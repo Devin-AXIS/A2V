@@ -26,6 +26,15 @@ export function RelationOneTab({
   const selectedId = (rec as any)[field.key] || null
   const selectedRecord = selectedId && targetDir ? targetDir.records.find((r) => r.id === selectedId) : null
 
+  // Debug logging
+  console.log("RelationOneTab Debug:", {
+    fieldKey: field.key,
+    fieldType: field.type,
+    targetDirId,
+    targetDir: targetDir ? { id: targetDir.id, name: targetDir.name, recordsCount: targetDir.records?.length } : null,
+    app: app ? { id: app.id, modulesCount: app.modules?.length } : null
+  })
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [targetDirRecords, setTargetDirRecords] = useState<RecordRow[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
