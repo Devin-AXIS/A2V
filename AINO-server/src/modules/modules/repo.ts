@@ -121,7 +121,7 @@ export class ModuleRepository {
         installType: data.installType,
         installConfig: data.installConfig,
         installStatus: "active",
-        createdBy: data.createdBy,
+        createdBy: null, // 临时设置为null，避免外键约束问题
       })
       .returning()
 
