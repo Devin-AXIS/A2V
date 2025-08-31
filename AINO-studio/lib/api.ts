@@ -819,6 +819,98 @@ const relationsApi = {
   }
 }
 
+// 模块管理相关 API
+export const modulesApi = {
+  // 获取已安装的模块列表
+  async getInstalledModules(params: {
+    applicationId: string
+    page?: number
+    limit?: number
+    search?: string
+    type?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: string
+  }): Promise<ApiResponse<any>> {
+    const searchParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString())
+      }
+    })
+
+    const queryString = searchParams.toString()
+    const endpoint = `/api/modules/installed${queryString ? `?${queryString}` : ''}`
+
+    return apiRequest<any>(endpoint)
+  },
+
+  // 获取模块详情
+  async getModuleDetail(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/installed/${moduleKey}?applicationId=${applicationId}`)
+  },
+
+  // 安装模块
+  async installModule(applicationId: string, data: {
+    moduleKey: string
+    moduleVersion?: string
+    installConfig?: any
+  }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/install?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 卸载模块
+  async uninstallModule(applicationId: string, moduleKey: string, data: {
+    keepData?: boolean
+  } = {}): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/uninstall/${moduleKey}?applicationId=${applicationId}`, {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 更新模块配置
+  async updateModuleConfig(applicationId: string, moduleKey: string, config: any): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/config/${moduleKey}?applicationId=${applicationId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ config }),
+    })
+  },
+
+  // 更新模块状态
+  async updateModuleStatus(applicationId: string, moduleKey: string, status: 'active' | 'disabled' | 'uninstalling'): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/status/${moduleKey}?applicationId=${applicationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    })
+  },
+
+  // 检查模块依赖
+  async checkModuleDependencies(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/dependencies/${moduleKey}?applicationId=${applicationId}`)
+  },
+
+  // 获取模块统计信息
+  async getModuleStats(applicationId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/stats?applicationId=${applicationId}`)
+  },
+
+  // 获取可用模块列表
+  async getAvailableModules(): Promise<ApiResponse<any>> {
+    return apiRequest<any>('/api/modules/available')
+  },
+
+  // 初始化系统模块
+  async initializeSystemModules(applicationId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/initialize-system?applicationId=${applicationId}`, {
+      method: 'POST',
+    })
+  }
+}
+
 // 导出默认 API 对象
 export const api = {
   auth: authApi,
@@ -830,4 +922,5 @@ export const api = {
   fields: fieldsApi,
   records: recordsApi,
   relations: relationsApi,
+  modules: modulesApi,
 }

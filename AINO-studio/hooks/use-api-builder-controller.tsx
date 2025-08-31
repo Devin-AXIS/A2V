@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocale } from "@/hooks/use-locale"
+import { useToast } from "@/hooks/use-toast"
 import { useApplicationModules } from "@/hooks/use-application-modules"
 import { type ApplicationModule } from "@/lib/api"
 import { api } from "@/lib/api"
+import { builtinModules, getStore, saveStore, type ModuleModel } from "@/lib/store"
 
 type DrawerState = {
   open: boolean
@@ -138,18 +140,26 @@ export function useApiBuilderController({
         // 将API数据转换为前端需要的格式，并获取完整的字段定义
         const directories = await Promise.all(
           response.data.directories.map(async (dir: any) => {
-            // 获取目录定义ID
-            const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, appId)
-            
             let fields = dir.config?.fields || []
             
-            if (dirDefResponse.success && dirDefResponse.data?.id) {
-              // 获取完整的字段定义
-              const fieldsResponse = await api.fields.getFields({
-                directoryId: dirDefResponse.data.id,
-                page: 1,
-                limit: 100
-              })
+            try {
+              // 先检查目录是否存在
+              const dirCheckResponse = await api.directories.getDirectory(dir.id)
+              if (!dirCheckResponse.success) {
+                console.warn(`目录 ${dir.id} 不存在，跳过处理`)
+                return null // 返回null，后续过滤掉
+              }
+              
+              // 获取目录定义ID
+              const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, appId)
+              
+              if (dirDefResponse.success && dirDefResponse.data?.id) {
+                // 获取完整的字段定义
+                const fieldsResponse = await api.fields.getFields({
+                  directoryId: dirDefResponse.data.id,
+                  page: 1,
+                  limit: 100
+                })
               
               if (fieldsResponse.success && fieldsResponse.data) {
                 // 将API字段定义转换为前端格式
@@ -192,6 +202,10 @@ export function useApiBuilderController({
                 }))
               }
             }
+            } catch (error) {
+              console.warn(`获取目录 ${dir.id} 的定义失败:`, error)
+              // 继续使用默认字段配置
+            }
             
             // 获取记录分类数据
             let categories: any[] = []
@@ -222,9 +236,12 @@ export function useApiBuilderController({
           })
         )
         
+        // 过滤掉null值（不存在的目录）
+        const validDirectories = directories.filter(dir => dir !== null)
+        
         setDirectoriesData(prev => ({
           ...prev,
-          [moduleId]: directories
+          [moduleId]: validDirectories
         }))
       }
     } catch (error) {
@@ -400,11 +417,51 @@ export function useApiBuilderController({
     }
   }
 
-  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string }) {
-    // 临时实现，后续可以连接到API
-    toast({
-      description: locale === "zh" ? "创建模块功能正在开发中" : "Create module feature is under development",
-    })
+  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
+    if (!application) return
+    if (!can("edit")) return
+    
+    try {
+      // 使用内置模块模板创建模块
+      const factory = (builtinModules as any)[payload.templateKey] as () => ModuleModel
+      const module = factory ? factory() : builtinModules.custom()
+      
+      // 设置模块名称和图标
+      if (payload.name.trim()) module.name = payload.name.trim()
+      if (payload.icon) module.icon = payload.icon
+      
+      // 添加到应用模块列表
+      const nextApp = structuredClone(application)
+      if (!nextApp.modules) {
+        nextApp.modules = []
+      }
+      nextApp.modules.push(module)
+      
+      // 保存到本地存储
+      const store = getStore()
+      const appIndex = store.apps.findIndex(a => a.id === application.id)
+      if (appIndex !== -1) {
+        store.apps[appIndex] = nextApp
+        saveStore(store)
+      }
+      
+      // 更新本地状态
+      setModuleId(module.id)
+      setDirId(module.directories[0]?.id || null)
+      setOpenAddModule(false)
+      
+      toast({
+        title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
+        description: locale === "zh" ? `模块 "${module.name}" 已创建` : `Module "${module.name}" has been created`,
+      })
+    } catch (error) {
+      console.error('创建模块失败:', error)
+      toast({
+        title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
+        description: locale === "zh" ? "请重试" : "Please try again",
+        variant: "destructive",
+      })
+    }
   }
 
   // 保存记录到API

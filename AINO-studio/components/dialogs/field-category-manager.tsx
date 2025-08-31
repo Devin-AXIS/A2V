@@ -13,6 +13,7 @@ import type { FieldCategoryModel } from "@/lib/field-categories"
 import { useLocale } from "@/hooks/use-locale"
 import { api } from "@/lib/api"
 import { FieldEditor } from "@/components/dialogs/field-editor"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 
 interface Props {
   open: boolean
@@ -448,6 +449,8 @@ function FieldCategoryManagerContent({
   const [isAdding, setIsAdding] = useState(false)
   const [addError, setAddError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<FieldCategoryModel | null>(null)
   const categoriesPerPage = 3
 
   // 获取字段分类列表
@@ -546,20 +549,20 @@ function FieldCategoryManagerContent({
       return
     }
 
-    const hasFields = categoryToDelete.fields.length > 0
-    const confirmMessage = hasFields
-      ? `${t("confirmDeleteCategory")}"${categoryToDelete.name}"？\n${t("confirmDeleteCategoryWithFields")} ${categoryToDelete.fields.length} ${t("fieldsWillMoveToUncategorized")}`
-      : `${t("confirmDeleteCategory")}"${categoryToDelete.name}"？`
+    setCategoryToDelete(categoryToDelete)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm(confirmMessage)) return
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return
 
     try {
-      await api.fieldCategories.deleteFieldCategory(categoryId)
+      await api.fieldCategories.deleteFieldCategory(categoryToDelete.id)
       
-      const updated = categories.filter((cat) => cat.id !== categoryId)
+      const updated = categories.filter((cat) => cat.id !== categoryToDelete.id)
       onCategoriesChange(updated)
 
-      if (selectedCategory?.id === categoryId) {
+      if (selectedCategory?.id === categoryToDelete.id) {
         setSelectedCategory(null)
       }
 
@@ -569,6 +572,9 @@ function FieldCategoryManagerContent({
       }
     } catch (error) {
       console.error("删除分类失败:", error)
+    } finally {
+      setDeleteDialogOpen(false)
+      setCategoryToDelete(null)
     }
   }
 
@@ -620,6 +626,15 @@ function FieldCategoryManagerContent({
           />
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={categoryToDelete?.name || ""}
+        itemType="category"
+        onConfirm={confirmDeleteCategory}
+      />
     </div>
   )
 }

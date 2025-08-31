@@ -1,6 +1,6 @@
 import { db } from "../../db"
 import { relationRecords, directoryDefs } from "../../db/schema"
-import { eq, and, or, desc, asc, sql } from "drizzle-orm"
+import { eq, and, or, desc, asc, sql, lt, count } from "drizzle-orm"
 import type { 
   CreateRelationRequest, 
   GetRelationsRequest, 
@@ -264,5 +264,236 @@ export class RelationRecordsRepository {
       .limit(1)
 
     return !!relation
+  }
+
+  // ==================== 标准化查询模板 ====================
+
+  /**
+   * 出边查询模板：从某记录找到所有关联记录
+   * 使用 idx_rel_out 索引优化
+   */
+  async findOutboundRelations(
+    applicationId: string,
+    fromDirectoryId: string,
+    fromRecordId: string,
+    options: {
+      relationType?: string;
+      toDirectoryId?: string;
+      limit?: number;
+      cursor?: Date;
+    } = {}
+  ) {
+    const { relationType, toDirectoryId, limit = 20, cursor } = options;
+
+    const conditions = [
+      eq(relationRecords.applicationId, applicationId),
+      eq(relationRecords.fromDirectoryId, fromDirectoryId),
+      eq(relationRecords.fromRecordId, fromRecordId),
+    ];
+
+    if (relationType) {
+      conditions.push(eq(relationRecords.relationType, relationType));
+    }
+
+    if (toDirectoryId) {
+      conditions.push(eq(relationRecords.toDirectoryId, toDirectoryId));
+    }
+
+    if (cursor) {
+      conditions.push(lt(relationRecords.createdAt, cursor));
+    }
+
+    const relations = await db
+      .select()
+      .from(relationRecords)
+      .where(and(...conditions))
+      .orderBy(desc(relationRecords.createdAt))
+      .limit(limit + 1); // 多取一条用于判断是否有下一页
+
+    const hasNext = relations.length > limit;
+    const nextCursor = hasNext ? relations[limit - 1].createdAt : null;
+    const data = hasNext ? relations.slice(0, limit) : relations;
+
+    return {
+      relations: data,
+      hasNext,
+      nextCursor,
+    };
+  }
+
+  /**
+   * 入边查询模板：反向关联查询
+   * 使用 idx_rel_in 索引优化
+   */
+  async findInboundRelations(
+    applicationId: string,
+    toDirectoryId: string,
+    toRecordId: string,
+    options: {
+      relationType?: string;
+      fromDirectoryId?: string;
+      limit?: number;
+      cursor?: Date;
+    } = {}
+  ) {
+    const { relationType, fromDirectoryId, limit = 20, cursor } = options;
+
+    const conditions = [
+      eq(relationRecords.applicationId, applicationId),
+      eq(relationRecords.toDirectoryId, toDirectoryId),
+      eq(relationRecords.toRecordId, toRecordId),
+    ];
+
+    if (relationType) {
+      conditions.push(eq(relationRecords.relationType, relationType));
+    }
+
+    if (fromDirectoryId) {
+      conditions.push(eq(relationRecords.fromDirectoryId, fromDirectoryId));
+    }
+
+    if (cursor) {
+      conditions.push(lt(relationRecords.createdAt, cursor));
+    }
+
+    const relations = await db
+      .select()
+      .from(relationRecords)
+      .where(and(...conditions))
+      .orderBy(desc(relationRecords.createdAt))
+      .limit(limit + 1);
+
+    const hasNext = relations.length > limit;
+    const nextCursor = hasNext ? relations[limit - 1].createdAt : null;
+    const data = hasNext ? relations.slice(0, limit) : relations;
+
+    return {
+      relations: data,
+      hasNext,
+      nextCursor,
+    };
+  }
+
+  /**
+   * 级联计数查询：列表页展示"关联数"
+   * 使用 idx_rel_out 索引优化
+   */
+  async getRelationCounts(
+    applicationId: string,
+    fromDirectoryId: string,
+    fromRecordId: string
+  ) {
+    const counts = await db
+      .select({
+        toDirectoryId: relationRecords.toDirectoryId,
+        relationType: relationRecords.relationType,
+        count: count(),
+      })
+      .from(relationRecords)
+      .where(
+        and(
+          eq(relationRecords.applicationId, applicationId),
+          eq(relationRecords.fromDirectoryId, fromDirectoryId),
+          eq(relationRecords.fromRecordId, fromRecordId)
+        )
+      )
+      .groupBy(relationRecords.toDirectoryId, relationRecords.relationType);
+
+    return counts;
+  }
+
+  /**
+   * 字段级存在性查询：检查特定字段的关联是否存在
+   * 使用 idx_rel_from_field 或 idx_rel_to_field 索引优化
+   */
+  async checkFieldRelationExists(
+    applicationId: string,
+    directoryId: string,
+    recordId: string,
+    fieldKey: string,
+    direction: 'from' | 'to' = 'from'
+  ) {
+    const conditions = [
+      eq(relationRecords.applicationId, applicationId),
+      eq(relationRecords[`${direction}DirectoryId`], directoryId),
+      eq(relationRecords[`${direction}RecordId`], recordId),
+      eq(relationRecords[`${direction}FieldKey`], fieldKey),
+    ];
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(relationRecords)
+      .where(and(...conditions))
+      .limit(1);
+
+    return result.count > 0;
+  }
+
+  /**
+   * 幂等写入：支持 ON CONFLICT DO NOTHING
+   * 使用 idx_rel_idempotent 索引优化
+   */
+  async createIdempotent(data: CreateRelationRequest) {
+    try {
+      const [relation] = await db
+        .insert(relationRecords)
+        .values({
+          applicationId: data.applicationId,
+          fromDirectoryId: data.fromDirectoryId,
+          fromRecordId: data.fromRecordId,
+          fromFieldKey: data.fromFieldKey,
+          toDirectoryId: data.toDirectoryId,
+          toRecordId: data.toRecordId,
+          toFieldKey: data.toFieldKey || null,
+          relationType: data.relationType,
+          bidirectional: data.bidirectional,
+          createdBy: null,
+        })
+        .returning();
+
+      return { relation, created: true };
+    } catch (error) {
+      // 如果是唯一约束冲突，说明已存在，返回现有记录
+      if (error.code === '23505') { // PostgreSQL unique violation
+        const [existing] = await db
+          .select()
+          .from(relationRecords)
+          .where(
+            and(
+              eq(relationRecords.applicationId, data.applicationId),
+              eq(relationRecords.fromDirectoryId, data.fromDirectoryId),
+              eq(relationRecords.fromRecordId, data.fromRecordId),
+              eq(relationRecords.fromFieldKey, data.fromFieldKey),
+              eq(relationRecords.toDirectoryId, data.toDirectoryId),
+              eq(relationRecords.toRecordId, data.toRecordId),
+              eq(relationRecords.relationType, data.relationType)
+            )
+          )
+          .limit(1);
+
+        return { relation: existing, created: false };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 批量幂等写入
+   */
+  async batchCreateIdempotent(
+    applicationId: string,
+    relations: Omit<CreateRelationRequest, 'applicationId'>[]
+  ) {
+    const results = [];
+    
+    for (const relation of relations) {
+      const result = await this.createIdempotent({
+        ...relation,
+        applicationId,
+      });
+      results.push(result);
+    }
+
+    return results;
   }
 }
