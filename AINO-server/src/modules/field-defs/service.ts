@@ -176,7 +176,21 @@ export class FieldDefsService {
       .returning()
     
     // 如果是双向关联字段，在目标目录中创建反向关联字段
+    console.log('🔍 检查双向关联配置:', {
+      bidirectional: data.relation?.bidirectional,
+      targetDirId: data.relation?.targetDirId,
+      reverseFieldKey: data.relation?.reverseFieldKey,
+      relation: data.relation
+    })
+    
     if (data.relation?.bidirectional && data.relation?.targetDirId && data.relation?.reverseFieldKey) {
+      console.log('✅ 开始创建反向关联字段:', {
+        sourceFieldKey: newField.key,
+        targetDirId: data.relation.targetDirId,
+        reverseFieldKey: data.relation.reverseFieldKey,
+        relationType: data.type
+      })
+      
       try {
         await this.createReverseRelationField({
           sourceField: newField,
@@ -185,10 +199,17 @@ export class FieldDefsService {
           relationType: data.type,
           onDelete: data.relation.onDelete || 'restrict'
         })
+        console.log('✅ 反向关联字段创建成功')
       } catch (error) {
-        console.error('创建反向关联字段失败:', error)
+        console.error('❌ 创建反向关联字段失败:', error)
         // 不抛出错误，避免影响主字段创建
       }
+    } else {
+      console.log('⏭️ 跳过反向关联字段创建:', {
+        reason: !data.relation?.bidirectional ? '非双向关联' : 
+                !data.relation?.targetDirId ? '缺少目标目录ID' : 
+                !data.relation?.reverseFieldKey ? '缺少反向字段名' : '未知原因'
+      })
     }
     
     return newField as FieldDef
