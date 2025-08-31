@@ -58,7 +58,9 @@ export type RelationMeta = {
   targetDirId: string | null
   mode: "one" | "many"
   displayFieldKey?: string | null
-  onDelete?: "cascade" | "restrict"
+  bidirectional?: boolean
+  reverseFieldKey?: string | null
+  onDelete?: "cascade" | "restrict" | "set_null"
 }
 
 export type CascaderNode = { id: string; name: string; children?: CascaderNode[] }
@@ -75,6 +77,7 @@ export type FieldModel = {
   desc?: string
   placeholder?: string
   categoryId?: string // 字段分类ID，关联到字段分类管理
+
   // 数值
   min?: number
   max?: number
@@ -284,7 +287,7 @@ export const builtinModules = {
       directories: [
         {
           id: uid(),
-          name: "分类管理",
+          name: "内容分类管理",
           type: "category",
           supportsCategory: true,
           fields: [f("name", "分类名", "text", true, true)],

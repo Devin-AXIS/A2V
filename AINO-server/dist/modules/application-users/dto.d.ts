@@ -12,8 +12,8 @@ export declare const ApplicationUser: z.ZodObject<{
         pending: "pending";
     }>>;
     role: z.ZodDefault<z.ZodEnum<{
-        admin: "admin";
         user: "user";
+        admin: "admin";
         guest: "guest";
     }>>;
     department: z.ZodOptional<z.ZodString>;
@@ -31,8 +31,8 @@ export declare const CreateApplicationUserRequest: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     avatar: z.ZodOptional<z.ZodString>;
     role: z.ZodDefault<z.ZodEnum<{
-        admin: "admin";
         user: "user";
+        admin: "admin";
         guest: "guest";
     }>>;
     department: z.ZodOptional<z.ZodString>;
@@ -52,8 +52,8 @@ export declare const UpdateApplicationUserRequest: z.ZodObject<{
         pending: "pending";
     }>>;
     role: z.ZodOptional<z.ZodEnum<{
-        admin: "admin";
         user: "user";
+        admin: "admin";
         guest: "guest";
     }>>;
     department: z.ZodOptional<z.ZodString>;
@@ -72,15 +72,15 @@ export declare const GetApplicationUsersQuery: z.ZodObject<{
         pending: "pending";
     }>>;
     role: z.ZodOptional<z.ZodEnum<{
-        admin: "admin";
         user: "user";
+        admin: "admin";
         guest: "guest";
     }>>;
     department: z.ZodOptional<z.ZodString>;
     sortBy: z.ZodDefault<z.ZodEnum<{
-        email: "email";
         name: "name";
         createdAt: "createdAt";
+        email: "email";
         lastLoginAt: "lastLoginAt";
     }>>;
     sortOrder: z.ZodDefault<z.ZodEnum<{
@@ -105,8 +105,8 @@ export declare const ApplicationUserListResponse: z.ZodObject<{
                 pending: "pending";
             }>>;
             role: z.ZodDefault<z.ZodEnum<{
-                admin: "admin";
                 user: "user";
+                admin: "admin";
                 guest: "guest";
             }>>;
             department: z.ZodOptional<z.ZodString>;
@@ -141,8 +141,8 @@ export declare const ApplicationUserResponse: z.ZodObject<{
             pending: "pending";
         }>>;
         role: z.ZodDefault<z.ZodEnum<{
-            admin: "admin";
             user: "user";
+            admin: "admin";
             guest: "guest";
         }>>;
         department: z.ZodOptional<z.ZodString>;

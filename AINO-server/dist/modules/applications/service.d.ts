@@ -3,17 +3,17 @@ export declare class ApplicationService {
     createApplication(data: CreateApplicationRequest, userId: string): Promise<{
         id: string;
         name: string;
-        slug: string;
-        version: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        slug: string;
         ownerId: string;
+        status: string;
         template: string | null;
         config: unknown;
         databaseConfig: unknown;
         isPublic: boolean | null;
+        version: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private createSystemModules;
     private createDefaultDirectories;
@@ -76,17 +76,17 @@ export declare class ApplicationService {
     createApplicationFromTemplate(data: CreateApplicationRequest, userId: string): Promise<{
         id: string;
         name: string;
-        slug: string;
-        version: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        slug: string;
         ownerId: string;
+        status: string;
         template: string | null;
         config: unknown;
         databaseConfig: unknown;
         isPublic: boolean | null;
+        version: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getApplicationModules(applicationId: string, userId: string): Promise<{
         application: {

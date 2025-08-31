@@ -30,6 +30,7 @@ const createFieldDefSchema = z.object({
   readRoles: z.array(z.string()).default(['admin', 'member']),
   writeRoles: z.array(z.string()).default(['admin']),
   required: z.boolean().default(false),
+
 })
 
 // 更新字段定义验证
@@ -97,6 +98,8 @@ fieldDefs.patch('/:id', zValidator('json', updateFieldDefSchema), async (c) => {
     return c.json({ success: false, error: '更新字段定义失败' }, 500)
   }
 })
+
+
 
 // 删除字段定义
 fieldDefs.delete('/:id', async (c) => {

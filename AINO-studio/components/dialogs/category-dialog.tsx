@@ -87,6 +87,31 @@ export function CategoryDialog({
     })
   }
 
+  function deleteL1(id: string) {
+    setCats((arr) => arr.filter((x: Cat) => x.id !== id))
+  }
+
+  function deleteL2(id: string) {
+    setCats((arr) => {
+      const next = structuredClone(arr)
+      const p1 = next.find((x: Cat) => x.id === lvl1)
+      if (!p1) return next
+      p1.children = p1.children?.filter((x: Cat) => x.id !== id) || []
+      return next
+    })
+  }
+
+  function deleteL3(id: string) {
+    setCats((arr) => {
+      const next = structuredClone(arr)
+      const p1 = next.find((x: Cat) => x.id === lvl1)
+      const p2 = p1?.children?.find((x: Cat) => x.id === lvl2)
+      if (!p2) return next
+      p2.children = p2.children?.filter((x: Cat) => x.id !== id) || []
+      return next
+    })
+  }
+
   const l2 = useMemo(() => cats.find((x) => x.id === lvl1)?.children || [], [cats, lvl1])
   const l3 = useMemo(
     () => cats.find((x) => x.id === lvl1)?.children?.find((x) => x.id === lvl2)?.children || [],
@@ -130,6 +155,9 @@ export function CategoryDialog({
           addL1={addL1}
           addL2={addL2}
           addL3={addL3}
+          deleteL1={deleteL1}
+          deleteL2={deleteL2}
+          deleteL3={deleteL3}
           l2={l2}
           l3={l3}
           canEdit={canEdit}

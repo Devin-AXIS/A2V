@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Trash2 } from "lucide-react"
 
 type Cat = { id: string; name: string; children?: Cat[] }
 
@@ -18,6 +19,8 @@ export type CategoryI18n = {
   save: string
   cancel: string
   preview: string
+  delete: string
+  confirmDelete: string
 }
 
 interface CategorySelectorProps {
@@ -44,6 +47,9 @@ interface CategorySelectorProps {
   addL1: (name: string) => void
   addL2: (name: string) => void
   addL3: (name: string) => void
+  deleteL1: (id: string) => void
+  deleteL2: (id: string) => void
+  deleteL3: (id: string) => void
   l2: Cat[]
   l3: Cat[]
   canEdit: boolean
@@ -73,6 +79,9 @@ export function CategorySelector({
   addL1,
   addL2,
   addL3,
+  deleteL1,
+  deleteL2,
+  deleteL3,
   l2,
   l3,
   canEdit,
@@ -104,17 +113,36 @@ export function CategorySelector({
               ))}
             </SelectContent>
           </Select>
-          <Button
-            variant="secondary"
-            className="px-3"
-            onClick={() => {
-              setAdding1((v) => !v)
-              setNewL1("")
-            }}
-            disabled={!canEdit}
-          >
-            +
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="secondary"
+              className="px-3"
+              onClick={() => {
+                setAdding1(!adding1)
+                setNewL1("")
+              }}
+              disabled={!canEdit}
+            >
+              +
+            </Button>
+            {lvl1 && canEdit && (
+              <Button
+                variant="secondary"
+                className="px-3 text-red-600 hover:bg-red-100"
+                onClick={() => {
+                  const selectedCat = cats.find(c => c.id === lvl1)
+                  if (selectedCat && confirm(`${i18n.confirmDelete} "${selectedCat.name}"？`)) {
+                    deleteL1(lvl1)
+                    setLvl1("")
+                    setLvl2("")
+                    setLvl3("")
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         {adding1 && (
           <div className="grid grid-cols-[92px_1fr_auto_auto] items-center gap-2">
@@ -167,18 +195,36 @@ export function CategorySelector({
               ))}
             </SelectContent>
           </Select>
-          <Button
-            variant="secondary"
-            className="px-3"
-            onClick={() => {
-              if (!lvl1) return
-              setAdding2((v) => !v)
-              setNewL2("")
-            }}
-            disabled={!lvl1 || !canEdit}
-          >
-            +
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="secondary"
+              className="px-3"
+              onClick={() => {
+                if (!lvl1) return
+                setAdding2(!adding2)
+                setNewL2("")
+              }}
+              disabled={!lvl1 || !canEdit}
+            >
+              +
+            </Button>
+            {lvl2 && canEdit && (
+              <Button
+                variant="secondary"
+                className="px-3 text-red-600 hover:bg-red-100"
+                onClick={() => {
+                  const selectedCat = l2.find(c => c.id === lvl2)
+                  if (selectedCat && confirm(`${i18n.confirmDelete} "${selectedCat.name}"？`)) {
+                    deleteL2(lvl2)
+                    setLvl2("")
+                    setLvl3("")
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         {adding2 && (
           <div className="grid grid-cols-[92px_1fr_auto_auto] items-center gap-2">
@@ -224,18 +270,35 @@ export function CategorySelector({
               ))}
             </SelectContent>
           </Select>
-          <Button
-            variant="secondary"
-            className="px-3"
-            onClick={() => {
-              if (!lvl2) return
-              setAdding3((v) => !v)
-              setNewL3("")
-            }}
-            disabled={!lvl2 || !canEdit}
-          >
-            +
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="secondary"
+              className="px-3"
+              onClick={() => {
+                if (!lvl2) return
+                setAdding3(!adding3)
+                setNewL3("")
+              }}
+              disabled={!lvl2 || !canEdit}
+            >
+              +
+            </Button>
+            {lvl3 && canEdit && (
+              <Button
+                variant="secondary"
+                className="px-3 text-red-600 hover:bg-red-100"
+                onClick={() => {
+                  const selectedCat = l3.find(c => c.id === lvl3)
+                  if (selectedCat && confirm(`${i18n.confirmDelete} "${selectedCat.name}"？`)) {
+                    deleteL3(lvl3)
+                    setLvl3("")
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         {adding3 && (
           <div className="grid grid-cols-[92px_1fr_auto_auto] items-center gap-2">

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, integer, jsonb, index } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, boolean, integer, jsonb, index, unique } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 // 应用表 - 支持多租户和独立数据库配置
@@ -92,19 +92,19 @@ export const fieldCategories = pgTable("field_categories", {
 }))
 
 // 记录分类表 - 每个目录独立的分类系统
-export const recordCategories = pgTable("record_categories", {
+export const recordCategories: any = pgTable("record_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
   directoryId: uuid("directory_id").notNull().references(() => directories.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   path: text("path").notNull(), // 分类路径，如 "电子产品/手机/智能手机"
   level: integer("level").notNull(), // 分类级别 1, 2, 3
-  parentId: uuid("parent_id").references(() => recordCategories.id, { onDelete: "cascade" }), // 父分类ID
+  parentId: uuid("parent_id").references((): any => recordCategories.id, { onDelete: "cascade" }), // 父分类ID
   order: integer("order").default(0),
   enabled: boolean("enabled").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
+}, (table: any) => ({
   createdAtIdx: index("record_categories_created_at_idx").on(table.createdAt),
   appDirIdx: index("record_categories_app_dir_idx").on(table.applicationId, table.directoryId),
   parentIdx: index("record_categories_parent_idx").on(table.parentId),
@@ -184,6 +184,7 @@ export const fieldDefs = pgTable('field_defs', {
   readRoles: jsonb('read_roles').$type<string[]>().default(['admin', 'member']),
   writeRoles: jsonb('write_roles').$type<string[]>().default(['admin']),
   required: boolean('required').default(false),
+  categoryId: uuid('category_id').references(() => fieldCategories.id, { onDelete: 'set null' }),
 }, (table) => ({
   directoryIdx: index("field_defs_directory_idx").on(table.directoryId),
   keyIdx: index("field_defs_key_idx").on(table.key),
@@ -204,20 +205,7 @@ export const dirUsers = pgTable('dir_users', {
   tenantIdx: index("dir_users_tenant_idx").on(table.tenantId),
 }))
 
-export const dirJobs = pgTable('dir_jobs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull(),
-  version: integer('version').notNull().default(1),
-  props: jsonb('props').notNull().$type<Record<string, any>>().default({}),
-  createdBy: uuid('created_by'),
-  updatedBy: uuid('updated_by'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
-}, (table) => ({
-  createdAtIdx: index("dir_jobs_created_at_idx").on(table.createdAt),
-  tenantIdx: index("dir_jobs_tenant_idx").on(table.tenantId),
-}))
+
 
 export const fieldIndexes = pgTable('field_indexes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -231,4 +219,27 @@ export const fieldIndexes = pgTable('field_indexes', {
   createdAtIdx: index("field_indexes_created_at_idx").on(table.createdAt),
   dirSlugIdx: index("field_indexes_dir_slug_idx").on(table.dirSlug),
   recordFieldIdx: index("field_indexes_record_field_idx").on(table.recordId, table.fieldKey),
+}))
+
+// 关联关系表
+export const relationRecords = pgTable('relation_records', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  fromDirectoryId: uuid('from_directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
+  fromRecordId: uuid('from_record_id').notNull(),
+  fromFieldKey: text('from_field_key').notNull(),
+  toDirectoryId: uuid('to_directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
+  toRecordId: uuid('to_record_id').notNull(),
+  toFieldKey: text('to_field_key'),
+  relationType: text('relation_type').notNull(), // 'one_to_one', 'one_to_many', 'many_to_many'
+  bidirectional: boolean('bidirectional').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  createdBy: uuid('created_by'),
+}, (table) => ({
+  createdAtIdx: index("relation_records_created_at_idx").on(table.createdAt),
+  fromIdx: index("relation_records_from_idx").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey),
+  toIdx: index("relation_records_to_idx").on(table.toDirectoryId, table.toRecordId, table.toFieldKey),
+  appIdx: index("relation_records_app_idx").on(table.applicationId),
+  uniqueRelation: unique("relation_records_unique").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey, table.toDirectoryId, table.toRecordId),
 }))

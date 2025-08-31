@@ -2,20 +2,20 @@ import type { TCreateApplicationUserRequest, TUpdateApplicationUserRequest, TGet
 export declare class ApplicationUserService {
     createApplicationUser(applicationId: string, data: TCreateApplicationUserRequest): Promise<{
         id: string;
-        email: string;
-        phone: string | null;
         name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        applicationId: string;
-        metadata: unknown;
+        email: string;
         avatar: string | null;
+        lastLoginAt: Date | null;
+        applicationId: string;
+        phone: string | null;
         role: string;
         department: string | null;
         position: string | null;
         tags: string[] | null;
-        lastLoginAt: Date | null;
+        metadata: unknown;
     }>;
     getApplicationUsers(applicationId: string, query: TGetApplicationUsersQuery): Promise<{
         users: {
@@ -78,20 +78,20 @@ export declare class ApplicationUserService {
     }>;
     deleteApplicationUser(applicationId: string, userId: string): Promise<{
         id: string;
-        email: string;
-        phone: string | null;
         name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        applicationId: string;
-        metadata: unknown;
+        email: string;
         avatar: string | null;
+        lastLoginAt: Date | null;
+        applicationId: string;
+        phone: string | null;
         role: string;
         department: string | null;
         position: string | null;
         tags: string[] | null;
-        lastLoginAt: Date | null;
+        metadata: unknown;
     }>;
     updateLastLoginTime(applicationId: string, userId: string): Promise<{
         id: string;
@@ -143,20 +143,20 @@ export declare class ApplicationUserService {
         success: boolean;
         data: {
             id: string;
-            email: string;
-            phone: string | null;
             name: string;
             status: string;
             createdAt: Date;
             updatedAt: Date;
-            applicationId: string;
-            metadata: unknown;
+            email: string;
             avatar: string | null;
+            lastLoginAt: Date | null;
+            applicationId: string;
+            phone: string | null;
             role: string;
             department: string | null;
             position: string | null;
             tags: string[] | null;
-            lastLoginAt: Date | null;
+            metadata: unknown;
         };
         error?: undefined;
     } | {

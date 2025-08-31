@@ -88,10 +88,10 @@ usersRoute.post("/login", async (c) => {
         message: "OK",
         data: {
             token,
-            user: { id: user.id, email: user.email, name: user.name },
+            user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
         },
         token,
-        user: { id: user.id, email: user.email, name: user.name },
+        user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
     }, 200);
 });
 usersRoute.get("/me", async (c) => {
@@ -103,9 +103,45 @@ usersRoute.get("/me", async (c) => {
     const { getUserFromToken } = await import('../../platform/auth');
     const identity = await getUserFromToken(token);
     if (identity) {
-        return c.json({ success: true, data: { id: identity.id, email: identity.email, name: identity.name } }, 200);
+        return c.json({ success: true, data: { id: identity.id, email: identity.email, name: identity.name, avatar: identity.avatar, roles: identity.roles } }, 200);
     }
     return c.json({ success: false, code: "UNAUTHORIZED", message: "令牌无效或已过期" }, 401);
+});
+const UpdateMeBody = z.object({
+    name: z.string().min(1).optional(),
+    avatar: z.string().min(1).optional(),
+});
+usersRoute.patch("/me", async (c) => {
+    const authHeader = c.req.header('Authorization');
+    const token = extractTokenFromHeader(authHeader);
+    if (!token) {
+        return c.json({ success: false, code: "UNAUTHORIZED", message: "未登录" }, 401);
+    }
+    const { getUserFromToken } = await import('../../platform/auth');
+    const identity = await getUserFromToken(token);
+    if (!identity) {
+        return c.json({ success: false, code: "UNAUTHORIZED", message: "令牌无效或已过期" }, 401);
+    }
+    let body;
+    try {
+        body = await c.req.json();
+    }
+    catch {
+        body = {};
+    }
+    const parsed = UpdateMeBody.safeParse(body);
+    if (!parsed.success) {
+        return c.json({ success: false, code: "BAD_REQUEST", message: "参数错误", detail: parsed.error.flatten() }, 400);
+    }
+    const { updateUserById } = await import('./repo');
+    const updated = await updateUserById(identity.id, parsed.data);
+    if (!updated) {
+        return c.json({ success: false, code: "NOT_FOUND", message: "用户不存在" }, 404);
+    }
+    return c.json({
+        success: true,
+        data: { id: updated.id, email: updated.email, name: updated.name, avatar: updated.avatar, roles: updated.roles },
+    }, 200);
 });
 usersRoute.post("/register", async (c) => {
     try {
@@ -128,10 +164,10 @@ usersRoute.post("/register", async (c) => {
             message: 'OK',
             data: {
                 token,
-                user: { id: user.id, email: user.email, name: user.name },
+                user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
             },
             token,
-            user: { id: user.id, email: user.email, name: user.name },
+            user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
         }, 200);
     }
     catch (err) {

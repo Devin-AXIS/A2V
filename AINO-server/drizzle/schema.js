@@ -1,4 +1,4 @@
-import { pgTable, index, foreignKey, uuid, text, integer, timestamp, jsonb, boolean, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, index, foreignKey, uuid, text, integer, timestamp, jsonb, boolean, pgEnum } from "drizzle-orm/pg-core";
 export const fieldType = pgEnum("field_type", ['text', 'number', 'date', 'datetime', 'boolean', 'email', 'url', 'phone', 'select', 'multiselect', 'textarea', 'rich_text', 'file', 'image', 'relation', 'formula', 'json']);
 export const moduleStatus = pgEnum("module_status", ['active', 'inactive', 'error']);
 export const moduleType = pgEnum("module_type", ['system', 'custom', 'remote']);
@@ -74,17 +74,6 @@ export const fieldDefs = pgTable("field_defs", {
         name: "field_defs_directory_id_fkey"
     }).onDelete("cascade"),
 ]);
-export const relations = pgTable("relations", {
-    id: uuid().defaultRandom().notNull(),
-    tenantId: uuid("tenant_id").notNull(),
-    fromUrn: varchar("from_urn", { length: 500 }).notNull(),
-    toUrn: varchar("to_urn", { length: 500 }).notNull(),
-    type: relationType().notNull(),
-    metadata: jsonb().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-    createdBy: uuid("created_by"),
-    deletedAt: timestamp("deleted_at", { withTimezone: true, mode: 'string' }),
-});
 export const applicationUsers = pgTable("application_users", {
     id: uuid().defaultRandom().notNull(),
     applicationId: uuid("application_id").notNull(),

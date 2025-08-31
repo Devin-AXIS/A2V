@@ -77,6 +77,7 @@ export function DirectoryShell({
             <Wrench className="mr-2 size-4" />
             {t("tabFields")}
           </TabsTrigger>
+
         </TabsList>
         <TabsContent value="list" className="mt-4">
           {listSlot}
@@ -84,6 +85,7 @@ export function DirectoryShell({
         <TabsContent value="fields" className="mt-4">
           {fieldsSlot}
         </TabsContent>
+
       </Tabs>
     </FrostPanel>
   )

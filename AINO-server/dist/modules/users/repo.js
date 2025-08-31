@@ -38,9 +38,7 @@ export async function findUserById(id) {
 }
 export async function createUser(data) {
     const hashedPassword = await hashPassword(data.password);
-    const userId = Math.random().toString(36).slice(2, 10);
     const [newUser] = await db.insert(users).values({
-        id: userId,
         name: data.name,
         email: data.email,
         password: hashedPassword,
@@ -72,5 +70,30 @@ export async function getAllUsers() {
         roles: user.roles || ['user'],
         createdAt: user.createdAt.toISOString(),
     }));
+}
+export async function updateUserById(id, data) {
+    const updateFields = {};
+    if (typeof data.name === 'string' && data.name.length > 0)
+        updateFields.name = data.name;
+    if (typeof data.avatar === 'string' && data.avatar.length > 0)
+        updateFields.avatar = data.avatar;
+    if (Object.keys(updateFields).length === 0) {
+        return await findUserById(id);
+    }
+    const [updated] = await db
+        .update(users)
+        .set(updateFields)
+        .where(eq(users.id, id))
+        .returning();
+    if (!updated)
+        return null;
+    return {
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        avatar: updated.avatar || undefined,
+        roles: updated.roles || ['user'],
+        createdAt: updated.createdAt.toISOString(),
+    };
 }
 //# sourceMappingURL=repo.js.map

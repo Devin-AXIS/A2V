@@ -16,10 +16,21 @@ export const RelationMetaSchema = z.object({
   targetDirId: z.string().nullable(),
   mode: z.enum(["one", "many"]),
   displayFieldKey: z.string().nullable().optional(),
+  bidirectional: z.boolean().default(false),
+  reverseFieldKey: z.string().nullable().optional(),
+  onDelete: z.enum(["cascade", "restrict", "set_null"]).default("restrict"),
 })
 
 // 级联节点
-export const CascaderNodeSchema = z.object({
+export const CascaderNodeSchema: z.ZodType<{
+  id: string
+  name: string
+  children?: Array<{
+    id: string
+    name: string
+    children?: any[]
+  }>
+}> = z.object({
   id: z.string(),
   name: z.string(),
   children: z.array(z.lazy(() => CascaderNodeSchema)).optional(),
@@ -38,7 +49,7 @@ export const CreateFieldRequest = z.object({
   enabled: z.boolean().default(true),
   desc: z.string().optional(),
   placeholder: z.string().optional(),
-  categoryId: z.string().uuid().optional(),
+
   
   // 数值配置
   min: z.number().optional(),
@@ -76,16 +87,16 @@ export const CreateFieldRequest = z.object({
   preset: z.string().optional(),
   
   // 特殊配置
-  skillsConfig: z.record(z.any()).optional(),
-  progressConfig: z.record(z.any()).optional(),
-  customExperienceConfig: z.record(z.any()).optional(),
-  identityVerificationConfig: z.record(z.any()).optional(),
-  certificateConfig: z.record(z.any()).optional(),
-  otherVerificationConfig: z.record(z.any()).optional(),
-  imageConfig: z.record(z.any()).optional(),
-  videoConfig: z.record(z.any()).optional(),
-  booleanConfig: z.record(z.any()).optional(),
-  multiselectConfig: z.record(z.any()).optional(),
+  skillsConfig: z.record(z.string(), z.any()).optional(),
+  progressConfig: z.record(z.string(), z.any()).optional(),
+  customExperienceConfig: z.record(z.string(), z.any()).optional(),
+  identityVerificationConfig: z.record(z.string(), z.any()).optional(),
+  certificateConfig: z.record(z.string(), z.any()).optional(),
+  otherVerificationConfig: z.record(z.string(), z.any()).optional(),
+  imageConfig: z.record(z.string(), z.any()).optional(),
+  videoConfig: z.record(z.string(), z.any()).optional(),
+  booleanConfig: z.record(z.string(), z.any()).optional(),
+  multiselectConfig: z.record(z.string(), z.any()).optional(),
   
   order: z.number().int().min(0).default(0),
 })
@@ -97,7 +108,7 @@ export const UpdateFieldRequest = CreateFieldRequest.partial().omit({ key: true 
 export const GetFieldsRequest = z.object({
   applicationId: z.string().uuid(),
   directoryId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+
   type: FieldTypeEnum.optional(),
   enabled: z.boolean().optional(),
   page: z.number().int().min(1).default(1),
@@ -109,7 +120,7 @@ export const FieldResponse = z.object({
   id: z.string().uuid(),
   applicationId: z.string().uuid(),
   directoryId: z.string().uuid(),
-  categoryId: z.string().uuid().nullable(),
+
   key: z.string(),
   label: z.string(),
   type: FieldTypeEnum,
@@ -119,6 +130,7 @@ export const FieldResponse = z.object({
   enabled: z.boolean(),
   desc: z.string().nullable(),
   placeholder: z.string().nullable(),
+
   
   // 数值配置
   min: z.number().nullable(),

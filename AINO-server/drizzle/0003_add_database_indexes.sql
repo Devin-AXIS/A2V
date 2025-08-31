@@ -46,9 +46,7 @@ CREATE INDEX IF NOT EXISTS "field_defs_key_idx" ON "field_defs" ("key");
 CREATE INDEX IF NOT EXISTS "dir_users_created_at_idx" ON "dir_users" ("created_at");
 CREATE INDEX IF NOT EXISTS "dir_users_tenant_idx" ON "dir_users" ("tenant_id");
 
--- dir_jobs 表索引
-CREATE INDEX IF NOT EXISTS "dir_jobs_created_at_idx" ON "dir_jobs" ("created_at");
-CREATE INDEX IF NOT EXISTS "dir_jobs_tenant_idx" ON "dir_jobs" ("tenant_id");
+-- dir_jobs 表索引已移除
 
 -- field_indexes 表索引
 CREATE INDEX IF NOT EXISTS "field_indexes_created_at_idx" ON "field_indexes" ("created_at");

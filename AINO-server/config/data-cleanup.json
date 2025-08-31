@@ -28,16 +28,7 @@
       "compress_fields": ["props"],
       "archive_enabled": true
     },
-    "dir_jobs": {
-      "retention_days": 60,
-      "compress_fields": ["props"],
-      "archive_enabled": true
-    },
-    "relations": {
-      "retention_days": 90,
-      "compress_fields": ["metadata"],
-      "archive_enabled": false
-    }
+
   },
   "monitoring": {
     "alert_thresholds": {

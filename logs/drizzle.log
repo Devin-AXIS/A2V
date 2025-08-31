@@ -1,9 +1,9 @@
 
-> server@1.0.0 studio /Users/wemo/new-flow/AINO/AINO-server
+> server@1.0.0 studio /Users/devin/Documents/AINO-main/AINO-server
 > drizzle-kit studio
 
 No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/wemo/new-flow/AINO/AINO-server/drizzle.config.ts'
+Reading config file '/Users/devin/Documents/AINO-main/AINO-server/drizzle.config.ts'
 Using 'pg' driver for database querying
 
  Warning  Drizzle Studio is currently in Beta. If you find anything that is not working as expected or should be improved, feel free to create an issue on GitHub: https://github.com/drizzle-team/drizzle-kit-mirror/issues/new or write to us on Discord: https://discord.gg/WcRKz2FFxN

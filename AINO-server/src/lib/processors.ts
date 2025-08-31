@@ -15,6 +15,7 @@ export interface FieldDef {
   readRoles?: string[]
   writeRoles?: string[]
   required?: boolean
+
 }
 
 export interface Ctx {

@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from 'drizzle-orm'
 import { db } from '../../db'
-import { directoryDefs, directories, applications } from '../../../drizzle/schema'
+import { directoryDefs, directories, applications } from '../../db/schema'
 
 export interface CreateDirectoryDefData {
   slug: string

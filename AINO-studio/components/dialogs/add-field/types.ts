@@ -42,6 +42,8 @@ export type FieldDraft = {
   relationModuleId?: string | null
   relationDisplayFieldKey?: string | null
   relationBidirectional?: boolean
+  relationReverseFieldKey?: string | null
+  relationOnDelete?: "cascade" | "restrict" | "set_null"
   relationAllowDuplicate?: boolean
   // extra configs
   preset?: PresetKey
