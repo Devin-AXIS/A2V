@@ -139,7 +139,7 @@ export const recordCategories: any = pgTable("record_categories", {
 export const applicationUsers = pgTable("application_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
-  phone: text("phone").notNull(), // 手机号作为唯一标识
+  phone: text("phone_number").notNull(), // 手机号作为唯一标识
   password: text("password"), // 用户密码（加密存储）
   status: text("status").default("active").notNull(), // active, inactive, pending
   role: text("role").default("user").notNull(), // admin, user, guest

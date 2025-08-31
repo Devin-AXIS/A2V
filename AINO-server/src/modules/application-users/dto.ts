@@ -53,7 +53,7 @@ export const GetApplicationUsersQuery = z.object({
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   role: z.enum(['admin', 'user', 'guest']).optional(),
   department: z.string().optional(),
-  sortBy: z.enum(['phone', 'createdAt', 'lastLoginAt']).default('createdAt'),
+  sortBy: z.enum(['phone_number', 'createdAt', 'lastLoginAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
