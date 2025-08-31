@@ -183,6 +183,8 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
             cascaderOptions: field.schema?.cascaderOptions || undefined,
             customExperienceConfig: field.schema?.customExperienceConfig || undefined,
             certificateConfig: field.schema?.certificateConfig || undefined,
+            // 提取关联字段配置
+            relation: field.relation || undefined,
             skillsConfig: field.schema?.skillsConfig || undefined,
             progressConfig: field.schema?.progressConfig || undefined,
             identityVerificationConfig: field.schema?.identityVerificationConfig || undefined,
@@ -373,6 +375,11 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
   async function addField(fieldData: any) {
     try {
       console.log("🔍 创建字段定义参数:", fieldData)
+      console.log("🔍 关联字段配置:", {
+        type: fieldData.type,
+        relationTargetId: fieldData.relationTargetId,
+        relationDisplayFieldKey: fieldData.relationDisplayFieldKey
+      })
 
       // 首先获取目录定义ID
       const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, app.id)

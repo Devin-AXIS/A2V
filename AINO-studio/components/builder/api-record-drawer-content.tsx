@@ -477,9 +477,46 @@ function renderDisplayValue(field: any, value: any) {
       return value || "未填写"
     case "image":
       if (value) {
+        // 处理单图/多图模式
+        const images = Array.isArray(value) ? value : [value]
+        const validImages = images.filter(Boolean)
+        
+        if (validImages.length === 0) {
+          return "未上传"
+        }
+        
+        // 多图模式：折叠显示，最多显示3个
+        if (validImages.length > 1) {
+          const maxDisplay = 3
+          const displayImages = validImages.slice(0, maxDisplay)
+          const hiddenCount = validImages.length - maxDisplay
+          
+          return (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                {displayImages.map((img, index) => (
+                  <img 
+                    key={index}
+                    src={img} 
+                    alt={`Image ${index + 1}`} 
+                    className="w-8 h-8 rounded object-cover border" 
+                  />
+                ))}
+                {hiddenCount > 0 && (
+                  <span className="text-xs text-gray-500 ml-1">+{hiddenCount}</span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                共 {validImages.length} 张图片
+              </div>
+            </div>
+          )
+        }
+        
+        // 单图模式：正常显示
         return (
           <div className="flex items-center gap-2">
-            <img src={value} alt="Image" className="w-8 h-8 rounded object-cover" />
+            <img src={validImages[0]} alt="Image" className="w-8 h-8 rounded object-cover" />
             <span className="text-xs text-gray-500">图片</span>
           </div>
         )
