@@ -44,12 +44,11 @@ export class ModuleService {
     data: TInstallModuleRequest, 
     createdBy?: string
   ) {
-    // 临时跳过模块已安装检查
-    console.log('🔍 临时跳过模块已安装检查')
-    // const isInstalled = await this.repo.isInstalled(applicationId, data.moduleKey)
-    // if (isInstalled) {
-    //   throw new Error("模块已安装")
-    // }
+    // 检查模块是否已安装
+    const isInstalled = await this.repo.isInstalled(applicationId, data.moduleKey)
+    if (isInstalled) {
+      throw new Error("模块已安装")
+    }
 
     // 检查模块依赖
     const dependencyCheck = await this.checkModuleDependencies(applicationId, data.moduleKey)

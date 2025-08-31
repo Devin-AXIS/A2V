@@ -110,19 +110,25 @@ export class ModuleRepository {
     installType: "system" | "market" | "custom"
     createdBy?: string
   }) {
+    const insertData: any = {
+      applicationId: data.applicationId,
+      moduleKey: data.moduleKey,
+      moduleName: data.moduleName,
+      moduleVersion: data.moduleVersion,
+      moduleType: data.moduleType,
+      installType: data.installType,
+      installConfig: data.installConfig,
+      installStatus: "active",
+    }
+
+    // 只有当 createdBy 存在时才添加到插入数据中
+    if (data.createdBy) {
+      insertData.createdBy = data.createdBy
+    }
+
     const [module] = await db
       .insert(moduleInstalls)
-      .values({
-        applicationId: data.applicationId,
-        moduleKey: data.moduleKey,
-        moduleName: data.moduleName,
-        moduleVersion: data.moduleVersion,
-        moduleType: data.moduleType,
-        installType: data.installType,
-        installConfig: data.installConfig,
-        installStatus: "active",
-        createdBy: null, // 临时设置为null，避免外键约束问题
-      })
+      .values(insertData)
       .returning()
 
     return module
@@ -207,15 +213,11 @@ export class ModuleRepository {
   async isInstalled(applicationId: string, moduleKey: string): Promise<boolean> {
     console.log('🔍 检查模块是否已安装:', { applicationId, moduleKey })
     
-    // 临时解决方案：总是返回false，跳过已安装检查
-    console.log('🔍 临时跳过已安装检查，返回false')
-    return false
-    
-    // 使用原始SQL查询（临时解决方案）
     const result = await db.execute(sql`
       SELECT id FROM module_installs 
       WHERE application_id = ${applicationId} 
       AND module_key = ${moduleKey}
+      AND install_status != 'error'
       LIMIT 1
     `)
 
