@@ -1,6 +1,6 @@
 import { db } from "../../db"
-import { applications, modules, directories, directoryDefs, fieldDefs, fieldCategories } from "../../db/schema"
-import { eq, and, desc } from "drizzle-orm"
+import { applications, modules, directories, directoryDefs, fieldDefs, fieldCategories, moduleInstalls } from "../../db/schema"
+import { eq, and, desc, sql } from "drizzle-orm"
 import type { CreateApplicationRequest, UpdateApplicationRequest, GetApplicationsQuery } from "./dto"
 import { getAllSystemModules } from "../../lib/system-modules"
 import { ModuleService } from "../modules/service"
@@ -304,16 +304,40 @@ export class ApplicationService {
     // 先检查用户是否有权限访问该应用
     const application = await this.getApplicationById(applicationId, userId)
     
-    // 获取应用的模块列表
-    const modulesList = await db
+    // 获取系统预定义模块（modules表）
+    const systemModules = await db
       .select()
       .from(modules)
       .where(eq(modules.applicationId, applicationId))
       .orderBy(modules.order)
     
+    // 获取用户安装的模块（moduleInstalls表）
+    const installedModules = await db
+      .select({
+        id: moduleInstalls.id,
+        applicationId: moduleInstalls.applicationId,
+        name: moduleInstalls.moduleName,
+        type: moduleInstalls.moduleType,
+        icon: sql<string>`COALESCE(${moduleInstalls.installConfig}->>'icon', 'package')`,
+        config: moduleInstalls.installConfig,
+        order: sql<number>`0`,
+        isEnabled: sql<boolean>`${moduleInstalls.installStatus} = 'active'`,
+        createdAt: moduleInstalls.installedAt,
+        updatedAt: moduleInstalls.updatedAt,
+      })
+      .from(moduleInstalls)
+      .where(eq(moduleInstalls.applicationId, applicationId))
+      .orderBy(moduleInstalls.installedAt)
+    
+    // 合并两个表的模块数据
+    const allModules = [
+      ...systemModules,
+      ...installedModules
+    ]
+    
     return {
       application,
-      modules: modulesList,
+      modules: allModules,
     }
   }
 }

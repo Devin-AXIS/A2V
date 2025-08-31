@@ -31,6 +31,7 @@ export function useApplicationModules(
       if (response.success && response.data) {
         setData(response.data)
         console.log("✅ 应用模块获取成功:", response.data.modules.length, "个模块")
+        console.log("📋 模块列表:", response.data.modules.map(m => `${m.name} (${m.type})`))
       } else {
         throw new Error(response.error || "获取应用模块失败")
       }

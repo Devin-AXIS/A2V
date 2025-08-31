@@ -455,6 +455,13 @@ export function useApiBuilderController({
       if (response.success) {
         setOpenAddModule(false)
         
+        console.log('🔄 模块创建成功，开始刷新数据...')
+        
+        // 刷新模块数据
+        await fetchModules()
+        
+        console.log('✅ 模块数据刷新完成')
+        
         toast({
           title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
           description: locale === "zh" ? `模块 "${payload.name}" 已创建` : `Module "${payload.name}" has been created`,
