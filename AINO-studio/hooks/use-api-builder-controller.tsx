@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocale } from "@/hooks/use-locale"
+import { useToast } from "@/hooks/use-toast"
 import { useApplicationModules } from "@/hooks/use-application-modules"
 import { type ApplicationModule } from "@/lib/api"
 import { api } from "@/lib/api"
+import { builtinModules, getStore, saveStore, type ModuleModel } from "@/lib/store"
 
 type DrawerState = {
   open: boolean
@@ -400,11 +402,49 @@ export function useApiBuilderController({
     }
   }
 
-  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string }) {
-    // 临时实现，后续可以连接到API
-    toast({
-      description: locale === "zh" ? "创建模块功能正在开发中" : "Create module feature is under development",
-    })
+  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
+    if (!app) return
+    if (!can("edit")) return
+    
+    try {
+      // 使用内置模块模板创建模块
+      const factory = (builtinModules as any)[payload.templateKey] as () => ModuleModel
+      const module = factory ? factory() : builtinModules.custom()
+      
+      // 设置模块名称和图标
+      if (payload.name.trim()) module.name = payload.name.trim()
+      if (payload.icon) module.icon = payload.icon
+      
+      // 添加到应用模块列表
+      const nextApp = structuredClone(app)
+      nextApp.modules.push(module)
+      
+      // 保存到本地存储
+      const store = getStore()
+      const appIndex = store.apps.findIndex(a => a.id === app.id)
+      if (appIndex !== -1) {
+        store.apps[appIndex] = nextApp
+        saveStore(store)
+      }
+      
+      // 更新本地状态
+      setApp(nextApp)
+      setModuleId(module.id)
+      setDirId(module.directories[0]?.id || null)
+      setOpenAddModule(false)
+      
+      toast({
+        title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
+        description: locale === "zh" ? `模块 "${module.name}" 已创建` : `Module "${module.name}" has been created`,
+      })
+    } catch (error) {
+      console.error('创建模块失败:', error)
+      toast({
+        title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
+        description: locale === "zh" ? "请重试" : "Please try again",
+        variant: "destructive",
+      })
+    }
   }
 
   // 保存记录到API
