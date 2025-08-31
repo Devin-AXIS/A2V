@@ -2479,6 +2479,8 @@ export function AddFieldDialog({
                     : undefined,
                 relationDisplayFieldKey: rel.displayFieldKey || null,
                 relationBidirectional: rel.bidirectional,
+                relationReverseFieldKey: rel.reverseFieldKey || null,
+                relationOnDelete: rel.onDelete || 'restrict',
                 relationAllowDuplicate: rel.allowDuplicate,
                 preset: preset || undefined,
                 ...(type === "date" ? { dateMode } : {}),

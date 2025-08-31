@@ -423,6 +423,9 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
             targetDirId: fieldData.relationTargetId || null,
             mode: fieldData.type === 'relation_one' ? 'one' : 'many',
             displayFieldKey: fieldData.relationDisplayFieldKey || null,
+            bidirectional: fieldData.relationBidirectional || false,
+            reverseFieldKey: fieldData.relationReverseFieldKey || null,
+            onDelete: fieldData.relationOnDelete || 'restrict',
           }
         } : {}),
         validators: fieldData.validators || {},

@@ -14,6 +14,8 @@ export type RelationConfigValue = {
   displayFieldKey?: string | null
   allowMultiple?: boolean
   bidirectional?: boolean
+  reverseFieldKey?: string | null
+  onDelete?: "cascade" | "restrict" | "set_null"
   allowDuplicate?: boolean
   // optional future: filter expression and hidden fields
   filterExpr?: string
@@ -144,7 +146,7 @@ export function RelationConfig({
         <div className="flex items-center justify-between rounded-lg border border-white/60 bg-white/70 px-3 py-2">
           <div className="space-y-0.5">
             <div className="text-sm">双向关联</div>
-            <div className="text-xs text-muted-foreground">在对方表中自动生成反向字段（示意）</div>
+            <div className="text-xs text-muted-foreground">在对方表中自动生成反向字段</div>
           </div>
           <Switch checked={!!value.bidirectional} onCheckedChange={(v) => onChange({ bidirectional: v })} />
         </div>
@@ -171,6 +173,44 @@ export function RelationConfig({
           <Switch checked={!!value.allowDuplicate} onCheckedChange={(v) => onChange({ allowDuplicate: v })} />
         </div>
       </div>
+
+      {/* 双向关联配置 */}
+      {value.bidirectional && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid gap-1">
+            <Label>反向关联字段名</Label>
+            <Input
+              className="bg-white/80"
+              placeholder="如：related_users"
+              value={value.reverseFieldKey || ""}
+              onChange={(e) => onChange({ reverseFieldKey: e.target.value || null })}
+            />
+            <div className="text-xs text-muted-foreground">
+              在目标表中创建的反向关联字段名称
+            </div>
+          </div>
+          
+          <div className="grid gap-1">
+            <Label>删除行为</Label>
+            <Select
+              value={value.onDelete || "restrict"}
+              onValueChange={(v) => onChange({ onDelete: v as "cascade" | "restrict" | "set_null" })}
+            >
+              <SelectTrigger className="bg-white/80">
+                <SelectValue placeholder="请选择..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="restrict">限制删除（默认）</SelectItem>
+                <SelectItem value="cascade">级联删除</SelectItem>
+                <SelectItem value="set_null">设置为空</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-muted-foreground">
+              当关联记录被删除时的处理方式
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hidden fields (示意：输入逗号分隔) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

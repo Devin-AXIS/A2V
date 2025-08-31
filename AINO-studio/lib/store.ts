@@ -58,7 +58,9 @@ export type RelationMeta = {
   targetDirId: string | null
   mode: "one" | "many"
   displayFieldKey?: string | null
-  onDelete?: "cascade" | "restrict"
+  bidirectional?: boolean
+  reverseFieldKey?: string | null
+  onDelete?: "cascade" | "restrict" | "set_null"
 }
 
 export type CascaderNode = { id: string; name: string; children?: CascaderNode[] }

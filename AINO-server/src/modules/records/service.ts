@@ -2,6 +2,7 @@ import { eq, and, desc, asc, sql, like, or } from 'drizzle-orm'
 import { db } from '../../db'
 import { dirUsers, directoryDefs, fieldDefs, directories } from '../../db/schema'
 import { fieldProcessorManager, FieldDef } from '../../lib/field-processors'
+import { RelationSyncService, RelationSyncContext } from '../../lib/relation-sync'
 
 export interface ListQuery {
   page: number
@@ -23,6 +24,8 @@ export interface ListResult<T> {
 }
 
 export class RecordsService {
+  private relationSyncService = new RelationSyncService()
+
   // 通过目录UUID获取目录信息
   private async getDirectoryById(dirId: string) {
     const dir = await db.select().from(directories).where(eq(directories.id, dirId)).limit(1)
@@ -216,6 +219,18 @@ export class RecordsService {
   async updateRecord(dir: string, id: string, props: Record<string, any>, version?: number, userId?: string) {
     const table = this.getTableByDir(dir)
     
+    // 获取旧记录用于关联关系同步
+    const [oldRecord] = await db.select().from(table)
+      .where(and(
+        eq(table.id, id),
+        eq(table.tenantId, dir)
+      ))
+      .limit(1)
+    
+    if (!oldRecord) {
+      throw new Error('记录不存在')
+    }
+    
     // 验证和转换数据
     const validatedProps = await this.validateAndTransformRecord(props, dir)
     
@@ -240,6 +255,31 @@ export class RecordsService {
       .where(and(...conditions))
       .returning()
     
+    if (record) {
+      // 同步关联关系
+      try {
+        const directory = await this.getDirectoryById(dir)
+        const fieldDefs = await this.getFieldDefs(dir)
+        
+        const syncContext: RelationSyncContext = {
+          applicationId: directory.applicationId,
+          directoryId: dir,
+          recordId: id,
+          userId
+        }
+        
+        await this.relationSyncService.syncRelationFields(
+          fieldDefs,
+          validatedProps,
+          oldRecord.props,
+          syncContext
+        )
+      } catch (error) {
+        console.error('同步关联关系失败:', error)
+        // 不抛出错误，避免影响主流程
+      }
+    }
+    
     return record || null
   }
 
@@ -258,6 +298,25 @@ export class RecordsService {
         eq(table.tenantId, dir) // 使用目录ID作为tenant_id
       ))
       .returning()
+    
+    if (record) {
+      // 清理关联关系
+      try {
+        const directory = await this.getDirectoryById(dir)
+        
+        const syncContext: RelationSyncContext = {
+          applicationId: directory.applicationId,
+          directoryId: dir,
+          recordId: id,
+          userId
+        }
+        
+        await this.relationSyncService.cleanupRecordRelations(syncContext)
+      } catch (error) {
+        console.error('清理关联关系失败:', error)
+        // 不抛出错误，避免影响主流程
+      }
+    }
     
     return !!record
   }

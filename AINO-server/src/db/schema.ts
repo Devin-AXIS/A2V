@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, integer, jsonb, index } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, boolean, integer, jsonb, index, unique } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 // 应用表 - 支持多租户和独立数据库配置
@@ -219,4 +219,27 @@ export const fieldIndexes = pgTable('field_indexes', {
   createdAtIdx: index("field_indexes_created_at_idx").on(table.createdAt),
   dirSlugIdx: index("field_indexes_dir_slug_idx").on(table.dirSlug),
   recordFieldIdx: index("field_indexes_record_field_idx").on(table.recordId, table.fieldKey),
+}))
+
+// 关联关系表
+export const relationRecords = pgTable('relation_records', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  fromDirectoryId: uuid('from_directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
+  fromRecordId: uuid('from_record_id').notNull(),
+  fromFieldKey: text('from_field_key').notNull(),
+  toDirectoryId: uuid('to_directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
+  toRecordId: uuid('to_record_id').notNull(),
+  toFieldKey: text('to_field_key'),
+  relationType: text('relation_type').notNull(), // 'one_to_one', 'one_to_many', 'many_to_many'
+  bidirectional: boolean('bidirectional').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  createdBy: uuid('created_by'),
+}, (table) => ({
+  createdAtIdx: index("relation_records_created_at_idx").on(table.createdAt),
+  fromIdx: index("relation_records_from_idx").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey),
+  toIdx: index("relation_records_to_idx").on(table.toDirectoryId, table.toRecordId, table.toFieldKey),
+  appIdx: index("relation_records_app_idx").on(table.applicationId),
+  uniqueRelation: unique("relation_records_unique").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey, table.toDirectoryId, table.toRecordId),
 }))
