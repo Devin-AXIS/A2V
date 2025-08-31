@@ -90,7 +90,7 @@ export function CategoryManager({ dir, onChange }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <div className="text-sm font-medium">
-            {locale === "zh" ? "分类管理（最多 3 级）" : "Category Management (Max 3 Levels)"}
+            {locale === "zh" ? "内容分类管理（最多 3 级）" : "Content Category Management (Max 3 Levels)"}
           </div>
           <div className="text-xs text-muted-foreground">
             {locale === "zh" ? "路径：" : "Path: "}L1 {sel[0]?.name || (locale === "zh" ? "未选" : "None")} {" / "} L2 {sel[1]?.name || (locale === "zh" ? "未选" : "None")}

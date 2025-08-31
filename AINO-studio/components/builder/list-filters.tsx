@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Plus, Settings } from "lucide-react"
 import { CascaderSelect, type CatNode } from "@/components/cascader-select"
+import { useLocale } from "@/hooks/use-locale"
 
 export type Option = { label: string; value: string; level?: 1 | 2 | 3 }
 
@@ -48,6 +49,7 @@ export function ListFilters({
   catLabel?: string
   statusLabel?: string
 }) {
+  const { locale } = useLocale()
   const cascadedMode = Array.isArray(categoriesTree) && categoriesTree.length > 0
 
   return (
@@ -115,7 +117,7 @@ export function ListFilters({
         {onCategoryManage && (
           <Button variant="outline" onClick={() => onCategoryManage()}>
             <Settings className="mr-1 size-4" />
-            分类管理
+            {locale === "zh" ? "内容分类" : "Content Categories"}
           </Button>
         )}
       </div>

@@ -285,7 +285,7 @@ export const builtinModules = {
       directories: [
         {
           id: uid(),
-          name: "分类管理",
+          name: "内容分类管理",
           type: "category",
           supportsCategory: true,
           fields: [f("name", "分类名", "text", true, true)],
