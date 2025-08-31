@@ -37,9 +37,6 @@ export class ApplicationService {
     
     const [result] = await db.insert(applications).values(newApp).returning()
     
-    // 使用新的模块管理服务初始化系统模块
-    await this.moduleService.initializeSystemModules(result.id, userId)
-    
     // 自动创建默认目录
     const createdModules = await this.createSystemModules(result.id)
     await this.createDefaultDirectories(result.id, createdModules)
@@ -47,24 +44,28 @@ export class ApplicationService {
     return result
   }
 
-  // 创建系统模块
+  // 创建系统模块 - 只创建用户模块
   private async createSystemModules(applicationId: string) {
     const systemModules = getAllSystemModules()
     const createdModules = []
     
+    // 只创建用户模块，其他模块由用户主动安装
     for (let i = 0; i < systemModules.length; i++) {
       const module = systemModules[i]
-      const [createdModule] = await db.insert(modules).values({
-        applicationId,
-        name: module.name,
-        type: module.type,
-        icon: module.icon,
-        config: module.config,
-        order: i,
-        isEnabled: true,
-      }).returning()
-      
-      createdModules.push(createdModule)
+      // 只创建用户模块
+      if (module.key === 'user') {
+        const [createdModule] = await db.insert(modules).values({
+          applicationId,
+          name: module.name,
+          type: module.type,
+          icon: module.icon,
+          config: module.config,
+          order: i,
+          isEnabled: true,
+        }).returning()
+        
+        createdModules.push(createdModule)
+      }
     }
     
     return createdModules
