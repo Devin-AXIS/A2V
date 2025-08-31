@@ -212,32 +212,30 @@ export default function ModulesPage() {
     if (selectedModule) {
       console.log('🗑️ 开始卸载模块:', selectedModule.moduleName, '类型:', selectedModule.moduleType)
       
-      // 尝试调用API卸载
       try {
+        // 尝试调用API卸载
         await uninstallModule(selectedModule.moduleKey, false)
         
         // 重新加载模块列表
         const installedData = await getInstalledModules()
         setModules(installedData.modules || [])
-      } catch (apiError) {
-        console.log('🔄 API调用失败，使用前端模拟卸载')
-        // 如果API调用失败，从前端列表中移除模块
-        setModules(prevModules => 
-          prevModules.filter(m => m.moduleKey !== selectedModule.moduleKey)
+        
+        // 显示成功提示
+        setSuccessMessage(
+          locale === "zh" 
+            ? `模块 "${selectedModule.moduleName}" 已成功卸载`
+            : `Module "${selectedModule.moduleName}" has been successfully uninstalled`
         )
+        setShowSuccessToast(true)
+        
+        console.log('✅ 模块卸载完成')
+      } catch (apiError) {
+        console.error('❌ 模块卸载失败:', apiError)
+        // 卸载失败时不显示成功消息，错误消息由hook中的toast处理
       }
       
       setUninstallDialogOpen(false)
       setSelectedModule(null)
-      console.log('✅ 模块卸载完成')
-      
-      // 显示成功提示
-      setSuccessMessage(
-        locale === "zh" 
-          ? `模块 "${selectedModule.moduleName}" 已成功卸载`
-          : `Module "${selectedModule.moduleName}" has been successfully uninstalled`
-      )
-      setShowSuccessToast(true)
     }
   }
 
