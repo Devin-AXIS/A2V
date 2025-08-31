@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,7 @@ import { Search, Plus, Download, Upload, Package, Star, ExternalLink, Settings, 
 import { ModuleConfigDialog } from "@/components/dialogs/module-config-dialog"
 import { ModuleUninstallDialog } from "@/components/dialogs/module-uninstall-dialog"
 import { useLocale } from "@/hooks/use-locale"
+import { useModuleManagement } from "@/hooks/use-module-management"
 
 // Mock data for modules
 const mockModules = [
@@ -74,50 +76,114 @@ const mockModules = [
 
 export default function ModulesPage() {
   const { locale } = useLocale()
+  const params = useParams()
+  const appId = params.appId as string
+  
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("internal")
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [uninstallDialogOpen, setUninstallDialogOpen] = useState(false)
   const [selectedModule, setSelectedModule] = useState<any>(null)
-  const [modules, setModules] = useState(mockModules)
+  const [modules, setModules] = useState<any[]>([])
+  const [availableModules, setAvailableModules] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const { 
+    getInstalledModules, 
+    installModule, 
+    uninstallModule, 
+    updateModuleConfig,
+    getAvailableModules,
+    isLoading: isOperationLoading 
+  } = useModuleManagement({ applicationId: appId })
+
+  // 加载数据
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      try {
+        // 加载已安装的模块
+        const installedData = await getInstalledModules()
+        setModules(installedData.modules || [])
+        
+        // 加载可用模块
+        const availableData = await getAvailableModules()
+        setAvailableModules(availableData.modules || [])
+      } catch (error) {
+        console.error('加载模块数据失败:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (appId) {
+      loadData()
+    }
+  }, [appId, getInstalledModules, getAvailableModules])
 
   const filteredModules = modules.filter((module) => {
     const matchesSearch =
-      module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      module.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTab = activeTab === "all" || module.type === activeTab
+      module.moduleName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      module.moduleKey?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesTab = activeTab === "all" || module.moduleType === activeTab
     return matchesSearch && matchesTab
   })
 
   const handleConfigureModule = (module: any) => {
-    console.log("配置模块:", module.name)
+    console.log("配置模块:", module.moduleName)
     setSelectedModule(module)
     setConfigDialogOpen(true)
   }
 
   const handleUninstallModule = (module: any) => {
-    console.log("卸载模块:", module.name)
+    console.log("卸载模块:", module.moduleName)
     setSelectedModule(module)
     setUninstallDialogOpen(true)
   }
 
-  const handleInstallModule = (module: any) => {
-    setModules(prev => prev.map(m => 
-      m.id === module.id ? { ...m, installed: true } : m
-    ))
-  }
-
-  const handleConfirmUninstall = () => {
-    if (selectedModule) {
-      setModules(prev => prev.map(m => 
-        m.id === selectedModule.id ? { ...m, installed: false } : m
-      ))
+  const handleInstallModule = async (module: any) => {
+    try {
+      await installModule({
+        moduleKey: module.key,
+        moduleVersion: module.version,
+        installConfig: {}
+      })
+      
+      // 重新加载模块列表
+      const installedData = await getInstalledModules()
+      setModules(installedData.modules || [])
+    } catch (error) {
+      console.error('安装模块失败:', error)
     }
   }
 
-  const handleSaveConfig = (config: any) => {
-    // 这里可以添加保存配置的逻辑
-    console.log("Saving config:", config)
+  const handleConfirmUninstall = async () => {
+    if (selectedModule) {
+      try {
+        await uninstallModule(selectedModule.moduleKey, false)
+        
+        // 重新加载模块列表
+        const installedData = await getInstalledModules()
+        setModules(installedData.modules || [])
+        
+        setUninstallDialogOpen(false)
+        setSelectedModule(null)
+      } catch (error) {
+        console.error('卸载模块失败:', error)
+      }
+    }
+  }
+
+  const handleSaveConfig = async (config: any) => {
+    if (selectedModule) {
+      try {
+        await updateModuleConfig(selectedModule.moduleKey, config)
+        setConfigDialogOpen(false)
+        setSelectedModule(null)
+      } catch (error) {
+        console.error('保存配置失败:', error)
+      }
+    }
   }
 
   return (
@@ -226,7 +292,7 @@ export default function ModulesPage() {
       <ModuleUninstallDialog
         open={uninstallDialogOpen}
         onOpenChange={setUninstallDialogOpen}
-        moduleName={selectedModule?.name || ""}
+        moduleName={selectedModule?.moduleName || ""}
         onConfirm={handleConfirmUninstall}
       />
     </div>
@@ -239,7 +305,7 @@ function ModuleGrid({
   onUninstall, 
   onInstall 
 }: { 
-  modules: typeof mockModules
+  modules: any[]
   onConfigure: (module: any) => void
   onUninstall: (module: any) => void
   onInstall: (module: any) => void
@@ -267,17 +333,19 @@ function ModuleGrid({
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="text-2xl">{module.icon}</div>
+                <div className="text-2xl">
+                  <Package className="size-6 text-blue-600" />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base font-medium truncate">{module.name}</CardTitle>
+                  <CardTitle className="text-base font-medium truncate">{module.moduleName}</CardTitle>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="secondary" className="text-xs">
-                      v{module.version}
+                      v{module.moduleVersion}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      {module.category}
+                      {module.moduleType}
                     </Badge>
-                    {module.installed && (
+                    {module.installStatus === 'active' && (
                       <Badge variant="default" className="text-xs bg-green-100 text-green-800">
                         {locale === "zh" ? "已安装" : "Installed"}
                       </Badge>
@@ -292,23 +360,21 @@ function ModuleGrid({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {module.installed ? (
+                  {module.installStatus === 'active' ? (
                     <>
-                      {module.configurable && (
-                        <DropdownMenuItem onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          console.log("下拉菜单配置点击:", module.name)
-                          onConfigure(module)
-                        }}>
-                          <Settings className="size-4 mr-2" />
-                          {locale === "zh" ? "配置" : "Configure"}
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuItem onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log("下拉菜单配置点击:", module.moduleName)
+                        onConfigure(module)
+                      }}>
+                        <Settings className="size-4 mr-2" />
+                        {locale === "zh" ? "配置" : "Configure"}
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="text-red-600" onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        console.log("下拉菜单卸载点击:", module.name)
+                        console.log("下拉菜单卸载点击:", module.moduleName)
                         onUninstall(module)
                       }}>
                         <Trash2 className="size-4 mr-2" />
@@ -331,41 +397,41 @@ function ModuleGrid({
           </CardHeader>
 
           <CardContent className="pt-0">
-            <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-2">{module.description}</CardDescription>
+            <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-2">
+              {module.manifest?.description || '暂无描述'}
+            </CardDescription>
 
             <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-              <span>by {module.author}</span>
+              <span>by {module.manifest?.author || 'AINO'}</span>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   <Download className="size-3" />
-                  {module.downloads}
+                  {module.moduleType}
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="size-3 fill-yellow-400 text-yellow-400" />
-                  {module.rating}
+                  4.5
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2">
-              {module.installed ? (
+              {module.installStatus === 'active' ? (
                 <>
-                  {module.configurable && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        console.log("按钮配置点击:", module.name)
-                        onConfigure(module)
-                      }}
-                    >
-                      <Settings className="size-3 mr-1" />
-                      {locale === "zh" ? "配置" : "Configure"}
-                    </Button>
-                  )}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log("按钮配置点击:", module.moduleName)
+                      onConfigure(module)
+                    }}
+                  >
+                    <Settings className="size-3 mr-1" />
+                    {locale === "zh" ? "配置" : "Configure"}
+                  </Button>
                   <Button 
                     size="sm" 
                     variant="destructive" 
@@ -373,7 +439,7 @@ function ModuleGrid({
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      console.log("按钮卸载点击:", module.name)
+                      console.log("按钮卸载点击:", module.moduleName)
                       onUninstall(module)
                     }}
                   >
