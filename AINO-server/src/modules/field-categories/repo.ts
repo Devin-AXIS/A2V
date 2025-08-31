@@ -1,5 +1,5 @@
 import { db } from "../../db"
-import { fieldCategories, applications } from "../../db/schema"
+import { fieldCategories, applications, fieldDefs } from "../../db/schema"
 import { eq, and, desc, asc, count, sql } from "drizzle-orm"
 import type {
   CreateFieldCategoryRequest,
