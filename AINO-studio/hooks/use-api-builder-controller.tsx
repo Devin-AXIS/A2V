@@ -254,11 +254,11 @@ export function useApiBuilderController({
         )
         
         // 过滤掉null值（不存在的目录）
-        const validDirectories = directories.filter(dir => dir !== null)
+        const filteredDirectories = directories.filter(dir => dir !== null)
         
         setDirectoriesData(prev => ({
           ...prev,
-          [moduleId]: validDirectories
+          [moduleId]: filteredDirectories
         }))
       }
     } catch (error) {
