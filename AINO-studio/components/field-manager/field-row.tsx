@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -9,6 +9,7 @@ import { Edit, Trash2, GripVertical } from "lucide-react"
 import type { FieldModel, FieldType } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import type { FieldCategoryModel } from "@/lib/field-categories"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 
 type FieldRowProps = {
   field: FieldModel
@@ -41,6 +42,7 @@ export function FieldRow({
 }: FieldRowProps) {
   const { t, locale } = useLocale()
   const f = field
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
   return (
     <Card className="p-3 bg-white/60 backdrop-blur border-white/60">
@@ -108,7 +110,7 @@ export function FieldRow({
             <Button 
               size="sm" 
               variant="destructive" 
-              onClick={onRemove} 
+              onClick={() => setDeleteDialogOpen(true)} 
               className="rounded-xl" 
               title={t("deleteField")}
             >
@@ -118,6 +120,15 @@ export function FieldRow({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={f.label}
+        itemType="field"
+        onConfirm={onRemove}
+      />
     </Card>
   )
 }

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import type { AppModel, DirectoryModel } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,
   PaginationContent,
@@ -46,6 +47,8 @@ export function DataTable({
 }: Props) {
   const { locale } = useLocale()
   const [currentPage, setCurrentPage] = useState(1)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
 
   const enabledFields = useMemo(() => dir.fields.filter((f) => f.enabled && (f.showInList ?? true)), [dir.fields])
 
@@ -255,7 +258,10 @@ export function DataTable({
                       {locale === "zh" ? "管理" : "Manage"}
                     </Button>
                     {canDelete && (
-                      <Button variant="destructive" size="sm" onClick={() => onDelete(row.id)}>
+                      <Button variant="destructive" size="sm" onClick={() => {
+                        setSelectedRecordId(row.id)
+                        setDeleteDialogOpen(true)
+                      }}>
                         {locale === "zh" ? "删除" : "Delete"}
                       </Button>
                     )}
@@ -300,6 +306,19 @@ export function DataTable({
           </Pagination>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={selectedRecordId || ""}
+        itemType="record"
+        onConfirm={() => {
+          if (selectedRecordId && onDelete) {
+            onDelete(selectedRecordId)
+          }
+        }}
+      />
     </div>
   )
 }

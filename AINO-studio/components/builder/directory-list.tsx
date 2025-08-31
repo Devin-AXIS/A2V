@@ -8,6 +8,7 @@ import { Folder, Tag, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import { FrostAside } from "@/components/frost"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLocale } from "@/hooks/use-locale"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,
   PaginationContent,
@@ -44,6 +45,8 @@ export function DirectoryList({
 }) {
   const { t, locale } = useLocale()
   const [currentPage, setCurrentPage] = useState(1)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedDirectory, setSelectedDirectory] = useState<DirectoryModel | null>(null)
 
   const totalPages = Math.ceil(directories.length / pageSize)
   const startIndex = (currentPage - 1) * pageSize
@@ -155,10 +158,8 @@ export function DirectoryList({
                     {locale === "zh" ? "重命名" : "Rename"}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    console.log('=== Delete button clicked ===', d.name)
-                    console.log('onDelete function exists:', !!onDelete)
-                    console.log('canEdit:', canEdit)
-                    onDelete?.(d)
+                    setSelectedDirectory(d)
+                    setDeleteDialogOpen(true)
                   }} className="text-red-600 focus:text-red-600">
                     <Trash2 className="size-4 mr-2" />
                     {locale === "zh" ? "删除" : "Delete"}
@@ -172,6 +173,19 @@ export function DirectoryList({
 
         {renderPagination()}
       </FrostAside>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={selectedDirectory?.name || ""}
+        itemType="directory"
+        onConfirm={() => {
+          if (selectedDirectory && onDelete) {
+            onDelete(selectedDirectory)
+          }
+        }}
+      />
     </div>
   )
 }
