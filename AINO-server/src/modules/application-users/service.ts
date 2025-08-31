@@ -8,6 +8,7 @@ import type {
 import * as repo from './repo'
 import { db } from '../../db'
 import { dirUsers } from '../../db/schema'
+import { and, eq, sql } from 'drizzle-orm'
 
 export class ApplicationUserService {
   // 创建应用用户（只创建账号）
@@ -198,6 +199,10 @@ export class ApplicationUserService {
     
     // 更新用户信息
     const updatedUser = await repo.updateApplicationUser(applicationId, targetUserId, mergedData)
+    
+    // 更新业务数据记录（以注册用户数据为准）
+    await this.updateUserBusinessRecord(applicationId, targetUserId, registerData)
+    
     console.log('✅ 用户合并成功:', updatedUser.id)
     return updatedUser
   }
@@ -243,6 +248,65 @@ export class ApplicationUserService {
       return businessRecord
     } catch (error) {
       console.error('❌ 创建用户业务数据记录失败:', error)
+      throw error
+    }
+  }
+
+  // 更新用户业务数据记录（合并时使用，以注册用户数据为准）
+  private async updateUserBusinessRecord(
+    applicationId: string, 
+    userId: string, 
+    registerData: TRegisterUserRequest
+  ) {
+    try {
+      // 查找现有的业务数据记录
+      const existingRecords = await db
+        .select()
+        .from(dirUsers)
+        .where(
+          and(
+            eq(dirUsers.tenantId, applicationId),
+            sql`${dirUsers.props}->>'userId' = ${userId}`
+          )
+        )
+        .limit(1)
+
+      if (existingRecords.length > 0) {
+        // 更新现有记录（以注册用户数据为准）
+        const existingRecord = existingRecords[0]
+        const updatedProps = {
+          ...existingRecord.props,
+          // 以注册用户数据为准，覆盖现有数据
+          name: registerData.name || existingRecord.props.name || '',
+          email: registerData.email || existingRecord.props.email || '',
+          avatar: registerData.avatar || existingRecord.props.avatar || '',
+          gender: registerData.gender || existingRecord.props.gender || '',
+          city: registerData.city || existingRecord.props.city || '',
+          birthday: registerData.birthday || existingRecord.props.birthday || '',
+          phone: registerData.phone, // 手机号以注册为准
+          // 保留其他字段
+          department: existingRecord.props.department || '',
+          position: existingRecord.props.position || '',
+          tags: existingRecord.props.tags || [],
+          // 更新合并信息
+          source: 'merged',
+          mergedAt: new Date().toISOString(),
+          originalSource: existingRecord.props.source || 'manual'
+        }
+
+        await db
+          .update(dirUsers)
+          .set({ props: updatedProps })
+          .where(eq(dirUsers.id, existingRecord.id))
+
+        console.log('✅ 用户业务数据记录更新成功（合并）:', existingRecord.id)
+      } else {
+        // 如果没有现有记录，创建新记录
+        await this.createUserBusinessRecord(applicationId, userId, registerData.phone, registerData)
+        console.log('✅ 用户业务数据记录创建成功（合并）')
+      }
+    } catch (error) {
+      console.error('❌ 更新用户业务数据记录失败:', error)
       throw error
     }
   }
