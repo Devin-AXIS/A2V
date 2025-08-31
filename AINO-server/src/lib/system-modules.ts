@@ -16,7 +16,7 @@ export const SystemModuleConfig = z.object({
 
 export type TSystemModuleConfig = z.infer<typeof SystemModuleConfig>
 
-// 系统模块定义
+// 系统模块定义 - 只保留用户模块
 export const SYSTEM_MODULES = [
   {
     key: 'user',
@@ -37,22 +37,23 @@ export const SYSTEM_MODULES = [
       },
     }),
   },
-  {
-    key: 'config',
-    name: '系统配置',
-    type: 'system' as const,
-    icon: 'settings',
-    description: '应用基础配置管理',
-    config: {},
-  },
-  {
-    key: 'audit',
-    name: '审计日志',
-    type: 'system' as const,
-    icon: 'activity',
-    description: '记录用户操作和系统事件',
-    config: {},
-  },
+  // 注释掉系统配置和审计日志模块
+  // {
+  //   key: 'config',
+  //   name: '系统配置',
+  //   type: 'system' as const,
+  //   icon: 'settings',
+  //   description: '应用基础配置管理',
+  //   config: {},
+  // },
+  // {
+  //   key: 'audit',
+  //   name: '审计日志',
+  //   type: 'system' as const,
+  //   icon: 'activity',
+  //   description: '记录用户操作和系统事件',
+  //   config: {},
+  // },
 ] as const
 
 export type SystemModuleKey = typeof SYSTEM_MODULES[number]['key']

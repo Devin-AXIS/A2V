@@ -53,7 +53,7 @@ class ModuleRegistry {
 // 全局模块注册表实例
 export const moduleRegistry = new ModuleRegistry()
 
-// 注册系统模块
+// 注册系统模块 - 只注册用户模块
 export function registerSystemModules(): void {
   // 用户模块
   moduleRegistry.register({
@@ -70,31 +70,32 @@ export function registerSystemModules(): void {
     description: '应用内用户管理，支持用户注册、登录、权限管理',
   })
 
+  // 注释掉配置模块和审计模块
   // 配置模块
-  moduleRegistry.register({
-    key: 'config',
-    name: '系统配置',
-    version: '1.0.0',
-    kind: ModuleKind.LOCAL,
-    routes: [
-      { method: 'GET', path: '/', description: '获取系统配置' },
-      { method: 'PUT', path: '/', description: '更新系统配置' },
-    ],
-    description: '应用基础配置管理',
-  })
+  // moduleRegistry.register({
+  //   key: 'config',
+  //   name: '系统配置',
+  //   version: '1.0.0',
+  //   kind: ModuleKind.LOCAL,
+  //   routes: [
+  //     { method: 'GET', path: '/', description: '获取系统配置' },
+  //     { method: 'PUT', path: '/', description: '更新系统配置' },
+  //   ],
+  //   description: '应用基础配置管理',
+  // })
 
   // 审计模块
-  moduleRegistry.register({
-    key: 'audit',
-    name: '审计日志',
-    version: '1.0.0',
-    kind: ModuleKind.LOCAL,
-    routes: [
-      { method: 'GET', path: '/logs', description: '获取审计日志' },
-      { method: 'POST', path: '/logs', description: '创建审计日志' },
-    ],
-    description: '记录用户操作和系统事件',
-  })
+  // moduleRegistry.register({
+  //   key: 'audit',
+  //   name: '审计日志',
+  //   version: '1.0.0',
+  //   kind: ModuleKind.LOCAL,
+  //   routes: [
+  //     { method: 'GET', path: '/logs', description: '获取审计日志' },
+  //     { method: 'POST', path: '/logs', description: '创建审计日志' },
+  //   ],
+  //   description: '记录用户操作和系统事件',
+  // })
 }
 
 // 注册远程模块的辅助函数

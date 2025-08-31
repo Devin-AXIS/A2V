@@ -50,8 +50,8 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
     return remoteProxy.fetch(c.req, { user })
   }
   
-  // 本地系统模块处理
-  const validModules = ["user", "config", "audit"]
+  // 本地系统模块处理 - 只支持用户模块
+  const validModules = ["user"]
   if (!validModules.includes(moduleKey)) {
     return c.json({
       success: false,
@@ -63,10 +63,6 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
   switch (moduleKey) {
     case "user":
       return await handleUserModule(c, user)
-    case "config":
-      return await handleConfigModule(c, user)
-    case "audit":
-      return await handleAuditModule(c, user)
     default:
       return c.json({
         success: false,
@@ -96,107 +92,108 @@ async function handleUserModule(c: any, user: any) {
   })
 }
 
+// 注释掉配置模块和审计模块的处理器
 // 配置模块处理器
-async function handleConfigModule(c: any, user: any) {
-  const path = c.req.path.replace("/api/modules/system/config", "")
-  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
-  if (!applicationId) {
-    return c.json({
-      success: false,
-      error: "缺少应用ID参数",
-    }, 400)
-  }
-  
-  // 配置模块的API实现
-  switch (c.req.method) {
-    case "GET":
-      if (path === "/" || path === "") {
-        return c.json({
-          success: true,
-          data: {
-            applicationId,
-            config: {
-              name: "应用配置",
-              description: "应用基础配置管理",
-              allowRegistration: true,
-              requireEmailVerification: false,
-            },
-          },
-        })
-      }
-      break
-      
-    case "PUT":
-      if (path === "/" || path === "") {
-        const body = await c.req.json()
-        return c.json({
-          success: true,
-          data: {
-            applicationId,
-            config: body,
-            updatedAt: new Date().toISOString(),
-          },
-        })
-      }
-      break
-  }
-  
-  return c.json({
-    success: false,
-    error: "配置模块API暂未实现",
-  }, 501)
-}
+// async function handleConfigModule(c: any, user: any) {
+//   const path = c.req.path.replace("/api/modules/system/config", "")
+//   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+//   
+//   if (!applicationId) {
+//     return c.json({
+//       success: false,
+//       error: "缺少应用ID参数",
+//     }, 400)
+//   }
+//   
+//   // 配置模块的API实现
+//   switch (c.req.method) {
+//     case "GET":
+//       if (path === "/" || path === "") {
+//         return c.json({
+//           success: true,
+//           data: {
+//             applicationId,
+//             config: {
+//               name: "应用配置",
+//               description: "应用基础配置管理",
+//               allowRegistration: true,
+//               requireEmailVerification: false,
+//             },
+//           },
+//         })
+//       }
+//       break
+//       
+//     case "PUT":
+//       if (path === "/" || path === "") {
+//         const body = await c.req.json()
+//         return c.json({
+//           success: true,
+//           data: {
+//             applicationId,
+//             config: body,
+//             updatedAt: new Date().toISOString(),
+//           },
+//         })
+//       }
+//       break
+//   }
+//   
+//   return c.json({
+//     success: false,
+//     error: "配置模块API暂未实现",
+//   }, 501)
+// }
 
 // 审计模块处理器
-async function handleAuditModule(c: any, user: any) {
-  const path = c.req.path.replace("/api/modules/system/audit", "")
-  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
-  if (!applicationId) {
-    return c.json({
-      success: false,
-      error: "缺少应用ID参数",
-    }, 400)
-  }
-  
-  // 审计模块的API实现
-  switch (c.req.method) {
-    case "GET":
-      if (path === "/" || path === "") {
-        return c.json({
-          success: true,
-          data: {
-            applicationId,
-            logs: [
-              {
-                id: "log-1",
-                action: "user.login",
-                userId: user.id,
-                timestamp: new Date().toISOString(),
-                details: {
-                  ip: "127.0.0.1",
-                  userAgent: "Mozilla/5.0...",
-                },
-              },
-            ],
-            pagination: {
-              page: 1,
-              limit: 20,
-              total: 1,
-              totalPages: 1,
-            },
-          },
-        })
-      }
-      break
-  }
-  
-  return c.json({
-    success: false,
-    error: "审计模块API暂未实现",
-  }, 501)
-}
+// async function handleAuditModule(c: any, user: any) {
+//   const path = c.req.path.replace("/api/modules/system/audit", "")
+//   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+//   
+//   if (!applicationId) {
+//     return c.json({
+//       success: false,
+//       error: "缺少应用ID参数",
+//     }, 400)
+//   }
+//   
+//   // 审计模块的API实现
+//   switch (c.req.method) {
+//     case "GET":
+//       if (path === "/" || path === "") {
+//         return c.json({
+//           success: true,
+//           data: {
+//             applicationId,
+//             logs: [
+//               {
+//                 id: "log-1",
+//                 action: "user.login",
+//                 userId: user.id,
+//                 timestamp: new Date().toISOString(),
+//                 details: {
+//                   ip: "127.0.0.1",
+//                   userAgent: "Mozilla/5.0...",
+//                 },
+//               },
+//             ],
+//             pagination: {
+//               page: 1,
+//               limit: 20,
+//               total: 1,
+//               totalPages: 1,
+//             },
+//           },
+//         })
+//       }
+//       break
+//   }
+//   
+//   return c.json({
+//     success: false,
+//     error: "审计模块API暂未实现",
+//   }, 501)
+// }
 
 
 
@@ -316,8 +313,9 @@ app.get("/:moduleKey", mockRequireAuthMiddleware, async (c) => {
 function getModuleIcon(moduleKey: string): string {
   const iconMap: Record<string, string> = {
     user: "users",
-    config: "settings",
-    audit: "activity",
+    // 注释掉配置和审计模块的图标
+    // config: "settings",
+    // audit: "activity",
   }
   return iconMap[moduleKey] || "package"
 }
