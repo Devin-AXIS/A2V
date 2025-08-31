@@ -417,6 +417,9 @@ export function useApiBuilderController({
       
       // 添加到应用模块列表
       const nextApp = structuredClone(application)
+      if (!nextApp.modules) {
+        nextApp.modules = []
+      }
       nextApp.modules.push(module)
       
       // 保存到本地存储
