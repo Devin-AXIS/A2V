@@ -461,11 +461,24 @@ export function useApiBuilderController({
       }
     } catch (error) {
       console.error('创建模块失败:', error)
-      toast({
-        title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
-        description: locale === "zh" ? "请重试" : "Please try again",
-        variant: "destructive",
-      })
+      
+      // 检查是否是模块已安装的错误
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const isModuleAlreadyInstalled = errorMessage.includes("模块已安装") || errorMessage.includes("already installed")
+      
+      if (isModuleAlreadyInstalled) {
+        toast({
+          title: locale === "zh" ? "模块已存在" : "Module Already Exists",
+          description: locale === "zh" ? `模块 "${payload.name}" 已经安装，请选择其他模块` : `Module "${payload.name}" is already installed, please choose another module`,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
+          description: locale === "zh" ? "请重试" : "Please try again",
+          variant: "destructive",
+        })
+      }
     }
   }
 
