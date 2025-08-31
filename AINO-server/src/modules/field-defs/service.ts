@@ -30,6 +30,63 @@ export interface UpdateFieldDefData extends Partial<CreateFieldDefData> {
 }
 
 export class FieldDefsService {
+  // 创建反向关联字段
+  private async createReverseRelationField(params: {
+    sourceField: any
+    targetDirId: string
+    reverseFieldKey: string
+    relationType: string
+    onDelete: string
+  }) {
+    const { sourceField, targetDirId, reverseFieldKey, relationType, onDelete } = params
+    
+    // 检查反向字段是否已存在
+    const existingReverseField = await db.select()
+      .from(fieldDefs)
+      .where(and(
+        eq(fieldDefs.directoryId, targetDirId),
+        eq(fieldDefs.key, reverseFieldKey)
+      ))
+      .limit(1)
+    
+    if (existingReverseField[0]) {
+      console.log(`反向关联字段 "${reverseFieldKey}" 已存在，跳过创建`)
+      return
+    }
+    
+    // 确定反向字段的类型
+    const reverseType = relationType === 'relation_one' ? 'relation_many' : 'relation_one'
+    
+    // 创建反向关联字段
+    const [reverseField] = await db.insert(fieldDefs)
+      .values({
+        directoryId: targetDirId,
+        key: reverseFieldKey,
+        kind: 'relation',
+        type: reverseType,
+        schema: {
+          label: `关联到 ${sourceField.key}`,
+          description: `自动生成的反向关联字段，关联到 ${sourceField.key}`,
+        },
+        relation: {
+          targetDirId: sourceField.directoryId,
+          mode: reverseType === 'relation_one' ? 'one' : 'many',
+          displayFieldKey: null,
+          bidirectional: true,
+          reverseFieldKey: sourceField.key,
+          onDelete: onDelete
+        },
+        validators: {},
+        readRoles: ['admin', 'member'],
+        writeRoles: ['admin'],
+        required: false,
+      })
+      .returning()
+    
+    console.log(`成功创建反向关联字段: ${reverseFieldKey} -> ${sourceField.key}`)
+    return reverseField
+  }
+
   // 获取字段定义列表
   async listFieldDefs(query: ListFieldDefsQuery) {
     const { directoryId, page, limit } = query
@@ -117,6 +174,22 @@ export class FieldDefsService {
 
       })
       .returning()
+    
+    // 如果是双向关联字段，在目标目录中创建反向关联字段
+    if (data.relation?.bidirectional && data.relation?.targetDirId && data.relation?.reverseFieldKey) {
+      try {
+        await this.createReverseRelationField({
+          sourceField: newField,
+          targetDirId: data.relation.targetDirId,
+          reverseFieldKey: data.relation.reverseFieldKey,
+          relationType: data.type,
+          onDelete: data.relation.onDelete || 'restrict'
+        })
+      } catch (error) {
+        console.error('创建反向关联字段失败:', error)
+        // 不抛出错误，避免影响主字段创建
+      }
+    }
     
     return newField as FieldDef
   }

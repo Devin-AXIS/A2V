@@ -39,13 +39,21 @@ export function RelationInput({
       // 调用API获取反向关联记录
       const fetchReverseRelations = async () => {
         try {
-          // 这里需要调用关联记录API
-          // 暂时使用模拟数据，实际实现时需要调用 /api/relation-records/records/:applicationId/:directoryId/:recordId/:fieldKey
-          const response = await fetch(`/api/relation-records/records/test-app-id/${targetDirId}/${currentRecordId}/${field.relation.reverseFieldKey}`)
+          // 获取应用ID
+          const applicationId = app.id
+          if (!applicationId) {
+            console.error('应用ID不存在')
+            setReverseRelations([])
+            return
+          }
+          
+          // 调用关联记录API获取反向关联记录
+          const response = await fetch(`/api/relation-records/records/${applicationId}/${targetDirId}/${currentRecordId}/${field.relation.reverseFieldKey}`)
           if (response.ok) {
             const data = await response.json()
             setReverseRelations(data.data?.records || [])
           } else {
+            console.error('获取反向关联记录失败:', response.status, response.statusText)
             setReverseRelations([])
           }
         } catch (error) {
