@@ -98,3 +98,25 @@ export const SuccessResponse = z.object({
 })
 
 export type TSuccessResponse = z.infer<typeof SuccessResponse>
+
+// 用户注册请求
+export const RegisterUserRequest = z.object({
+  phone: z.string().min(1, "手机号不能为空"),
+  password: z.string().min(6, "密码至少6位"),
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  gender: z.string().optional(),
+  city: z.string().optional(),
+  birthday: z.string().optional(),
+  avatar: z.string().optional(),
+})
+
+export type TRegisterUserRequest = z.infer<typeof RegisterUserRequest>
+
+// 用户合并请求
+export const MergeUserRequest = z.object({
+  targetUserId: z.string().uuid(),
+  sourceUserId: z.string().uuid(),
+})
+
+export type TMergeUserRequest = z.infer<typeof MergeUserRequest>

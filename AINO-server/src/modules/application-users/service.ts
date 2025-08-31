@@ -1,7 +1,9 @@
 import type { 
   TCreateApplicationUserRequest, 
   TUpdateApplicationUserRequest, 
-  TGetApplicationUsersQuery 
+  TGetApplicationUsersQuery,
+  TRegisterUserRequest,
+  TMergeUserRequest
 } from './dto'
 import * as repo from './repo'
 
@@ -124,6 +126,93 @@ export class ApplicationUserService {
       }
     }
     return results
+  }
+
+  // 用户注册
+  async registerUser(
+    applicationId: string, 
+    data: TRegisterUserRequest
+  ) {
+    console.log('🔍 开始用户注册:', { applicationId, phone: data.phone })
+    
+    // 检查手机号是否已存在
+    const existingUser = await repo.findUserByPhone(applicationId, data.phone)
+    
+    if (existingUser) {
+      console.log('🔍 发现相同手机号用户，执行合并:', existingUser.id)
+      // 合并用户
+      return await this.mergeUser(applicationId, existingUser.id, data)
+    } else {
+      console.log('🔍 创建新用户')
+      // 创建新用户
+      const userData = {
+        name: data.name || data.phone,
+        email: data.email || '',
+        phone: data.phone,
+        role: 'user',
+        status: 'active',
+        metadata: {
+          password: data.password, // 临时存储密码，后续需要加密
+          gender: data.gender,
+          city: data.city,
+          birthday: data.birthday,
+          avatar: data.avatar,
+          source: 'register',
+          registeredAt: new Date().toISOString()
+        }
+      }
+      
+      const user = await repo.createApplicationUser(applicationId, userData)
+      console.log('✅ 用户注册成功:', user.id)
+      return user
+    }
+  }
+
+  // 合并用户
+  async mergeUser(
+    applicationId: string, 
+    targetUserId: string, 
+    registerData: TRegisterUserRequest
+  ) {
+    console.log('🔍 开始合并用户:', { targetUserId, phone: registerData.phone })
+    
+    // 获取目标用户信息
+    const targetUser = await repo.getApplicationUserById(applicationId, targetUserId)
+    if (!targetUser) {
+      throw new Error('目标用户不存在')
+    }
+    
+    // 合并数据
+    const mergedData = {
+      // 保留目标用户的基础信息
+      name: targetUser.name || registerData.name || registerData.phone,
+      email: targetUser.email || registerData.email || '',
+      phone: registerData.phone,
+      status: 'active', // 激活状态
+      metadata: {
+        ...targetUser.metadata,
+        // 添加注册信息
+        password: registerData.password, // 临时存储密码，后续需要加密
+        gender: registerData.gender,
+        city: registerData.city,
+        birthday: registerData.birthday,
+        avatar: registerData.avatar,
+        source: 'merged',
+        mergedAt: new Date().toISOString(),
+        originalSource: targetUser.metadata?.source || 'manual'
+      }
+    }
+    
+    // 更新用户信息
+    const updatedUser = await repo.updateApplicationUser(applicationId, targetUserId, mergedData)
+    console.log('✅ 用户合并成功:', updatedUser.id)
+    return updatedUser
+  }
+
+  // 根据手机号查找用户
+  async findUserByPhone(applicationId: string, phone: string) {
+    const user = await repo.findUserByPhone(applicationId, phone)
+    return user
   }
 
   async batchDeleteUsers(

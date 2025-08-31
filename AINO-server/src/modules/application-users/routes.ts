@@ -6,7 +6,8 @@ import { mockRequireAuthMiddleware } from "../../middleware/auth"
 import { 
   CreateApplicationUserRequest, 
   UpdateApplicationUserRequest, 
-  GetApplicationUsersQuery 
+  GetApplicationUsersQuery,
+  RegisterUserRequest
 } from "./dto"
 
 const app = new Hono()
@@ -249,6 +250,39 @@ app.delete("/batch",
       return c.json({
         success: false,
         error: error instanceof Error ? error.message : "批量删除应用用户失败",
+      }, 400)
+    }
+  }
+)
+
+// 用户注册
+app.post("/register",
+  zValidator("json", RegisterUserRequest),
+  async (c) => {
+    try {
+      const data = c.req.valid("json")
+      
+      // 从查询参数或请求头获取应用ID
+      const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+      if (!applicationId) {
+        return c.json({
+          success: false,
+          error: "缺少应用ID参数",
+        }, 400)
+      }
+      
+      const result = await service.registerUser(applicationId, data)
+      
+      return c.json({
+        success: true,
+        data: result,
+        message: "用户注册成功"
+      }, 201)
+    } catch (error) {
+      console.error("用户注册失败:", error)
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : "用户注册失败",
       }, 400)
     }
   }

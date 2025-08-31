@@ -208,3 +208,25 @@ export async function updateLastLoginTime(
 
   return result
 }
+
+// 根据手机号查找用户
+export async function findUserByPhone(applicationId: string, phone: string) {
+  const [user] = await db
+    .select()
+    .from(applicationUsers)
+    .where(
+      and(
+        eq(applicationUsers.applicationId, applicationId),
+        eq(applicationUsers.phone, phone)
+      )
+    )
+    .limit(1)
+
+  return user
+}
+
+// 检查手机号是否存在
+export async function checkPhoneExists(applicationId: string, phone: string) {
+  const user = await findUserByPhone(applicationId, phone)
+  return !!user
+}
