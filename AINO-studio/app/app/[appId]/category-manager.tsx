@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import type { DirectoryModel } from "@/lib/store"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,
   PaginationContent,
@@ -31,6 +32,8 @@ export function CategoryManager({ dir, onChange }: Props) {
   const [l1Page, setL1Page] = useState(1)
   const [l2Page, setL2Page] = useState(1)
   const [l3Page, setL3Page] = useState(1)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<Cat | null>(null)
   const pageSize = 8
 
   useEffect(() => {
@@ -75,10 +78,17 @@ export function CategoryManager({ dir, onChange }: Props) {
     commit(next)
   }
   function remove(node: Cat) {
-    if (!confirm(locale === "zh" ? "删除该内容分类及其子级？" : "Delete this content category and all its subcategories?")) return
+    setCategoryToDelete(node)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteCategory = () => {
+    if (!categoryToDelete) return
     const next = structuredClone(cats)
-    del(next, node.id)
+    del(next, categoryToDelete.id)
     commit(next)
+    setDeleteDialogOpen(false)
+    setCategoryToDelete(null)
   }
 
   const l1 = cats
@@ -159,6 +169,15 @@ export function CategoryManager({ dir, onChange }: Props) {
           pageSize={pageSize}
         />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={categoryToDelete?.name || ""}
+        itemType="category"
+        onConfirm={confirmDeleteCategory}
+      />
     </div>
   )
 }
