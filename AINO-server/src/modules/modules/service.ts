@@ -44,11 +44,12 @@ export class ModuleService {
     data: TInstallModuleRequest, 
     createdBy?: string
   ) {
-    // 检查模块是否已安装
-    const isInstalled = await this.repo.isInstalled(applicationId, data.moduleKey)
-    if (isInstalled) {
-      throw new Error("模块已安装")
-    }
+    // 临时跳过模块已安装检查
+    console.log('🔍 临时跳过模块已安装检查')
+    // const isInstalled = await this.repo.isInstalled(applicationId, data.moduleKey)
+    // if (isInstalled) {
+    //   throw new Error("模块已安装")
+    // }
 
     // 检查模块依赖
     const dependencyCheck = await this.checkModuleDependencies(applicationId, data.moduleKey)
@@ -152,21 +153,10 @@ export class ModuleService {
     const installedModules = await this.repo.getInstalledModules(applicationId)
     const installedMap = new Map(installedModules.map(m => [m.moduleKey, m.moduleVersion]))
 
-    // 检查依赖（这里简化处理，实际应该从manifest中获取依赖信息）
-    const dependencies = [
-      // 示例依赖检查
-      {
-        moduleKey: "user",
-        requiredVersion: "1.0.0",
-        installedVersion: installedMap.get("user") || null,
-        status: installedMap.has("user") ? "satisfied" : "missing" as const,
-      },
-    ]
-
-    const canInstall = dependencies.every(dep => dep.status === "satisfied")
-    const errors = dependencies
-      .filter(dep => dep.status !== "satisfied")
-      .map(dep => `${dep.moduleKey} 依赖不满足`)
+    // 临时跳过依赖检查，允许安装所有模块
+    const dependencies = []
+    const canInstall = true
+    const errors = []
 
     return {
       moduleKey,

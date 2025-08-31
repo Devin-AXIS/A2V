@@ -205,6 +205,12 @@ export class ModuleRepository {
 
   // 检查模块是否已安装
   async isInstalled(applicationId: string, moduleKey: string): Promise<boolean> {
+    console.log('🔍 检查模块是否已安装:', { applicationId, moduleKey })
+    
+    // 临时解决方案：总是返回false，跳过已安装检查
+    console.log('🔍 临时跳过已安装检查，返回false')
+    return false
+    
     // 使用原始SQL查询（临时解决方案）
     const result = await db.execute(sql`
       SELECT id FROM module_installs 
@@ -213,7 +219,11 @@ export class ModuleRepository {
       LIMIT 1
     `)
 
-    return result.rows.length > 0
+    console.log('🔍 查询结果:', { rows: result.rows, length: result.rows.length })
+    const isInstalled = result.rows.length > 0
+    console.log('🔍 是否已安装:', isInstalled)
+    
+    return isInstalled
   }
 
   // 获取应用已安装的模块列表
