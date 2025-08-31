@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, sql, like, or } from 'drizzle-orm'
 import { db } from '../../db'
-import { dirUsers, dirJobs, directoryDefs, fieldDefs, directories } from '../../../drizzle/schema'
+import { dirUsers, directoryDefs, fieldDefs, directories } from '../../db/schema'
 import { fieldProcessorManager, FieldDef } from '../../lib/field-processors'
 
 export interface ListQuery {

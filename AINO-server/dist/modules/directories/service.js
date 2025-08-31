@@ -17,6 +17,10 @@ export class DirectoryService {
     }
     async getDirectoryCategories(directoryId, applicationId) {
         try {
+            const directory = await this.repo.findById(directoryId);
+            if (directory && directory.config && directory.config.categories) {
+                return directory.config.categories;
+            }
             const categories = await this.recordCategoriesRepo.findMany({
                 applicationId,
                 directoryId,
@@ -27,13 +31,7 @@ export class DirectoryService {
         }
         catch (error) {
             console.error("获取目录分类数据失败:", error);
-            return [
-                {
-                    id: "mock-category-1",
-                    name: "测试分类",
-                    children: []
-                }
-            ];
+            return [];
         }
     }
     async getDirectoryFields(directoryId) {
@@ -58,7 +56,7 @@ export class DirectoryService {
                 validators: field.validators,
                 description: field.schema?.description || "",
                 placeholder: field.schema?.placeholder || "",
-                preset: field.schema?.preset || undefined
+                preset: field.schema?.preset || undefined,
             }));
         }
         catch (error) {
@@ -168,8 +166,32 @@ export class DirectoryService {
         if (!hasAccess) {
             throw new Error("没有权限访问该目录");
         }
-        console.log("查询目录详情成功:", result.id);
-        return result;
+        try {
+            const [categories, fields] = await Promise.all([
+                this.getDirectoryCategories(id, result.applicationId),
+                this.getDirectoryFields(id)
+            ]);
+            console.log("查询目录详情成功:", result.id);
+            return {
+                ...result,
+                config: {
+                    ...result.config,
+                    categories: categories,
+                    fields: fields
+                }
+            };
+        }
+        catch (error) {
+            console.error(`获取目录 ${id} 的数据失败:`, error);
+            return {
+                ...result,
+                config: {
+                    ...result.config,
+                    categories: [],
+                    fields: []
+                }
+            };
+        }
     }
     async update(id, data, userId) {
         const existing = await this.repo.findById(id);

@@ -75,6 +75,7 @@ export type FieldModel = {
   desc?: string
   placeholder?: string
   categoryId?: string // 字段分类ID，关联到字段分类管理
+
   // 数值
   min?: number
   max?: number

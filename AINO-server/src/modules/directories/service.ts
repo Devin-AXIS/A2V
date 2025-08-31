@@ -80,7 +80,8 @@ export class DirectoryService {
         validators: field.validators,
         description: field.schema?.description || "",
         placeholder: field.schema?.placeholder || "",
-        preset: field.schema?.preset || undefined
+        preset: field.schema?.preset || undefined,
+
       }))
     } catch (error) {
       console.error("获取目录字段定义失败:", error)
@@ -208,8 +209,33 @@ export class DirectoryService {
       throw new Error("没有权限访问该目录")
     }
 
-    console.log("查询目录详情成功:", result.id)
-    return result
+    // 获取分类数据和字段定义并转换为前端期望的格式
+    try {
+      const [categories, fields] = await Promise.all([
+        this.getDirectoryCategories(id, result.applicationId),
+        this.getDirectoryFields(id)
+      ])
+      
+      console.log("查询目录详情成功:", result.id)
+      return {
+        ...result,
+        config: {
+          ...result.config,
+          categories: categories,
+          fields: fields
+        }
+      }
+    } catch (error) {
+      console.error(`获取目录 ${id} 的数据失败:`, error)
+      return {
+        ...result,
+        config: {
+          ...result.config,
+          categories: [],
+          fields: []
+        }
+      }
+    }
   }
 
   async update(id: string, data: UpdateDirectoryRequest, userId: string): Promise<DirectoryResponse | null> {

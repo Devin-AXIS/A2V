@@ -10,7 +10,6 @@ import recordCategoriesRoute from "./modules/record-categories/routes";
 import { records } from "./routes/records";
 import { fieldDefs } from "./modules/field-defs/routes";
 import { directoryDefs } from "./modules/directory-defs/routes";
-import { relations } from "./modules/relations/routes";
 import { docsRoute } from "./docs/routes";
 const app = new Hono();
 app.use("*", cors({
@@ -34,7 +33,6 @@ app.route("/api/record-categories", recordCategoriesRoute);
 app.route("/api/records", records);
 app.route("/api/field-defs", fieldDefs);
 app.route("/api/directory-defs", directoryDefs);
-app.route("/api/relations", relations);
 app.route("/docs", docsRoute);
 app.notFound((c) => c.json({ success: false, code: "NOT_FOUND", message: "Not Found" }, 404));
 export default app;
