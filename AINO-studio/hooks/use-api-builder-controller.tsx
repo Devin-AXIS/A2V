@@ -438,6 +438,8 @@ export function useApiBuilderController({
     if (!application) return
     if (!can("edit")) return
     
+    console.log('🔍 开始创建模块:', { appId, payload })
+    
     try {
       // 使用简化的模块安装API
       const response = await api.modules.installModuleSimple(appId, {
@@ -447,6 +449,8 @@ export function useApiBuilderController({
           icon: payload.icon
         }
       })
+      
+      console.log('🔍 API响应:', response)
       
       if (response.success) {
         setOpenAddModule(false)
@@ -459,10 +463,12 @@ export function useApiBuilderController({
         throw new Error(response.error || "模块创建失败")
       }
     } catch (error) {
-      console.error('创建模块失败:', error)
+      console.error('❌ 创建模块失败:', error)
       
       // 检查是否是模块已安装的错误
       const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log('🔍 错误信息:', errorMessage)
+      
       const isModuleAlreadyInstalled = errorMessage.includes("模块已安装") || errorMessage.includes("already installed")
       
       if (isModuleAlreadyInstalled) {
@@ -474,7 +480,7 @@ export function useApiBuilderController({
       } else {
         toast({
           title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
-          description: locale === "zh" ? "请重试" : "Please try again",
+          description: locale === "zh" ? `错误: ${errorMessage}` : `Error: ${errorMessage}`,
           variant: "destructive",
         })
       }
