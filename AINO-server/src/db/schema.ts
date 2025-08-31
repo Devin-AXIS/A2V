@@ -135,26 +135,23 @@ export const recordCategories: any = pgTable("record_categories", {
 
 
 
-// 应用用户表 - 每个应用内部的业务用户（与系统用户无关）
+// 应用用户账号表 - 只存储账号认证相关字段，业务数据存储在用户模块中
 export const applicationUsers = pgTable("application_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  avatar: text("avatar"),
+  phone: text("phone").notNull(), // 手机号作为唯一标识
+  password: text("password"), // 用户密码（加密存储）
   status: text("status").default("active").notNull(), // active, inactive, pending
   role: text("role").default("user").notNull(), // admin, user, guest
-  department: text("department"),
-  position: text("position"),
-  tags: text("tags").array().default([]),
-  metadata: jsonb("metadata").default({}), // 扩展字段
+  metadata: jsonb("metadata").default({}), // 扩展字段（如注册来源、设备信息等）
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   createdAtIdx: index("application_users_created_at_idx").on(table.createdAt),
   appStatusIdx: index("application_users_app_status_idx").on(table.applicationId, table.status),
+  appPhoneIdx: index("application_users_app_phone_idx").on(table.applicationId, table.phone),
+  phoneIdx: index("application_users_phone_idx").on(table.phone),
 }))
 
 // 审计日志表

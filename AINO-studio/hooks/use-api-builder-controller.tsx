@@ -287,21 +287,59 @@ export function useApiBuilderController({
     setRecordsLoading(prev => ({ ...prev, [dirId]: true }))
     
     try {
-      const response = await api.records.listRecords(dirId, {
-        page: 1,
-        pageSize: 20, // 修复：后端最大限制是50，使用20更安全
-      })
+      // 检查是否是用户模块的用户列表目录
+      const isUserModule = modules.some(module => 
+        module.name === '用户管理' && 
+        directoriesData[module.id]?.some(dir => dir.id === dirId && dir.name === '用户列表')
+      )
       
-      if (response.success && response.data) {
-        // 后端返回格式: { data: [...], pagination: {...} }
-        // 前端期望格式: 直接是记录数组
-        const records = Array.isArray(response.data) ? response.data : response.data.records || response.data
-        console.log('🔍 记录数据获取成功:', dirId, '记录数量:', records.length)
-        setRecordsData(prev => ({
-          ...prev,
-          [dirId]: records
-        }))
+      let records = []
+      
+      if (isUserModule) {
+        // 使用应用用户API获取用户数据
+        console.log('🔍 检测到用户模块，使用应用用户API')
+        const response = await api.applicationUsers.getApplicationUsers(appId, {
+          page: 1,
+          limit: 20
+        })
+        
+        if (response.success && response.data) {
+          // 将应用用户数据转换为记录格式
+          records = response.data.users.map((user: any) => ({
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            avatar: user.avatar,
+            department: user.department,
+            position: user.position,
+            tags: user.tags,
+            status: user.status,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+          }))
+          console.log('🔍 用户数据获取成功:', dirId, '用户数量:', records.length)
+        }
+      } else {
+        // 使用普通记录API
+        const response = await api.records.listRecords(dirId, {
+          page: 1,
+          pageSize: 20, // 修复：后端最大限制是50，使用20更安全
+        })
+        
+        if (response.success && response.data) {
+          // 后端返回格式: { data: [...], pagination: {...} }
+          // 前端期望格式: 直接是记录数组
+          records = Array.isArray(response.data) ? response.data : response.data.records || response.data
+          console.log('🔍 记录数据获取成功:', dirId, '记录数量:', records.length)
+        }
       }
+      
+      setRecordsData(prev => ({
+        ...prev,
+        [dirId]: records
+      }))
     } catch (error) {
       console.error("获取记录数据失败:", error)
       toast({
@@ -312,7 +350,7 @@ export function useApiBuilderController({
       fetchRecordsRef.current[dirId] = false
       setRecordsLoading(prev => ({ ...prev, [dirId]: false }))
     }
-  }, [toast, locale]) // 移除recordsLoading和lastFetchTime依赖
+  }, [toast, locale, modules, directoriesData, appId]) // 添加必要的依赖
 
   // 将API模块数据转换为ModuleModel格式，并合并目录数据
   const apiModules = useMemo<ModuleModel[]>(() => {

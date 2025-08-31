@@ -1,52 +1,45 @@
 import { z } from 'zod'
 
-// 应用用户基础信息
+// 应用用户基础信息（包含账号信息和业务数据）
 export const ApplicationUser = z.object({
   id: z.string().uuid(),
   applicationId: z.string().uuid(),
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  avatar: z.string().url().optional(),
+  phone: z.string(), // 账号标识
+  password: z.string().optional(), // 不返回给前端
   status: z.enum(['active', 'inactive', 'pending']).default('active'),
   role: z.enum(['admin', 'user', 'guest']).default('user'),
-  department: z.string().optional(),
-  position: z.string().optional(),
-  tags: z.array(z.string()).default([]),
   metadata: z.record(z.any()).default({}),
   lastLoginAt: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  // 业务数据字段（从用户模块获取）
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  avatar: z.string().url().optional(),
+  department: z.string().optional(),
+  position: z.string().optional(),
+  tags: z.array(z.string()).default([]),
 })
 
 export type TApplicationUser = z.infer<typeof ApplicationUser>
 
-// 创建应用用户请求
+// 创建应用用户请求（只包含账号信息）
 export const CreateApplicationUserRequest = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  avatar: z.string().url().optional(),
+  phone: z.string().min(1, "手机号不能为空"),
+  password: z.string().min(6, "密码至少6位").optional(),
   role: z.enum(['admin', 'user', 'guest']).default('user'),
-  department: z.string().optional(),
-  position: z.string().optional(),
-  tags: z.array(z.string()).default([]),
+  status: z.enum(['active', 'inactive', 'pending']).default('active'),
   metadata: z.record(z.any()).default({}),
 })
 
 export type TCreateApplicationUserRequest = z.infer<typeof CreateApplicationUserRequest>
 
-// 更新应用用户请求
+// 更新应用用户请求（只包含账号信息）
 export const UpdateApplicationUserRequest = z.object({
-  name: z.string().min(1).max(100).optional(),
-  email: z.string().email().optional(),
   phone: z.string().optional(),
-  avatar: z.string().url().optional(),
+  password: z.string().min(6, "密码至少6位").optional(),
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   role: z.enum(['admin', 'user', 'guest']).optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
-  tags: z.array(z.string()).optional(),
   metadata: z.record(z.any()).optional(),
 })
 
@@ -60,7 +53,7 @@ export const GetApplicationUsersQuery = z.object({
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   role: z.enum(['admin', 'user', 'guest']).optional(),
   department: z.string().optional(),
-  sortBy: z.enum(['name', 'email', 'createdAt', 'lastLoginAt']).default('createdAt'),
+  sortBy: z.enum(['phone', 'createdAt', 'lastLoginAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 

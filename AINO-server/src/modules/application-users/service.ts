@@ -6,17 +6,19 @@ import type {
   TMergeUserRequest
 } from './dto'
 import * as repo from './repo'
+import { db } from '../../db'
+import { dirUsers } from '../../db/schema'
 
 export class ApplicationUserService {
-  // 创建应用用户
+  // 创建应用用户（只创建账号）
   async createApplicationUser(
     applicationId: string, 
     data: TCreateApplicationUserRequest
   ) {
-    // 检查邮箱是否已存在
-    const emailExists = await repo.checkEmailExists(applicationId, data.email)
-    if (emailExists) {
-      throw new Error('邮箱已存在')
+    // 检查手机号是否已存在
+    const phoneExists = await repo.checkPhoneExists(applicationId, data.phone)
+    if (phoneExists) {
+      throw new Error('手机号已存在')
     }
 
     const user = await repo.createApplicationUser(applicationId, data)
@@ -44,7 +46,7 @@ export class ApplicationUserService {
     return user
   }
 
-  // 更新应用用户
+  // 更新应用用户（只更新账号信息）
   async updateApplicationUser(
     applicationId: string, 
     userId: string, 
@@ -56,11 +58,11 @@ export class ApplicationUserService {
       throw new Error('用户不存在')
     }
 
-    // 如果更新邮箱，检查是否与其他用户冲突
-    if (data.email && data.email !== existingUser.email) {
-      const emailExists = await repo.checkEmailExists(applicationId, data.email, userId)
-      if (emailExists) {
-        throw new Error('邮箱已存在')
+    // 如果更新手机号，检查是否与其他用户冲突
+    if (data.phone && data.phone !== existingUser.phone) {
+      const phoneExists = await repo.checkPhoneExists(applicationId, data.phone)
+      if (phoneExists) {
+        throw new Error('手机号已存在')
       }
     }
 
@@ -144,25 +146,23 @@ export class ApplicationUserService {
       return await this.mergeUser(applicationId, existingUser.id, data)
     } else {
       console.log('🔍 创建新用户')
-      // 创建新用户
+      // 创建新用户（只创建账号）
       const userData = {
-        name: data.name || data.phone,
-        email: data.email || '',
         phone: data.phone,
+        password: data.password, // 临时存储密码，后续需要加密
         role: 'user',
         status: 'active',
         metadata: {
-          password: data.password, // 临时存储密码，后续需要加密
-          gender: data.gender,
-          city: data.city,
-          birthday: data.birthday,
-          avatar: data.avatar,
           source: 'register',
           registeredAt: new Date().toISOString()
         }
       }
       
       const user = await repo.createApplicationUser(applicationId, userData)
+      
+      // 在用户模块中创建对应的业务数据记录
+      await this.createUserBusinessRecord(applicationId, user.id, user.phone, data)
+      
       console.log('✅ 用户注册成功:', user.id)
       return user
     }
@@ -182,21 +182,14 @@ export class ApplicationUserService {
       throw new Error('目标用户不存在')
     }
     
-    // 合并数据
+    // 合并数据（只更新账号信息）
     const mergedData = {
-      // 保留目标用户的基础信息
-      name: targetUser.name || registerData.name || registerData.phone,
-      email: targetUser.email || registerData.email || '',
       phone: registerData.phone,
       status: 'active', // 激活状态
       metadata: {
         ...targetUser.metadata,
         // 添加注册信息
         password: registerData.password, // 临时存储密码，后续需要加密
-        gender: registerData.gender,
-        city: registerData.city,
-        birthday: registerData.birthday,
-        avatar: registerData.avatar,
         source: 'merged',
         mergedAt: new Date().toISOString(),
         originalSource: targetUser.metadata?.source || 'manual'
@@ -213,6 +206,45 @@ export class ApplicationUserService {
   async findUserByPhone(applicationId: string, phone: string) {
     const user = await repo.findUserByPhone(applicationId, phone)
     return user
+  }
+
+  // 创建用户业务数据记录
+  private async createUserBusinessRecord(
+    applicationId: string, 
+    userId: string, 
+    phone: string, 
+    userData: TRegisterUserRequest
+  ) {
+    try {
+      // 在 dir_users 表中创建业务数据记录
+      const [businessRecord] = await db.insert(dirUsers).values({
+        tenantId: applicationId,
+        props: {
+          // 基础信息
+          name: userData.name || '',
+          phone: phone,
+          email: userData.email || '',
+          avatar: userData.avatar || '',
+          gender: userData.gender || '',
+          city: userData.city || '',
+          birthday: userData.birthday || '',
+          // 其他字段
+          department: '',
+          position: '',
+          tags: [],
+          // 关联信息
+          userId: userId,
+          source: 'register',
+          registeredAt: new Date().toISOString()
+        }
+      }).returning()
+
+      console.log('✅ 用户业务数据记录创建成功:', businessRecord.id)
+      return businessRecord
+    } catch (error) {
+      console.error('❌ 创建用户业务数据记录失败:', error)
+      throw error
+    }
   }
 
   async batchDeleteUsers(
