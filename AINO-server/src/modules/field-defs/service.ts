@@ -40,11 +40,35 @@ export class FieldDefsService {
   }) {
     const { sourceField, targetDirId, reverseFieldKey, relationType, onDelete } = params
     
+    console.log('🔍 开始创建反向关联字段:', {
+      sourceFieldKey: sourceField.key,
+      sourceDirectoryId: sourceField.directoryId,
+      targetDirId,
+      reverseFieldKey
+    })
+    
+    // 首先通过目录ID找到对应的目录定义ID
+    const [targetDirectoryDef] = await db.select()
+      .from(directoryDefs)
+      .where(eq(directoryDefs.directoryId, targetDirId))
+      .limit(1)
+    
+    if (!targetDirectoryDef) {
+      console.error('❌ 找不到目标目录定义:', targetDirId)
+      throw new Error(`目标目录定义不存在: ${targetDirId}`)
+    }
+    
+    console.log('✅ 找到目标目录定义:', {
+      directoryId: targetDirId,
+      directoryDefId: targetDirectoryDef.id,
+      title: targetDirectoryDef.title
+    })
+    
     // 检查反向字段是否已存在
     const existingReverseField = await db.select()
       .from(fieldDefs)
       .where(and(
-        eq(fieldDefs.directoryId, targetDirId),
+        eq(fieldDefs.directoryId, targetDirectoryDef.id),
         eq(fieldDefs.key, reverseFieldKey)
       ))
       .limit(1)
@@ -60,7 +84,7 @@ export class FieldDefsService {
     // 创建反向关联字段
     const [reverseField] = await db.insert(fieldDefs)
       .values({
-        directoryId: targetDirId,
+        directoryId: targetDirectoryDef.id, // 使用目录定义ID，不是目录ID
         key: reverseFieldKey,
         kind: 'relation',
         type: reverseType,
@@ -83,7 +107,7 @@ export class FieldDefsService {
       })
       .returning()
     
-    console.log(`成功创建反向关联字段: ${reverseFieldKey} -> ${sourceField.key}`)
+    console.log(`✅ 成功创建反向关联字段: ${reverseFieldKey} -> ${sourceField.key}`)
     return reverseField
   }
 
