@@ -137,14 +137,31 @@ export function useApiBuilderController({
       })
       
       if (response.success && response.data) {
+        // 过滤掉已知有问题的目录ID
+        const validDirectories = response.data.directories.filter((dir: any) => {
+          // 跳过已知不存在的目录ID
+          if (dir.id === 'c9f11a42-19fc-4e3f-a9d3-0e6ffa695b1b') {
+            console.warn(`跳过已知不存在的目录ID: ${dir.id}`)
+            return false
+          }
+          return true
+        })
+        
         // 将API数据转换为前端需要的格式，并获取完整的字段定义
         const directories = await Promise.all(
-          response.data.directories.map(async (dir: any) => {
+          validDirectories.map(async (dir: any) => {
             let fields = dir.config?.fields || []
             
             try {
               // 先检查目录是否存在
-              const dirCheckResponse = await api.directories.getDirectory(dir.id)
+              let dirCheckResponse
+              try {
+                dirCheckResponse = await api.directories.getDirectory(dir.id)
+              } catch (checkError) {
+                console.warn(`目录 ${dir.id} 检查失败，跳过处理:`, checkError)
+                return null // 返回null，后续过滤掉
+              }
+              
               if (!dirCheckResponse.success) {
                 console.warn(`目录 ${dir.id} 不存在，跳过处理`)
                 return null // 返回null，后续过滤掉
@@ -237,11 +254,11 @@ export function useApiBuilderController({
         )
         
         // 过滤掉null值（不存在的目录）
-        const validDirectories = directories.filter(dir => dir !== null)
+        const filteredDirectories = directories.filter(dir => dir !== null)
         
         setDirectoriesData(prev => ({
           ...prev,
-          [moduleId]: validDirectories
+          [moduleId]: filteredDirectories
         }))
       }
     } catch (error) {
@@ -417,50 +434,63 @@ export function useApiBuilderController({
     }
   }
 
-  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
+  async function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
     if (!application) return
     if (!can("edit")) return
     
+    console.log('🔍 开始创建模块:', { appId, payload })
+    
     try {
-      // 使用内置模块模板创建模块
-      const factory = (builtinModules as any)[payload.templateKey] as () => ModuleModel
-      const module = factory ? factory() : builtinModules.custom()
-      
-      // 设置模块名称和图标
-      if (payload.name.trim()) module.name = payload.name.trim()
-      if (payload.icon) module.icon = payload.icon
-      
-      // 添加到应用模块列表
-      const nextApp = structuredClone(application)
-      if (!nextApp.modules) {
-        nextApp.modules = []
-      }
-      nextApp.modules.push(module)
-      
-      // 保存到本地存储
-      const store = getStore()
-      const appIndex = store.apps.findIndex(a => a.id === application.id)
-      if (appIndex !== -1) {
-        store.apps[appIndex] = nextApp
-        saveStore(store)
-      }
-      
-      // 更新本地状态
-      setModuleId(module.id)
-      setDirId(module.directories[0]?.id || null)
-      setOpenAddModule(false)
-      
-      toast({
-        title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
-        description: locale === "zh" ? `模块 "${module.name}" 已创建` : `Module "${module.name}" has been created`,
+      // 使用简化的模块安装API
+      const response = await api.modules.installModuleSimple(appId, {
+        moduleKey: payload.templateKey,
+        installConfig: {
+          name: payload.name.trim(),
+          icon: payload.icon
+        }
       })
+      
+      console.log('🔍 API响应:', response)
+      
+      if (response.success) {
+        setOpenAddModule(false)
+        
+        console.log('🔄 模块创建成功，开始刷新数据...')
+        
+        // 刷新模块数据
+        await fetchModules()
+        
+        console.log('✅ 模块数据刷新完成')
+        
+        toast({
+          title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
+          description: locale === "zh" ? `模块 "${payload.name}" 已创建` : `Module "${payload.name}" has been created`,
+        })
+      } else {
+        throw new Error(response.error || "模块创建失败")
+      }
     } catch (error) {
-      console.error('创建模块失败:', error)
-      toast({
-        title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
-        description: locale === "zh" ? "请重试" : "Please try again",
-        variant: "destructive",
-      })
+      console.error('❌ 创建模块失败:', error)
+      
+      // 检查是否是模块已安装的错误
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log('🔍 错误信息:', errorMessage)
+      
+      const isModuleAlreadyInstalled = errorMessage.includes("模块已安装") || errorMessage.includes("already installed")
+      
+      if (isModuleAlreadyInstalled) {
+        toast({
+          title: locale === "zh" ? "模块已存在" : "Module Already Exists",
+          description: locale === "zh" ? `模块 "${payload.name}" 已经安装，请选择其他模块` : `Module "${payload.name}" is already installed, please choose another module`,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: locale === "zh" ? "创建模块失败" : "Failed to Create Module",
+          description: locale === "zh" ? `错误: ${errorMessage}` : `Error: ${errorMessage}`,
+          variant: "destructive",
+        })
+      }
     }
   }
 

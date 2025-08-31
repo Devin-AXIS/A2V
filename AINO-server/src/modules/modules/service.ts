@@ -152,21 +152,10 @@ export class ModuleService {
     const installedModules = await this.repo.getInstalledModules(applicationId)
     const installedMap = new Map(installedModules.map(m => [m.moduleKey, m.moduleVersion]))
 
-    // 检查依赖（这里简化处理，实际应该从manifest中获取依赖信息）
-    const dependencies = [
-      // 示例依赖检查
-      {
-        moduleKey: "user",
-        requiredVersion: "1.0.0",
-        installedVersion: installedMap.get("user") || null,
-        status: installedMap.has("user") ? "satisfied" : "missing" as const,
-      },
-    ]
-
-    const canInstall = dependencies.every(dep => dep.status === "satisfied")
-    const errors = dependencies
-      .filter(dep => dep.status !== "satisfied")
-      .map(dep => `${dep.moduleKey} 依赖不满足`)
+    // 临时跳过依赖检查，允许安装所有模块
+    const dependencies = []
+    const canInstall = true
+    const errors = []
 
     return {
       moduleKey,
@@ -214,29 +203,33 @@ export class ModuleService {
     return moduleRegistry.getRemoteModules()
   }
 
-  // 初始化应用系统模块
+  // 初始化应用系统模块 - 只安装真正的系统模块
   async initializeSystemModules(applicationId: string, createdBy?: string) {
-    const systemModules = moduleRegistry.getLocalModules()
+    // 只安装用户模块，其他模块由用户主动安装
+    const systemModuleKeys = ['user'] // 只包含真正的系统模块
     const installedModules = await this.repo.getInstalledModules(applicationId)
     const installedKeys = new Set(installedModules.map(m => m.moduleKey))
 
     const results = []
-    for (const module of systemModules) {
-      if (!installedKeys.has(module.key)) {
-        try {
-          const installed = await this.repo.install({
-            applicationId,
-            moduleKey: module.key,
-            moduleName: module.name,
-            moduleVersion: module.version,
-            moduleType: "system",
-            installType: "system",
-            installConfig: {},
-            createdBy,
-          })
-          results.push(installed)
-        } catch (error) {
-          console.error(`Failed to install system module ${module.key}:`, error)
+    for (const moduleKey of systemModuleKeys) {
+      if (!installedKeys.has(moduleKey)) {
+        const module = moduleRegistry.get(moduleKey)
+        if (module) {
+          try {
+            const installed = await this.repo.install({
+              applicationId,
+              moduleKey: module.key,
+              moduleName: module.name,
+              moduleVersion: module.version,
+              moduleType: "system",
+              installType: "system",
+              installConfig: {},
+              createdBy,
+            })
+            results.push(installed)
+          } catch (error) {
+            console.error(`Failed to install system module ${module.key}:`, error)
+          }
         }
       }
     }

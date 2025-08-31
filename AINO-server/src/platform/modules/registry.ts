@@ -83,6 +83,66 @@ export function registerSystemModules(): void {
     description: '空白模块模板，可用于快速创建自定义模块',
   })
 
+  // 电商模块
+  moduleRegistry.register({
+    key: 'ecom',
+    name: '电商模块',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/products', description: '获取商品列表' },
+      { method: 'POST', path: '/products', description: '创建商品' },
+      { method: 'GET', path: '/orders', description: '获取订单列表' },
+      { method: 'POST', path: '/orders', description: '创建订单' },
+    ],
+    description: '电商功能模块，包含商品管理、订单处理等功能',
+  })
+
+  // 教育模块
+  moduleRegistry.register({
+    key: 'edu',
+    name: '教育模块',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/courses', description: '获取课程列表' },
+      { method: 'POST', path: '/courses', description: '创建课程' },
+      { method: 'GET', path: '/students', description: '获取学生列表' },
+      { method: 'POST', path: '/students', description: '注册学生' },
+    ],
+    description: '教育管理模块，包含课程管理、学生管理等功能',
+  })
+
+  // 内容管理模块
+  moduleRegistry.register({
+    key: 'content',
+    name: '内容管理模块',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/articles', description: '获取文章列表' },
+      { method: 'POST', path: '/articles', description: '创建文章' },
+      { method: 'GET', path: '/categories', description: '获取分类列表' },
+      { method: 'POST', path: '/categories', description: '创建分类' },
+    ],
+    description: '内容管理模块，包含文章管理、分类管理等功能',
+  })
+
+  // 项目管理模块
+  moduleRegistry.register({
+    key: 'project',
+    name: '项目管理模块',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/projects', description: '获取项目列表' },
+      { method: 'POST', path: '/projects', description: '创建项目' },
+      { method: 'GET', path: '/tasks', description: '获取任务列表' },
+      { method: 'POST', path: '/tasks', description: '创建任务' },
+    ],
+    description: '项目管理模块，包含项目管理、任务管理等功能',
+  })
+
   // 注释掉配置模块和审计模块
   // 配置模块
   // moduleRegistry.register({

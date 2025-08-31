@@ -110,19 +110,25 @@ export class ModuleRepository {
     installType: "system" | "market" | "custom"
     createdBy?: string
   }) {
+    const insertData: any = {
+      applicationId: data.applicationId,
+      moduleKey: data.moduleKey,
+      moduleName: data.moduleName,
+      moduleVersion: data.moduleVersion,
+      moduleType: data.moduleType,
+      installType: data.installType,
+      installConfig: data.installConfig,
+      installStatus: "active",
+    }
+
+    // 只有当 createdBy 存在时才添加到插入数据中
+    if (data.createdBy) {
+      insertData.createdBy = data.createdBy
+    }
+
     const [module] = await db
       .insert(moduleInstalls)
-      .values({
-        applicationId: data.applicationId,
-        moduleKey: data.moduleKey,
-        moduleName: data.moduleName,
-        moduleVersion: data.moduleVersion,
-        moduleType: data.moduleType,
-        installType: data.installType,
-        installConfig: data.installConfig,
-        installStatus: "active",
-        createdBy: data.createdBy,
-      })
+      .values(insertData)
       .returning()
 
     return module
@@ -205,15 +211,21 @@ export class ModuleRepository {
 
   // 检查模块是否已安装
   async isInstalled(applicationId: string, moduleKey: string): Promise<boolean> {
-    // 使用原始SQL查询（临时解决方案）
+    console.log('🔍 检查模块是否已安装:', { applicationId, moduleKey })
+    
     const result = await db.execute(sql`
       SELECT id FROM module_installs 
       WHERE application_id = ${applicationId} 
       AND module_key = ${moduleKey}
+      AND install_status != 'error'
       LIMIT 1
     `)
 
-    return result.rows.length > 0
+    console.log('🔍 查询结果:', { rows: result.rows, length: result.rows.length })
+    const isInstalled = result.rows.length > 0
+    console.log('🔍 是否已安装:', isInstalled)
+    
+    return isInstalled
   }
 
   // 获取应用已安装的模块列表

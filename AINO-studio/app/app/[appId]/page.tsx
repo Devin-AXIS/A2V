@@ -668,13 +668,13 @@ export default function BuilderPage() {
         showIconUpload={true}
         iconLabel={locale === "zh" ? "模块图标" : "Module Icon"}
         options={[
-          { key: "custom", label: t("module_custom") },
+          { key: "blank-template", label: t("module_custom") },
           { key: "ecom", label: t("module_ecom") },
           { key: "edu", label: t("module_edu") },
           { key: "content", label: t("module_content") },
           { key: "project", label: t("module_project") },
         ]}
-        defaultOptionKey="custom"
+        defaultOptionKey="blank-template"
         onSubmit={(p) => c.handleCreateModuleFromDialog(p as any)}
       />
       <AddEntityDialog

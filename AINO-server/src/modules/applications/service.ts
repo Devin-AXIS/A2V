@@ -1,6 +1,6 @@
 import { db } from "../../db"
-import { applications, modules, directories, directoryDefs, fieldDefs, fieldCategories } from "../../db/schema"
-import { eq, and, desc } from "drizzle-orm"
+import { applications, modules, directories, directoryDefs, fieldDefs, fieldCategories, moduleInstalls } from "../../db/schema"
+import { eq, and, desc, sql } from "drizzle-orm"
 import type { CreateApplicationRequest, UpdateApplicationRequest, GetApplicationsQuery } from "./dto"
 import { getAllSystemModules } from "../../lib/system-modules"
 import { ModuleService } from "../modules/service"
@@ -37,9 +37,6 @@ export class ApplicationService {
     
     const [result] = await db.insert(applications).values(newApp).returning()
     
-    // 使用新的模块管理服务初始化系统模块
-    await this.moduleService.initializeSystemModules(result.id, userId)
-    
     // 自动创建默认目录
     const createdModules = await this.createSystemModules(result.id)
     await this.createDefaultDirectories(result.id, createdModules)
@@ -47,24 +44,28 @@ export class ApplicationService {
     return result
   }
 
-  // 创建系统模块
+  // 创建系统模块 - 只创建用户模块
   private async createSystemModules(applicationId: string) {
     const systemModules = getAllSystemModules()
     const createdModules = []
     
+    // 只创建用户模块，其他模块由用户主动安装
     for (let i = 0; i < systemModules.length; i++) {
       const module = systemModules[i]
-      const [createdModule] = await db.insert(modules).values({
-        applicationId,
-        name: module.name,
-        type: module.type,
-        icon: module.icon,
-        config: module.config,
-        order: i,
-        isEnabled: true,
-      }).returning()
-      
-      createdModules.push(createdModule)
+      // 只创建用户模块
+      if (module.key === 'user') {
+        const [createdModule] = await db.insert(modules).values({
+          applicationId,
+          name: module.name,
+          type: module.type,
+          icon: module.icon,
+          config: module.config,
+          order: i,
+          isEnabled: true,
+        }).returning()
+        
+        createdModules.push(createdModule)
+      }
     }
     
     return createdModules
@@ -304,16 +305,40 @@ export class ApplicationService {
     // 先检查用户是否有权限访问该应用
     const application = await this.getApplicationById(applicationId, userId)
     
-    // 获取应用的模块列表
-    const modulesList = await db
+    // 获取系统预定义模块（modules表）
+    const systemModules = await db
       .select()
       .from(modules)
       .where(eq(modules.applicationId, applicationId))
       .orderBy(modules.order)
     
+    // 获取用户安装的模块（moduleInstalls表）
+    const installedModules = await db
+      .select({
+        id: moduleInstalls.id,
+        applicationId: moduleInstalls.applicationId,
+        name: moduleInstalls.moduleName,
+        type: moduleInstalls.moduleType,
+        icon: sql<string>`COALESCE(${moduleInstalls.installConfig}->>'icon', 'package')`,
+        config: moduleInstalls.installConfig,
+        order: sql<number>`0`,
+        isEnabled: sql<boolean>`${moduleInstalls.installStatus} = 'active'`,
+        createdAt: moduleInstalls.installedAt,
+        updatedAt: moduleInstalls.updatedAt,
+      })
+      .from(moduleInstalls)
+      .where(eq(moduleInstalls.applicationId, applicationId))
+      .orderBy(moduleInstalls.installedAt)
+    
+    // 合并两个表的模块数据
+    const allModules = [
+      ...systemModules,
+      ...installedModules
+    ]
+    
     return {
       application,
-      modules: modulesList,
+      modules: allModules,
     }
   }
 }
