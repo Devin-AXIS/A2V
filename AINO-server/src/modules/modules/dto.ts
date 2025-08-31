@@ -11,7 +11,6 @@ export type TInstallModuleRequest = z.infer<typeof InstallModuleRequest>
 
 // 模块卸载请求
 export const UninstallModuleRequest = z.object({
-  moduleKey: z.string().min(1, "模块标识不能为空"),
   keepData: z.boolean().optional().default(false), // 是否保留数据
 })
 

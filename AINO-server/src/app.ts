@@ -27,6 +27,12 @@ app.use("*", cors({
 
 app.get("/health", (c) => c.text("ok"))
 
+// 添加全局调试中间件
+app.use("*", async (c, next) => {
+  console.log('🌐 全局路由请求:', c.req.method, c.req.url)
+  await next()
+})
+
 // 两条前缀都挂上，防止前端写成 /users/login
 app.route("/api/users", usersRoute)
 app.route("/users", usersRoute)

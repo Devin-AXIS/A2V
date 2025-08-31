@@ -14,6 +14,7 @@ export class ModuleService {
 
   // 获取模块列表
   async getModules(query: TGetModulesQuery & { applicationId: string }) {
+    console.log('🔍 Service.getModules 调用，query:', query)
     return await this.repo.findMany(query)
   }
 
@@ -86,9 +87,9 @@ export class ModuleService {
   }
 
   // 卸载模块
-  async uninstallModule(applicationId: string, data: TUninstallModuleRequest) {
+  async uninstallModule(applicationId: string, moduleKey: string, data: TUninstallModuleRequest) {
     // 检查模块是否已安装
-    const module = await this.repo.findByAppAndModule(applicationId, data.moduleKey)
+    const module = await this.repo.findByAppAndModule(applicationId, moduleKey)
     if (!module) {
       throw new Error("模块未安装")
     }
@@ -99,13 +100,13 @@ export class ModuleService {
     }
 
     // 检查是否有其他模块依赖此模块
-    const dependents = await this.checkModuleDependents(applicationId, data.moduleKey)
+    const dependents = await this.checkModuleDependents(applicationId, moduleKey)
     if (dependents.length > 0) {
       throw new Error(`有其他模块依赖此模块: ${dependents.join(", ")}`)
     }
 
     // 卸载模块
-    const uninstalledModule = await this.repo.uninstall(applicationId, data.moduleKey)
+    const uninstalledModule = await this.repo.uninstall(applicationId, moduleKey)
 
     // 如果保留数据，只标记为已卸载，不删除数据
     if (data.keepData) {
