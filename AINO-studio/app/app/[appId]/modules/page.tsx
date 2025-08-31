@@ -105,40 +105,6 @@ export default function ModulesPage() {
     const loadData = async () => {
       setIsLoading(true)
       
-      // 为了测试前端交互功能，直接使用测试数据
-      console.log('🔄 使用测试数据验证前端交互功能')
-      const testModules = [
-        {
-          id: "test-user-module",
-          moduleKey: "user",
-          moduleName: "用户管理模块",
-          moduleVersion: "1.0.0",
-          moduleType: "system",
-          installStatus: "active",
-          manifest: {
-            description: "系统用户管理模块，提供用户注册、登录、权限管理等功能",
-            author: "AINO Team"
-          }
-        },
-        {
-          id: "test-local-module",
-          moduleKey: "local-test",
-          moduleName: "本地测试模块",
-          moduleVersion: "1.0.0",
-          moduleType: "local",
-          installStatus: "active",
-          manifest: {
-            description: "本地开发的测试模块",
-            author: "Developer"
-          }
-        }
-      ]
-      setModules(testModules)
-      setAvailableModules([])
-      setIsLoading(false)
-      
-      // 注释掉API调用，专注于前端交互测试
-      /*
       try {
         // 加载已安装的模块
         const installedData = await getInstalledModules()
@@ -151,10 +117,12 @@ export default function ModulesPage() {
         setAvailableModules(availableData.modules || [])
       } catch (error) {
         console.error('加载模块数据失败:', error)
+        // 如果API调用失败，使用空数组
+        setModules([])
+        setAvailableModules([])
       } finally {
         setIsLoading(false)
       }
-      */
     }
 
     if (appId) {
