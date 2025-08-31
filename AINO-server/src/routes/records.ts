@@ -163,6 +163,55 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
   }
 })
 
+// 创建记录（按目录隔离）
+records.post('/:dir', async (c) => {
+  const dirId = c.req.param('dir')
+  const body = await c.req.json()
+  const { props } = body
+
+  try {
+    console.log('🔍 创建记录:', { dirId, props })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 添加目录ID到props中
+    const recordData = {
+      ...props,
+      __dirId: dirId
+    }
+
+    const [row] = await db.insert(t).values({
+      tenantId,
+      props: recordData,
+      createdBy: user?.id || 'system',
+      updatedBy: user?.id || 'system'
+    }).returning()
+
+    return c.json({
+      success: true,
+      data: {
+        id: row.id,
+        props: row.props,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        createdBy: row.createdBy,
+        updatedBy: row.updatedBy
+      }
+    }, 201)
+  } catch (error) {
+    console.error('创建记录失败:', error)
+    return c.json({ success: false, error: '创建记录失败' }, 500)
+  }
+})
+
 // 详情查询（按目录隔离）
 records.get('/:dir/:id', async (c) => {
   const dir = c.req.param('dir')
