@@ -545,20 +545,19 @@ export function useApiBuilderController({
       
       let response
       if (isUserModule) {
-        // 用户模块使用应用用户API
+        // 用户模块：只更新application_users表，不更新dir_users表
+        // 根据开发约束，application_users是业务用户，dir_users是业务数据
+        // 用户模块的保存应该只更新账号相关数据
         console.log('🔍 检测到用户模块，使用应用用户API更新')
+        
         response = await api.applicationUsers.updateApplicationUser(appId, recordId, {
           phone_number: props.phone_number,
           status: props.status,
           role: props.role
         })
         
-        // 同时更新业务数据（dir_users表）
-        if (response.success) {
-          const businessDataResponse = await api.records.updateRecord(dirId, recordId, { props })
-          if (!businessDataResponse.success) {
-            console.warn('更新业务数据失败:', businessDataResponse.error)
-          }
+        if (!response.success) {
+          throw new Error(response.error || "更新用户数据失败")
         }
       } else {
         // 普通模块使用记录API
