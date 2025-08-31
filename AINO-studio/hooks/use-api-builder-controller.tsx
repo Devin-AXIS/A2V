@@ -699,9 +699,12 @@ export function useApiBuilderController({
       if (response.success && response.data) {
         console.log('🔍 记录创建成功，返回数据:', response.data)
         
-        // 重新获取记录列表
-        console.log('🔍 重新获取记录列表...')
-        await fetchRecords(currentDir.id)
+        // 直接将新创建的记录添加到recordsData中
+        const newRecord = response.data
+        setRecordsData(prev => ({
+          ...prev,
+          [currentDir.id]: [...(prev[currentDir.id] || []), newRecord]
+        }))
         
         // 打开记录抽屉进行编辑
         const recordId = response.data.id
