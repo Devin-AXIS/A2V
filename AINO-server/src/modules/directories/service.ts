@@ -81,7 +81,7 @@ export class DirectoryService {
         description: field.schema?.description || "",
         placeholder: field.schema?.placeholder || "",
         preset: field.schema?.preset || undefined,
-
+        categoryId: field.categoryId || null, // 添加分类ID
       }))
     } catch (error) {
       console.error("获取目录字段定义失败:", error)

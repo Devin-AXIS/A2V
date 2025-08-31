@@ -22,7 +22,7 @@ export class FieldCategoriesRepository {
       predefinedFields: data.predefinedFields,
     }).returning()
 
-    return this.convertToResponse(result)
+    return await this.convertToResponse(result)
   }
 
   async findMany(query: GetFieldCategoriesQuery): Promise<FieldCategoriesListResponse> {
@@ -60,8 +60,12 @@ export class FieldCategoriesRepository {
       .limit(limit)
       .offset(offset)
 
+    const categories = await Promise.all(
+      categoriesList.map(cat => this.convertToResponse(cat))
+    )
+
     return {
-      categories: categoriesList.map(this.convertToResponse.bind(this)),
+      categories,
       pagination: {
         page,
         limit,
@@ -98,7 +102,7 @@ export class FieldCategoriesRepository {
       .where(eq(fieldCategories.id, id))
       .returning()
 
-    return result ? this.convertToResponse(result) : null
+    return result ? await this.convertToResponse(result) : null
   }
 
   async delete(id: string): Promise<boolean> {
@@ -145,7 +149,10 @@ export class FieldCategoriesRepository {
     return result
   }
 
-  private convertToResponse(dbRecord: any): FieldCategoryResponse {
+  private async convertToResponse(dbRecord: any): Promise<FieldCategoryResponse> {
+    // 获取该分类下的字段
+    const fields = await this.getFieldsInCategory(dbRecord.id)
+    
     return {
       id: String(dbRecord.id),
       applicationId: String(dbRecord.applicationId),
@@ -155,9 +162,35 @@ export class FieldCategoriesRepository {
       order: Number(dbRecord.order || 0),
       enabled: Boolean(dbRecord.enabled),
       system: Boolean(dbRecord.system),
-      predefinedFields: dbRecord.predefinedFields || [],
+      predefinedFields: fields, // 使用实际字段而不是预定义字段
       createdAt: dbRecord.createdAt instanceof Date ? dbRecord.createdAt.toISOString() : String(dbRecord.createdAt),
       updatedAt: dbRecord.updatedAt instanceof Date ? dbRecord.updatedAt.toISOString() : String(dbRecord.updatedAt),
+    }
+  }
+
+  // 获取分类下的字段
+  private async getFieldsInCategory(categoryId: string): Promise<any[]> {
+    try {
+      const fields = await db
+        .select()
+        .from(fieldDefs)
+        .where(eq(fieldDefs.categoryId, categoryId))
+        .orderBy(asc(fieldDefs.key))
+
+      return fields.map(field => ({
+        id: field.id,
+        key: field.key,
+        type: field.type,
+        label: field.schema?.label || field.key,
+        required: field.required,
+        showInForm: field.schema?.showInForm ?? true,
+        showInList: field.schema?.showInList ?? true,
+        options: field.schema?.options || [],
+        description: field.schema?.description || "",
+      }))
+    } catch (error) {
+      console.error("获取分类字段失败:", error)
+      return []
     }
   }
 }
