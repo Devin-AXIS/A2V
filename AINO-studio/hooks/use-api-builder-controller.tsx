@@ -403,7 +403,7 @@ export function useApiBuilderController({
   }
 
   function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
-    if (!app) return
+    if (!application) return
     if (!can("edit")) return
     
     try {
@@ -416,19 +416,18 @@ export function useApiBuilderController({
       if (payload.icon) module.icon = payload.icon
       
       // 添加到应用模块列表
-      const nextApp = structuredClone(app)
+      const nextApp = structuredClone(application)
       nextApp.modules.push(module)
       
       // 保存到本地存储
       const store = getStore()
-      const appIndex = store.apps.findIndex(a => a.id === app.id)
+      const appIndex = store.apps.findIndex(a => a.id === application.id)
       if (appIndex !== -1) {
         store.apps[appIndex] = nextApp
         saveStore(store)
       }
       
       // 更新本地状态
-      setApp(nextApp)
       setModuleId(module.id)
       setDirId(module.directories[0]?.id || null)
       setOpenAddModule(false)
