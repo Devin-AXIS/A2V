@@ -143,6 +143,13 @@ export function useApiBuilderController({
             let fields = dir.config?.fields || []
             
             try {
+              // 先检查目录是否存在
+              const dirCheckResponse = await api.directories.getDirectory(dir.id)
+              if (!dirCheckResponse.success) {
+                console.warn(`目录 ${dir.id} 不存在，跳过处理`)
+                return null // 返回null，后续过滤掉
+              }
+              
               // 获取目录定义ID
               const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, appId)
               
@@ -229,9 +236,12 @@ export function useApiBuilderController({
           })
         )
         
+        // 过滤掉null值（不存在的目录）
+        const validDirectories = directories.filter(dir => dir !== null)
+        
         setDirectoriesData(prev => ({
           ...prev,
-          [moduleId]: directories
+          [moduleId]: validDirectories
         }))
       }
     } catch (error) {
