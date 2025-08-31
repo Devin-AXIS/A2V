@@ -373,6 +373,11 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
   async function addField(fieldData: any) {
     try {
       console.log("🔍 创建字段定义参数:", fieldData)
+      console.log("🔍 关联字段配置:", {
+        type: fieldData.type,
+        relationTargetId: fieldData.relationTargetId,
+        relationDisplayFieldKey: fieldData.relationDisplayFieldKey
+      })
 
       // 首先获取目录定义ID
       const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, app.id)
@@ -399,25 +404,30 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
           showInList: fieldData.showInList || true,
           showInForm: fieldData.showInForm || true,
           showInDetail: fieldData.showInDetail || true,
-          preset: fieldData.preset || undefined,
-          cascaderOptions: fieldData.cascaderOptions || undefined,
-          customExperienceConfig: fieldData.customExperienceConfig || undefined,
-          certificateConfig: fieldData.certificateConfig || undefined,
-          skillsConfig: fieldData.skillsConfig || undefined,
-          progressConfig: fieldData.progressConfig || undefined,
-          identityVerificationConfig: fieldData.identityVerificationConfig || undefined,
-          otherVerificationConfig: fieldData.otherVerificationConfig || undefined,
-          imageConfig: fieldData.imageConfig || undefined,
-          videoConfig: fieldData.videoConfig || undefined,
-          booleanConfig: fieldData.booleanConfig || undefined,
-          multiselectConfig: fieldData.multiselectConfig || undefined,
+          ...(fieldData.preset && { preset: fieldData.preset }),
+          ...(fieldData.cascaderOptions && { cascaderOptions: fieldData.cascaderOptions }),
+          ...(fieldData.customExperienceConfig && { customExperienceConfig: fieldData.customExperienceConfig }),
+          ...(fieldData.certificateConfig && { certificateConfig: fieldData.certificateConfig }),
+          ...(fieldData.skillsConfig && { skillsConfig: fieldData.skillsConfig }),
+          ...(fieldData.progressConfig && { progressConfig: fieldData.progressConfig }),
+          ...(fieldData.identityVerificationConfig && { identityVerificationConfig: fieldData.identityVerificationConfig }),
+          ...(fieldData.otherVerificationConfig && { otherVerificationConfig: fieldData.otherVerificationConfig }),
+          ...(fieldData.imageConfig && { imageConfig: fieldData.imageConfig }),
+          ...(fieldData.videoConfig && { videoConfig: fieldData.videoConfig }),
+          ...(fieldData.booleanConfig && { booleanConfig: fieldData.booleanConfig }),
+          ...(fieldData.multiselectConfig && { multiselectConfig: fieldData.multiselectConfig }),
         },
         // 添加关联字段配置
-        relation: (fieldData.type === 'relation_one' || fieldData.type === 'relation_many') ? {
-          targetDirId: fieldData.relationTargetId || null,
-          mode: fieldData.type === 'relation_one' ? 'one' : 'many',
-          displayFieldKey: fieldData.relationDisplayFieldKey || null,
-        } : undefined,
+        ...(fieldData.type === 'relation_one' || fieldData.type === 'relation_many' ? {
+          relation: {
+            targetDirId: fieldData.relationTargetId || null,
+            mode: fieldData.type === 'relation_one' ? 'one' : 'many',
+            displayFieldKey: fieldData.relationDisplayFieldKey || null,
+            bidirectional: fieldData.relationBidirectional || false,
+            reverseFieldKey: fieldData.relationReverseFieldKey || null,
+            onDelete: fieldData.relationOnDelete || 'restrict',
+          }
+        } : {}),
         validators: fieldData.validators || {},
         required: fieldData.required || false,
       })
@@ -458,6 +468,18 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
         }
 
         setFieldDefs(prev => [...prev, newField])
+
+        // 如果是双向关联字段，需要刷新目标目录的字段列表
+        if (fieldData.type === 'relation_one' || fieldData.type === 'relation_many') {
+          if (fieldData.relationBidirectional && fieldData.relationTargetId) {
+            console.log('🔄 双向关联字段创建成功，需要刷新目标目录字段列表')
+            // 这里可以添加逻辑来刷新目标目录的字段列表
+            // 由于目标目录可能在不同的模块中，暂时通过重新获取当前目录字段来触发刷新
+            setTimeout(() => {
+              fetchFieldDefs()
+            }, 1000) // 延迟1秒后刷新，确保后端反向字段已创建
+          }
+        }
 
         // 如果选择了分类，将字段添加到分类的fields中
         if (fieldData.categoryId) {
@@ -544,11 +566,13 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
           multiselectConfig: fieldData.multiselectConfig || undefined,
         },
         // 添加关联字段配置
-        relation: (fieldData.type === 'relation_one' || fieldData.type === 'relation_many') ? {
-          targetDirId: fieldData.relationTargetId || null,
-          mode: fieldData.type === 'relation_one' ? 'one' : 'many',
-          displayFieldKey: fieldData.relationDisplayFieldKey || null,
-        } : undefined,
+        ...(fieldData.type === 'relation_one' || fieldData.type === 'relation_many' ? {
+          relation: {
+            targetDirId: fieldData.relationTargetId || null,
+            mode: fieldData.type === 'relation_one' ? 'one' : 'many',
+            displayFieldKey: fieldData.relationDisplayFieldKey || null,
+          }
+        } : {}),
         validators: fieldData.validators || {},
         required: fieldData.required || false,
       })
@@ -728,7 +752,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCategoryManagerOpen(true)} className="rounded-xl">
             <Settings className="mr-1 size-4" />
-            {t("categoryManagement")}
+            {t("fieldCategoryManagement")}
           </Button>
         </div>
       </div>

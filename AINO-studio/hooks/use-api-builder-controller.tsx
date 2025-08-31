@@ -193,12 +193,30 @@ export function useApiBuilderController({
               }
             }
             
+            // 获取记录分类数据
+            let categories: any[] = []
+            try {
+              const categoriesResponse = await api.recordCategories.getRecordCategories({
+                applicationId: appId,
+                directoryId: dir.id
+              })
+              
+              if (categoriesResponse.success && categoriesResponse.data?.categories) {
+                // 将扁平结构转换为树形结构
+                categories = buildCategoryTree(categoriesResponse.data.categories)
+              }
+            } catch (error) {
+              console.error("获取分类数据失败:", error)
+              // 如果获取失败，使用目录配置中的分类作为备用
+              categories = dir.config?.categories || []
+            }
+            
             return {
               id: dir.id,
               name: dir.name,
               type: dir.type,
               fields: fields,
-              categories: dir.config?.categories || [],
+              categories: categories,
               records: [],
             }
           })
@@ -503,6 +521,7 @@ export function useApiBuilderController({
             defaultValue = field.required ? "example@example.com" : ""
             break
           case "image":
+          case "profile":
             // 图片字段：如果是必填的，设置一个默认图片URL；否则设置空值
             if (field.required) {
               defaultValue = "https://via.placeholder.com/150x150?text=Image" // 使用完整的占位图片URL
@@ -708,45 +727,114 @@ export function useApiBuilderController({
     if (!currentDir || !appId) return
     
     try {
-      // 获取现有的分类
-      const existingCategories = currentDir.categories || []
+      console.log('🔍 保存分类数据:', newCats)
       
-      // 找出新增的分类
-      const newCategories = newCats.filter(newCat => 
-        !existingCategories.some(existingCat => existingCat.id === newCat.id)
-      )
+      // 简化逻辑：先删除所有现有分类，再重新创建
+      // 这样可以避免复杂的ID映射和层级关系问题
       
-      // 为每个新分类调用API
-      for (const category of newCategories) {
-        await api.recordCategories.createRecordCategory({
-          name: category.name,
-          order: newCats.indexOf(category),
-          enabled: true,
-          parentId: undefined // 暂时只支持一级分类
-        }, {
-          applicationId: appId,
-          directoryId: currentDir.id
-        })
-      }
-      
-      // 更新本地状态
-      const updatedDir = {
-        ...currentDir,
-        categories: newCats
-      }
-      
-      // 更新目录数据
-      setDirectoriesData(prev => ({
-        ...prev,
-        [currentModule?.id || '']: prev[currentModule?.id || '']?.map(dir => 
-          dir.id === currentDir.id ? updatedDir : dir
-        ) || []
-      }))
-      
-      toast({
-        description: locale === "zh" ? "分类保存成功" : "Categories saved successfully",
+      // 1. 获取并删除所有现有分类
+      const existingCategories = await api.recordCategories.getRecordCategories({
+        applicationId: appId,
+        directoryId: currentDir.id
       })
-      setOpenCategory(false)
+      
+      if (existingCategories.success && existingCategories.data?.categories) {
+        console.log('🗑️ 删除现有分类，数量:', existingCategories.data.categories.length)
+        
+        // 按层级倒序删除：先删除子分类，再删除父分类
+        const categories = existingCategories.data.categories
+        const sortedCategories = categories.sort((a: any, b: any) => (b.level || 1) - (a.level || 1))
+        
+        for (const category of sortedCategories) {
+          try {
+            console.log('🗑️ 删除分类:', category.name, 'level:', category.level)
+            await api.recordCategories.deleteRecordCategory(category.id)
+          } catch (error) {
+            console.warn('删除分类失败:', category.id, category.name, error)
+            // 如果删除失败，继续尝试删除其他分类
+          }
+        }
+      }
+      
+      // 2. 重新创建所有分类（按层级顺序）
+      const flatCategories = flattenCategories(newCats)
+      console.log('🔄 扁平化分类:', flatCategories)
+      
+      // 按层级分组
+      const levels = new Map()
+      flatCategories.forEach(category => {
+        const level = category.level || 1
+        if (!levels.has(level)) {
+          levels.set(level, [])
+        }
+        levels.get(level).push(category)
+      })
+      
+      // 存储新创建的ID映射
+      const idMap = new Map()
+      
+      // 按层级顺序创建分类
+      for (const level of Array.from(levels.keys()).sort()) {
+        const categoriesAtLevel = levels.get(level)
+        for (const category of categoriesAtLevel) {
+          console.log('➕ 创建分类:', category.name, 'level:', level)
+          
+          // 处理parentId - 使用新创建的ID
+          let parentId = null
+          if (category.parentId && idMap.has(category.parentId)) {
+            parentId = idMap.get(category.parentId)
+          }
+          
+          const response = await api.recordCategories.createRecordCategory({
+            name: category.name,
+            ...(parentId && { parentId: parentId }),
+            order: category.order || 0,
+            enabled: category.enabled !== false
+          }, {
+            applicationId: appId,
+            directoryId: currentDir.id
+          })
+          
+          if (response.success && response.data) {
+            // 存储新ID映射
+            idMap.set(category.tempId, response.data.id)
+            console.log('✅ 分类创建成功:', category.name, 'ID:', response.data.id)
+          } else {
+            console.error('❌ 分类创建失败:', category.name, response)
+          }
+        }
+      }
+      
+      // 3. 重新获取分类数据并更新本地状态
+      const updatedCategories = await api.recordCategories.getRecordCategories({
+        applicationId: appId,
+        directoryId: currentDir.id
+      })
+      
+      if (updatedCategories.success) {
+        // 将扁平数据转换为树形结构
+        const treeCategories = buildCategoryTree(updatedCategories.data?.categories || [])
+        
+        // 更新本地状态
+        const updatedDir = {
+          ...currentDir,
+          categories: treeCategories
+        } as any
+        
+        setDirectoriesData(prev => ({
+          ...prev,
+          [currentModule?.id || '']: prev[currentModule?.id || '']?.map(dir => 
+            dir.id === currentDir.id ? updatedDir : dir
+          ) || []
+        }))
+        
+        toast({
+          description: locale === "zh" ? "分类保存成功" : "Categories saved successfully",
+        })
+        setOpenCategory(false)
+      } else {
+        throw new Error(updatedCategories.error || "获取更新后的分类失败")
+      }
     } catch (error) {
       console.error("保存分类失败:", error)
       toast({
@@ -754,6 +842,76 @@ export function useApiBuilderController({
         variant: "destructive"
       })
     }
+  }
+  
+  // 将树形分类结构转换为扁平结构
+  function flattenCategories(categories: any[], parentId: string | null = null, level: number = 1): any[] {
+    const result: any[] = []
+    
+    categories.forEach((category, index) => {
+      // 为没有ID的分类生成临时ID
+      const tempId = category.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      const flatCategory = {
+        id: category.id,
+        tempId: tempId, // 临时ID，用于映射关系
+        name: category.name,
+        parentId,
+        level,
+        order: index,
+        enabled: category.enabled !== false
+      }
+      result.push(flatCategory)
+      
+      // 递归处理子分类
+      if (category.children && category.children.length > 0) {
+        const childCategories = flattenCategories(category.children, category.id || tempId, level + 1)
+        result.push(...childCategories)
+      }
+    })
+    
+    return result
+  }
+  
+  // 将扁平分类结构转换为树形结构
+  function buildCategoryTree(flatCategories: any[]): any[] {
+    const categoryMap = new Map()
+    const rootCategories: any[] = []
+    
+    // 创建分类映射
+    flatCategories.forEach(category => {
+      categoryMap.set(category.id, {
+        ...category,
+        children: []
+      })
+    })
+    
+    // 构建树形结构
+    flatCategories.forEach(category => {
+      const categoryNode = categoryMap.get(category.id)
+      
+      if (category.parentId && categoryMap.has(category.parentId)) {
+        // 有父分类，添加到父分类的children中
+        const parent = categoryMap.get(category.parentId)
+        parent.children.push(categoryNode)
+      } else {
+        // 没有父分类，是根分类
+        rootCategories.push(categoryNode)
+      }
+    })
+    
+    // 按order排序
+    const sortCategories = (categories: any[]) => {
+      categories.sort((a, b) => (a.order || 0) - (b.order || 0))
+      categories.forEach(category => {
+        if (category.children.length > 0) {
+          sortCategories(category.children)
+        }
+      })
+    }
+    
+    sortCategories(rootCategories)
+    return rootCategories
   }
 
   async function handleSingleDelete(rid: string) {
@@ -807,7 +965,7 @@ export function useApiBuilderController({
     try {
       const response = await api.records.bulkDeleteRecords(currentDir.id, selectedIds)
       
-      if (response.success) {
+      if (response.success && response.data) {
         const { deletedCount, failedCount } = response.data
         
         // 重新获取记录数据

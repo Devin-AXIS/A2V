@@ -208,32 +208,65 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
           return <span className="text-gray-400">{locale === "zh" ? "暂无图片" : "No image"}</span>
         }
         
-        return (
-          <div className="space-y-2">
-            <div className={`grid gap-2 ${validImages.length > 1 ? "grid-cols-2 md:grid-cols-3" : "grid-cols-1 max-w-xs"}`}>
-              {validImages.map((img, index) => (
-                <div key={index} className="relative">
-                  <img 
-                    src={img} 
-                    alt={`${locale === "zh" ? "图片" : "Image"} ${index + 1}`} 
-                    className="w-full h-24 rounded-lg object-cover border border-gray-200"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
-                      if (errorDiv) errorDiv.style.display = 'block'
-                    }}
-                  />
-                  <div className="text-xs text-gray-500 hidden bg-gray-100 p-2 rounded border text-center">
-                    {locale === "zh" ? "图片加载失败" : "Image failed to load"}
+        // 多图模式：折叠显示，最多显示3个
+        if (validImages.length > 1) {
+          const maxDisplay = 3
+          const displayImages = validImages.slice(0, maxDisplay)
+          const hiddenCount = validImages.length - maxDisplay
+          
+          return (
+            <div className="space-y-2">
+              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                {displayImages.map((img, index) => (
+                  <div key={index} className="relative">
+                    <img 
+                      src={img} 
+                      alt={`${locale === "zh" ? "图片" : "Image"} ${index + 1}`} 
+                      className="w-full h-24 rounded-lg object-cover border border-gray-200"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                        if (errorDiv) errorDiv.style.display = 'block'
+                      }}
+                    />
+                    <div className="text-xs text-gray-500 hidden bg-gray-100 p-2 rounded border text-center">
+                      {locale === "zh" ? "图片加载失败" : "Image failed to load"}
+                    </div>
                   </div>
+                ))}
+              </div>
+              {hiddenCount > 0 && (
+                <div className="text-xs text-gray-500">
+                  {locale === "zh" ? `还有 ${hiddenCount} 张图片未显示` : `${hiddenCount} more images not shown`}
                 </div>
-              ))}
-            </div>
-            {validImages.length > 1 && (
+              )}
               <div className="text-xs text-gray-500">
                 {locale === "zh" ? `共 ${validImages.length} 张图片` : `${validImages.length} images total`}
               </div>
-            )}
+            </div>
+          )
+        }
+        
+        // 单图模式：正常显示
+        return (
+          <div className="space-y-2">
+            <div className="grid gap-2 grid-cols-1 max-w-xs">
+              <div className="relative">
+                <img 
+                  src={validImages[0]} 
+                  alt={`${locale === "zh" ? "图片" : "Image"}`} 
+                  className="w-full h-24 rounded-lg object-cover border border-gray-200"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                    const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                    if (errorDiv) errorDiv.style.display = 'block'
+                  }}
+                />
+                <div className="text-xs text-gray-500 hidden bg-gray-100 p-2 rounded border text-center">
+                  {locale === "zh" ? "图片加载失败" : "Image failed to load"}
+                </div>
+              </div>
+            </div>
           </div>
         )
       case "video":

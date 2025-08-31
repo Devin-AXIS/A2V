@@ -11,7 +11,8 @@ import recordCategoriesRoute from "./modules/record-categories/routes"
 import { records } from "./routes/records"
 import { fieldDefs } from "./modules/field-defs/routes"
 import { directoryDefs } from "./modules/directory-defs/routes"
-import { relations } from "./modules/relations/routes"
+import relationRecordsRoute from "./modules/relation-records/routes"
+
 import { docsRoute } from "./docs/routes"
 
 const app = new Hono()
@@ -61,8 +62,8 @@ app.route("/api/field-defs", fieldDefs)
 // 目录定义管理路由
 app.route("/api/directory-defs", directoryDefs)
 
-// 关联表管理路由
-app.route("/api/relations", relations)
+// 关联关系管理路由
+app.route("/api/relation-records", relationRecordsRoute)
 
 // API 文档路由
 app.route("/docs", docsRoute)

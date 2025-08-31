@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { and, eq, desc, sql } from 'drizzle-orm'
 import { db } from '../db'
-import { dirUsers, directories, directoryDefs, fieldDefs } from '../../drizzle/schema'
+import { dirUsers, directories, directoryDefs, fieldDefs } from '../db/schema'
 import { getDirectoryMeta } from '../lib/meta'
 import { zodFromFields, zodFromFieldsPartial } from '../lib/zod-from-fields'
 import { runSerialize } from '../lib/processors'
@@ -260,7 +260,7 @@ records.post('/:dir', async (c) => {
       console.log('🔍 字段定义数量:', fieldDefinitions.length)
       console.log('🔍 字段定义详情:', fieldDefinitions.map(fd => ({ key: fd.key, type: fd.type })))
 
-      const propsData = input.props || input
+      const propsData = input.props || input.data || input
       console.log('🔍 输入数据:', propsData)
 
       // 特别检查g_hcj1字段
@@ -321,7 +321,7 @@ records.post('/:dir', async (c) => {
       }, 201)
     } else {
       // 没有字段定义时，直接使用输入数据
-      const propsData = input.props || input
+      const propsData = input.props || input.data || input
       console.log('🔍 无字段定义，直接使用数据:', propsData)
 
       // 写入目录标识，确保跨目录隔离

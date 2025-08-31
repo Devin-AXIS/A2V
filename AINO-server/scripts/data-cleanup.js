@@ -28,7 +28,7 @@ const pool = new Pool({
 
 class DataCleanup {
   constructor() {
-    this.tables = ['dir_users', 'dir_jobs', 'relations'];
+    this.tables = ['dir_users'];
     this.safetyConfig = {
       dryRun: false,
       requireConfirmation: true,

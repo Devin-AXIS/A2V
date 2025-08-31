@@ -83,7 +83,7 @@ export function createConfigModule(): ModuleModel {
       },
       {
         id: uid(),
-        name: "分类管理",
+        name: "内容分类管理",
         type: "category",
         supportsCategory: true,
         fields: [

@@ -329,7 +329,7 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
       )
     case "relation_one":
     case "relation_many":
-      return <RelationInput app={app} field={field} value={value} onChange={onChange} />
+      return <RelationInput app={app} field={field} value={value} onChange={onChange} currentRecordId={record.id} />
     case "experience":
       return <ExperienceEditor value={value || []} onChange={onChange} className="bg-white rounded-md p-2" field={field} />
 

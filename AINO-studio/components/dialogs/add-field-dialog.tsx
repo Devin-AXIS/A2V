@@ -83,6 +83,8 @@ export type FieldDraft = {
   // user-select preset extras
   userAllowMultiple?: boolean
   userNotifyNew?: boolean
+  // default field protection
+  isDefault?: boolean
   // skills preset extras
   skillsConfig?: {
     allowedCategories: string[]
@@ -391,6 +393,7 @@ export function AddFieldDialog({
   const [required, setRequired] = useState(false)
   const [unique, setUnique] = useState(false)
   const [showInList, setShowInList] = useState(true)
+  const [isDefault, setIsDefault] = useState(false)
   const [categoryId, setCategoryId] = useState<string>("")
   const [relationTargetId, setRelationTargetId] = useState<string>("")
   const [defaultRaw, setDefaultRaw] = useState<string>("")
@@ -560,6 +563,7 @@ export function AddFieldDialog({
       setRequired(!!initialDraft.required)
       setUnique(!!initialDraft.unique)
       setShowInList(initialDraft.showInList !== false)
+      setIsDefault(!!initialDraft.isDefault)
       setCategoryId(initialDraft.categoryId ?? "")
       setOptions(initialDraft.options ? [...initialDraft.options] : [])
       setDefaultRaw(initialDraft.defaultRaw || "")
@@ -702,6 +706,7 @@ export function AddFieldDialog({
     setRequired(false)
     setUnique(false)
     setShowInList(true)
+    setIsDefault(false)
     setCategoryId("")
     setRelationTargetId("")
     setDefaultRaw("")
@@ -991,16 +996,22 @@ export function AddFieldDialog({
                       key={tp}
                       type="button"
                       onClick={() => {
-                        setType(tp)
-                        setPreset(null)
+                        if (!isDefault) {
+                          setType(tp)
+                          setPreset(null)
+                        }
                       }}
+                      disabled={isDefault}
                       className={cn(
-                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left bg-white/70 hover:bg-white/90 transition",
-                        type === tp && !preset
+                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
+                        isDefault 
+                          ? "bg-gray-100 cursor-not-allowed opacity-60"
+                          : "bg-white/70 hover:bg-white/90",
+                        type === tp && !preset && !isDefault
                           ? "outline outline-2 outline-blue-200 border-blue-200"
                           : "border-white/60",
                       )}
-                      title={typeNames[tp] || tp}
+                      title={isDefault ? (locale === "zh" ? "默认字段类型不允许修改" : "Default field type cannot be modified") : (typeNames[tp] || tp)}
                     >
                       {TYPE_ICON[tp]}
                       <span className="text-sm">{typeNames[tp] || tp}</span>
@@ -1017,16 +1028,22 @@ export function AddFieldDialog({
                       key={tp}
                       type="button"
                       onClick={() => {
-                        setType(tp)
-                        setPreset(null)
+                        if (!isDefault) {
+                          setType(tp)
+                          setPreset(null)
+                        }
                       }}
+                      disabled={isDefault}
                       className={cn(
-                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left bg-white/70 hover:bg-white/90 transition",
-                        type === tp && !preset
+                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
+                        isDefault 
+                          ? "bg-gray-100 cursor-not-allowed opacity-60"
+                          : "bg-white/70 hover:bg-white/90",
+                        type === tp && !preset && !isDefault
                           ? "outline outline-2 outline-blue-200 border-blue-200"
                           : "border-white/60",
                       )}
-                      title={typeNames[tp] || tp}
+                      title={isDefault ? (locale === "zh" ? "默认字段类型不允许修改" : "Default field type cannot be modified") : (typeNames[tp] || tp)}
                     >
                       {TYPE_ICON[tp]}
                       <span className="text-sm">{typeNames[tp] || tp}</span>
@@ -1037,14 +1054,20 @@ export function AddFieldDialog({
                       key={p.key}
                       type="button"
                       onClick={() => {
-                        setPreset(p.key)
-                        setType(p.baseType)
+                        if (!isDefault) {
+                          setPreset(p.key)
+                          setType(p.baseType)
+                        }
                       }}
+                      disabled={isDefault}
                       className={cn(
-                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left bg-white/70 hover:bg-white/90 transition",
-                        preset === p.key ? "outline outline-2 outline-blue-200 border-blue-200" : "border-white/60",
+                        "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
+                        isDefault 
+                          ? "bg-gray-100 cursor-not-allowed opacity-60"
+                          : "bg-white/70 hover:bg-white/90",
+                        preset === p.key && !isDefault ? "outline outline-2 outline-blue-200 border-blue-200" : "border-white/60",
                       )}
-                      title={p.label}
+                      title={isDefault ? (locale === "zh" ? "默认字段类型不允许修改" : "Default field type cannot be modified") : p.label}
                     >
                       {PRESET_ICON[p.key]}
                       <div className="flex-1 text-left">
@@ -1091,9 +1114,16 @@ export function AddFieldDialog({
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
                   placeholder={i18n.keyPh}
-                  className={cn("bg-white/80", keyError && "border-red-300")}
+                  disabled={isDefault}
+                  className={cn("bg-white/80", keyError && "border-red-300", isDefault && "bg-gray-100 cursor-not-allowed")}
                 />
                 {keyError && <div className="text-xs text-red-600">{keyError}</div>}
+                {isDefault && (
+                  <div className="text-xs text-amber-600 flex items-center gap-1">
+                    <Shield className="size-3" />
+                    {locale === "zh" ? "默认字段的标识符不允许修改" : "Default field key cannot be modified"}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2436,6 +2466,7 @@ export function AddFieldDialog({
                 required,
                 unique,
                 showInList,
+                isDefault,
                 categoryId: categoryId || undefined,
                 options:
                   type === "select" || type === "multiselect" ? options.filter((o) => o.trim() !== "") : undefined,
@@ -2448,6 +2479,8 @@ export function AddFieldDialog({
                     : undefined,
                 relationDisplayFieldKey: rel.displayFieldKey || null,
                 relationBidirectional: rel.bidirectional,
+                relationReverseFieldKey: rel.reverseFieldKey || null,
+                relationOnDelete: rel.onDelete || 'restrict',
                 relationAllowDuplicate: rel.allowDuplicate,
                 preset: preset || undefined,
                 ...(type === "date" ? { dateMode } : {}),

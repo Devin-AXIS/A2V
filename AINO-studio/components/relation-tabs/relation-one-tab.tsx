@@ -26,14 +26,28 @@ export function RelationOneTab({
   const selectedId = (rec as any)[field.key] || null
   const selectedRecord = selectedId && targetDir ? targetDir.records.find((r) => r.id === selectedId) : null
 
+  // Debug logging
+  console.log("RelationOneTab Debug:", {
+    fieldKey: field.key,
+    fieldType: field.type,
+    targetDirId,
+    targetDir: targetDir ? { id: targetDir.id, name: targetDir.name, recordsCount: targetDir.records?.length } : null,
+    app: app ? { id: app.id, modulesCount: app.modules?.length } : null
+  })
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [targetDirRecords, setTargetDirRecords] = useState<RecordRow[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
 
   // Load target directory records
   const loadTargetDirRecords = async () => {
-    if (!targetDirId || recordsLoading) return
+    // API调用前检查必要参数的有效性
+    if (!targetDirId || recordsLoading) {
+      console.log("RelationOneTab: Skipping record load", { targetDirId, recordsLoading })
+      return
+    }
     
+    console.log("RelationOneTab: Loading records for targetDirId:", targetDirId)
     setRecordsLoading(true)
     try {
       const response = await api.records.listRecords(targetDirId, {
@@ -41,10 +55,15 @@ export function RelationOneTab({
         pageSize: 100
       })
       
-      if (response.success && response.data?.records) {
-        setTargetDirRecords(response.data.records)
+      console.log("RelationOneTab: API response:", response)
+      
+      if (response.success && response.data) {
+        // 后端返回的data直接是记录数组，不是{records: [...]}
+        const records = Array.isArray(response.data) ? response.data : []
+        setTargetDirRecords(records)
+        console.log("RelationOneTab: Loaded records:", records.length)
       } else {
-        console.error("Failed to load target directory records:", response.error)
+        console.error("Failed to load target directory records:", response.error || "Unknown error")
         setTargetDirRecords([])
       }
     } catch (error) {

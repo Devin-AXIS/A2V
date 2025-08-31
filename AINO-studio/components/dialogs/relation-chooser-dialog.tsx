@@ -79,7 +79,7 @@ export function RelationChooserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white/80 backdrop-blur" aria-describedby="relation-chooser-description">
+      <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] bg-white/80 backdrop-blur" aria-describedby="relation-chooser-description">
         <DialogHeader>
           <DialogTitle>{locale === "zh" ? `选择 ${targetDir.name}` : `Select ${targetDir.name}`}</DialogTitle>
         </DialogHeader>
@@ -92,7 +92,7 @@ export function RelationChooserDialog({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="my-2 bg-white/70"
         />
-        <ScrollArea className="h-[400px] border rounded-md bg-white/60">
+        <ScrollArea className="h-[300px] border rounded-md bg-white/60">
           <div className="p-2">
             {isMulti ? (
               <div className="space-y-1">

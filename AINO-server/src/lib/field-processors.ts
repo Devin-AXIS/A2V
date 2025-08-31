@@ -57,7 +57,8 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
       }
       
       // 默认文本字段验证
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
       if (value && typeof value !== 'string') {
@@ -236,12 +237,13 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 邮箱字段
   email: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
+      if (value && stringValue !== '') {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) {
+        if (!emailRegex.test(stringValue)) {
           return { valid: false, error: '邮箱格式不正确' }
         }
       }
@@ -254,12 +256,13 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 手机号字段
   phone: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
+      if (value && stringValue !== '') {
         const phoneRegex = /^1[3-9]\d{9}$/
-        if (!phoneRegex.test(value.replace(/\s/g, ''))) {
+        if (!phoneRegex.test(stringValue.replace(/\s/g, ''))) {
           return { valid: false, error: '手机号格式不正确' }
         }
       }
@@ -272,7 +275,8 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 选择字段
   select: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
       // 对于preset字段，跳过options验证，因为选项由前端组件提供
@@ -347,11 +351,12 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 日期字段
   date: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
-        const date = new Date(value)
+      if (value && stringValue !== '') {
+        const date = new Date(stringValue)
         if (isNaN(date.getTime())) {
           return { valid: false, error: '日期格式不正确' }
         }
@@ -359,8 +364,9 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
       return { valid: true }
     },
     transform: (value) => {
-      if (!value || value.trim() === '') return null
-      const date = new Date(value)
+      const stringValue = value ? String(value).trim() : ''
+      if (!value || stringValue === '') return null
+      const date = new Date(stringValue)
       return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0]
     },
     format: (value) => value
@@ -369,11 +375,12 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 日期时间字段
   datetime: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
-        const date = new Date(value)
+      if (value && stringValue !== '') {
+        const date = new Date(stringValue)
         if (isNaN(date.getTime())) {
           return { valid: false, error: '日期时间格式不正确' }
         }
@@ -381,8 +388,9 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
       return { valid: true }
     },
     transform: (value) => {
-      if (!value || value.trim() === '') return null
-      const date = new Date(value)
+      const stringValue = value ? String(value).trim() : ''
+      if (!value || stringValue === '') return null
+      const date = new Date(stringValue)
       return isNaN(date.getTime()) ? null : date.toISOString()
     },
     format: (value) => value
@@ -406,7 +414,8 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 文本域字段
   textarea: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
       if (value && typeof value !== 'string') {
@@ -569,7 +578,8 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 表格字段（兼容text类型）
   table: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
       if (value && typeof value !== 'string') {
@@ -1030,12 +1040,13 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 时间字段
   time: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      const stringValue = value ? String(value).trim() : ''
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
+      if (value && stringValue !== '') {
         const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
-        if (!timeRegex.test(value.trim())) {
+        if (!timeRegex.test(stringValue)) {
           return { valid: false, error: '时间格式不正确，应为HH:mm格式' }
         }
       }
@@ -1144,13 +1155,16 @@ export const baseFieldProcessors: Record<FieldType, FieldProcessor> = {
   // 一对一关联字段
   relation_one: {
     validate: (value, fieldDef) => {
-      if (fieldDef.required && (!value || value.trim() === '')) {
+      // 确保value是字符串类型
+      const stringValue = value ? String(value).trim() : ''
+      
+      if (fieldDef.required && (!value || stringValue === '')) {
         return { valid: false, error: '此字段为必填项' }
       }
-      if (value && value.trim() !== '') {
+      if (value && stringValue !== '') {
         // 验证UUID格式
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-        if (!uuidRegex.test(value.trim())) {
+        if (!uuidRegex.test(stringValue)) {
           return { valid: false, error: '关联ID格式不正确' }
         }
       }

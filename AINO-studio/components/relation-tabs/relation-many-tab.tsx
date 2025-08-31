@@ -57,9 +57,11 @@ export function RelationManyTab({
       
       console.log("RelationManyTab: API response:", response)
       
-      if (response.success && response.data?.records) {
-        setTargetDirRecords(response.data.records)
-        console.log("RelationManyTab: Loaded records:", response.data.records.length)
+      if (response.success && response.data) {
+        // 后端返回的data直接是记录数组，不是{records: [...]}
+        const records = Array.isArray(response.data) ? response.data : []
+        setTargetDirRecords(records)
+        console.log("RelationManyTab: Loaded records:", records.length)
       } else {
         console.error("Failed to load target directory records:", response.error)
         setTargetDirRecords([])

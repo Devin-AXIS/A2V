@@ -58,7 +58,7 @@ export function CategoryManager({ dir, onChange }: Props) {
   }
 
   function add(level: 0 | 1 | 2, parent?: Cat, nameArg?: string) {
-    const name = (nameArg ?? (prompt(locale === "zh" ? "分类名称" : "Category Name") || "")).trim()
+    const name = (nameArg ?? (prompt(locale === "zh" ? "内容分类名称" : "Content Category Name") || "")).trim()
     if (!name) return
     const node: Cat = { id: uid(), name, children: [] }
     const next = structuredClone(cats)
@@ -68,14 +68,14 @@ export function CategoryManager({ dir, onChange }: Props) {
     commit(next)
   }
   function rename(node: Cat) {
-    const nv = (prompt(locale === "zh" ? "分类名称" : "Category Name", node.name) || "").trim()
+    const nv = (prompt(locale === "zh" ? "内容分类名称" : "Content Category Name", node.name) || "").trim()
     if (!nv) return
     const next = structuredClone(cats)
     find(next, node.id)!.name = nv
     commit(next)
   }
   function remove(node: Cat) {
-    if (!confirm(locale === "zh" ? "删除该分类及其子级？" : "Delete this category and all its subcategories?")) return
+    if (!confirm(locale === "zh" ? "删除该内容分类及其子级？" : "Delete this content category and all its subcategories?")) return
     const next = structuredClone(cats)
     del(next, node.id)
     commit(next)
@@ -90,7 +90,7 @@ export function CategoryManager({ dir, onChange }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <div className="text-sm font-medium">
-            {locale === "zh" ? "分类管理（最多 3 级）" : "Category Management (Max 3 Levels)"}
+            {locale === "zh" ? "内容分类管理（最多 3 级）" : "Content Category Management (Max 3 Levels)"}
           </div>
           <div className="text-xs text-muted-foreground">
             {locale === "zh" ? "路径：" : "Path: "}L1 {sel[0]?.name || (locale === "zh" ? "未选" : "None")} {" / "} L2 {sel[1]?.name || (locale === "zh" ? "未选" : "None")}

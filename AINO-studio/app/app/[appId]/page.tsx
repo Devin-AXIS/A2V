@@ -17,6 +17,7 @@ import { BackgroundLights } from "@/components/background-lights"
 import { useApiBuilderController } from "@/hooks/use-api-builder-controller"
 import { DataTable } from "./data-table"
 import { FieldManager } from "./field-manager"
+
 import { ApiRecordDrawer } from "./api-record-drawer"
 import { RenameDialog } from "@/components/dialogs/rename-dialog"
 import { CategoryDialog } from "@/components/dialogs/category-dialog"
@@ -435,6 +436,7 @@ export default function BuilderPage() {
                     ]}
                     addText={t("addRecord")}
                     onAdd={c.addRecord}
+                    onCategoryManage={() => c.setOpenCategory(true)}
                     searchPlaceholder={t("searchPlaceholder")}
                     catLabel={t("filterByCategory")}
                     statusLabel={t("filterByStatus")}
@@ -491,6 +493,7 @@ export default function BuilderPage() {
                   />
                 ) : null
               }
+
             />
           </>
         )}
@@ -536,7 +539,7 @@ export default function BuilderPage() {
         i18n={
           locale === "zh"
             ? {
-                title: "配置三级分类",
+                title: "配置三级内容分类",
                 l1: "一级分类",
                 l2: "二级分类",
                 l3: "三级分类",
@@ -548,9 +551,11 @@ export default function BuilderPage() {
                 save: "保存",
                 cancel: "取消",
                 preview: "预览：",
+                delete: "删除",
+                confirmDelete: "确认删除内容分类",
               }
             : {
-                title: "Configure 3-level Categories",
+                title: "Configure 3-level Content Categories",
                 l1: "Level 1",
                 l2: "Level 2",
                 l3: "Level 3",
@@ -562,6 +567,8 @@ export default function BuilderPage() {
                 save: "Save",
                 cancel: "Cancel",
                 preview: "Preview:",
+                delete: "Delete",
+                confirmDelete: "Confirm delete content category",
               }
         }
       />
@@ -684,7 +691,7 @@ export default function BuilderPage() {
         onOpenChange={c.setOpenCategorySelection}
         categories={c.currentDir?.categories || []}
         onConfirm={(categoryPath) => c.createRecordWithCategory(categoryPath)}
-        title={locale === "zh" ? "选择记录分类" : "Select Record Category"}
+        title={locale === "zh" ? "选择内容分类" : "Select Content Category"}
       />
     </main>
   )

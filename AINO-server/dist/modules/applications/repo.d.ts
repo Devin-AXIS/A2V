@@ -5,17 +5,17 @@ export declare class ApplicationRepository {
     }): Promise<{
         id: string;
         name: string;
-        slug: string;
-        version: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        slug: string;
         ownerId: string;
+        status: string;
         template: string | null;
         config: unknown;
         databaseConfig: unknown;
         isPublic: boolean | null;
+        version: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     findMany(query: GetApplicationsQuery & {
         userId: string;

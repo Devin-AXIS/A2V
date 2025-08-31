@@ -12,6 +12,7 @@ function toDraft(app: AppModel, dir: DirectoryModel, f: FieldModel): FieldDraft 
     required: !!f.required,
     unique: !!f.unique,
     showInList: f.showInList !== false,
+    isDefault: f.isDefault || false,
     categoryId: (f as any).categoryId || undefined,
     options: Array.isArray(f.options) ? [...f.options] : undefined,
     defaultRaw: "",

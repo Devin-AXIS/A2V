@@ -81,24 +81,7 @@ async function createDefaultDirectories() {
         },
         order: 1,
       },
-      {
-        name: '用户注册',
-        type: 'form',
-        supportsCategory: false,
-        config: {
-          description: '用户注册表单',
-          fields: [
-            { key: 'name', label: '姓名', type: 'text', required: true, showInList: false, showInForm: true },
-            { key: 'email', label: '邮箱', type: 'email', required: true, showInList: false, showInForm: true },
-            { key: 'phone', label: '手机号', type: 'phone', required: false, showInList: false, showInForm: true },
-            { key: 'password', label: '密码', type: 'password', required: true, showInList: false, showInForm: true },
-            { key: 'confirmPassword', label: '确认密码', type: 'password', required: true, showInList: false, showInForm: true },
-            { key: 'department', label: '部门', type: 'select', required: false, showInList: false, showInForm: true },
-            { key: 'position', label: '职位', type: 'text', required: false, showInList: false, showInForm: true },
-          ]
-        },
-        order: 2,
-      },
+
     ]
     
     console.log('📝 创建默认目录...')

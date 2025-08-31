@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, sql } from 'drizzle-orm'
 import { db } from '../../db'
-import { fieldDefs, directoryDefs } from '../../../drizzle/schema'
+import { fieldDefs, directoryDefs } from '../../db/schema'
 import type { FieldDef } from '../../lib/processors'
 
 export interface ListFieldDefsQuery {
@@ -22,6 +22,7 @@ export interface CreateFieldDefData {
   readRoles?: string[]
   writeRoles?: string[]
   required?: boolean
+
 }
 
 export interface UpdateFieldDefData extends Partial<CreateFieldDefData> {
@@ -29,6 +30,87 @@ export interface UpdateFieldDefData extends Partial<CreateFieldDefData> {
 }
 
 export class FieldDefsService {
+  // 创建反向关联字段
+  private async createReverseRelationField(params: {
+    sourceField: any
+    targetDirId: string
+    reverseFieldKey: string
+    relationType: string
+    onDelete: string
+  }) {
+    const { sourceField, targetDirId, reverseFieldKey, relationType, onDelete } = params
+    
+    console.log('🔍 开始创建反向关联字段:', {
+      sourceFieldKey: sourceField.key,
+      sourceDirectoryId: sourceField.directoryId,
+      targetDirId,
+      reverseFieldKey
+    })
+    
+    // 首先通过目录ID找到对应的目录定义ID
+    const [targetDirectoryDef] = await db.select()
+      .from(directoryDefs)
+      .where(eq(directoryDefs.directoryId, targetDirId))
+      .limit(1)
+    
+    if (!targetDirectoryDef) {
+      console.error('❌ 找不到目标目录定义:', targetDirId)
+      throw new Error(`目标目录定义不存在: ${targetDirId}`)
+    }
+    
+    console.log('✅ 找到目标目录定义:', {
+      directoryId: targetDirId,
+      directoryDefId: targetDirectoryDef.id,
+      title: targetDirectoryDef.title
+    })
+    
+    // 检查反向字段是否已存在
+    const existingReverseField = await db.select()
+      .from(fieldDefs)
+      .where(and(
+        eq(fieldDefs.directoryId, targetDirectoryDef.id),
+        eq(fieldDefs.key, reverseFieldKey)
+      ))
+      .limit(1)
+    
+    if (existingReverseField[0]) {
+      console.log(`反向关联字段 "${reverseFieldKey}" 已存在，跳过创建`)
+      return
+    }
+    
+    // 确定反向字段的类型
+    const reverseType = relationType === 'relation_one' ? 'relation_many' : 'relation_one'
+    
+    // 创建反向关联字段
+    const [reverseField] = await db.insert(fieldDefs)
+      .values({
+        directoryId: targetDirectoryDef.id, // 使用目录定义ID，不是目录ID
+        key: reverseFieldKey,
+        kind: 'relation',
+        type: reverseType,
+        schema: {
+          label: `关联到 ${sourceField.key}`,
+          description: `自动生成的反向关联字段，关联到 ${sourceField.key}`,
+        },
+        relation: {
+          targetDirId: sourceField.directoryId,
+          mode: reverseType === 'relation_one' ? 'one' : 'many',
+          displayFieldKey: null,
+          bidirectional: true,
+          reverseFieldKey: sourceField.key,
+          onDelete: onDelete
+        },
+        validators: {},
+        readRoles: ['admin', 'member'],
+        writeRoles: ['admin'],
+        required: false,
+      })
+      .returning()
+    
+    console.log(`✅ 成功创建反向关联字段: ${reverseFieldKey} -> ${sourceField.key}`)
+    return reverseField
+  }
+
   // 获取字段定义列表
   async listFieldDefs(query: ListFieldDefsQuery) {
     const { directoryId, page, limit } = query
@@ -113,8 +195,46 @@ export class FieldDefsService {
         readRoles: data.readRoles || ['admin', 'member'],
         writeRoles: data.writeRoles || ['admin'],
         required: data.required || false,
+
       })
       .returning()
+    
+    // 如果是双向关联字段，在目标目录中创建反向关联字段
+    console.log('🔍 检查双向关联配置:', {
+      bidirectional: data.relation?.bidirectional,
+      targetDirId: data.relation?.targetDirId,
+      reverseFieldKey: data.relation?.reverseFieldKey,
+      relation: data.relation
+    })
+    
+    if (data.relation?.bidirectional && data.relation?.targetDirId && data.relation?.reverseFieldKey) {
+      console.log('✅ 开始创建反向关联字段:', {
+        sourceFieldKey: newField.key,
+        targetDirId: data.relation.targetDirId,
+        reverseFieldKey: data.relation.reverseFieldKey,
+        relationType: data.type
+      })
+      
+      try {
+        await this.createReverseRelationField({
+          sourceField: newField,
+          targetDirId: data.relation.targetDirId,
+          reverseFieldKey: data.relation.reverseFieldKey,
+          relationType: data.type,
+          onDelete: data.relation.onDelete || 'restrict'
+        })
+        console.log('✅ 反向关联字段创建成功')
+      } catch (error) {
+        console.error('❌ 创建反向关联字段失败:', error)
+        // 不抛出错误，避免影响主字段创建
+      }
+    } else {
+      console.log('⏭️ 跳过反向关联字段创建:', {
+        reason: !data.relation?.bidirectional ? '非双向关联' : 
+                !data.relation?.targetDirId ? '缺少目标目录ID' : 
+                !data.relation?.reverseFieldKey ? '缺少反向字段名' : '未知原因'
+      })
+    }
     
     return newField as FieldDef
   }
@@ -126,6 +246,8 @@ export class FieldDefsService {
     if (!existingField) {
       return null
     }
+    
+
     
     // 如果更新key，检查是否与其他字段冲突
     if (data.key && data.key !== existingField.key) {
@@ -188,6 +310,8 @@ export class FieldDefsService {
     
     return records as FieldDef[]
   }
+
+
 
   // 验证字段定义数据
   validateFieldDefData(data: CreateFieldDefData): string[] {

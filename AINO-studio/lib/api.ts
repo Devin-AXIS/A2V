@@ -575,7 +575,17 @@ export const recordsApi = {
     filter?: string
   } = {}): Promise<ApiResponse<any>> {
     const searchParams = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => {
+    
+    // 转换参数名：pageSize -> limit
+    const backendParams = {
+      page: params.page,
+      limit: params.pageSize, // 后端期望的是limit参数
+      sort: params.sort,
+      fields: params.fields,
+      filter: params.filter
+    }
+    
+    Object.entries(backendParams).forEach(([key, value]) => {
       if (value !== undefined) {
         searchParams.append(key, value.toString())
       }

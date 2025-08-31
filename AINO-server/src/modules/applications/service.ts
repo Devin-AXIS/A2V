@@ -1,5 +1,5 @@
 import { db } from "../../db"
-import { applications, modules, directories } from "../../db/schema"
+import { applications, modules, directories, directoryDefs, fieldDefs, fieldCategories } from "../../db/schema"
 import { eq, and, desc } from "drizzle-orm"
 import type { CreateApplicationRequest, UpdateApplicationRequest, GetApplicationsQuery } from "./dto"
 import { getAllSystemModules } from "../../lib/system-modules"
@@ -68,60 +68,130 @@ export class ApplicationService {
 
   // 创建默认目录
   private async createDefaultDirectories(applicationId: string, modules: any[]) {
-    const defaultDirectories = [
-      // 用户管理模块的默认目录 - 管理系统用户
-      {
-        name: '用户列表',
-        type: 'table' as const,
-        supportsCategory: false,
-        config: {
-          description: '系统用户管理列表',
-          fields: [
-            { key: 'name', label: '姓名', type: 'text', required: true, showInList: true, showInForm: true },
-            { key: 'email', label: '邮箱', type: 'email', required: true, showInList: true, showInForm: true },
-            { key: 'roles', label: '角色', type: 'multiselect', required: true, showInList: true, showInForm: true, options: ['admin', 'user', 'editor', 'viewer'] },
-            { key: 'status', label: '状态', type: 'select', required: true, showInList: true, showInForm: true, options: ['active', 'inactive', 'pending'] },
-            { key: 'avatar', label: '头像', type: 'image', required: false, showInList: true, showInForm: true },
-            { key: 'lastLoginAt', label: '最后登录', type: 'datetime', required: false, showInList: true, showInForm: false },
-            { key: 'createdAt', label: '创建时间', type: 'datetime', required: false, showInList: true, showInForm: false },
-          ]
-        },
-        order: 0,
-      },
-      {
-        name: '用户注册',
-        type: 'form' as const,
-        supportsCategory: false,
-        config: {
-          description: '系统用户注册表单',
-          fields: [
-            { key: 'name', label: '姓名', type: 'text', required: true, showInList: false, showInForm: true },
-            { key: 'email', label: '邮箱', type: 'email', required: true, showInList: false, showInForm: true },
-            { key: 'password', label: '密码', type: 'password', required: true, showInList: false, showInForm: true },
-            { key: 'confirmPassword', label: '确认密码', type: 'password', required: true, showInList: false, showInForm: true },
-            { key: 'roles', label: '角色', type: 'multiselect', required: true, showInList: false, showInForm: true, options: ['user', 'editor', 'viewer'] },
-          ]
-        },
-        order: 1,
-      },
-    ]
-
     // 找到用户管理模块
     const userModule = modules.find(m => m.name === '用户管理')
     if (userModule) {
-      for (const directory of defaultDirectories) {
-        await db.insert(directories).values({
-          applicationId,
-          moduleId: userModule.id,
-          name: directory.name,
-          type: directory.type,
-          supportsCategory: directory.supportsCategory,
-          config: directory.config,
-          order: directory.order,
-          isEnabled: true,
-        })
-      }
+      // 创建用户列表目录
+      const [createdDirectory] = await db.insert(directories).values({
+        applicationId,
+        moduleId: userModule.id,
+        name: '用户列表',
+        type: 'table',
+        supportsCategory: false,
+        config: {
+          description: '系统用户管理列表',
+          fields: []
+        },
+        order: 0,
+        isEnabled: true,
+      }).returning()
+
+      // 创建目录定义
+      const [directoryDef] = await db.insert(directoryDefs).values({
+        applicationId,
+        directoryId: createdDirectory.id,
+        title: '用户列表',
+        slug: `user-list-${Date.now()}`,
+        status: 'active',
+      }).returning()
+
+      // 自动创建用户模块的默认字段分类
+      await this.createUserModuleFieldCategories(applicationId, createdDirectory.id)
+      
+      // 自动创建用户模块的默认字段
+      await this.createUserModuleDefaultFields(directoryDef.id, createdDirectory.id)
     }
+  }
+
+  // 创建用户模块字段分类
+  private async createUserModuleFieldCategories(applicationId: string, directoryId: string) {
+    const categories = [
+      {
+        applicationId,
+        directoryId,
+        name: '基础信息',
+        description: '用户基本信息',
+        order: 1,
+        system: true,
+        enabled: true,
+      },
+      {
+        applicationId,
+        directoryId,
+        name: '用户履历',
+        description: '用户经历和履历',
+        order: 2,
+        system: true,
+        enabled: true,
+      },
+      {
+        applicationId,
+        directoryId,
+        name: '实名与认证',
+        description: '身份认证信息',
+        order: 3,
+        system: true,
+        enabled: true,
+      }
+    ]
+
+    await db.insert(fieldCategories).values(categories)
+  }
+
+  // 创建用户模块默认字段
+  private async createUserModuleDefaultFields(directoryDefId: string, directoryId: string) {
+    // 先获取刚创建的分类ID
+    const categories = await db.select().from(fieldCategories).where(eq(fieldCategories.directoryId, directoryId))
+    const categoryMap: Record<string, string> = {}
+    categories.forEach(cat => {
+      categoryMap[cat.name] = cat.id
+    })
+
+    const fields = [
+      // 基础信息 (10个字段)
+      { key: 'avatar', label: '头像', type: 'profile', required: true, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'name', label: '姓名', type: 'text', required: true, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'email', label: '邮箱', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'phone_number', label: '手机号', type: 'text', required: true, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'gender', label: '性别', type: 'select', required: true, showInList: true, showInForm: true, options: ['男', '女', '其他'], category: '基础信息' },
+      { key: 'birthday', label: '生日', type: 'date', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'city', label: '居住城市', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'industry', label: '行业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'occupation', label: '职业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      { key: 'bio', label: '个人介绍', type: 'textarea', required: false, showInList: true, showInForm: true, category: '基础信息' },
+      
+      // 用户履历 (7个字段)
+      { key: 'work_exp', label: '工作经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      { key: 'edu_exp', label: '教育经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      { key: 'proj_exp', label: '项目经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      { key: 'honors', label: '荣誉证书', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      { key: 'skills', label: '技能', type: 'multiselect', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      { key: 'zodiac_sign', label: '星座', type: 'select', required: false, showInList: true, showInForm: true, options: ['白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座'], category: '用户履历' },
+      { key: 'user_id', label: '用户ID', type: 'text', required: false, showInList: true, showInForm: true, category: '用户履历' },
+      
+      // 实名与认证 (2个字段)
+      { key: 'realname_status', label: '实名认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' },
+      { key: 'socid_status', label: '社会身份认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' }
+    ]
+
+    const fieldValues = fields.map(field => ({
+      directoryId: directoryDefId,
+      key: field.key,
+      kind: 'primitive',
+      type: field.type,
+      schema: {
+        label: field.label,
+        showInList: field.showInList,
+        showInForm: field.showInForm,
+        options: field.options || [],
+      },
+      required: field.required || false,
+      readRoles: ['admin', 'member'],
+      writeRoles: ['admin'],
+      categoryId: categoryMap[field.category] || null, // 添加分类ID关联
+    }))
+
+    await db.insert(fieldDefs).values(fieldValues)
   }
 
   // 获取应用列表
