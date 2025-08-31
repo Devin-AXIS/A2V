@@ -434,43 +434,31 @@ export function useApiBuilderController({
     }
   }
 
-  function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
+  async function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
     if (!application) return
     if (!can("edit")) return
     
     try {
-      // 使用内置模块模板创建模块
-      const factory = (builtinModules as any)[payload.templateKey] as () => ModuleModel
-      const module = factory ? factory() : builtinModules.custom()
-      
-      // 设置模块名称和图标
-      if (payload.name.trim()) module.name = payload.name.trim()
-      if (payload.icon) module.icon = payload.icon
-      
-      // 添加到应用模块列表
-      const nextApp = structuredClone(application)
-      if (!nextApp.modules) {
-        nextApp.modules = []
-      }
-      nextApp.modules.push(module)
-      
-      // 保存到本地存储
-      const store = getStore()
-      const appIndex = store.apps.findIndex(a => a.id === application.id)
-      if (appIndex !== -1) {
-        store.apps[appIndex] = nextApp
-        saveStore(store)
-      }
-      
-      // 更新本地状态
-      setModuleId(module.id)
-      setDirId(module.directories[0]?.id || null)
-      setOpenAddModule(false)
-      
-      toast({
-        title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
-        description: locale === "zh" ? `模块 "${module.name}" 已创建` : `Module "${module.name}" has been created`,
+      // 调用后端API安装模块
+      const response = await api.modules.installModule(application.id, {
+        moduleKey: payload.templateKey,
+        moduleVersion: "1.0.0",
+        installConfig: {
+          name: payload.name.trim(),
+          icon: payload.icon
+        }
       })
+      
+      if (response.success) {
+        setOpenAddModule(false)
+        
+        toast({
+          title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
+          description: locale === "zh" ? `模块 "${payload.name}" 已创建` : `Module "${payload.name}" has been created`,
+        })
+      } else {
+        throw new Error(response.error || "模块创建失败")
+      }
     } catch (error) {
       console.error('创建模块失败:', error)
       toast({
