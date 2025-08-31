@@ -25,7 +25,7 @@ export type TApplicationUser = z.infer<typeof ApplicationUser>
 
 // 创建应用用户请求（只包含账号信息）
 export const CreateApplicationUserRequest = z.object({
-  phone: z.string().min(1, "手机号不能为空"),
+  phone_number: z.string().min(1, "手机号不能为空"),
   password: z.string().min(6, "密码至少6位").optional(),
   role: z.enum(['admin', 'user', 'guest']).default('user'),
   status: z.enum(['active', 'inactive', 'pending']).default('active'),
@@ -36,7 +36,7 @@ export type TCreateApplicationUserRequest = z.infer<typeof CreateApplicationUser
 
 // 更新应用用户请求（只包含账号信息）
 export const UpdateApplicationUserRequest = z.object({
-  phone: z.string().optional(),
+  phone_number: z.string().optional(),
   password: z.string().min(6, "密码至少6位").optional(),
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   role: z.enum(['admin', 'user', 'guest']).optional(),
@@ -94,7 +94,7 @@ export type TSuccessResponse = z.infer<typeof SuccessResponse>
 
 // 用户注册请求
 export const RegisterUserRequest = z.object({
-  phone: z.string().min(1, "手机号不能为空"),
+  phone_number: z.string().min(1, "手机号不能为空"),
   password: z.string().min(6, "密码至少6位"),
   name: z.string().optional(),
   email: z.string().email().optional(),

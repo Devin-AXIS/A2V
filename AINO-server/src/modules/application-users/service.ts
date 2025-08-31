@@ -17,7 +17,7 @@ export class ApplicationUserService {
     data: TCreateApplicationUserRequest
   ) {
     // 检查手机号是否已存在
-    const phoneExists = await repo.checkPhoneExists(applicationId, data.phone)
+    const phoneExists = await repo.checkPhoneExists(applicationId, data.phone_number)
     if (phoneExists) {
       throw new Error('手机号已存在')
     }
@@ -60,8 +60,8 @@ export class ApplicationUserService {
     }
 
     // 如果更新手机号，检查是否与其他用户冲突
-    if (data.phone && data.phone !== existingUser.phone) {
-      const phoneExists = await repo.checkPhoneExists(applicationId, data.phone)
+    if (data.phone_number && data.phone_number !== existingUser.phone) {
+      const phoneExists = await repo.checkPhoneExists(applicationId, data.phone_number)
       if (phoneExists) {
         throw new Error('手机号已存在')
       }
@@ -136,10 +136,10 @@ export class ApplicationUserService {
     applicationId: string, 
     data: TRegisterUserRequest
   ) {
-    console.log('🔍 开始用户注册:', { applicationId, phone: data.phone })
+    console.log('🔍 开始用户注册:', { applicationId, phone: data.phone_number })
     
     // 检查手机号是否已存在
-    const existingUser = await repo.findUserByPhone(applicationId, data.phone)
+    const existingUser = await repo.findUserByPhone(applicationId, data.phone_number)
     
     if (existingUser) {
       console.log('🔍 发现相同手机号用户，执行合并:', existingUser.id)
@@ -149,7 +149,7 @@ export class ApplicationUserService {
       console.log('🔍 创建新用户')
       // 创建新用户（只创建账号）
       const userData = {
-        phone: data.phone,
+        phone_number: data.phone_number,
         password: data.password, // 临时存储密码，后续需要加密
         role: 'user',
         status: 'active',
@@ -175,7 +175,7 @@ export class ApplicationUserService {
     targetUserId: string, 
     registerData: TRegisterUserRequest
   ) {
-    console.log('🔍 开始合并用户:', { targetUserId, phone: registerData.phone })
+    console.log('🔍 开始合并用户:', { targetUserId, phone: registerData.phone_number })
     
     // 获取目标用户信息
     const targetUser = await repo.getApplicationUserById(applicationId, targetUserId)
@@ -185,7 +185,7 @@ export class ApplicationUserService {
     
     // 合并数据（只更新账号信息）
     const mergedData = {
-      phone: registerData.phone,
+      phone_number: registerData.phone_number,
       status: 'active', // 激活状态
       metadata: {
         ...targetUser.metadata,
@@ -227,7 +227,7 @@ export class ApplicationUserService {
         props: {
           // 基础信息
           name: userData.name || '',
-          phone: phone,
+          phone_number: phone,
           email: userData.email || '',
           avatar: userData.avatar || '',
           gender: userData.gender || '',
@@ -283,7 +283,7 @@ export class ApplicationUserService {
           gender: registerData.gender || existingRecord.props.gender || '',
           city: registerData.city || existingRecord.props.city || '',
           birthday: registerData.birthday || existingRecord.props.birthday || '',
-          phone: registerData.phone, // 手机号以注册为准
+          phone_number: registerData.phone_number, // 手机号以注册为准
           // 保留其他字段
           department: existingRecord.props.department || '',
           position: existingRecord.props.position || '',
@@ -302,7 +302,7 @@ export class ApplicationUserService {
         console.log('✅ 用户业务数据记录更新成功（合并）:', existingRecord.id)
       } else {
         // 如果没有现有记录，创建新记录
-        await this.createUserBusinessRecord(applicationId, userId, registerData.phone, registerData)
+        await this.createUserBusinessRecord(applicationId, userId, registerData.phone_number, registerData)
         console.log('✅ 用户业务数据记录创建成功（合并）')
       }
     } catch (error) {

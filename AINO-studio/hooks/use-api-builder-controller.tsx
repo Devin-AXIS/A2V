@@ -308,7 +308,7 @@ export function useApiBuilderController({
           records = response.data.users.map((user: any) => ({
             id: user.id,
             name: user.name,
-            phone: user.phone,
+            phone_number: user.phone_number,
             email: user.email,
             avatar: user.avatar,
             department: user.department,

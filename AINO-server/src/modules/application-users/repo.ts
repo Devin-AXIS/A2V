@@ -14,7 +14,7 @@ export async function createApplicationUser(
 ) {
   const [result] = await db.insert(applicationUsers).values({
     applicationId,
-    phone: data.phone,
+    phone: data.phone_number,
     password: data.password,
     role: data.role || 'user',
     status: data.status || 'active',
@@ -105,6 +105,8 @@ export async function getApplicationUsers(
         department: businessData.department || '',
         position: businessData.position || '',
         tags: businessData.tags || [],
+        // 添加phone_number字段（业务数据中的手机号）
+        phone_number: businessData.phone_number || user.phone,
       }
     })
   )
@@ -147,7 +149,7 @@ export async function updateApplicationUser(
   const updateData: any = {}
   
   // 只更新账号相关字段
-  if (data.phone !== undefined) updateData.phone = data.phone
+  if (data.phone_number !== undefined) updateData.phone = data.phone_number
   if (data.password !== undefined) updateData.password = data.password
   if (data.status !== undefined) updateData.status = data.status
   if (data.role !== undefined) updateData.role = data.role
