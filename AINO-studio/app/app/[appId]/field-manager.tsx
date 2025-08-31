@@ -469,6 +469,18 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
 
         setFieldDefs(prev => [...prev, newField])
 
+        // 如果是双向关联字段，需要刷新目标目录的字段列表
+        if (fieldData.type === 'relation_one' || fieldData.type === 'relation_many') {
+          if (fieldData.relationBidirectional && fieldData.relationTargetId) {
+            console.log('🔄 双向关联字段创建成功，需要刷新目标目录字段列表')
+            // 这里可以添加逻辑来刷新目标目录的字段列表
+            // 由于目标目录可能在不同的模块中，暂时通过重新获取当前目录字段来触发刷新
+            setTimeout(() => {
+              fetchFieldDefs()
+            }, 1000) // 延迟1秒后刷新，确保后端反向字段已创建
+          }
+        }
+
         // 如果选择了分类，将字段添加到分类的fields中
         if (fieldData.categoryId) {
           try {

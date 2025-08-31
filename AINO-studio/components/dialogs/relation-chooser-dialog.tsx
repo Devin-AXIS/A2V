@@ -79,7 +79,7 @@ export function RelationChooserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white/80 backdrop-blur" aria-describedby="relation-chooser-description">
+      <DialogContent className="max-w-4xl w-[90vw] bg-white/80 backdrop-blur" aria-describedby="relation-chooser-description">
         <DialogHeader>
           <DialogTitle>{locale === "zh" ? `选择 ${targetDir.name}` : `Select ${targetDir.name}`}</DialogTitle>
         </DialogHeader>
