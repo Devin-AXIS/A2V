@@ -250,6 +250,149 @@ records.get('/:dir/:id', async (c) => {
   }
 })
 
+// 更新记录（按目录隔离）
+records.patch('/:dir/:id', async (c) => {
+  const dirId = c.req.param('dir')
+  const recordId = c.req.param('id')
+  const body = await c.req.json()
+  const { props } = body
+
+  try {
+    console.log('🔍 更新记录:', { dirId, recordId, props })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 检查记录是否存在
+    const [existingRecord] = await db.select()
+      .from(t)
+      .where(and(
+        eq(t.id, recordId),
+        eq(t.tenantId, tenantId),
+        sql`${t.deletedAt} is null`,
+        sql`(${t.props} ->> '__dirId') = ${dirId}`
+      ))
+      .limit(1)
+
+    if (!existingRecord) {
+      return c.json({ success: false, error: '记录不存在' }, 404)
+    }
+
+    // 更新记录
+    const updatedProps = {
+      ...existingRecord.props,
+      ...props,
+      __dirId: dirId
+    }
+
+    const [updatedRow] = await db.update(t)
+      .set({
+        props: updatedProps,
+        updatedBy: user?.id || 'system',
+        updatedAt: new Date()
+      })
+      .where(eq(t.id, recordId))
+      .returning()
+
+    return c.json({
+      success: true,
+      data: {
+        id: updatedRow.id,
+        props: updatedRow.props,
+        createdAt: updatedRow.createdAt,
+        updatedAt: updatedRow.updatedAt,
+        createdBy: updatedRow.createdBy,
+        updatedBy: updatedRow.updatedBy
+      }
+    })
+  } catch (error) {
+    console.error('更新记录失败:', error)
+    return c.json({ success: false, error: '更新记录失败' }, 500)
+  }
+})
+
+// 删除记录（按目录隔离）
+records.delete('/:dir/:id', async (c) => {
+  const dirId = c.req.param('dir')
+  const recordId = c.req.param('id')
+
+  try {
+    console.log('🔍 删除记录:', { dirId, recordId })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 检查记录是否存在
+    const [existingRecord] = await db.select()
+      .from(t)
+      .where(and(
+        eq(t.id, recordId),
+        eq(t.tenantId, tenantId),
+        sql`${t.deletedAt} is null`,
+        sql`(${t.props} ->> '__dirId') = ${dirId}`
+      ))
+      .limit(1)
+
+    if (!existingRecord) {
+      return c.json({ success: false, error: '记录不存在' }, 404)
+    }
+
+    // 软删除记录
+    await db.update(t)
+      .set({
+        deletedAt: new Date(),
+        updatedBy: user?.id || 'system',
+        updatedAt: new Date()
+      })
+      .where(eq(t.id, recordId))
+
+    // 如果是用户模块的记录，同时删除对应的application_users记录
+    const isUserModule = directory.name === '用户列表'
+    if (isUserModule) {
+      try {
+        // 检查是否有对应的application_users记录
+        const { applicationUsers } = await import('../db/schema')
+        const [appUser] = await db.select()
+          .from(applicationUsers)
+          .where(and(
+            eq(applicationUsers.id, recordId),
+            eq(applicationUsers.applicationId, tenantId)
+          ))
+          .limit(1)
+
+        if (appUser) {
+          // 删除application_users记录
+          await db.delete(applicationUsers)
+            .where(eq(applicationUsers.id, recordId))
+          console.log('🔍 同时删除了对应的application_users记录:', recordId)
+        }
+      } catch (error) {
+        console.error('删除application_users记录失败:', error)
+        // 不抛出错误，因为主要记录已经删除成功
+      }
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('删除记录失败:', error)
+    return c.json({ success: false, error: '删除记录失败' }, 500)
+  }
+})
+
 // 创建记录（写入目录标识）
 records.post('/:dir', async (c) => {
   const dir = c.req.param('dir')
