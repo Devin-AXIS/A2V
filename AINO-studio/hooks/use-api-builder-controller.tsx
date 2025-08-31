@@ -144,7 +144,14 @@ export function useApiBuilderController({
             
             try {
               // 先检查目录是否存在
-              const dirCheckResponse = await api.directories.getDirectory(dir.id)
+              let dirCheckResponse
+              try {
+                dirCheckResponse = await api.directories.getDirectory(dir.id)
+              } catch (checkError) {
+                console.warn(`目录 ${dir.id} 检查失败，跳过处理:`, checkError)
+                return null // 返回null，后续过滤掉
+              }
+              
               if (!dirCheckResponse.success) {
                 console.warn(`目录 ${dir.id} 不存在，跳过处理`)
                 return null // 返回null，后续过滤掉
