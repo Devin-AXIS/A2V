@@ -23,35 +23,55 @@ export class SimpleModuleService {
   ) {
     console.log('🔍 开始安装模块:', { applicationId, moduleKey, installConfig })
     
-    // 1. 检查模块是否已安装
-    const isInstalled = await this.isModuleInstalled(applicationId, moduleKey)
-    if (isInstalled) {
-      throw new Error("模块已安装")
-    }
-    
-    // 2. 检查模块是否存在于注册表
+    // 1. 检查模块是否存在于注册表
     const manifest = moduleRegistry.get(moduleKey)
     if (!manifest) {
       throw new Error("模块不存在")
     }
     
-    // 3. 安装模块到数据库
-    const [installedModule] = await db
-      .insert(moduleInstalls)
-      .values({
-        applicationId,
-        moduleKey,
-        moduleName: installConfig.name || manifest.name,
-        moduleVersion: manifest.version,
-        moduleType: manifest.kind === 'local' ? 'local' : 'remote',
-        installType: 'market',
-        installConfig,
-        installStatus: 'active',
-      })
-      .returning()
+    // 2. 检查模块是否已安装
+    const isInstalled = await this.isModuleInstalled(applicationId, moduleKey)
     
-    console.log('✅ 模块安装成功:', installedModule)
-    return installedModule
+    if (isInstalled) {
+      // 如果已安装，更新配置
+      console.log('🔍 模块已安装，更新配置')
+      const [updatedModule] = await db
+        .update(moduleInstalls)
+        .set({
+          moduleName: installConfig.name || manifest.name,
+          installConfig,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(moduleInstalls.applicationId, applicationId),
+            eq(moduleInstalls.moduleKey, moduleKey)
+          )
+        )
+        .returning()
+      
+      console.log('✅ 模块配置更新成功:', updatedModule)
+      return updatedModule
+    } else {
+      // 如果未安装，创建新模块
+      console.log('🔍 模块未安装，创建新模块')
+      const [installedModule] = await db
+        .insert(moduleInstalls)
+        .values({
+          applicationId,
+          moduleKey,
+          moduleName: installConfig.name || manifest.name,
+          moduleVersion: manifest.version,
+          moduleType: manifest.kind === 'local' ? 'local' : 'remote',
+          installType: 'market',
+          installConfig,
+          installStatus: 'active',
+        })
+        .returning()
+      
+      console.log('✅ 模块安装成功:', installedModule)
+      return installedModule
+    }
   }
   
   /**
