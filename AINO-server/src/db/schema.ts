@@ -82,7 +82,7 @@ export const moduleInstalls = pgTable("module_installs", {
 export const directories = pgTable("directories", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
-  moduleId: uuid("module_id").notNull().references(() => modules.id, { onDelete: "cascade" }),
+  moduleId: uuid("module_id").notNull(), // 移除外键约束，支持引用 modules 和 moduleInstalls 表
   name: text("name").notNull(),
   type: text("type").notNull(), // table, category, form
   supportsCategory: boolean("supports_category").default(false),
