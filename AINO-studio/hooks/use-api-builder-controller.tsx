@@ -439,10 +439,9 @@ export function useApiBuilderController({
     if (!can("edit")) return
     
     try {
-      // 调用后端API安装模块 - 使用appId而不是application.id
-      const response = await api.modules.installModule(appId, {
+      // 使用简化的模块安装API
+      const response = await api.modules.installModuleSimple(appId, {
         moduleKey: payload.templateKey,
-        moduleVersion: "1.0.0",
         installConfig: {
           name: payload.name.trim(),
           icon: payload.icon

@@ -880,6 +880,22 @@ export const modulesApi = {
     })
   },
 
+  // 简化的模块安装API
+  async installModuleSimple(applicationId: string, data: {
+    moduleKey: string
+    installConfig?: any
+  }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/simple/install?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 简化的获取已安装模块API
+  async getInstalledModulesSimple(applicationId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/simple/installed?applicationId=${applicationId}`)
+  },
+
   // 更新模块状态
   async updateModuleStatus(applicationId: string, moduleKey: string, status: 'active' | 'disabled' | 'uninstalling'): Promise<ApiResponse<any>> {
     return apiRequest<any>(`/api/modules/status/${moduleKey}?applicationId=${applicationId}`, {
