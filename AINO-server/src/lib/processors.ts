@@ -15,6 +15,7 @@ export interface FieldDef {
   readRoles?: string[]
   writeRoles?: string[]
   required?: boolean
+  isDefault?: boolean // 是否为默认字段，默认字段的key和type不允许修改
 }
 
 export interface Ctx {

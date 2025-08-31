@@ -22,6 +22,7 @@ export interface CreateFieldDefData {
   readRoles?: string[]
   writeRoles?: string[]
   required?: boolean
+  isDefault?: boolean // 是否为默认字段
 }
 
 export interface UpdateFieldDefData extends Partial<CreateFieldDefData> {
@@ -113,6 +114,7 @@ export class FieldDefsService {
         readRoles: data.readRoles || ['admin', 'member'],
         writeRoles: data.writeRoles || ['admin'],
         required: data.required || false,
+        isDefault: data.isDefault || false,
       })
       .returning()
     
@@ -125,6 +127,16 @@ export class FieldDefsService {
     const existingField = await this.getFieldDef(id)
     if (!existingField) {
       return null
+    }
+    
+    // 如果是默认字段，保护 key 和 type 不允许修改
+    if (existingField.isDefault) {
+      if (data.key && data.key !== existingField.key) {
+        throw new Error('默认字段的key不允许修改')
+      }
+      if (data.type && data.type !== existingField.type) {
+        throw new Error('默认字段的类型不允许修改')
+      }
     }
     
     // 如果更新key，检查是否与其他字段冲突
@@ -187,6 +199,16 @@ export class FieldDefsService {
       .orderBy(asc(fieldDefs.key))
     
     return records as FieldDef[]
+  }
+
+  // 标记字段为默认字段
+  async markFieldAsDefault(id: string): Promise<FieldDef | null> {
+    const [updatedField] = await db.update(fieldDefs)
+      .set({ isDefault: true })
+      .where(eq(fieldDefs.id, id))
+      .returning()
+    
+    return updatedField as FieldDef || null
   }
 
   // 验证字段定义数据

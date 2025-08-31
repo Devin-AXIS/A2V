@@ -1,5 +1,5 @@
 import { db } from "../../db"
-import { applications, modules, directories } from "../../db/schema"
+import { applications, modules, directories, directoryDefs, fieldDefs } from "../../db/schema"
 import { eq, and, desc } from "drizzle-orm"
 import type { CreateApplicationRequest, UpdateApplicationRequest, GetApplicationsQuery } from "./dto"
 import { getAllSystemModules } from "../../lib/system-modules"
@@ -77,13 +77,25 @@ export class ApplicationService {
         config: {
           description: '系统用户管理列表',
           fields: [
+            { key: 'avatar', label: '头像', type: 'profile', required: true, showInList: true, showInForm: true },
+            { key: 'bio', label: '个人介绍', type: 'textarea', required: false, showInList: true, showInForm: true },
+            { key: 'birthday', label: '生日', type: 'date', required: false, showInList: true, showInForm: true },
+            { key: 'city', label: '居住城市', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'edu_exp', label: '教育经历', type: 'experience', required: false, showInList: true, showInForm: true },
+            { key: 'email', label: '邮箱', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'gender', label: '性别', type: 'select', required: true, showInList: true, showInForm: true, options: ['男', '女', '其他'] },
+            { key: 'honors', label: '荣誉证书', type: 'experience', required: false, showInList: true, showInForm: true },
+            { key: 'industry', label: '行业', type: 'text', required: false, showInList: true, showInForm: true },
             { key: 'name', label: '姓名', type: 'text', required: true, showInList: true, showInForm: true },
-            { key: 'email', label: '邮箱', type: 'email', required: true, showInList: true, showInForm: true },
-            { key: 'roles', label: '角色', type: 'multiselect', required: true, showInList: true, showInForm: true, options: ['admin', 'user', 'editor', 'viewer'] },
-            { key: 'status', label: '状态', type: 'select', required: true, showInList: true, showInForm: true, options: ['active', 'inactive', 'pending'] },
-            { key: 'avatar', label: '头像', type: 'image', required: false, showInList: true, showInForm: true },
-            { key: 'lastLoginAt', label: '最后登录', type: 'datetime', required: false, showInList: true, showInForm: false },
-            { key: 'createdAt', label: '创建时间', type: 'datetime', required: false, showInList: true, showInForm: false },
+            { key: 'occupation', label: '职业', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'phone_number', label: '手机号', type: 'text', required: true, showInList: true, showInForm: true },
+            { key: 'proj_exp', label: '项目经历', type: 'experience', required: false, showInList: true, showInForm: true },
+            { key: 'realname_status', label: '实名认证', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'skills', label: '技能', type: 'multiselect', required: false, showInList: true, showInForm: true },
+            { key: 'socid_status', label: '社会身份认证', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'user_id', label: '用户ID', type: 'text', required: false, showInList: true, showInForm: true },
+            { key: 'work_exp', label: '工作经历', type: 'experience', required: false, showInList: true, showInForm: true },
+            { key: 'zodiac_sign', label: '星座', type: 'select', required: false, showInList: true, showInForm: true, options: ['白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座'] },
           ]
         },
         order: 0,
@@ -94,7 +106,8 @@ export class ApplicationService {
     const userModule = modules.find(m => m.name === '用户管理')
     if (userModule) {
       for (const directory of defaultDirectories) {
-        await db.insert(directories).values({
+        // 创建目录
+        const [createdDirectory] = await db.insert(directories).values({
           applicationId,
           moduleId: userModule.id,
           name: directory.name,
@@ -103,7 +116,38 @@ export class ApplicationService {
           config: directory.config,
           order: directory.order,
           isEnabled: true,
-        })
+        }).returning()
+
+        // 创建目录定义
+        const [directoryDef] = await db.insert(directoryDefs).values({
+          applicationId,
+          directoryId: createdDirectory.id,
+          title: directory.name,
+          slug: `${directory.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          status: 'active',
+        }).returning()
+
+        // 创建默认字段定义
+        if (directory.config.fields && directory.config.fields.length > 0) {
+          for (const field of directory.config.fields) {
+            await db.insert(fieldDefs).values({
+              directoryId: directoryDef.id,
+              key: field.key,
+              kind: 'primitive',
+              type: field.type,
+              schema: {
+                label: field.label,
+                showInList: field.showInList,
+                showInForm: field.showInForm,
+                options: field.options || [],
+              },
+              required: field.required || false,
+              readRoles: ['admin', 'member'],
+              writeRoles: ['admin'],
+              isDefault: true, // 标记为默认字段
+            })
+          }
+        }
       }
     }
   }

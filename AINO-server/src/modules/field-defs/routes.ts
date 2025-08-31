@@ -30,6 +30,7 @@ const createFieldDefSchema = z.object({
   readRoles: z.array(z.string()).default(['admin', 'member']),
   writeRoles: z.array(z.string()).default(['admin']),
   required: z.boolean().default(false),
+  isDefault: z.boolean().default(false),
 })
 
 // 更新字段定义验证
@@ -95,6 +96,23 @@ fieldDefs.patch('/:id', zValidator('json', updateFieldDefSchema), async (c) => {
   } catch (error) {
     console.error('更新字段定义失败:', error)
     return c.json({ success: false, error: '更新字段定义失败' }, 500)
+  }
+})
+
+// 标记字段为默认字段
+fieldDefs.patch('/:id/mark-default', async (c) => {
+  const id = c.req.param('id')
+  
+  try {
+    const service = new FieldDefsService()
+    const updatedField = await service.markFieldAsDefault(id)
+    if (!updatedField) {
+      return c.json({ success: false, error: '字段定义不存在' }, 404)
+    }
+    return c.json({ success: true, data: updatedField })
+  } catch (error) {
+    console.error('标记默认字段失败:', error)
+    return c.json({ success: false, error: '标记默认字段失败' }, 500)
   }
 })
 
