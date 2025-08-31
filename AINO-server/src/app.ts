@@ -3,6 +3,7 @@ import { cors } from "hono/cors"
 import { usersRoute } from "./modules/users/routes"
 import applicationsRoute from "./modules/applications/routes"
 import modulesRoute from "./modules/modules/routes"
+import simpleModulesRoute from "./modules/modules/simple-routes"
 import applicationUsersRoute from "./modules/application-users/routes"
 import directoriesRoute from "./modules/directories/routes"
 
@@ -44,6 +45,9 @@ app.route("/applications", applicationsRoute)
 // 模块路由系统（包括远程模块代理）
 app.route("/api/modules", modulesRoute)
 app.route("/api/remote", modulesRoute)
+
+// 简化的模块路由（用于测试）
+app.route("/api/modules/simple", simpleModulesRoute)
 
 // 应用用户路由（直接访问）
 app.route("/api/application-users", applicationUsersRoute)
