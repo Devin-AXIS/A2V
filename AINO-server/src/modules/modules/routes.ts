@@ -1,14 +1,26 @@
 import { Hono } from "hono"
+import { zValidator } from "@hono/zod-validator"
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
 import { SYSTEM_MODULES } from "../../lib/system-modules"
 import applicationUsersRoute from "../application-users/routes"
 import { moduleRegistry, registerSystemModules, isRemoteModule } from "../../platform/modules/registry"
 import remoteProxy from "../../platform/modules/proxy"
+import { ModuleService } from "./service"
+import {
+  InstallModuleRequest,
+  UninstallModuleRequest,
+  UpdateModuleConfigRequest,
+  UpdateModuleStatusRequest,
+  GetModulesQuery,
+} from "./dto"
 
 const app = new Hono()
 
 // 初始化系统模块注册
 registerSystemModules()
+
+// 模块管理服务实例
+const moduleService = new ModuleService()
 
 // 获取系统模块列表（必须在 /system/:moduleKey/* 之前）
 app.get("/system", mockRequireAuthMiddleware, async (c) => {
@@ -319,5 +331,286 @@ function getModuleIcon(moduleKey: string): string {
   }
   return iconMap[moduleKey] || "package"
 }
+
+// ==================== 模块管理API ====================
+
+// 获取应用已安装的模块列表
+app.get("/installed", mockRequireAuthMiddleware, zValidator("query", GetModulesQuery), async (c) => {
+  const user = c.get("user")
+  const query = c.req.valid("query")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.getModules({ ...query, applicationId })
+    return c.json({
+      success: true,
+      data: result,
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "获取模块列表失败",
+    }, 500)
+  }
+})
+
+// 获取模块详情
+app.get("/installed/:moduleKey", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  const moduleKey = c.req.param("moduleKey")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.getModuleDetail(applicationId, moduleKey)
+    return c.json({
+      success: true,
+      data: result,
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "获取模块详情失败",
+    }, 404)
+  }
+})
+
+// 安装模块
+app.post("/install", mockRequireAuthMiddleware, zValidator("json", InstallModuleRequest), async (c) => {
+  const user = c.get("user")
+  const data = c.req.valid("json")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.installModule(applicationId, data, user.id)
+    return c.json({
+      success: true,
+      data: {
+        message: "模块安装成功",
+        module: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "模块安装失败",
+    }, 400)
+  }
+})
+
+// 卸载模块
+app.delete("/uninstall/:moduleKey", mockRequireAuthMiddleware, zValidator("json", UninstallModuleRequest), async (c) => {
+  const user = c.get("user")
+  const moduleKey = c.req.param("moduleKey")
+  const data = c.req.valid("json")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.uninstallModule(applicationId, { ...data, moduleKey })
+    return c.json({
+      success: true,
+      data: {
+        message: "模块卸载成功",
+        module: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "模块卸载失败",
+    }, 400)
+  }
+})
+
+// 更新模块配置
+app.put("/config/:moduleKey", mockRequireAuthMiddleware, zValidator("json", UpdateModuleConfigRequest), async (c) => {
+  const user = c.get("user")
+  const moduleKey = c.req.param("moduleKey")
+  const data = c.req.valid("json")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.updateModuleConfig(applicationId, { ...data, moduleKey })
+    return c.json({
+      success: true,
+      data: {
+        message: "模块配置更新成功",
+        module: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "模块配置更新失败",
+    }, 400)
+  }
+})
+
+// 更新模块状态
+app.patch("/status/:moduleKey", mockRequireAuthMiddleware, zValidator("json", UpdateModuleStatusRequest), async (c) => {
+  const user = c.get("user")
+  const moduleKey = c.req.param("moduleKey")
+  const data = c.req.valid("json")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.updateModuleStatus(applicationId, { ...data, moduleKey })
+    return c.json({
+      success: true,
+      data: {
+        message: "模块状态更新成功",
+        module: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "模块状态更新失败",
+    }, 400)
+  }
+})
+
+// 检查模块依赖
+app.get("/dependencies/:moduleKey", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  const moduleKey = c.req.param("moduleKey")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.checkModuleDependencies(applicationId, moduleKey)
+    return c.json({
+      success: true,
+      data: result,
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "检查模块依赖失败",
+    }, 500)
+  }
+})
+
+// 获取模块统计信息
+app.get("/stats", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.getModuleStats(applicationId)
+    return c.json({
+      success: true,
+      data: result,
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "获取模块统计失败",
+    }, 500)
+  }
+})
+
+// 获取可用模块列表（从模块注册表）
+app.get("/available", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  
+  try {
+    const result = await moduleService.getAvailableModules()
+    return c.json({
+      success: true,
+      data: {
+        modules: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "获取可用模块失败",
+    }, 500)
+  }
+})
+
+// 初始化系统模块（应用创建时调用）
+app.post("/initialize-system", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+  
+  if (!applicationId) {
+    return c.json({
+      success: false,
+      error: "缺少应用ID参数",
+    }, 400)
+  }
+
+  try {
+    const result = await moduleService.initializeSystemModules(applicationId, user.id)
+    return c.json({
+      success: true,
+      data: {
+        message: "系统模块初始化成功",
+        installedModules: result,
+      },
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "系统模块初始化失败",
+    }, 500)
+  }
+})
 
 export default app

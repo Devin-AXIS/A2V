@@ -3,6 +3,7 @@ import { applications, modules, directories, directoryDefs, fieldDefs, fieldCate
 import { eq, and, desc } from "drizzle-orm"
 import type { CreateApplicationRequest, UpdateApplicationRequest, GetApplicationsQuery } from "./dto"
 import { getAllSystemModules } from "../../lib/system-modules"
+import { ModuleService } from "../modules/service"
 
 // 生成slug的辅助函数
 function generateSlug(name: string): string {
@@ -17,6 +18,8 @@ function generateSlug(name: string): string {
 }
 
 export class ApplicationService {
+  private moduleService = new ModuleService()
+
   // 创建应用
   async createApplication(data: CreateApplicationRequest, userId: string) {
     const newApp = {
@@ -34,10 +37,11 @@ export class ApplicationService {
     
     const [result] = await db.insert(applications).values(newApp).returning()
     
-    // 自动创建系统模块
-    const createdModules = await this.createSystemModules(result.id)
+    // 使用新的模块管理服务初始化系统模块
+    await this.moduleService.initializeSystemModules(result.id, userId)
     
     // 自动创建默认目录
+    const createdModules = await this.createSystemModules(result.id)
     await this.createDefaultDirectories(result.id, createdModules)
     
     return result

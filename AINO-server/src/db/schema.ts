@@ -55,6 +55,29 @@ export const modules = pgTable("modules", {
   appEnabledIdx: index("modules_app_enabled_idx").on(table.applicationId, table.isEnabled),
 }))
 
+// 模块安装记录表 - 支持模块生命周期管理
+export const moduleInstalls = pgTable("module_installs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  moduleKey: text("module_key").notNull(),
+  moduleName: text("module_name").notNull(),
+  moduleVersion: text("module_version").notNull(),
+  moduleType: text("module_type").notNull(), // system, local, remote
+  installType: text("install_type").notNull(), // system, market, custom
+  installConfig: jsonb("install_config").default({}),
+  installStatus: text("install_status").default("active"), // active, disabled, uninstalling, error
+  installError: text("install_error"),
+  installedAt: timestamp("installed_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+}, (table) => ({
+  appModuleIdx: index("module_installs_app_module_idx").on(table.applicationId, table.moduleKey),
+  statusIdx: index("module_installs_status_idx").on(table.installStatus),
+  typeIdx: index("module_installs_type_idx").on(table.moduleType),
+  createdAtIdx: index("module_installs_created_at_idx").on(table.installedAt),
+  uniqueAppModule: unique("unique_app_module").on(table.applicationId, table.moduleKey),
+}))
+
 // 目录表
 export const directories = pgTable("directories", {
   id: uuid("id").primaryKey().defaultRandom(),
