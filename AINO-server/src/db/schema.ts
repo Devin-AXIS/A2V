@@ -237,9 +237,17 @@ export const relationRecords = pgTable('relation_records', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   createdBy: uuid('created_by'),
 }, (table) => ({
+  // 基础索引
   createdAtIdx: index("relation_records_created_at_idx").on(table.createdAt),
   fromIdx: index("relation_records_from_idx").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey),
   toIdx: index("relation_records_to_idx").on(table.toDirectoryId, table.toRecordId, table.toFieldKey),
   appIdx: index("relation_records_app_idx").on(table.applicationId),
   uniqueRelation: unique("relation_records_unique").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey, table.toDirectoryId, table.toRecordId),
+  
+  // 性能优化索引
+  outIdx: index("idx_rel_out").on(table.applicationId, table.fromDirectoryId, table.fromRecordId, table.relationType, table.toDirectoryId),
+  inIdx: index("idx_rel_in").on(table.applicationId, table.toDirectoryId, table.toRecordId, table.relationType, table.fromDirectoryId),
+  fromFieldIdx: index("idx_rel_from_field").on(table.applicationId, table.fromDirectoryId, table.fromFieldKey, table.fromRecordId),
+  toFieldIdx: index("idx_rel_to_field").on(table.applicationId, table.toDirectoryId, table.toFieldKey, table.toRecordId),
+  idempotentIdx: index("idx_rel_idempotent").on(table.applicationId, table.fromDirectoryId, table.fromRecordId, table.toDirectoryId, table.toRecordId, table.relationType),
 }))
