@@ -183,8 +183,6 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
             cascaderOptions: field.schema?.cascaderOptions || undefined,
             customExperienceConfig: field.schema?.customExperienceConfig || undefined,
             certificateConfig: field.schema?.certificateConfig || undefined,
-            // 提取关联字段配置
-            relation: field.relation || undefined,
             skillsConfig: field.schema?.skillsConfig || undefined,
             progressConfig: field.schema?.progressConfig || undefined,
             identityVerificationConfig: field.schema?.identityVerificationConfig || undefined,
@@ -739,7 +737,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCategoryManagerOpen(true)} className="rounded-xl">
             <Settings className="mr-1 size-4" />
-            {t("categoryManagement")}
+            {t("fieldCategoryManagement")}
           </Button>
         </div>
       </div>

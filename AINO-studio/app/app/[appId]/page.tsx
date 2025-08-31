@@ -539,7 +539,7 @@ export default function BuilderPage() {
         i18n={
           locale === "zh"
             ? {
-                title: "配置三级分类",
+                title: "配置三级内容分类",
                 l1: "一级分类",
                 l2: "二级分类",
                 l3: "三级分类",
@@ -552,10 +552,10 @@ export default function BuilderPage() {
                 cancel: "取消",
                 preview: "预览：",
                 delete: "删除",
-                confirmDelete: "确认删除分类",
+                confirmDelete: "确认删除内容分类",
               }
             : {
-                title: "Configure 3-level Categories",
+                title: "Configure 3-level Content Categories",
                 l1: "Level 1",
                 l2: "Level 2",
                 l3: "Level 3",
@@ -568,7 +568,7 @@ export default function BuilderPage() {
                 cancel: "Cancel",
                 preview: "Preview:",
                 delete: "Delete",
-                confirmDelete: "Confirm delete category",
+                confirmDelete: "Confirm delete content category",
               }
         }
       />
@@ -691,7 +691,7 @@ export default function BuilderPage() {
         onOpenChange={c.setOpenCategorySelection}
         categories={c.currentDir?.categories || []}
         onConfirm={(categoryPath) => c.createRecordWithCategory(categoryPath)}
-        title={locale === "zh" ? "选择记录分类" : "Select Record Category"}
+        title={locale === "zh" ? "选择内容分类" : "Select Content Category"}
       />
     </main>
   )
