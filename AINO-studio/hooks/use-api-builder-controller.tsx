@@ -537,7 +537,33 @@ export function useApiBuilderController({
     try {
       console.log('🔍 保存记录:', { dirId, recordId, props })
       
-      const response = await api.records.updateRecord(dirId, recordId, { props })
+      // 检查是否是用户模块的用户列表目录
+      const isUserModule = modules.some(module => 
+        module.name === '用户管理' && 
+        directoriesData[module.id]?.some(dir => dir.id === dirId && dir.name === '用户列表')
+      )
+      
+      let response
+      if (isUserModule) {
+        // 用户模块使用应用用户API
+        console.log('🔍 检测到用户模块，使用应用用户API更新')
+        response = await api.applicationUsers.updateApplicationUser(appId, recordId, {
+          phone_number: props.phone_number,
+          status: props.status,
+          role: props.role
+        })
+        
+        // 同时更新业务数据（dir_users表）
+        if (response.success) {
+          const businessDataResponse = await api.records.updateRecord(dirId, recordId, { props })
+          if (!businessDataResponse.success) {
+            console.warn('更新业务数据失败:', businessDataResponse.error)
+          }
+        }
+      } else {
+        // 普通模块使用记录API
+        response = await api.records.updateRecord(dirId, recordId, { props })
+      }
       
       if (response.success && response.data) {
         // 重新获取记录列表以更新本地状态
@@ -1053,7 +1079,21 @@ export function useApiBuilderController({
     }
 
     try {
-      const response = await api.records.deleteRecord(currentDir.id, rid)
+      // 检查是否是用户模块的用户列表目录
+      const isUserModule = modules.some(module => 
+        module.name === '用户管理' && 
+        directoriesData[module.id]?.some(dir => dir.id === currentDir.id && dir.name === '用户列表')
+      )
+      
+      let response
+      if (isUserModule) {
+        // 用户模块使用应用用户API
+        console.log('🔍 检测到用户模块，使用应用用户API删除')
+        response = await api.applicationUsers.deleteApplicationUser(appId, rid)
+      } else {
+        // 普通模块使用记录API
+        response = await api.records.deleteRecord(currentDir.id, rid)
+      }
       
       if (response.success) {
         // 重新获取记录数据
