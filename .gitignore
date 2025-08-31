@@ -66,4 +66,4 @@ coverage/
 
 node_modules
 AINO-server/node_modules
-AINO-studio/node_modules
+AINO-studio/node_modules.DS_Store
