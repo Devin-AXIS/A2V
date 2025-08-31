@@ -70,6 +70,19 @@ export function registerSystemModules(): void {
     description: '应用内用户管理，支持用户注册、登录、权限管理',
   })
 
+  // 空白模块模板
+  moduleRegistry.register({
+    key: 'blank-template',
+    name: '空白模块模板',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/', description: '获取模块信息' },
+      { method: 'POST', path: '/init', description: '初始化模块' },
+    ],
+    description: '空白模块模板，可用于快速创建自定义模块',
+  })
+
   // 注释掉配置模块和审计模块
   // 配置模块
   // moduleRegistry.register({
