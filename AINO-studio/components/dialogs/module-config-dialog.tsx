@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Loader2, Save, RotateCcw } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 
 interface ModuleConfigDialogProps {
@@ -28,7 +29,7 @@ interface ModuleConfigDialogProps {
       timeout: number
     }
   } | null
-  onSave: (config: any) => void
+  onSave: (config: any) => Promise<void>
 }
 
 export function ModuleConfigDialog({
@@ -38,6 +39,7 @@ export function ModuleConfigDialog({
   onSave
 }: ModuleConfigDialogProps) {
   const { locale } = useLocale()
+  const [isLoading, setIsLoading] = useState(false)
   const [config, setConfig] = useState(module?.settings || {
     enabled: true,
     apiKey: "",
@@ -55,9 +57,17 @@ export function ModuleConfigDialog({
     }
   }, [module])
 
-  const handleSave = () => {
-    onSave(config)
-    onOpenChange(false)
+  const handleSave = async () => {
+    setIsLoading(true)
+    try {
+      await onSave(config)
+      onOpenChange(false)
+    } catch (error) {
+      console.error('保存配置失败:', error)
+      // 错误处理会在父组件中显示toast
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleReset = () => {
@@ -182,11 +192,27 @@ export function ModuleConfigDialog({
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={handleReset}>
+          <Button 
+            variant="outline" 
+            onClick={handleReset}
+            disabled={isLoading}
+          >
+            <RotateCcw className="size-4 mr-2" />
             {locale === "zh" ? "重置" : "Reset"}
           </Button>
-          <Button onClick={handleSave}>
-            {locale === "zh" ? "保存" : "Save"}
+          <Button 
+            onClick={handleSave}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="size-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="size-4 mr-2" />
+            )}
+            {isLoading 
+              ? (locale === "zh" ? "保存中..." : "Saving...")
+              : (locale === "zh" ? "保存" : "Save")
+            }
           </Button>
         </div>
       </DialogContent>

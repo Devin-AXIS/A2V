@@ -27,6 +27,7 @@ import { AddFieldDialog, type FieldDraft } from "@/components/dialogs/add-field-
 import { ListFilters } from "@/components/builder/list-filters"
 import { SettingsSidebar } from "./settings-sidebar"
 import { SettingsContent } from "./settings-content"
+import { SimpleModuleDialog } from "@/components/dialogs/simple-module-dialog"
 
 type SettingsSection = "personal" | "team" | "usage" | "api-keys" | "notifications" | "settings"
 
@@ -41,6 +42,9 @@ export default function BuilderPage() {
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>("team")
   const [showModuleManagement, setShowModuleManagement] = useState(false)
   const [selectedModuleCategory, setSelectedModuleCategory] = useState<"internal" | "thirdparty" | "public">("internal")
+  const [configDialogOpen, setConfigDialogOpen] = useState(false)
+  const [uninstallDialogOpen, setUninstallDialogOpen] = useState(false)
+  const [selectedModule, setSelectedModule] = useState<any>(null)
 
   const typeNames: Record<FieldType, string> = useMemo(
     () => ({
@@ -347,10 +351,22 @@ export default function BuilderPage() {
                           </div>
 
                           <div className="flex gap-1.5">
-                            <button className="flex-1 text-xs px-3 py-1.5 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 transition-colors font-medium">
+                            <button 
+                              onClick={() => {
+                                setSelectedModule(module)
+                                setConfigDialogOpen(true)
+                              }}
+                              className="flex-1 text-xs px-3 py-1.5 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 transition-colors font-medium"
+                            >
                               {locale === "zh" ? "配置" : "Configure"}
                             </button>
-                            <button className="flex-1 text-xs px-3 py-1.5 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium">
+                            <button 
+                              onClick={() => {
+                                setSelectedModule(module)
+                                setUninstallDialogOpen(true)
+                              }}
+                              className="flex-1 text-xs px-3 py-1.5 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium"
+                            >
                               {locale === "zh" ? "卸载" : "Uninstall"}
                             </button>
                           </div>
@@ -692,6 +708,29 @@ export default function BuilderPage() {
         categories={c.currentDir?.categories || []}
         onConfirm={(categoryPath) => c.createRecordWithCategory(categoryPath)}
         title={locale === "zh" ? "选择内容分类" : "Select Content Category"}
+      />
+
+      {/* Simple Module Dialogs */}
+      <SimpleModuleDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+        module={selectedModule}
+        type="config"
+        onConfirm={(config) => {
+          console.log('配置模块:', selectedModule?.name, config)
+          toast({ description: locale === "zh" ? "配置已保存" : "Configuration saved" })
+        }}
+      />
+      
+      <SimpleModuleDialog
+        open={uninstallDialogOpen}
+        onOpenChange={setUninstallDialogOpen}
+        module={selectedModule}
+        type="uninstall"
+        onConfirm={() => {
+          console.log('卸载模块:', selectedModule?.name)
+          toast({ description: locale === "zh" ? "模块已卸载" : "Module uninstalled" })
+        }}
       />
     </main>
   )

@@ -148,7 +148,7 @@ app.delete("/uninstall/:moduleKey", mockRequireAuthMiddleware, zValidator("json"
   }
 
   try {
-    const result = await moduleService.uninstallModule(applicationId, moduleKey, data, user.id)
+    const result = await moduleService.uninstallModule(applicationId, moduleKey, data)
     return c.json({
       success: true,
       data: result,
@@ -175,7 +175,7 @@ app.put("/config/:moduleKey", mockRequireAuthMiddleware, zValidator("json", Upda
   }
 
   try {
-    const result = await moduleService.updateModuleConfig(applicationId, moduleKey, data.config, user.id)
+    const result = await moduleService.updateModuleConfig(applicationId, { moduleKey, config: data.config })
     return c.json({
       success: true,
       data: result,
@@ -202,7 +202,7 @@ app.patch("/status/:moduleKey", mockRequireAuthMiddleware, zValidator("json", Up
   }
 
   try {
-    const result = await moduleService.updateModuleStatus(applicationId, moduleKey, data.status, user.id)
+    const result = await moduleService.updateModuleStatus(applicationId, { moduleKey, status: data.status })
     return c.json({
       success: true,
       data: result,

@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const InstallModuleRequest = z.object({
   moduleKey: z.string().min(1, "模块标识不能为空"),
   moduleVersion: z.string().optional().default("latest"),
-  installConfig: z.record(z.any()).optional().default({}),
+  installConfig: z.record(z.string(), z.any()).optional().default({}),
 })
 
 export type TInstallModuleRequest = z.infer<typeof InstallModuleRequest>
@@ -19,7 +19,7 @@ export type TUninstallModuleRequest = z.infer<typeof UninstallModuleRequest>
 // 模块配置更新请求
 export const UpdateModuleConfigRequest = z.object({
   moduleKey: z.string().min(1, "模块标识不能为空"),
-  config: z.record(z.any()),
+  config: z.record(z.string(), z.any()),
 })
 
 export type TUpdateModuleConfigRequest = z.infer<typeof UpdateModuleConfigRequest>
@@ -54,7 +54,7 @@ export const ModuleInstallResponse = z.object({
   moduleVersion: z.string(),
   moduleType: z.enum(["system", "local", "remote"]),
   installType: z.enum(["system", "market", "custom"]),
-  installConfig: z.record(z.any()),
+  installConfig: z.record(z.string(), z.any()),
   installStatus: z.enum(["active", "disabled", "uninstalling", "error"]),
   installError: z.string().nullable(),
   installedAt: z.string(),
