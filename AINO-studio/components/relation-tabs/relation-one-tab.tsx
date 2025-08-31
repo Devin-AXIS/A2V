@@ -36,7 +36,16 @@ export function RelationOneTab({
     
     setRecordsLoading(true)
     try {
-      const response = await api.records.listRecords(targetDirId, {
+      // 如果targetDirId是目录定义ID，需要通过targetDir获取实际的目录ID
+      const actualDirId = targetDir?.id || targetDirId
+      
+      console.log('🔍 加载目标目录记录:', {
+        targetDirId,
+        actualDirId,
+        targetDir: targetDir ? { id: targetDir.id, name: targetDir.name } : null
+      })
+      
+      const response = await api.records.listRecords(actualDirId, {
         page: 1,
         pageSize: 100
       })

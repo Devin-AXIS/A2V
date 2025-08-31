@@ -47,10 +47,17 @@ export function RelationManyTab({
       return
     }
     
-    console.log("RelationManyTab: Loading records for targetDirId:", targetDirId)
+    // 如果targetDirId是目录定义ID，需要通过targetDir获取实际的目录ID
+    const actualDirId = targetDir?.id || targetDirId
+    
+    console.log("RelationManyTab: Loading records for targetDirId:", {
+      targetDirId,
+      actualDirId,
+      targetDir: targetDir ? { id: targetDir.id, name: targetDir.name } : null
+    })
     setRecordsLoading(true)
     try {
-      const response = await api.records.listRecords(targetDirId, {
+      const response = await api.records.listRecords(actualDirId, {
         page: 1,
         pageSize: 100
       })
