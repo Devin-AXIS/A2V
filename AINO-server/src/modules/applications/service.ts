@@ -188,6 +188,7 @@ export class ApplicationService {
       required: field.required || false,
       readRoles: ['admin', 'member'],
       writeRoles: ['admin'],
+      categoryId: categoryMap[field.category] || null, // 添加分类ID关联
     }))
 
     await db.insert(fieldDefs).values(fieldValues)

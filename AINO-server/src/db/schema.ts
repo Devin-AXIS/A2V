@@ -184,6 +184,7 @@ export const fieldDefs = pgTable('field_defs', {
   readRoles: jsonb('read_roles').$type<string[]>().default(['admin', 'member']),
   writeRoles: jsonb('write_roles').$type<string[]>().default(['admin']),
   required: boolean('required').default(false),
+  categoryId: uuid('category_id').references(() => fieldCategories.id, { onDelete: 'set null' }),
 }, (table) => ({
   directoryIdx: index("field_defs_directory_idx").on(table.directoryId),
   keyIdx: index("field_defs_key_idx").on(table.key),
