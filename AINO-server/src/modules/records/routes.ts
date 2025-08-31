@@ -40,14 +40,17 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
   const dir = c.req.param('dir')
   const query = c.req.valid('query')
   
+  console.log('🔍 记录API被调用:', { dir, query })
+  
   try {
     const service = new RecordsService()
     const result = await service.listRecords(dir, query)
     console.log('🔍 服务层返回结果:', JSON.stringify(result, null, 2))
     return c.json({ success: true, ...result })
   } catch (error) {
-    console.error('获取记录列表失败:', error)
-    return c.json({ success: false, error: '获取记录列表失败' }, 500)
+    console.error('❌ 获取记录列表失败:', error)
+    const errorMessage = error instanceof Error ? error.message : '获取记录列表失败'
+    return c.json({ success: false, error: errorMessage }, 400)
   }
 })
 

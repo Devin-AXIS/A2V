@@ -114,16 +114,20 @@ export class RecordsService {
       // 获取目录信息
       const directory = await this.getDirectoryById(dirId)
       if (!directory) {
+        console.error('❌ 目录不存在:', dirId)
         throw new Error(`目录不存在: ${dirId}`)
       }
+      
+      console.log('✅ 找到目录:', { id: directory.id, name: directory.name })
       
       // 获取目录定义
       const dirDef = await this.getDirectoryDef(dirId)
       if (!dirDef) {
+        console.error('❌ 目录定义不存在:', dirId)
         throw new Error(`目录定义不存在: ${dirId}`)
       }
       
-      console.log('🔍 目录信息:', { directory, dirDef })
+      console.log('✅ 找到目录定义:', { id: dirDef.id, title: dirDef.title })
       
       // 暂时返回mock数据，因为我们需要先解决表结构问题
       const mockData = [
