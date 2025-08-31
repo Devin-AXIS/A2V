@@ -137,9 +137,19 @@ export function useApiBuilderController({
       })
       
       if (response.success && response.data) {
+        // 过滤掉已知有问题的目录ID
+        const validDirectories = response.data.directories.filter((dir: any) => {
+          // 跳过已知不存在的目录ID
+          if (dir.id === 'c9f11a42-19fc-4e3f-a9d3-0e6ffa695b1b') {
+            console.warn(`跳过已知不存在的目录ID: ${dir.id}`)
+            return false
+          }
+          return true
+        })
+        
         // 将API数据转换为前端需要的格式，并获取完整的字段定义
         const directories = await Promise.all(
-          response.data.directories.map(async (dir: any) => {
+          validDirectories.map(async (dir: any) => {
             let fields = dir.config?.fields || []
             
             try {
