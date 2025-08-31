@@ -15,6 +15,7 @@ import { UserMenu } from "@/components/layout/user-menu"
 import { useAuth } from "@/hooks/use-auth"
 import { useApplications } from "@/hooks/use-applications"
 import { type Application } from "@/lib/api"
+import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 
 export default function Page() {
   const { user, isLoading: authLoading } = useAuth()
@@ -36,6 +37,8 @@ export default function Page() {
   const [openAddApp, setOpenAddApp] = useState(false)
   const [appName, setAppName] = useState("")
   const [appDesc, setAppDesc] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [appToDelete, setAppToDelete] = useState<{ id: string; name: string } | null>(null)
 
   // 决定使用哪种数据源
   const isUsingApi = !!user // 如果用户已登录，使用 API
@@ -160,22 +163,33 @@ export default function Page() {
 
   // 删除应用
   async function doDelete(id: string) {
-    if (!confirm(t("confirmDeleteApp"))) return
+    const app = applications.find(a => a.id === id)
+    if (!app) return
+    
+    setAppToDelete({ id, name: app.name })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteApp = async () => {
+    if (!appToDelete) return
 
     if (isUsingApi) {
       // 使用 API 删除
       try {
-        await deleteApplication(id)
+        await deleteApplication(appToDelete.id)
       } catch (error) {
         console.error("删除应用失败:", error)
       }
     } else {
       // 使用 localStorage 删除
       const s = getStore()
-      s.apps = s.apps.filter((a) => a.id !== id)
+      s.apps = s.apps.filter((a) => a.id !== appToDelete.id)
       saveStore(s)
       setLocalApps([...s.apps])
     }
+    
+    setDeleteDialogOpen(false)
+    setAppToDelete(null)
   }
 
   // 过滤应用列表
@@ -353,6 +367,15 @@ export default function Page() {
         defaultOptionKey="blank"
         initialName=""
         onSubmit={handleCreateAppFromDialog}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={appToDelete?.name || ""}
+        itemType="application"
+        onConfirm={confirmDeleteApp}
       />
     </main>
   )
