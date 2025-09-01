@@ -11,7 +11,7 @@ function generateSlug(name: string): string {
   if (/^[a-zA-Z0-9\s]+$/.test(name)) {
     return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   }
-  
+
   // 如果是中文或其他字符，使用时间戳作为slug
   const timestamp = Date.now()
   return `app-${timestamp}`
@@ -34,13 +34,13 @@ export class ApplicationService {
       isPublic: data.isPublic || false,
       version: "1.0.0",
     }
-    
+
     const [result] = await db.insert(applications).values(newApp).returning()
-    
+
     // 自动创建默认目录
     const createdModules = await this.createSystemModules(result.id)
     await this.createDefaultDirectories(result.id, createdModules)
-    
+
     return result
   }
 
@@ -48,7 +48,7 @@ export class ApplicationService {
   private async createSystemModules(applicationId: string) {
     const systemModules = getAllSystemModules()
     const createdModules = []
-    
+
     // 只创建用户模块，其他模块由用户主动安装
     for (let i = 0; i < systemModules.length; i++) {
       const module = systemModules[i]
@@ -63,11 +63,11 @@ export class ApplicationService {
           order: i,
           isEnabled: true,
         }).returning()
-        
+
         createdModules.push(createdModule)
       }
     }
-    
+
     return createdModules
   }
 
@@ -100,11 +100,27 @@ export class ApplicationService {
         status: 'active',
       }).returning()
 
-      // 自动创建用户模块的默认字段分类
-      await this.createUserModuleFieldCategories(applicationId, createdDirectory.id)
-      
-      // 自动创建用户模块的默认字段
-      await this.createUserModuleDefaultFields(directoryDef.id, createdDirectory.id)
+      // 自动创建用户模块的默认字段分类与默认字段（软失败，不阻断应用创建）
+      try {
+        await this.createUserModuleFieldCategories(applicationId, createdDirectory.id)
+      } catch (err) {
+        console.error('创建用户模块字段分类失败（已忽略）:', {
+          applicationId,
+          directoryId: createdDirectory.id,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+
+      try {
+        await this.createUserModuleDefaultFields(directoryDef.id, createdDirectory.id)
+      } catch (err) {
+        console.error('创建用户模块默认字段失败（已忽略）:', {
+          applicationId,
+          directoryId: createdDirectory.id,
+          directoryDefId: directoryDef.id,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
   }
 
@@ -164,7 +180,7 @@ export class ApplicationService {
       { key: 'industry', label: '行业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
       { key: 'occupation', label: '职业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
       { key: 'bio', label: '个人介绍', type: 'textarea', required: false, showInList: true, showInForm: true, category: '基础信息' },
-      
+
       // 用户履历 (7个字段)
       { key: 'work_exp', label: '工作经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
       { key: 'edu_exp', label: '教育经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
@@ -173,7 +189,7 @@ export class ApplicationService {
       { key: 'skills', label: '技能', type: 'multiselect', required: false, showInList: true, showInForm: true, category: '用户履历' },
       { key: 'zodiac_sign', label: '星座', type: 'select', required: false, showInList: true, showInForm: true, options: ['白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座'], category: '用户履历' },
       { key: 'user_id', label: '用户ID', type: 'text', required: false, showInList: true, showInForm: true, category: '用户履历' },
-      
+
       // 实名与认证 (2个字段)
       { key: 'realname_status', label: '实名认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' },
       { key: 'socid_status', label: '社会身份认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' }
@@ -190,43 +206,61 @@ export class ApplicationService {
         showInForm: field.showInForm,
         options: field.options || [],
       },
+      validators: {},
       required: field.required || false,
       readRoles: ['admin', 'member'],
       writeRoles: ['admin'],
       categoryId: categoryMap[field.category] || null, // 添加分类ID关联
     }))
 
-    await db.insert(fieldDefs).values(fieldValues)
+    try {
+      await db.insert(fieldDefs).values(fieldValues)
+    } catch (err) {
+      // 单条回退：尝试逐条插入以获得更清晰的错误并尽可能插入其余字段
+      console.warn('批量插入默认字段失败，尝试逐条插入:', err instanceof Error ? err.message : String(err))
+      for (const value of fieldValues) {
+        try {
+          await db.insert(fieldDefs).values(value)
+        } catch (singleErr) {
+          console.error('插入单个默认字段失败（已忽略）:', {
+            directoryDefId,
+            directoryId,
+            key: value.key,
+            error: singleErr instanceof Error ? singleErr.message : String(singleErr),
+          })
+        }
+      }
+    }
   }
 
   // 获取应用列表
   async getApplications(query: GetApplicationsQuery, userId: string) {
     const { page = 1, limit = 10, search, status, template } = query
     const offset = (page - 1) * limit
-    
+
     // 构建查询条件 - 只查询用户拥有的应用
     let whereConditions = [eq(applications.ownerId, userId)]
-    
+
     if (search) {
       whereConditions.push(eq(applications.name, search))
     }
-    
+
     if (status) {
       whereConditions.push(eq(applications.status, status))
     }
-    
+
     if (template) {
       whereConditions.push(eq(applications.template, template))
     }
-    
+
     // 获取总数
     const countResult = await db
       .select({ count: applications.id })
       .from(applications)
       .where(and(...whereConditions))
-    
+
     const total = countResult.length
-    
+
     // 获取分页数据
     const applicationsList = await db
       .select()
@@ -235,7 +269,7 @@ export class ApplicationService {
       .orderBy(desc(applications.createdAt))
       .limit(limit)
       .offset(offset)
-    
+
     return {
       applications: applicationsList,
       pagination: {
@@ -253,7 +287,7 @@ export class ApplicationService {
       .select()
       .from(applications)
       .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
-    
+
     if (!application) {
       throw new Error("应用不存在或无权限访问")
     }
@@ -267,13 +301,13 @@ export class ApplicationService {
       ...data,
       updatedAt: new Date()
     }
-    
+
     const [result] = await db
       .update(applications)
       .set(updateData)
       .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
       .returning()
-    
+
     if (!result) {
       throw new Error("应用不存在或无权限访问")
     }
@@ -287,7 +321,7 @@ export class ApplicationService {
       .delete(applications)
       .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
       .returning()
-    
+
     if (!result) {
       throw new Error("应用不存在或无权限访问")
     }
@@ -304,14 +338,14 @@ export class ApplicationService {
   async getApplicationModules(applicationId: string, userId: string) {
     // 先检查用户是否有权限访问该应用
     const application = await this.getApplicationById(applicationId, userId)
-    
+
     // 获取系统预定义模块（modules表）
     const systemModules = await db
       .select()
       .from(modules)
       .where(eq(modules.applicationId, applicationId))
       .orderBy(modules.order)
-    
+
     // 获取用户安装的模块（moduleInstalls表）
     const installedModules = await db
       .select({
@@ -329,13 +363,13 @@ export class ApplicationService {
       .from(moduleInstalls)
       .where(eq(moduleInstalls.applicationId, applicationId))
       .orderBy(moduleInstalls.installedAt)
-    
+
     // 合并两个表的模块数据
     const allModules = [
       ...systemModules,
       ...installedModules
     ]
-    
+
     return {
       application,
       modules: allModules,
