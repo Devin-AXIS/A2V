@@ -52,7 +52,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = async () => {
     console.log("🔍 开始认证检查...")
     try {
-      const token = getStoredToken()
+      let token = getStoredToken()
+      
+      // 开发环境：如果没有token，设置默认的test-token
+      if (!token) {
+        console.log("🔧 设置默认test-token")
+        token = 'test-token'
+        setStoredToken(token)
+      }
+      
       console.log("🔑 Token 状态:", token ? "存在" : "不存在")
       if (token) {
         console.log("🔄 尝试获取用户信息...")

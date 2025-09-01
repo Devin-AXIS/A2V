@@ -87,6 +87,11 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+  
+  // 开发环境：如果没有token，使用默认的test-token
+  if (!token) {
+    token = 'test-token'
+  }
 
   const config: RequestInit = {
     headers: {
@@ -992,6 +997,8 @@ export const modulesApi = {
     })
   }
 }
+
+
 
 // 导出默认 API 对象
 export const api = {
