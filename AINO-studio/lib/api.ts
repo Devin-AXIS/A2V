@@ -28,6 +28,17 @@ export interface LoginResponse {
   user: User
 }
 
+export interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+}
+
+export interface RegisterResponse {
+  token: string
+  user: User
+}
+
 // 应用相关类型
 export interface Application {
   id: string
@@ -87,7 +98,7 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
-  
+
   // 开发环境：如果没有token，使用默认的test-token
   if (!token) {
     token = 'test-token'
@@ -186,6 +197,15 @@ export const authApi = {
     })
   },
 
+  // 用户注册
+  async register(data: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
+    // 后端已在 /api/users 和 /users 前缀挂载
+    return apiRequest<RegisterResponse>('/api/users/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
   // 获取当前用户信息（从后端读取）
   async getCurrentUser(): Promise<ApiResponse<User>> {
     return apiRequest<User>('/api/users/me')
@@ -221,10 +241,10 @@ export const applicationUsersApi = {
     if (params?.department) queryParams.append('department', params.department)
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
-    
+
     const queryString = queryParams.toString()
     const endpoint = `/api/modules/system/user?applicationId=${applicationId}${queryString ? `&${queryString}` : ''}`
-    
+
     return apiRequest<any>(endpoint)
   },
 
@@ -646,7 +666,7 @@ export const recordsApi = {
     filter?: string
   } = {}): Promise<ApiResponse<any>> {
     const searchParams = new URLSearchParams()
-    
+
     // 转换参数名：pageSize -> limit
     const backendParams = {
       page: params.page,
@@ -655,7 +675,7 @@ export const recordsApi = {
       fields: params.fields,
       filter: params.filter
     }
-    
+
     Object.entries(backendParams).forEach(([key, value]) => {
       if (value !== undefined) {
         searchParams.append(key, value.toString())
