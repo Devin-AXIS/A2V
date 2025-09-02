@@ -221,6 +221,21 @@ export const authApi = {
 
 // 应用用户相关 API
 export const applicationUsersApi = {
+  // 应用用户登录
+  async loginUser(applicationId: string, data: { phone_number: string; password: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/login?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 应用用户修改密码
+  async changePassword(applicationId: string, data: { phone_number: string; old_password: string; new_password: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/change-password?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
   // 获取应用用户列表
   async getApplicationUsers(applicationId: string, params?: {
     page?: number

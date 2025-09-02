@@ -113,3 +113,20 @@ export const MergeUserRequest = z.object({
 })
 
 export type TMergeUserRequest = z.infer<typeof MergeUserRequest>
+
+// 应用用户登录请求
+export const LoginUserRequest = z.object({
+  phone_number: z.string().min(1, "手机号不能为空"),
+  password: z.string().min(6, "密码至少6位"),
+})
+
+export type TLoginUserRequest = z.infer<typeof LoginUserRequest>
+
+// 应用用户修改密码请求
+export const ChangePasswordRequest = z.object({
+  phone_number: z.string().min(1, "手机号不能为空"),
+  old_password: z.string().min(6, "旧密码至少6位"),
+  new_password: z.string().min(6, "新密码至少6位"),
+})
+
+export type TChangePasswordRequest = z.infer<typeof ChangePasswordRequest>

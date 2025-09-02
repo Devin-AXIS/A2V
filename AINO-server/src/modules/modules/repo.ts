@@ -4,6 +4,45 @@ import { eq, and, like, desc, asc, count, sql, or } from "drizzle-orm"
 import type { TGetModulesQuery, TInstallModuleRequest, TUpdateModuleConfigRequest, TUpdateModuleStatusRequest } from "./dto"
 
 export class ModuleRepository {
+  // 生成唯一实例 key（支持同类型多实例）
+  async generateInstanceKey(applicationId: string, baseModuleKey: string): Promise<{ instanceKey: string; instanceIndex: number }> {
+    // 查询已存在的该 base 的所有实例
+    const existing = await db
+      .select({ key: moduleInstalls.moduleKey })
+      .from(moduleInstalls)
+      .where(
+        and(
+          eq(moduleInstalls.applicationId, applicationId),
+          or(
+            eq(moduleInstalls.moduleKey, baseModuleKey),
+            like(moduleInstalls.moduleKey, `${baseModuleKey}#%`)
+          )!
+        )
+      )
+
+    if (existing.length === 0) {
+      return { instanceKey: baseModuleKey, instanceIndex: 1 }
+    }
+
+    // 提取已用的序号，形如 base#N
+    let maxIndex = 1
+    for (const row of existing) {
+      const key = row.key as unknown as string
+      if (key === baseModuleKey) {
+        maxIndex = Math.max(maxIndex, 1)
+      } else {
+        const parts = key.split('#')
+        const idx = parts.length > 1 ? parseInt(parts[1], 10) : NaN
+        if (!Number.isNaN(idx)) {
+          maxIndex = Math.max(maxIndex, idx)
+        }
+      }
+    }
+
+    const nextIndex = maxIndex + 1
+    return { instanceKey: `${baseModuleKey}#${nextIndex}`, instanceIndex: nextIndex }
+  }
+
   // 获取模块安装列表
   async findMany(query: TGetModulesQuery & { applicationId: string }) {
     const { page, limit, search, type, status, sortBy, sortOrder, applicationId } = query
@@ -11,7 +50,7 @@ export class ModuleRepository {
 
     // 构建查询条件
     const whereConditions = [eq(moduleInstalls.applicationId, applicationId)]
-    
+
     if (search) {
       whereConditions.push(
         or(
@@ -20,11 +59,11 @@ export class ModuleRepository {
         )!
       )
     }
-    
+
     if (type !== "all") {
       whereConditions.push(eq(moduleInstalls.moduleType, type))
     }
-    
+
     if (status !== "all") {
       whereConditions.push(eq(moduleInstalls.installStatus, status))
     }
@@ -103,7 +142,7 @@ export class ModuleRepository {
   }
 
   // 安装模块
-  async install(data: TInstallModuleRequest & { 
+  async install(data: TInstallModuleRequest & {
     applicationId: string
     moduleName: string
     moduleType: "system" | "local" | "remote"
@@ -195,7 +234,7 @@ export class ModuleRepository {
   // 卸载模块
   async uninstall(applicationId: string, moduleKey: string) {
     console.log('🔍 卸载模块:', { applicationId, moduleKey })
-    
+
     const [deletedModule] = await db
       .delete(moduleInstalls)
       .where(
@@ -212,7 +251,7 @@ export class ModuleRepository {
   // 检查模块是否已安装
   async isInstalled(applicationId: string, moduleKey: string): Promise<boolean> {
     console.log('🔍 检查模块是否已安装:', { applicationId, moduleKey })
-    
+
     const result = await db.execute(sql`
       SELECT id FROM module_installs 
       WHERE application_id = ${applicationId} 
@@ -224,7 +263,7 @@ export class ModuleRepository {
     console.log('🔍 查询结果:', { rows: result.rows, length: result.rows.length })
     const isInstalled = result.rows.length > 0
     console.log('🔍 是否已安装:', isInstalled)
-    
+
     return isInstalled
   }
 

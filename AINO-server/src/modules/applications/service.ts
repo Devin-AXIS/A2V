@@ -191,8 +191,8 @@ export class ApplicationService {
       { key: 'user_id', label: '用户ID', type: 'text', required: false, showInList: true, showInForm: true, category: '用户履历' },
 
       // 实名与认证 (2个字段)
-      { key: 'realname_status', label: '实名认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' },
-      { key: 'socid_status', label: '社会身份认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' }
+      { key: 'realname_status', label: '实名认证', type: 'identity_verification', required: false, showInList: true, showInForm: true, category: '实名与认证', preset: 'identity_verification' as any },
+      { key: 'socid_status', label: '社会身份认证', type: 'other_verification', required: false, showInList: true, showInForm: true, category: '实名与认证', preset: 'other_verification' as any }
     ]
 
     const fieldValues = fields.map(field => ({
@@ -205,6 +205,8 @@ export class ApplicationService {
         showInList: field.showInList,
         showInForm: field.showInForm,
         options: field.options || [],
+        // 透传预设，便于前端按预设渲染
+        preset: (field as any).preset,
       },
       validators: {},
       required: field.required || false,

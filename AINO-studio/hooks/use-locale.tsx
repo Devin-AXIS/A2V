@@ -115,7 +115,7 @@ const zh: Dict = {
   systemCategoryCannotDelete: "系统分类不能删除",
   previousPage: "上一页",
   nextPage: "下一页",
-  fieldCategoryManagement: "字段分类管理",
+  fieldCategoryManagement: "字段分类",
   deleteCategory: "删除分类",
   // 记录分类管理相关
   recordCategoryManagement: "内容分类管理",
@@ -281,7 +281,7 @@ const en: Dict = {
   systemCategoryCannotDelete: "System categories cannot be deleted",
   previousPage: "Previous",
   nextPage: "Next",
-  fieldCategoryManagement: "Field Category Management",
+  fieldCategoryManagement: "Field Category",
   deleteCategory: "Delete Category",
   // Record Category Management
   recordCategoryManagement: "Content Category Management",
@@ -348,31 +348,31 @@ const LocaleContext = createContext<LocaleContextType | null>(null)
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>("zh")
   const [mounted, setMounted] = useState(false)
-  
+
   useEffect(() => {
     setMounted(true)
     const saved = (localStorage.getItem("nocode_locale") as Locale) || "zh"
     setLocale(saved)
   }, [])
-  
+
   useEffect(() => {
     if (mounted) {
       localStorage.setItem("nocode_locale", locale)
     }
   }, [locale, mounted])
-  
+
   const dict = locale === "zh" ? zh : en
-  
+
   function t(key: keyof typeof zh, params?: any): string {
     const v = (dict as any)[key]
     if (typeof v === "function") return v(params)
     return v ?? String(key)
   }
-  
+
   function toggleLocale() {
     setLocale((l) => (l === "zh" ? "en" : "zh"))
   }
-  
+
   return (
     <LocaleContext.Provider value={{ locale, t, toggleLocale }}>
       {children}
@@ -385,7 +385,7 @@ export function useLocale() {
   if (!context) {
     throw new Error("useLocale must be used within a LocaleProvider")
   }
-  
+
   // 为了确保服务器端和客户端渲染一致，我们使用默认的中文字典
   const defaultDict = zh
   const defaultT = (key: keyof typeof zh, params?: any): string => {
@@ -393,15 +393,15 @@ export function useLocale() {
     if (typeof v === "function") return v(params)
     return v ?? String(key)
   }
-  
+
   // 如果context还没有准备好，返回默认值
   if (!context.locale) {
     return {
       locale: "zh" as Locale,
       t: defaultT,
-      toggleLocale: () => {}
+      toggleLocale: () => { }
     }
   }
-  
+
   return context
 }

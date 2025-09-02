@@ -1,19 +1,22 @@
-import type { 
-  TCreateApplicationUserRequest, 
-  TUpdateApplicationUserRequest, 
+import type {
+  TCreateApplicationUserRequest,
+  TUpdateApplicationUserRequest,
   TGetApplicationUsersQuery,
   TRegisterUserRequest,
-  TMergeUserRequest
+  TMergeUserRequest,
+  TLoginUserRequest,
+  TChangePasswordRequest
 } from './dto'
 import * as repo from './repo'
 import { db } from '../../db'
-import { dirUsers } from '../../db/schema'
+import { dirUsers, directories } from '../../db/schema'
 import { and, eq, sql } from 'drizzle-orm'
+import bcrypt from 'bcryptjs'
 
 export class ApplicationUserService {
   // 创建应用用户（只创建账号）
   async createApplicationUser(
-    applicationId: string, 
+    applicationId: string,
     data: TCreateApplicationUserRequest
   ) {
     // 检查手机号是否已存在
@@ -28,7 +31,7 @@ export class ApplicationUserService {
 
   // 获取应用用户列表
   async getApplicationUsers(
-    applicationId: string, 
+    applicationId: string,
     query: TGetApplicationUsersQuery
   ) {
     const result = await repo.getApplicationUsers(applicationId, query)
@@ -37,7 +40,7 @@ export class ApplicationUserService {
 
   // 根据ID获取应用用户
   async getApplicationUserById(
-    applicationId: string, 
+    applicationId: string,
     userId: string
   ) {
     const user = await repo.getApplicationUserById(applicationId, userId)
@@ -49,8 +52,8 @@ export class ApplicationUserService {
 
   // 更新应用用户（只更新账号信息）
   async updateApplicationUser(
-    applicationId: string, 
-    userId: string, 
+    applicationId: string,
+    userId: string,
     data: TUpdateApplicationUserRequest
   ) {
     // 检查用户是否存在
@@ -73,7 +76,7 @@ export class ApplicationUserService {
 
   // 删除应用用户
   async deleteApplicationUser(
-    applicationId: string, 
+    applicationId: string,
     userId: string
   ) {
     // 检查用户是否存在
@@ -96,7 +99,7 @@ export class ApplicationUserService {
 
   // 更新最后登录时间
   async updateLastLoginTime(
-    applicationId: string, 
+    applicationId: string,
     userId: string
   ) {
     const user = await repo.updateLastLoginTime(applicationId, userId)
@@ -115,8 +118,8 @@ export class ApplicationUserService {
 
   // 批量操作
   async batchUpdateUsers(
-    applicationId: string, 
-    userIds: string[], 
+    applicationId: string,
+    userIds: string[],
     data: Partial<TUpdateApplicationUserRequest>
   ) {
     const results = []
@@ -133,24 +136,24 @@ export class ApplicationUserService {
 
   // 用户注册
   async registerUser(
-    applicationId: string, 
+    applicationId: string,
     data: TRegisterUserRequest
   ) {
     console.log('🔍 开始用户注册:', { applicationId, phone: data.phone_number })
-    
+
     // 检查手机号是否已存在
     const existingUser = await repo.findUserByPhone(applicationId, data.phone_number)
-    
+
     if (existingUser) {
-      console.log('🔍 发现相同手机号用户，执行合并:', existingUser.id)
-      // 合并用户
-      return await this.mergeUser(applicationId, existingUser.id, data)
+      console.log('⚠️ 发现相同手机号用户，阻止重复注册:', existingUser.id)
+      throw new Error('用户已注册')
     } else {
       console.log('🔍 创建新用户')
       // 创建新用户（只创建账号）
+      const hashedPassword = await bcrypt.hash(data.password, 10)
       const userData = {
         phone_number: data.phone_number,
-        password: data.password, // 临时存储密码，后续需要加密
+        password: hashedPassword,
         role: 'user',
         status: 'active',
         metadata: {
@@ -158,12 +161,64 @@ export class ApplicationUserService {
           registeredAt: new Date().toISOString()
         }
       }
-      
+
       const user = await repo.createApplicationUser(applicationId, userData)
-      
-      // 在用户模块中创建对应的业务数据记录
-      await this.createUserBusinessRecord(applicationId, user.id, user.phone, data)
-      
+
+      // 通过手机号查找是否已有业务数据记录，兼容 tenantId 为 applicationId 或 用户列表目录ID
+      try {
+        const userListDirId = await this.getUserListDirectoryId(applicationId)
+
+        const existingCurrent = await db
+          .select()
+          .from(dirUsers)
+          .where(
+            and(
+              eq(dirUsers.tenantId, applicationId),
+              sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+            )
+          )
+          .limit(1)
+
+        let existing = existingCurrent[0]
+
+        if (!existing && userListDirId) {
+          const existingByDir = await db
+            .select()
+            .from(dirUsers)
+            .where(
+              and(
+                eq(dirUsers.tenantId, userListDirId),
+                sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+              )
+            )
+            .limit(1)
+          existing = existingByDir[0]
+        }
+
+        if (existing) {
+          const updatedProps = {
+            ...existing.props,
+            userId: user.id,
+            phone_number: data.phone_number,
+            name: data.name || existing.props.name || '',
+            email: data.email || existing.props.email || '',
+            avatar: data.avatar || existing.props.avatar || '',
+            gender: data.gender || existing.props.gender || '',
+            city: data.city || existing.props.city || '',
+            birthday: data.birthday || existing.props.birthday || '',
+            source: existing.props.source || 'register',
+            linkedAt: new Date().toISOString(),
+          }
+          await db.update(dirUsers).set({ props: updatedProps }).where(eq(dirUsers.id, existing.id))
+        } else {
+          // 在用户模块中创建对应的业务数据记录
+          await this.createUserBusinessRecord(applicationId, user.id, user.phone, data)
+        }
+      } catch (err) {
+        console.error('❌ 关联或创建业务数据失败:', err)
+        // 不阻断注册流程
+      }
+
       console.log('✅ 用户注册成功:', user.id)
       return user
     }
@@ -171,38 +226,37 @@ export class ApplicationUserService {
 
   // 合并用户
   async mergeUser(
-    applicationId: string, 
-    targetUserId: string, 
+    applicationId: string,
+    targetUserId: string,
     registerData: TRegisterUserRequest
   ) {
     console.log('🔍 开始合并用户:', { targetUserId, phone: registerData.phone_number })
-    
+
     // 获取目标用户信息
     const targetUser = await repo.getApplicationUserById(applicationId, targetUserId)
     if (!targetUser) {
       throw new Error('目标用户不存在')
     }
-    
+
     // 合并数据（只更新账号信息）
+    const hashedPassword = await bcrypt.hash(registerData.password, 10)
     const mergedData = {
       phone_number: registerData.phone_number,
       status: 'active', // 激活状态
       metadata: {
         ...targetUser.metadata,
-        // 添加注册信息
-        password: registerData.password, // 临时存储密码，后续需要加密
         source: 'merged',
         mergedAt: new Date().toISOString(),
         originalSource: targetUser.metadata?.source || 'manual'
       }
     }
-    
+
     // 更新用户信息
-    const updatedUser = await repo.updateApplicationUser(applicationId, targetUserId, mergedData)
-    
+    const updatedUser = await repo.updateApplicationUser(applicationId, targetUserId, { ...mergedData, password: hashedPassword })
+
     // 更新业务数据记录（以注册用户数据为准）
     await this.updateUserBusinessRecord(applicationId, targetUserId, registerData)
-    
+
     console.log('✅ 用户合并成功:', updatedUser.id)
     return updatedUser
   }
@@ -215,9 +269,9 @@ export class ApplicationUserService {
 
   // 创建用户业务数据记录
   private async createUserBusinessRecord(
-    applicationId: string, 
-    userId: string, 
-    phone: string, 
+    applicationId: string,
+    userId: string,
+    phone: string,
     userData: TRegisterUserRequest
   ) {
     try {
@@ -254,8 +308,8 @@ export class ApplicationUserService {
 
   // 更新用户业务数据记录（合并时使用，以注册用户数据为准）
   private async updateUserBusinessRecord(
-    applicationId: string, 
-    userId: string, 
+    applicationId: string,
+    userId: string,
     registerData: TRegisterUserRequest
   ) {
     try {
@@ -312,7 +366,7 @@ export class ApplicationUserService {
   }
 
   async batchDeleteUsers(
-    applicationId: string, 
+    applicationId: string,
     userIds: string[]
   ) {
     const results = []
@@ -325,5 +379,133 @@ export class ApplicationUserService {
       }
     }
     return results
+  }
+
+  // 应用用户登录
+  async login(
+    applicationId: string,
+    data: TLoginUserRequest
+  ) {
+    console.log('🔐 应用用户登录:', { applicationId, phone: data.phone_number })
+    const user = await repo.findUserByPhone(applicationId, data.phone_number)
+    if (!user || !user.password) {
+      throw new Error('手机号或密码错误')
+    }
+
+    const isValid = await bcrypt.compare(data.password, user.password)
+    if (!isValid) {
+      throw new Error('手机号或密码错误')
+    }
+
+    // 更新最后登录时间
+    await repo.updateLastLoginTime(applicationId, user.id)
+
+    // 读取业务数据：兼容 tenantId 两种存法（applicationId 或 用户列表目录ID）
+    let businessData: any = {}
+    try {
+      const userListDirId = await this.getUserListDirectoryId(applicationId)
+
+      // 先按 userId
+      let rec = await db
+        .select({ props: dirUsers.props })
+        .from(dirUsers)
+        .where(
+          and(
+            eq(dirUsers.tenantId, applicationId),
+            sql`${dirUsers.props}->>'userId' = ${user.id}`
+          )
+        )
+        .limit(1)
+
+      if ((!rec || rec.length === 0) && userListDirId) {
+        rec = await db
+          .select({ props: dirUsers.props })
+          .from(dirUsers)
+          .where(
+            and(
+              eq(dirUsers.tenantId, userListDirId),
+              sql`${dirUsers.props}->>'userId' = ${user.id}`
+            )
+          )
+          .limit(1)
+      }
+
+      if (!rec || rec.length === 0) {
+        // 再按手机号（兼容 phone/phone_number）
+        rec = await db
+          .select({ props: dirUsers.props })
+          .from(dirUsers)
+          .where(
+            and(
+              eq(dirUsers.tenantId, applicationId),
+              sql`( ${dirUsers.props}->>'phone_number' = ${user.phone} OR ${dirUsers.props}->>'phone' = ${user.phone} )`
+            )
+          )
+          .limit(1)
+
+        if ((!rec || rec.length === 0) && userListDirId) {
+          rec = await db
+            .select({ props: dirUsers.props })
+            .from(dirUsers)
+            .where(
+              and(
+                eq(dirUsers.tenantId, userListDirId),
+                sql`( ${dirUsers.props}->>'phone_number' = ${user.phone} OR ${dirUsers.props}->>'phone' = ${user.phone} )`
+              )
+            )
+            .limit(1)
+        }
+      }
+
+      businessData = rec && rec[0] ? (rec[0].props || {}) : {}
+    } catch { }
+
+    return {
+      ...user,
+      name: businessData.name || '',
+      email: businessData.email || '',
+      avatar: businessData.avatar || '',
+      department: businessData.department || '',
+      position: businessData.position || '',
+      tags: businessData.tags || [],
+      phone_number: businessData.phone_number || user.phone,
+      profile: businessData,
+    }
+  }
+
+  // 应用用户修改密码
+  async changePassword(
+    applicationId: string,
+    data: TChangePasswordRequest
+  ) {
+    console.log('🔑 应用用户修改密码:', { applicationId, phone: data.phone_number })
+    const user = await repo.findUserByPhone(applicationId, data.phone_number)
+    if (!user || !user.password) {
+      throw new Error('用户不存在')
+    }
+
+    const ok = await bcrypt.compare(data.old_password, user.password)
+    if (!ok) {
+      throw new Error('旧密码错误')
+    }
+
+    const newHash = await bcrypt.hash(data.new_password, 10)
+    await repo.updateApplicationUser(applicationId, user.id, { password: newHash })
+    return { success: true }
+  }
+
+  // 获取“用户列表”目录ID
+  private async getUserListDirectoryId(applicationId: string): Promise<string | null> {
+    const rows = await db
+      .select({ id: directories.id })
+      .from(directories)
+      .where(
+        and(
+          eq(directories.applicationId, applicationId),
+          eq(directories.name, '用户列表')
+        )
+      )
+      .limit(1)
+    return rows && rows[0] ? rows[0].id : null
   }
 }

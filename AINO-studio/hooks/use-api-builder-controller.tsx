@@ -82,7 +82,7 @@ export function useApiBuilderController({
   toast: (opts: { description: string; variant?: any }) => void
 }) {
   const { t, locale } = useLocale()
-  
+
   // 使用API获取应用和模块数据
   const {
     data,
@@ -119,7 +119,7 @@ export function useApiBuilderController({
   // 目录数据状态
   const [directoriesData, setDirectoriesData] = useState<Record<string, DirectoryModel[]>>({})
   const [directoriesLoading, setDirectoriesLoading] = useState<Record<string, boolean>>({})
-  
+
   // 记录数据状态
   const [recordsData, setRecordsData] = useState<Record<string, any[]>>({})
   const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
@@ -127,15 +127,15 @@ export function useApiBuilderController({
   // 获取目录数据的函数
   const fetchDirectories = async (moduleId: string) => {
     if (directoriesLoading[moduleId]) return
-    
+
     setDirectoriesLoading(prev => ({ ...prev, [moduleId]: true }))
-    
+
     try {
       const response = await api.directories.getDirectories({
         applicationId: appId,
         moduleId: moduleId,
       })
-      
+
       if (response.success && response.data) {
         // 过滤掉已知有问题的目录ID
         const validDirectories = response.data.directories.filter((dir: any) => {
@@ -146,12 +146,12 @@ export function useApiBuilderController({
           }
           return true
         })
-        
+
         // 将API数据转换为前端需要的格式，并获取完整的字段定义
         const directories = await Promise.all(
           validDirectories.map(async (dir: any) => {
             let fields = dir.config?.fields || []
-            
+
             try {
               // 先检查目录是否存在
               let dirCheckResponse
@@ -161,15 +161,15 @@ export function useApiBuilderController({
                 console.warn(`目录 ${dir.id} 检查失败，跳过处理:`, checkError)
                 return null // 返回null，后续过滤掉
               }
-              
+
               if (!dirCheckResponse.success) {
                 console.warn(`目录 ${dir.id} 不存在，跳过处理`)
                 return null // 返回null，后续过滤掉
               }
-              
+
               // 获取目录定义ID
               const dirDefResponse = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(dir.id, appId)
-              
+
               if (dirDefResponse.success && dirDefResponse.data?.id) {
                 // 获取完整的字段定义
                 const fieldsResponse = await api.fields.getFields({
@@ -177,53 +177,54 @@ export function useApiBuilderController({
                   page: 1,
                   limit: 100
                 })
-              
-              if (fieldsResponse.success && fieldsResponse.data) {
-                // 将API字段定义转换为前端格式
-                fields = fieldsResponse.data.map((field: any) => ({
-                  id: field.id,
-                  key: field.key,
-                  label: field.schema?.label || field.key,
-                  type: field.type,
-                  required: field.required || false,
-                  unique: false,
-                  showInList: field.schema?.showInList ?? true,
-                  showInForm: field.schema?.showInForm ?? true,
-                  showInDetail: field.schema?.showInDetail ?? true,
-                  placeholder: field.schema?.placeholder || '',
-                  desc: field.schema?.description || '',
-                  options: field.schema?.options || [],
-                  config: field.schema || {},
-                  validators: field.validators || {},
-                  enabled: true,
-                  locked: false,
-                  // 提取字段配置信息
-                  cascaderOptions: field.schema?.cascaderOptions || undefined,
-                  customExperienceConfig: field.schema?.customExperienceConfig || undefined,
-                  certificateConfig: field.schema?.certificateConfig || undefined,
-                  skillsConfig: field.schema?.skillsConfig || undefined,
-                  progressConfig: field.schema?.progressConfig || undefined,
-                  identityVerificationConfig: field.schema?.identityVerificationConfig || undefined,
-                  otherVerificationConfig: field.schema?.otherVerificationConfig || undefined,
-                  imageConfig: field.schema?.imageConfig || undefined,
-                  videoConfig: field.schema?.videoConfig || undefined,
-                  booleanConfig: field.schema?.booleanConfig || undefined,
-                  multiselectConfig: field.schema?.multiselectConfig || undefined,
-                  preset: field.schema?.preset || undefined,
-                  // 添加关联字段配置
-                  relation: field.relation ? {
-                    targetDirId: field.relation.targetDirId || null,
-                    mode: field.relation.mode || (field.type === 'relation_one' ? 'one' : 'many'),
-                    displayFieldKey: field.relation.displayFieldKey || null,
-                  } : undefined,
-                }))
+
+                if (fieldsResponse.success && fieldsResponse.data) {
+                  // 将API字段定义转换为前端格式，并为每个字段初始化 order（按当前返回顺序）
+                  fields = fieldsResponse.data.map((field: any, index: number) => ({
+                    id: field.id,
+                    key: field.key,
+                    label: field.schema?.label || field.key,
+                    type: field.type,
+                    required: field.required || false,
+                    unique: false,
+                    showInList: field.schema?.showInList ?? true,
+                    showInForm: field.schema?.showInForm ?? true,
+                    showInDetail: field.schema?.showInDetail ?? true,
+                    placeholder: field.schema?.placeholder || '',
+                    desc: field.schema?.description || '',
+                    options: field.schema?.options || [],
+                    config: field.schema || {},
+                    validators: field.validators || {},
+                    enabled: true,
+                    locked: false,
+                    // 提取字段配置信息
+                    cascaderOptions: field.schema?.cascaderOptions || undefined,
+                    customExperienceConfig: field.schema?.customExperienceConfig || undefined,
+                    certificateConfig: field.schema?.certificateConfig || undefined,
+                    skillsConfig: field.schema?.skillsConfig || undefined,
+                    progressConfig: field.schema?.progressConfig || undefined,
+                    identityVerificationConfig: field.schema?.identityVerificationConfig || undefined,
+                    otherVerificationConfig: field.schema?.otherVerificationConfig || undefined,
+                    imageConfig: field.schema?.imageConfig || undefined,
+                    videoConfig: field.schema?.videoConfig || undefined,
+                    booleanConfig: field.schema?.booleanConfig || undefined,
+                    multiselectConfig: field.schema?.multiselectConfig || undefined,
+                    preset: field.schema?.preset || undefined,
+                    order: (field as any).order ?? index,
+                    // 添加关联字段配置
+                    relation: field.relation ? {
+                      targetDirId: field.relation.targetDirId || null,
+                      mode: field.relation.mode || (field.type === 'relation_one' ? 'one' : 'many'),
+                      displayFieldKey: field.relation.displayFieldKey || null,
+                    } : undefined,
+                  }))
+                }
               }
-            }
             } catch (error) {
               console.warn(`获取目录 ${dir.id} 的定义失败:`, error)
               // 继续使用默认字段配置
             }
-            
+
             // 获取记录分类数据
             let categories: any[] = []
             try {
@@ -231,7 +232,7 @@ export function useApiBuilderController({
                 applicationId: appId,
                 directoryId: dir.id
               })
-              
+
               if (categoriesResponse.success && categoriesResponse.data?.categories) {
                 // 将扁平结构转换为树形结构
                 categories = buildCategoryTree(categoriesResponse.data.categories)
@@ -241,7 +242,7 @@ export function useApiBuilderController({
               // 如果获取失败，使用目录配置中的分类作为备用
               categories = dir.config?.categories || []
             }
-            
+
             return {
               id: dir.id,
               name: dir.name,
@@ -252,10 +253,10 @@ export function useApiBuilderController({
             }
           })
         )
-        
+
         // 过滤掉null值（不存在的目录）
         const filteredDirectories = directories.filter(dir => dir !== null)
-        
+
         setDirectoriesData(prev => ({
           ...prev,
           [moduleId]: filteredDirectories
@@ -274,68 +275,31 @@ export function useApiBuilderController({
 
   // 获取记录数据的函数 - 使用ref来避免依赖项问题
   const fetchRecordsRef = useRef<Record<string, boolean>>({})
-  
+
   const fetchRecords = useCallback(async (dirId: string) => {
     // 使用ref来跟踪请求状态，避免依赖项问题
     if (fetchRecordsRef.current[dirId]) {
       console.log('🔍 记录正在加载中，跳过重复请求:', dirId)
       return
     }
-    
+
     console.log('🔍 开始获取记录数据:', dirId)
     fetchRecordsRef.current[dirId] = true
     setRecordsLoading(prev => ({ ...prev, [dirId]: true }))
-    
+
     try {
-      // 检查是否是用户模块的用户列表目录
-      const isUserModule = modules.some(module => 
-        module.name === '用户管理' && 
-        directoriesData[module.id]?.some(dir => dir.id === dirId && dir.name === '用户列表')
-      )
-      
       let records = []
-      
-      if (isUserModule) {
-        // 使用应用用户API获取用户数据
-        console.log('🔍 检测到用户模块，使用应用用户API')
-        const response = await api.applicationUsers.getApplicationUsers(appId, {
-          page: 1,
-          limit: 20
-        })
-        
-        if (response.success && response.data) {
-          // 将应用用户数据转换为记录格式
-          records = response.data.users.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            phone_number: user.phone_number,
-            email: user.email,
-            avatar: user.avatar,
-            department: user.department,
-            position: user.position,
-            tags: user.tags,
-            status: user.status,
-            role: user.role,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt
-          }))
-          console.log('🔍 用户数据获取成功:', dirId, '用户数量:', records.length)
-        }
-      } else {
-        // 使用普通记录API
-        const response = await api.records.listRecords(dirId, {
-          page: 1,
-          pageSize: 20, // 修复：后端最大限制是50，使用20更安全
-        })
-        
-        if (response.success && response.data) {
-          // 后端返回格式: { data: [...], pagination: {...} }
-          // 前端期望格式: 直接是记录数组
-          records = Array.isArray(response.data) ? response.data : response.data.records || response.data
-          console.log('🔍 记录数据获取成功:', dirId, '记录数量:', records.length)
-        }
+      // 统一使用记录API
+      const response = await api.records.listRecords(dirId, {
+        page: 1,
+        pageSize: 20,
+      })
+
+      if (response.success && response.data) {
+        records = Array.isArray(response.data) ? response.data : response.data.records || response.data
+        console.log('🔍 记录数据获取成功:', dirId, '记录数量:', records.length)
       }
-      
+
       setRecordsData(prev => ({
         ...prev,
         [dirId]: records
@@ -397,7 +361,7 @@ export function useApiBuilderController({
     if (!currentModule || !dirId) return null
     const dir = currentModule.directories.find((d) => d.id === dirId)
     if (!dir) return null
-    
+
     // 动态获取记录数据，避免在useMemo中直接使用recordsData
     return {
       ...dir,
@@ -432,9 +396,9 @@ export function useApiBuilderController({
   async function handleCreateDirectoryFromDialog(payload: { name: string; templateKey: string }) {
     if (!currentModule) return
     if (!can("edit")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权创建目录" : "Current role has no permission to create directory", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权创建目录" : "Current role has no permission to create directory",
+        variant: "destructive"
       })
       return
     }
@@ -454,11 +418,11 @@ export function useApiBuilderController({
       if (response.success && response.data) {
         // 重新获取目录数据
         await fetchDirectories(currentModule.id)
-        
+
         // 设置新创建的目录为当前目录
         setDirId(response.data.id)
         setOpenAddDir(false)
-        
+
         toast({
           description: locale === "zh" ? `目录「${payload.name}」创建成功` : `Directory "${payload.name}" created successfully`,
         })
@@ -475,9 +439,9 @@ export function useApiBuilderController({
   async function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
     if (!application) return
     if (!can("edit")) return
-    
+
     console.log('🔍 开始创建模块:', { appId, payload })
-    
+
     try {
       // 使用简化的模块安装API
       const response = await api.modules.installModuleSimple(appId, {
@@ -487,19 +451,19 @@ export function useApiBuilderController({
           icon: payload.icon
         }
       })
-      
+
       console.log('🔍 API响应:', response)
-      
+
       if (response.success) {
         setOpenAddModule(false)
-        
+
         console.log('🔄 模块创建成功，开始刷新数据...')
-        
+
         // 刷新模块数据
         await fetchModules()
-        
+
         console.log('✅ 模块数据刷新完成')
-        
+
         toast({
           title: locale === "zh" ? "模块创建成功" : "Module Created Successfully",
           description: locale === "zh" ? `模块 "${payload.name}" 已创建` : `Module "${payload.name}" has been created`,
@@ -509,13 +473,13 @@ export function useApiBuilderController({
       }
     } catch (error) {
       console.error('❌ 创建模块失败:', error)
-      
+
       // 检查是否是模块已安装的错误
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.log('🔍 错误信息:', errorMessage)
-      
+
       const isModuleAlreadyInstalled = errorMessage.includes("模块已安装") || errorMessage.includes("already installed")
-      
+
       if (isModuleAlreadyInstalled) {
         toast({
           title: locale === "zh" ? "模块已存在" : "Module Already Exists",
@@ -536,42 +500,17 @@ export function useApiBuilderController({
   async function saveRecord(dirId: string, recordId: string, props: Record<string, any>) {
     try {
       console.log('🔍 保存记录:', { dirId, recordId, props })
-      
-      // 检查是否是用户模块的用户列表目录
-      const isUserModule = modules.some(module => 
-        module.name === '用户管理' && 
-        directoriesData[module.id]?.some(dir => dir.id === dirId && dir.name === '用户列表')
-      )
-      
-      let response
-      if (isUserModule) {
-        // 用户模块：只更新application_users表，不更新dir_users表
-        // 根据开发约束，application_users是业务用户，dir_users是业务数据
-        // 用户模块的保存应该只更新账号相关数据
-        console.log('🔍 检测到用户模块，使用应用用户API更新')
-        
-        response = await api.applicationUsers.updateApplicationUser(appId, recordId, {
-          phone_number: props.phone_number,
-          status: props.status,
-          role: props.role
-        })
-        
-        if (!response.success) {
-          throw new Error(response.error || "更新用户数据失败")
-        }
-      } else {
-        // 普通模块使用记录API
-        response = await api.records.updateRecord(dirId, recordId, { props })
-      }
-      
+      // 统一使用记录API
+      const response = await api.records.updateRecord(dirId, recordId, { props })
+
       if (response.success && response.data) {
         // 重新获取记录列表以更新本地状态
         await fetchRecords(dirId)
-        
+
         toast({
           description: locale === "zh" ? "记录保存成功" : "Record saved successfully",
         })
-        
+
         return response.data
       } else {
         throw new Error(response.error || "保存记录失败")
@@ -587,17 +526,61 @@ export function useApiBuilderController({
   }
 
   function persist(app: any) {
-    // 临时实现，用于兼容旧的接口
-    // 新的实现应该使用 saveRecord 函数
-    console.log("Persist app (deprecated):", app)
+    try {
+      // 将传入的 app（包含已更新目录字段顺序）合并回 directoriesData
+      if (!app || !app.modules) return
+
+      setDirectoriesData((prev) => {
+        const next = { ...prev }
+        for (const mod of app.modules || []) {
+          if (!mod || !mod.id) continue
+          const updatedDirs = (mod.directories || []).map((d: any) => {
+            const existingList = prev[mod.id] || []
+            const existing = existingList.find((x) => x.id === d.id)
+            return {
+              id: d.id,
+              name: d.name,
+              type: d.type,
+              // 关键：使用传入 app 的最新字段顺序
+              fields: Array.isArray(d.fields) ? d.fields.slice() : [],
+              // 保留现有的分类与记录（如存在）
+              categories: d.categories ?? existing?.categories ?? [],
+              records: existing?.records ?? [],
+            }
+          })
+          next[mod.id] = updatedDirs
+        }
+        return next
+      })
+    } catch (e) {
+      console.warn('persist 合并目录数据失败:', e)
+    }
+  }
+
+  function updateDirectoryFields(moduleId: string, directoryId: string, fields: any[]) {
+    try {
+      setDirectoriesData((prev) => {
+        const list = prev[moduleId] || []
+        const nextList = list.map((d) => {
+          if (d.id !== directoryId) return d
+          return {
+            ...d,
+            fields: Array.isArray(fields) ? fields.slice() : [],
+          }
+        })
+        return { ...prev, [moduleId]: nextList }
+      })
+    } catch (e) {
+      console.warn('updateDirectoryFields 失败:', e)
+    }
   }
 
   async function addRecord() {
     if (!currentDir) return
     if (!can("edit")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权添加记录" : "Current role has no permission to add record", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权添加记录" : "Current role has no permission to add record",
+        variant: "destructive"
       })
       return
     }
@@ -605,7 +588,7 @@ export function useApiBuilderController({
     try {
       // 检查是否有内容分类
       const hasCategories = currentDir.categories && currentDir.categories.length > 0
-      
+
       if (hasCategories) {
         // 有分类时，先弹出分类选择对话框
         setOpenCategorySelection(true)
@@ -628,14 +611,14 @@ export function useApiBuilderController({
     try {
       // 构建默认记录数据
       const defaultProps: Record<string, any> = {}
-      
+
       // 根据字段定义设置默认值
       currentDir.fields.forEach((field) => {
         if (field.default !== undefined) {
           defaultProps[field.key] = field.default
           return
         }
-        
+
         // 根据字段类型设置默认值
         let defaultValue: any
         switch (field.type) {
@@ -695,7 +678,7 @@ export function useApiBuilderController({
               defaultValue = ""
             }
         }
-        
+
         defaultProps[field.key] = defaultValue
       })
 
@@ -708,34 +691,34 @@ export function useApiBuilderController({
       }
 
       // 调用API创建记录
-      console.log('🔍 创建记录:', { 
-        dirId: currentDir.id, 
+      console.log('🔍 创建记录:', {
+        dirId: currentDir.id,
         dirName: currentDir.name,
         props: defaultProps,
-        fieldsInfo: currentDir.fields.map(f => ({ 
-          key: f.key, 
-          type: f.type, 
+        fieldsInfo: currentDir.fields.map(f => ({
+          key: f.key,
+          type: f.type,
           required: f.required,
-          label: f.label 
+          label: f.label
         }))
       })
       const response = await api.records.createRecord(currentDir.id, { props: defaultProps })
-      
+
       if (response.success && response.data) {
         console.log('🔍 记录创建成功，返回数据:', response.data)
-        
+
         // 直接将新创建的记录添加到recordsData中
         const newRecord = response.data
         setRecordsData(prev => ({
           ...prev,
           [currentDir.id]: [...(prev[currentDir.id] || []), newRecord]
         }))
-        
+
         // 打开记录抽屉进行编辑
         const recordId = response.data.id
         console.log('🔍 准备打开抽屉:', { dirId: currentDir.id, recordId, tab: "basic" })
         setDrawer({ open: true, dirId: currentDir.id, recordId: recordId, tab: "basic" })
-        
+
         toast({
           description: locale === "zh" ? "记录创建成功" : "Record created successfully",
         })
@@ -773,9 +756,9 @@ export function useApiBuilderController({
   function handleRenameModule(name?: string) {
     if (!currentModule) return
     if (!can("edit")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权重命名模块" : "Current role has no permission to rename module", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权重命名模块" : "Current role has no permission to rename module",
+        variant: "destructive"
       })
       return
     }
@@ -790,9 +773,9 @@ export function useApiBuilderController({
 
   async function renameDir(d: any) {
     if (!can("edit")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权重命名目录" : "Current role has no permission to rename directory", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权重命名目录" : "Current role has no permission to rename directory",
+        variant: "destructive"
       })
       return
     }
@@ -805,7 +788,7 @@ export function useApiBuilderController({
     if (!currentModule || !renameDirTargetId) return
     const newName = (name || renameDirName).trim()
     if (!newName) return
-    
+
     try {
       const response = await api.directories.updateDirectory(renameDirTargetId, {
         name: newName,
@@ -814,7 +797,7 @@ export function useApiBuilderController({
       if (response.success) {
         // 重新获取目录数据
         await fetchDirectories(currentModule.id)
-        
+
         toast({
           description: locale === "zh" ? `目录重命名为「${newName}」` : `Directory renamed to "${newName}"`,
         })
@@ -832,20 +815,20 @@ export function useApiBuilderController({
   async function deleteDir(d: any) {
     if (!currentModule) return
     if (!can("delete")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权删除目录" : "Current role has no permission to delete directory", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权删除目录" : "Current role has no permission to delete directory",
+        variant: "destructive"
       })
       return
     }
-    
+
     // 检查目录是否有记录
     if (d.records && d.records.length > 0) {
-      toast({ 
-        description: locale === "zh" 
+      toast({
+        description: locale === "zh"
           ? `无法删除目录「${d.name}」，请先删除目录中的 ${d.records.length} 条记录`
-          : `Cannot delete directory "${d.name}", please delete ${d.records.length} records first`, 
-        variant: "destructive" 
+          : `Cannot delete directory "${d.name}", please delete ${d.records.length} records first`,
+        variant: "destructive"
       })
       return
     }
@@ -856,13 +839,13 @@ export function useApiBuilderController({
       if (response.success) {
         // 重新获取目录数据
         await fetchDirectories(currentModule.id)
-        
+
         // 如果删除的是当前目录，切换到第一个可用目录
         if (dirId === d.id) {
           const remainingDirs = directoriesData[currentModule.id]?.filter(dir => dir.id !== d.id) || []
           setDirId(remainingDirs.length > 0 ? remainingDirs[0].id : null)
         }
-        
+
         toast({
           description: locale === "zh" ? `目录「${d.name}」已删除` : `Directory "${d.name}" deleted`,
         })
@@ -878,26 +861,26 @@ export function useApiBuilderController({
 
   async function handleSaveCategories(newCats: any[]) {
     if (!currentDir || !appId) return
-    
+
     try {
       console.log('🔍 保存分类数据:', newCats)
-      
+
       // 简化逻辑：先删除所有现有分类，再重新创建
       // 这样可以避免复杂的ID映射和层级关系问题
-      
+
       // 1. 获取并删除所有现有分类
       const existingCategories = await api.recordCategories.getRecordCategories({
         applicationId: appId,
         directoryId: currentDir.id
       })
-      
+
       if (existingCategories.success && existingCategories.data?.categories) {
         console.log('🗑️ 删除现有分类，数量:', existingCategories.data.categories.length)
-        
+
         // 按层级倒序删除：先删除子分类，再删除父分类
         const categories = existingCategories.data.categories
         const sortedCategories = categories.sort((a: any, b: any) => (b.level || 1) - (a.level || 1))
-        
+
         for (const category of sortedCategories) {
           try {
             console.log('🗑️ 删除分类:', category.name, 'level:', category.level)
@@ -908,11 +891,11 @@ export function useApiBuilderController({
           }
         }
       }
-      
+
       // 2. 重新创建所有分类（按层级顺序）
       const flatCategories = flattenCategories(newCats)
       console.log('🔄 扁平化分类:', flatCategories)
-      
+
       // 按层级分组
       const levels = new Map()
       flatCategories.forEach(category => {
@@ -922,22 +905,22 @@ export function useApiBuilderController({
         }
         levels.get(level).push(category)
       })
-      
+
       // 存储新创建的ID映射
       const idMap = new Map()
-      
+
       // 按层级顺序创建分类
       for (const level of Array.from(levels.keys()).sort()) {
         const categoriesAtLevel = levels.get(level)
         for (const category of categoriesAtLevel) {
           console.log('➕ 创建分类:', category.name, 'level:', level)
-          
+
           // 处理parentId - 使用新创建的ID
           let parentId = null
           if (category.parentId && idMap.has(category.parentId)) {
             parentId = idMap.get(category.parentId)
           }
-          
+
           const response = await api.recordCategories.createRecordCategory({
             name: category.name,
             ...(parentId && { parentId: parentId }),
@@ -947,7 +930,7 @@ export function useApiBuilderController({
             applicationId: appId,
             directoryId: currentDir.id
           })
-          
+
           if (response.success && response.data) {
             // 存储新ID映射
             idMap.set(category.tempId, response.data.id)
@@ -957,30 +940,30 @@ export function useApiBuilderController({
           }
         }
       }
-      
+
       // 3. 重新获取分类数据并更新本地状态
       const updatedCategories = await api.recordCategories.getRecordCategories({
         applicationId: appId,
         directoryId: currentDir.id
       })
-      
+
       if (updatedCategories.success) {
         // 将扁平数据转换为树形结构
         const treeCategories = buildCategoryTree(updatedCategories.data?.categories || [])
-        
+
         // 更新本地状态
         const updatedDir = {
           ...currentDir,
           categories: treeCategories
         } as any
-        
+
         setDirectoriesData(prev => ({
           ...prev,
-          [currentModule?.id || '']: prev[currentModule?.id || '']?.map(dir => 
+          [currentModule?.id || '']: prev[currentModule?.id || '']?.map(dir =>
             dir.id === currentDir.id ? updatedDir : dir
           ) || []
         }))
-        
+
         toast({
           description: locale === "zh" ? "分类保存成功" : "Categories saved successfully",
         })
@@ -996,15 +979,15 @@ export function useApiBuilderController({
       })
     }
   }
-  
+
   // 将树形分类结构转换为扁平结构
   function flattenCategories(categories: any[], parentId: string | null = null, level: number = 1): any[] {
     const result: any[] = []
-    
+
     categories.forEach((category, index) => {
       // 为没有ID的分类生成临时ID
       const tempId = category.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
+
       const flatCategory = {
         id: category.id,
         tempId: tempId, // 临时ID，用于映射关系
@@ -1015,22 +998,22 @@ export function useApiBuilderController({
         enabled: category.enabled !== false
       }
       result.push(flatCategory)
-      
+
       // 递归处理子分类
       if (category.children && category.children.length > 0) {
         const childCategories = flattenCategories(category.children, category.id || tempId, level + 1)
         result.push(...childCategories)
       }
     })
-    
+
     return result
   }
-  
+
   // 将扁平分类结构转换为树形结构
   function buildCategoryTree(flatCategories: any[]): any[] {
     const categoryMap = new Map()
     const rootCategories: any[] = []
-    
+
     // 创建分类映射
     flatCategories.forEach(category => {
       categoryMap.set(category.id, {
@@ -1038,11 +1021,11 @@ export function useApiBuilderController({
         children: []
       })
     })
-    
+
     // 构建树形结构
     flatCategories.forEach(category => {
       const categoryNode = categoryMap.get(category.id)
-      
+
       if (category.parentId && categoryMap.has(category.parentId)) {
         // 有父分类，添加到父分类的children中
         const parent = categoryMap.get(category.parentId)
@@ -1052,7 +1035,7 @@ export function useApiBuilderController({
         rootCategories.push(categoryNode)
       }
     })
-    
+
     // 按order排序
     const sortCategories = (categories: any[]) => {
       categories.sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -1062,7 +1045,7 @@ export function useApiBuilderController({
         }
       })
     }
-    
+
     sortCategories(rootCategories)
     return rootCategories
   }
@@ -1070,34 +1053,21 @@ export function useApiBuilderController({
   async function handleSingleDelete(rid: string) {
     if (!currentDir) return
     if (!can("delete")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权删除记录" : "Current role has no permission to delete record", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权删除记录" : "Current role has no permission to delete record",
+        variant: "destructive"
       })
       return
     }
 
     try {
-      // 检查是否是用户模块的用户列表目录
-      const isUserModule = modules.some(module => 
-        module.name === '用户管理' && 
-        directoriesData[module.id]?.some(dir => dir.id === currentDir.id && dir.name === '用户列表')
-      )
-      
-      let response
-      if (isUserModule) {
-        // 用户模块使用应用用户API
-        console.log('🔍 检测到用户模块，使用应用用户API删除')
-        response = await api.applicationUsers.deleteApplicationUser(appId, rid)
-      } else {
-        // 普通模块使用记录API
-        response = await api.records.deleteRecord(currentDir.id, rid)
-      }
-      
+      // 统一使用记录API
+      const response = await api.records.deleteRecord(currentDir.id, rid)
+
       if (response.success) {
         // 重新获取记录数据
         await fetchRecords(currentDir.id)
-        
+
         toast({
           description: locale === "zh" ? "记录删除成功" : "Record deleted successfully",
         })
@@ -1114,44 +1084,44 @@ export function useApiBuilderController({
   async function handleBulkDelete() {
     if (!currentDir) return
     if (!can("bulkDelete")) {
-      toast({ 
-        description: locale === "zh" ? "当前角色无权批量删除" : "Current role has no permission to bulk delete", 
-        variant: "destructive" 
+      toast({
+        description: locale === "zh" ? "当前角色无权批量删除" : "Current role has no permission to bulk delete",
+        variant: "destructive"
       })
       return
     }
     if (selectedIds.length === 0) return
 
     // 确认删除
-    const confirmMessage = locale === "zh" 
+    const confirmMessage = locale === "zh"
       ? `确定要删除选中的 ${selectedIds.length} 条记录吗？此操作不可撤销。`
       : `Are you sure you want to delete ${selectedIds.length} selected records? This action cannot be undone.`
-    
+
     if (!confirm(confirmMessage)) return
 
     try {
       const response = await api.records.bulkDeleteRecords(currentDir.id, selectedIds)
-      
+
       if (response.success && response.data) {
         const { deletedCount, failedCount } = response.data
-        
+
         // 重新获取记录数据
         await fetchRecords(currentDir.id)
-        
+
         // 清空选择
         setSelectedIds([])
-        
+
         // 显示结果消息
         if (failedCount === 0) {
           toast({
-            description: locale === "zh" 
-              ? `成功删除 ${deletedCount} 条记录` 
+            description: locale === "zh"
+              ? `成功删除 ${deletedCount} 条记录`
               : `Successfully deleted ${deletedCount} records`,
           })
         } else {
           toast({
-            description: locale === "zh" 
-              ? `删除了 ${deletedCount} 条记录，${failedCount} 条删除失败` 
+            description: locale === "zh"
+              ? `删除了 ${deletedCount} 条记录，${failedCount} 条删除失败`
               : `Deleted ${deletedCount} records, ${failedCount} failed`,
             variant: "destructive",
           })
@@ -1180,13 +1150,13 @@ export function useApiBuilderController({
     currentModule,
     currentDir,
     records: currentDir ? (recordsData[currentDir.id] || []) : [],
-    
+
     // 选择状态
     moduleId,
     setModuleId,
     dirId,
     setDirId,
-    
+
     // 过滤和标签页
     filters,
     setFilters,
@@ -1194,11 +1164,11 @@ export function useApiBuilderController({
     setTab,
     selectedIds,
     setSelectedIds,
-    
+
     // 抽屉状态
     drawer,
     setDrawer,
-    
+
     // 对话框状态
     openAddModule,
     setOpenAddModule,
@@ -1220,16 +1190,17 @@ export function useApiBuilderController({
     setOpenCategory,
     openCategorySelection,
     setOpenCategorySelection,
-    
+
     // 加载状态
     isLoading,
     error,
-    
+
     // 刷新方法
     refresh: fetchModules,
 
     // 添加缺失的方法
     persist,
+    updateDirectoryFields,
     saveRecord,
     addRecord,
     openDrawer,

@@ -3,25 +3,27 @@ import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { ApplicationUserService } from "./service"
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
-import { 
-  CreateApplicationUserRequest, 
-  UpdateApplicationUserRequest, 
+import {
+  CreateApplicationUserRequest,
+  UpdateApplicationUserRequest,
   GetApplicationUsersQuery,
-  RegisterUserRequest
+  RegisterUserRequest,
+  LoginUserRequest,
+  ChangePasswordRequest
 } from "./dto"
 
 const app = new Hono()
 const service = new ApplicationUserService()
 
 // 获取应用用户列表
-app.get("/", 
+app.get("/",
   mockRequireAuthMiddleware,
   zValidator("query", GetApplicationUsersQuery),
   async (c) => {
     try {
       const query = c.req.valid("query")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -30,9 +32,9 @@ app.get("/",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const result = await service.getApplicationUsers(applicationId, query)
-      
+
       return c.json({
         success: true,
         data: result,
@@ -48,14 +50,14 @@ app.get("/",
 )
 
 // 创建应用用户
-app.post("/", 
+app.post("/",
   mockRequireAuthMiddleware,
   zValidator("json", CreateApplicationUserRequest),
   async (c) => {
     try {
       const data = c.req.valid("json")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -64,9 +66,9 @@ app.post("/",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const applicationUser = await service.createApplicationUser(applicationId, data)
-      
+
       return c.json({
         success: true,
         data: applicationUser,
@@ -82,13 +84,13 @@ app.post("/",
 )
 
 // 获取应用用户详情
-app.get("/:id", 
+app.get("/:id",
   mockRequireAuthMiddleware,
   async (c) => {
     try {
       const id = c.req.param("id")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -97,9 +99,9 @@ app.get("/:id",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const applicationUser = await service.getApplicationUserById(applicationId, id)
-      
+
       return c.json({
         success: true,
         data: applicationUser,
@@ -115,7 +117,7 @@ app.get("/:id",
 )
 
 // 更新应用用户
-app.put("/:id", 
+app.put("/:id",
   mockRequireAuthMiddleware,
   zValidator("json", UpdateApplicationUserRequest),
   async (c) => {
@@ -123,7 +125,7 @@ app.put("/:id",
       const id = c.req.param("id")
       const data = c.req.valid("json")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -132,9 +134,9 @@ app.put("/:id",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const applicationUser = await service.updateApplicationUser(applicationId, id, data)
-      
+
       return c.json({
         success: true,
         data: applicationUser,
@@ -150,13 +152,13 @@ app.put("/:id",
 )
 
 // 删除应用用户
-app.delete("/:id", 
+app.delete("/:id",
   mockRequireAuthMiddleware,
   async (c) => {
     try {
       const id = c.req.param("id")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -165,9 +167,9 @@ app.delete("/:id",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       await service.deleteApplicationUser(applicationId, id)
-      
+
       return c.json({
         success: true,
         message: "应用用户删除成功",
@@ -183,7 +185,7 @@ app.delete("/:id",
 )
 
 // 批量更新应用用户
-app.patch("/batch", 
+app.patch("/batch",
   mockRequireAuthMiddleware,
   zValidator("json", z.object({
     userIds: z.array(z.string().uuid()),
@@ -193,7 +195,7 @@ app.patch("/batch",
     try {
       const { userIds, data } = c.req.valid("json")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -202,9 +204,9 @@ app.patch("/batch",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const results = await service.batchUpdateUsers(applicationId, userIds, data)
-      
+
       return c.json({
         success: true,
         data: results,
@@ -220,7 +222,7 @@ app.patch("/batch",
 )
 
 // 批量删除应用用户
-app.delete("/batch", 
+app.delete("/batch",
   mockRequireAuthMiddleware,
   zValidator("json", z.object({
     userIds: z.array(z.string().uuid()),
@@ -229,7 +231,7 @@ app.delete("/batch",
     try {
       const { userIds } = c.req.valid("json")
       const user = c.get("user")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -238,9 +240,9 @@ app.delete("/batch",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const results = await service.batchDeleteUsers(applicationId, userIds)
-      
+
       return c.json({
         success: true,
         data: results,
@@ -261,7 +263,7 @@ app.post("/register",
   async (c) => {
     try {
       const data = c.req.valid("json")
-      
+
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
       if (!applicationId) {
@@ -270,9 +272,9 @@ app.post("/register",
           error: "缺少应用ID参数",
         }, 400)
       }
-      
+
       const result = await service.registerUser(applicationId, data)
-      
+
       return c.json({
         success: true,
         data: result,
@@ -284,6 +286,44 @@ app.post("/register",
         success: false,
         error: error instanceof Error ? error.message : "用户注册失败",
       }, 400)
+    }
+  }
+)
+
+// 用户登录（应用用户）
+app.post("/login",
+  zValidator("json", LoginUserRequest),
+  async (c) => {
+    try {
+      const data = c.req.valid("json")
+      const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+      if (!applicationId) {
+        return c.json({ success: false, error: "缺少应用ID参数" }, 400)
+      }
+
+      const result = await service.login(applicationId, data)
+      return c.json({ success: true, data: result })
+    } catch (error) {
+      return c.json({ success: false, error: error instanceof Error ? error.message : "登录失败" }, 400)
+    }
+  }
+)
+
+// 修改密码（应用用户）
+app.post("/change-password",
+  zValidator("json", ChangePasswordRequest),
+  async (c) => {
+    try {
+      const data = c.req.valid("json")
+      const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+      if (!applicationId) {
+        return c.json({ success: false, error: "缺少应用ID参数" }, 400)
+      }
+
+      await service.changePassword(applicationId, data)
+      return c.json({ success: true, message: "密码修改成功" })
+    } catch (error) {
+      return c.json({ success: false, error: error instanceof Error ? error.message : "修改密码失败" }, 400)
     }
   }
 )

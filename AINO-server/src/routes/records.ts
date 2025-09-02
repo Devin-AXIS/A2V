@@ -10,6 +10,7 @@ import { runSerialize } from '../lib/processors'
 import { buildOrderBy, projectProps, buildJsonbWhere } from '../lib/jsonb'
 import { mockRequireAuthMiddleware } from '../middleware/auth'
 import { fieldProcessorManager } from '../lib/field-processors'
+import { RelationSyncService } from '../lib/relation-sync'
 
 // 定义Context类型
 type AppContext = {
@@ -79,8 +80,8 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
 
     // 获取表实例
     const t = tableFor(dirId)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 使用目录对应的 applicationId 作为租户隔离标识
+    const tenantId = directory.applicationId
 
     // 计算偏移量
     const offset = (query.page - 1) * query.pageSize
@@ -195,11 +196,44 @@ records.post('/:dir', async (c) => {
       updatedBy: user?.id || 'system'
     }).returning()
 
+    // 同步关联关系（基于字段定义）
+    try {
+      // 加载目录字段定义
+      const [dirDef] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dirId)).limit(1)
+      if (dirDef) {
+        const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, dirDef.id))
+        const fieldDefinitions = fieldDefsResult.map(fd => ({
+          id: fd.id,
+          key: fd.key,
+          kind: fd.kind,
+          type: fd.type,
+          schema: fd.schema,
+          relation: fd.relation,
+          lookup: fd.lookup,
+          computed: fd.computed,
+          validators: fd.validators,
+          readRoles: fd.readRoles || [],
+          writeRoles: fd.writeRoles || [],
+          required: fd.required
+        }))
+
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          recordData,
+          {},
+          { applicationId: tenantId, directoryId: dirId, recordId: row.id }
+        )
+      }
+    } catch (e) {
+      console.error('同步关联关系失败(创建):', e)
+    }
+
     return c.json({
       success: true,
       data: {
         id: row.id,
-        props: row.props,
+        ...(row.props as Record<string, any>),
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         createdBy: row.createdBy,
@@ -218,9 +252,14 @@ records.get('/:dir/:id', async (c) => {
   const id = c.req.param('id')
 
   try {
+    // 获取目录信息以确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
     const t = tableFor(dir)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
 
     const [row] = await db.select()
       .from(t)
@@ -300,6 +339,38 @@ records.patch('/:dir/:id', async (c) => {
       })
       .where(eq(t.id, recordId))
       .returning()
+
+    // 同步关联关系（基于字段定义）
+    try {
+      const [dirDef] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dirId)).limit(1)
+      if (dirDef) {
+        const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, dirDef.id))
+        const fieldDefinitions = fieldDefsResult.map(fd => ({
+          id: fd.id,
+          key: fd.key,
+          kind: fd.kind,
+          type: fd.type,
+          schema: fd.schema,
+          relation: fd.relation,
+          lookup: fd.lookup,
+          computed: fd.computed,
+          validators: fd.validators,
+          readRoles: fd.readRoles || [],
+          writeRoles: fd.writeRoles || [],
+          required: fd.required
+        }))
+
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          updatedProps,
+          existingRecord.props as any,
+          { applicationId: tenantId, directoryId: dirId, recordId: updatedRow.id }
+        )
+      }
+    } catch (e) {
+      console.error('同步关联关系失败(更新):', e)
+    }
 
     return c.json({
       success: true,
@@ -422,7 +493,8 @@ records.post('/:dir', async (c) => {
 
     const t = tableFor(dir)
     const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 使用目录对应的 applicationId 作为租户隔离标识
+    const tenantId = directory.applicationId
 
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
@@ -503,6 +575,32 @@ records.post('/:dir', async (c) => {
         props: decoratedData
       }).returning()
 
+      // 同步关联关系（无字段定义分支）
+      try {
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          [] as any,
+          decoratedData,
+          {},
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(创建-基础分支):', e)
+      }
+
+      // 同步关联关系（基于字段定义）
+      try {
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          decoratedData,
+          {},
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(创建-高级分支):', e)
+      }
+
       return c.json({
         success: true,
         data: {
@@ -552,9 +650,15 @@ records.patch('/:dir/:id', async (c) => {
       return c.json({ success: false, error: '目录ID格式无效' }, 400)
     }
 
+    // 获取目录信息以确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
     const t = tableFor(dir)
     const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
 
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
@@ -601,6 +705,17 @@ records.patch('/:dir/:id', async (c) => {
       const transformedData = fieldProcessorManager.transformRecord(propsData, fieldsToValidate)
       console.log('🔍 验证和转换后的更新数据:', transformedData)
 
+      // 先获取旧记录以便比较变更
+      const [prevRowAdv] = await db.select()
+        .from(t)
+        .where(and(
+          eq(t.id, id),
+          eq(t.tenantId, tenantId),
+          sql`${t.deletedAt} is null`,
+          sql`(${t.props} ->> '__dirId') = ${dir}`
+        ))
+        .limit(1)
+
       const [row] = await db.update(t)
         .set({
           // 合并更新，保留原有props中的目录标识等
@@ -618,6 +733,21 @@ records.patch('/:dir/:id', async (c) => {
 
       if (!row) {
         return c.json({ success: false, error: '记录不存在' }, 404)
+      }
+
+      // 同步关联关系（基于字段定义）
+      try {
+        const relationSync = new RelationSyncService()
+        const oldProps = (prevRowAdv?.props as any) || {}
+        const newPropsForSync = { ...oldProps, ...transformedData, __dirId: dir }
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          newPropsForSync,
+          oldProps,
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(更新-高级分支):', e)
       }
 
       return c.json({
@@ -674,8 +804,13 @@ records.delete('/:dir/batch', zValidator('json', bulkDeleteSchema), async (c) =>
   const user = c.get('user') as any
 
   try {
+    // 获取目录信息确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
     const t = tableFor(dir)
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
     const results = []
 
     for (const recordId of recordIds) {
@@ -728,8 +863,12 @@ records.delete('/:dir/:id', async (c) => {
 
   try {
     const t = tableFor(dir)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 获取目录信息确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+    const tenantId = directory.applicationId
 
     const [row] = await db.update(t)
       .set({

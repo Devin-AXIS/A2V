@@ -139,7 +139,7 @@ export const recordCategories: any = pgTable("record_categories", {
 export const applicationUsers = pgTable("application_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
-  phone: text("phone_number").notNull(), // 手机号作为唯一标识
+  phone: text("phone").notNull(), // 手机号作为唯一标识
   password: text("password"), // 用户密码（加密存储）
   status: text("status").default("active").notNull(), // active, inactive, pending
   role: text("role").default("user").notNull(), // admin, user, guest
@@ -263,7 +263,7 @@ export const relationRecords = pgTable('relation_records', {
   toIdx: index("relation_records_to_idx").on(table.toDirectoryId, table.toRecordId, table.toFieldKey),
   appIdx: index("relation_records_app_idx").on(table.applicationId),
   uniqueRelation: unique("relation_records_unique").on(table.fromDirectoryId, table.fromRecordId, table.fromFieldKey, table.toDirectoryId, table.toRecordId),
-  
+
   // 性能优化索引
   outIdx: index("idx_rel_out").on(table.applicationId, table.fromDirectoryId, table.fromRecordId, table.relationType, table.toDirectoryId),
   inIdx: index("idx_rel_in").on(table.applicationId, table.toDirectoryId, table.toRecordId, table.relationType, table.fromDirectoryId),

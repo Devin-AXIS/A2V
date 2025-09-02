@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import type { AppModel, DirectoryModel } from "@/lib/store"
+import { findDirByIdAcrossModules, getRecordName } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
 import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
@@ -50,7 +51,12 @@ export function DataTable({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
 
-  const enabledFields = useMemo(() => dir.fields.filter((f) => f.enabled && (f.showInList ?? true)), [dir.fields])
+  const enabledFields = useMemo(() => {
+    const list = dir.fields.filter((f) => f.enabled && (f.showInList ?? true))
+    // 若包含 order，则按 order 排序；否则保持原顺序
+    const hasOrder = list.some((f: any) => typeof (f as any).order === 'number')
+    return hasOrder ? [...list].sort((a: any, b: any) => (a.order ?? 1e12) - (b.order ?? 1e12)) : list
+  }, [dir.fields])
 
   const filteredRows = useMemo(() => {
     const kw = filters.kw.trim().toLowerCase()
@@ -212,7 +218,7 @@ export function DataTable({
               {enabledFields.map((f) => (
                 <th
                   key={f.id}
-                  className="text-left text-xs font-medium bg-white/60 backdrop-blur py-2 px-4 border border-white/60 first:rounded-l-xl last:rounded-r-xl whitespace-nowrap min-w-[120px]"
+                  className="text-left text-xs font-medium bg-white/60 backdrop-blur py-2 px-4 border border-white/60 first:rounded-l-xl last:rounded-r-xl min-w-[120px]"
                 >
                   {f.label}
                 </th>
@@ -245,10 +251,10 @@ export function DataTable({
                   return (
                     <td
                       key={f.id}
-                      className="bg-white/60 backdrop-blur border border-white/60 py-2 px-4 first:rounded-l-xl last:rounded-r-xl cursor-pointer align-top text-sm whitespace-nowrap min-w-[120px]"
+                      className="bg-white/60 backdrop-blur border border-white/60 py-2 px-4 first:rounded-l-xl last:rounded-r-xl cursor-pointer align-top text-sm min-w-[120px]"
                       onClick={() => onOpen(row.id)}
                     >
-                      {renderCell(f.type, v, f, locale)}
+                      {renderCell(app, f.type, v, f, locale)}
                     </td>
                   )
                 })}
@@ -323,8 +329,51 @@ export function DataTable({
   )
 }
 
-function renderCell(type: string, v: any, f?: any, locale?: string) {
+function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: string) {
   const valueStr = String(v ?? "")
+  if (type === "relation_one") {
+    const targetDirId = f?.relation?.targetDirId
+    const targetDir = targetDirId ? findDirByIdAcrossModules(app, targetDirId) : null
+    if (typeof v === "string" && v) {
+      const rec = targetDir?.records.find((r: any) => r.id === v)
+      const label = rec
+        ? (f?.relation?.displayFieldKey
+          ? String((rec as any)[f.relation.displayFieldKey] ?? getRecordName(targetDir!, rec))
+          : getRecordName(targetDir!, rec))
+        : v
+      return (
+        <div className="truncate" title={label}>{label}</div>
+      )
+    }
+    return <span className="text-gray-400">-</span>
+  }
+
+  if (type === "relation_many") {
+    const targetDirId = f?.relation?.targetDirId
+    const targetDir = targetDirId ? findDirByIdAcrossModules(app, targetDirId) : null
+    const ids: string[] = Array.isArray(v) ? v : []
+    const labels = ids.map((id) => {
+      const rec = targetDir?.records.find((r: any) => r.id === id)
+      if (!rec) return id
+      return f?.relation?.displayFieldKey
+        ? String((rec as any)[f.relation.displayFieldKey] ?? getRecordName(targetDir!, rec))
+        : getRecordName(targetDir!, rec)
+    }).filter(Boolean)
+
+    if (labels.length === 0) return <span className="text-gray-400">-</span>
+
+    const visible = labels.slice(0, 2)
+    const hidden = labels.length - visible.length
+
+    return (
+      <div className="flex flex-wrap gap-1 items-center" title={labels.join(", ")}>
+        {visible.map((label, i) => (
+          <span key={i} className="text-xs px-1.5 py-0.5 rounded-full border border-white/60 bg-white/70 backdrop-blur">{label}</span>
+        ))}
+        {hidden > 0 && <span className="text-xs text-muted-foreground ml-1">+{hidden}</span>}
+      </div>
+    )
+  }
 
   if (type === "tags" && Array.isArray(v) && v.length > 0) {
     const visibleTags = v.slice(0, 2)
@@ -370,9 +419,9 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
     // 处理单图/多图模式
     const images = Array.isArray(v) ? v : [v]
     const validImages = images.filter(Boolean)
-    
+
     if (validImages.length === 0) return null
-    
+
     return (
       <div className="flex items-center gap-1">
         <img
@@ -394,9 +443,9 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
     // 处理标识字段 - 圆形显示
     const images = Array.isArray(v) ? v : [v]
     const validImages = images.filter(Boolean)
-    
+
     if (validImages.length === 0) return null
-    
+
     return (
       <div className="flex items-center gap-1">
         <img
@@ -417,9 +466,9 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
     // 处理单视频/多视频模式
     const videos = Array.isArray(v) ? v : [v]
     const validVideos = videos.filter(Boolean)
-    
+
     if (validVideos.length === 0) return null
-    
+
     return (
       <div className="flex items-center gap-1">
         <div className="relative">
@@ -430,7 +479,7 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
           />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded">
             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
+              <path d="M8 5v14l11-7z" />
             </svg>
           </div>
         </div>
@@ -464,12 +513,12 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
     const value = Number(v ?? 0)
     const maxValue = f.progressConfig.maxValue || 100
     const percentage = Math.round((value / maxValue) * 100)
-    
+
     return (
       <div className="flex items-center gap-2">
         {f.progressConfig.showProgressBar && (
           <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-            <div 
+            <div
               className="h-2 rounded-full transition-all duration-300 bg-blue-500"
               style={{
                 width: `${Math.min(percentage, 100)}%`
@@ -492,17 +541,17 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
       // 先从预定义技能中查找
       const predefinedSkill = getSkillById(skillId)
       if (predefinedSkill) return predefinedSkill.name
-      
+
       // 再从自定义技能中查找
       const customSkill = f?.skillsConfig?.customSkills?.find((s: any) => s.id === skillId)
       if (customSkill) return customSkill.name
-      
+
       return skillId // 如果都找不到，显示ID
     }).filter(Boolean)
-    
+
     const visibleSkills = skillNames.slice(0, 2)
     const hiddenCount = skillNames.length - visibleSkills.length
-    
+
     return (
       <div className="flex flex-wrap gap-1 items-center" title={skillNames.join(", ")}>
         {visibleSkills.map((skillName: string, i: number) => (
@@ -543,14 +592,14 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
     if (!v || typeof v !== "object") return <span className="text-gray-400">-</span>
     const hasData = Object.keys(v).length > 0
     if (!hasData) return <span className="text-gray-400">-</span>
-    
+
     // Get the first text field value as the verification name
-    const textFields = Object.entries(v).filter(([key, value]) => 
+    const textFields = Object.entries(v).filter(([key, value]) =>
       typeof value === "string" && value.trim() !== ""
     )
-    
+
     const verificationName = textFields.length > 0 ? textFields[0][1] : null
-    
+
     return (
       <div className="text-sm">
         {verificationName && <div className="font-medium">{verificationName}</div>}
@@ -565,7 +614,7 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
   if (type === "experience" && Array.isArray(v) && v.length > 0) {
     const experiences = v.slice(0, 2) // Show max 2 experiences
     const hiddenCount = v.length - experiences.length
-    
+
     return (
       <div className="space-y-1">
         {experiences.map((exp: any, index: number) => {
@@ -618,11 +667,11 @@ function renderCell(type: string, v: any, f?: any, locale?: string) {
   // Handle constellation field
   if ((type === "select" && f?.preset === "constellation") || type === "constellation") {
     if (!v) return <span className="text-gray-400">-</span>
-    
+
     // Import constellation data
     const { constellationData } = require('@/lib/data/constellation-data')
     const constellation = constellationData.find((item: any) => item.id === v)
-    
+
     return (
       <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
         {constellation ? constellation.name : v}

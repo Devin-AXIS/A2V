@@ -273,16 +273,23 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
     setDragIndex((from) => {
       if (from === null || from === i) return from
 
-      // Update fieldDefs order by moving the field
+      // 基于字段ID在完整列表中移动，避免筛选导致的索引错位
+      const fromField = filteredFields[from]
+      const toField = filteredFields[i]
+      if (!fromField || !toField) return i
+
       setFieldDefs((prevFieldDefs) => {
         const newFieldDefs = [...prevFieldDefs]
-        const [moved] = newFieldDefs.splice(from, 1)
-        newFieldDefs.splice(i, 0, moved)
+        const fromIndex = newFieldDefs.findIndex((f) => f.id === fromField.id)
+        const toIndex = newFieldDefs.findIndex((f) => f.id === toField.id)
+        if (fromIndex < 0 || toIndex < 0) return prevFieldDefs
 
-        // Update order property for each field
+        const [moved] = newFieldDefs.splice(fromIndex, 1)
+        newFieldDefs.splice(toIndex, 0, moved)
+
         return newFieldDefs.map((field, index) => ({
           ...field,
-          order: index
+          order: index,
         }))
       })
 
@@ -292,8 +299,29 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
 
   function handleDragEnd() {
     setDragIndex(null)
-    // Save field order to backend
+    // 先同步到目录字段顺序（影响记录列表列顺序）
+    syncDirFieldsOrderToStore()
+    // 再尝试保存到后端（若后端忽略order也不影响前端展示）
     saveFieldOrder()
+  }
+
+  // 将当前 fieldDefs 顺序同步到全局目录的 fields 顺序
+  function syncDirFieldsOrderToStore() {
+    try {
+      const orderByKey = new Map<string, number>(fieldDefs.map((f: any, idx: number) => [f.key, idx]))
+      commit((d) => {
+        // 先根据 key 进行排序
+        d.fields.sort((a: any, b: any) => {
+          const ai = orderByKey.get(a.key) ?? Number.MAX_SAFE_INTEGER
+          const bi = orderByKey.get(b.key) ?? Number.MAX_SAFE_INTEGER
+          return ai - bi
+        })
+        // 再写入 order 索引，便于列表按显式顺序渲染
+        d.fields = d.fields.map((f: any, idx: number) => ({ ...f, order: idx }))
+      })
+    } catch (e) {
+      console.error("同步字段顺序到目录失败", e)
+    }
   }
 
   // Save field order to backend
@@ -307,13 +335,21 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
 
       const directoryDefId = dirDefResponse.data.id
 
-      // Update each field's order
+      // Update each field's order（写入 schema.order，后端会据此排序并持久化）
       for (let i = 0; i < fieldDefs.length; i++) {
         const field = fieldDefs[i]
         if (field.id) {
           await api.fields.updateField(field.id, {
-            ...field,
-            order: i
+            schema: {
+              ...(field.config || {}),
+              // 保持现有可见性与标签等
+              label: (field.config?.label ?? field.label) || field.label,
+              showInList: field.config?.showInList ?? field.showInList ?? true,
+              showInForm: field.config?.showInForm ?? field.showInForm ?? true,
+              showInDetail: field.config?.showInDetail ?? field.showInDetail ?? true,
+              // 关键：持久化顺序
+              order: i,
+            }
           })
         }
       }
@@ -762,7 +798,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
           variant={selectedCategoryId === null ? "default" : "outline"}
           size="sm"
           onClick={() => setSelectedCategoryId(null)}
-          className="rounded-xl whitespace-nowrap flex-shrink-0"
+          className="rounded-xl flex-shrink-0"
         >
           {t("allFields")} ({fieldDefs.length})
         </Button>
@@ -777,7 +813,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
                 variant={selectedCategoryId === category.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategoryId(category.id)}
-                className="rounded-xl whitespace-nowrap flex-shrink-0"
+                className="rounded-xl flex-shrink-0"
               >
                 {category.name} ({fieldCount})
               </Button>
@@ -788,7 +824,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
             variant={selectedCategoryId === "uncategorized" ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedCategoryId("uncategorized")}
-            className="rounded-xl whitespace-nowrap flex-shrink-0"
+            className="rounded-xl flex-shrink-0"
           >
             {t("uncategorized")} ({categorizedFields.uncategorizedFields.length})
           </Button>
@@ -803,7 +839,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
 
           return (
             <div
-              key={`field-${f.id}-${idx}`}
+              key={`field-${f.id}`}
               className={"rounded-xl " + (dragIndex === idx ? "ring-2 ring-blue-200" : "")}
               onDragOver={(e) => e.preventDefault()}
               onDragEnter={() => handleDragEnter(idx)}

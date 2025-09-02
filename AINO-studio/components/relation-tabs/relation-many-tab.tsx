@@ -25,7 +25,6 @@ export function RelationManyTab({
   const targetDir = findDirByIdAcrossModules(app, targetDirId)
   const rawValue = (rec as any)[field.key]
   const selectedIds = Array.isArray(rawValue) ? rawValue : []
-  const selectedRecords = selectedIds.map((id: string) => targetDir?.records.find((r) => r.id === id)).filter(Boolean)
 
   // Debug logging
   console.log("RelationManyTab Debug:", {
@@ -40,13 +39,24 @@ export function RelationManyTab({
   const [targetDirRecords, setTargetDirRecords] = useState<RecordRow[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
 
+  // 在已加载的远端记录集中优先查找；否则回退到静态的 targetDir.records
+  const findRecordById = (id: string) => {
+    const fromLoaded = targetDirRecords.find((r) => r.id === id)
+    if (fromLoaded) return fromLoaded
+    return targetDir?.records.find((r) => r.id === id)
+  }
+
+  const selectedRecords = selectedIds
+    .map((id: string) => findRecordById(id))
+    .filter(Boolean) as RecordRow[]
+
   // Load target directory records
   const loadTargetDirRecords = async () => {
     if (!targetDirId || recordsLoading) {
       console.log("RelationManyTab: Skipping record load", { targetDirId, recordsLoading })
       return
     }
-    
+
     console.log("RelationManyTab: Loading records for targetDirId:", targetDirId)
     setRecordsLoading(true)
     try {
@@ -54,9 +64,9 @@ export function RelationManyTab({
         page: 1,
         pageSize: 100
       })
-      
+
       console.log("RelationManyTab: API response:", response)
-      
+
       if (response.success && response.data) {
         // 后端返回的data直接是记录数组，不是{records: [...]}
         const records = Array.isArray(response.data) ? response.data : []
@@ -132,9 +142,8 @@ export function RelationManyTab({
       const label = v ? f?.trueLabel || "是" : f?.falseLabel || "否"
       return (
         <span
-          className={`text-xs px-1.5 py-0.5 rounded-full ${
-            v ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"
-          }`}
+          className={`text-xs px-1.5 py-0.5 rounded-full ${v ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"
+            }`}
         >
           {label}
         </span>
@@ -189,7 +198,7 @@ export function RelationManyTab({
   return (
     <div className="space-y-4">
       <div className="text-sm text-muted-foreground">{locale === "zh" ? "显示连标一些核心资料 最多不超过4" : "Display linked core data, up to 4 items"}</div>
-      
+
       {selectedRecords.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-y-2 min-w-max">
@@ -198,7 +207,7 @@ export function RelationManyTab({
                 {coreFields.map((f) => (
                   <th
                     key={f.id}
-                    className="text-left text-xs font-medium bg-white/60 backdrop-blur py-2 px-4 border border-white/60 first:rounded-l-xl last:rounded-r-xl whitespace-nowrap min-w-[120px]"
+                    className="text-left text-xs font-medium bg-white/60 backdrop-blur py-2 px-4 border border-white/60 first:rounded-l-xl last:rounded-r-xl min-w-[120px]"
                   >
                     {f.label}
                   </th>
@@ -216,7 +225,7 @@ export function RelationManyTab({
                     return (
                       <td
                         key={f.id}
-                        className="bg-white/60 backdrop-blur border border-white/60 py-2 px-4 first:rounded-l-xl last:rounded-r-xl align-top text-sm whitespace-nowrap min-w-[120px]"
+                        className="bg-white/60 backdrop-blur border border-white/60 py-2 px-4 first:rounded-l-xl last:rounded-r-xl align-top text-sm min-w-[120px]"
                       >
                         {renderCell(f.type, v, f)}
                       </td>
@@ -239,19 +248,19 @@ export function RelationManyTab({
           {locale === "zh" ? "暂无关联记录" : "No related records"}
         </div>
       )}
-      <Button 
-        variant="outline" 
-        className="w-full bg-white" 
+      <Button
+        variant="outline"
+        className="w-full bg-white"
         onClick={() => {
           console.log("🔍 RelationManyTab: Add button clicked", {
             fieldKey: field.key,
             targetDirId,
             targetDir: targetDir ? { id: targetDir.id, name: targetDir.name } : null,
             targetDirRecords: targetDirRecords.length,
-            targetDirWithRecords: targetDirWithRecords ? { 
-              id: targetDirWithRecords.id, 
-              name: targetDirWithRecords.name, 
-              recordsCount: targetDirWithRecords.records?.length 
+            targetDirWithRecords: targetDirWithRecords ? {
+              id: targetDirWithRecords.id,
+              name: targetDirWithRecords.name,
+              recordsCount: targetDirWithRecords.records?.length
             } : null,
             dialogOpen,
             recordsLoading
@@ -276,8 +285,8 @@ export function RelationManyTab({
           {locale === "zh" ? "无法加载目标目录数据" : "Cannot load target directory data"}
           <br />
           <span className="text-xs">
-            targetDirId: {targetDirId || "null"}, 
-            targetDir: {targetDir ? "exists" : "null"}, 
+            targetDirId: {targetDirId || "null"},
+            targetDir: {targetDir ? "exists" : "null"},
             records: {targetDirRecords.length}
           </span>
         </div>
