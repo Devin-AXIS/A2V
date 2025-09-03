@@ -881,10 +881,10 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
               <div
                 key={`field-${f.id}`}
                 className={`rounded-xl transition-all duration-200 ${dragIndex === idx
-                    ? "ring-2 ring-blue-500 ring-opacity-50"
-                    : dragHoverIndex === idx && dragIndex !== null
-                      ? "ring-2 ring-green-400 ring-opacity-75 scale-[1.01]"
-                      : ""
+                  ? "ring-2 ring-blue-500 ring-opacity-50"
+                  : dragHoverIndex === idx && dragIndex !== null
+                    ? "ring-2 ring-green-400 ring-opacity-75 scale-[1.01]"
+                    : ""
                   }`}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDragEnter={() => handleDragEnter(idx)}
@@ -927,23 +927,23 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
       </div>
 
       {
-            editing && (
-              <FieldEditor
-                open={editOpen}
-                onOpenChange={setEditOpen}
-                app={app}
-                dir={dir}
-                field={editing}
-                typeNames={typeNames}
-                i18n={i18n}
-                onSubmit={async (fieldData) => {
-                  await updateField(editing.id, fieldData)
-                  setEditOpen(false)
-                  setEditing(null)
-                }}
-              />
-            )
-          }
+        editing && (
+          <FieldEditor
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            app={app}
+            dir={dir}
+            field={editing}
+            typeNames={typeNames}
+            i18n={i18n}
+            onSubmit={async (fieldData) => {
+              await updateField(editing.id, fieldData)
+              setEditOpen(false)
+              setEditing(null)
+            }}
+          />
+        )
+      }
 
       <AddFieldDialog
         open={addFieldOpen}
@@ -993,5 +993,5 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
         }}
       />
     </div>
-      )
+  )
 }

@@ -169,8 +169,8 @@ export default function BuilderPage() {
         tSave={t("save")}
       />
 
-      <div className="w-full px-4 -mt-2" style={{ position: 'absolute', zIndex: 1000, top: 24, right: 340 }}>
-        <div className="max-w-full flex items-center justify-end">
+      <div className="px-4 -mt-2 pointer-events-none" style={{ position: 'absolute', zIndex: 1000, top: 24, right: 340 }}>
+        <div className="max-w-full flex items-center justify-end pointer-events-auto">
           <button
             onClick={() => router.push(`/app/${params.appId}/auth-test`)}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors cursor-pointer"

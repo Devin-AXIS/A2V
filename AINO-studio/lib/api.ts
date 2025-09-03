@@ -953,7 +953,7 @@ export const modulesApi = {
 
   // 获取模块详情
   async getModuleDetail(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/installed/${moduleKey}?applicationId=${applicationId}`)
+    return apiRequest<any>(`/api/modules/installed/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`)
   },
 
   // 安装模块
@@ -972,7 +972,7 @@ export const modulesApi = {
   async uninstallModule(applicationId: string, moduleKey: string, data: {
     keepData?: boolean
   } = {}): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/uninstall/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/uninstall/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'DELETE',
       body: JSON.stringify(data),
     })
@@ -980,7 +980,7 @@ export const modulesApi = {
 
   // 更新模块配置
   async updateModuleConfig(applicationId: string, moduleKey: string, config: any): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/config/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/config/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'PUT',
       body: JSON.stringify({ config }),
     })
@@ -1004,7 +1004,7 @@ export const modulesApi = {
 
   // 更新模块状态
   async updateModuleStatus(applicationId: string, moduleKey: string, status: 'active' | 'disabled' | 'uninstalling'): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/status/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/status/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     })
@@ -1012,7 +1012,7 @@ export const modulesApi = {
 
   // 检查模块依赖
   async checkModuleDependencies(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/dependencies/${moduleKey}?applicationId=${applicationId}`)
+    return apiRequest<any>(`/api/modules/dependencies/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`)
   },
 
   // 获取模块统计信息
