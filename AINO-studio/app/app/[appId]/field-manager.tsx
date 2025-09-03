@@ -51,6 +51,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
   const [editOpen, setEditOpen] = useState(false)
   const [editing, setEditing] = useState<FieldModel | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragHoverIndex, setDragHoverIndex] = useState<number | null>(null)
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false)
   const [addFieldOpen, setAddFieldOpen] = useState(false)
   const [fieldCategories, setFieldCategories] = useState<ApiFieldCategoryModel[]>([])
@@ -269,14 +270,25 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
     setDragIndex(i)
   }
 
-  function handleDragEnter(i: number) {
+  function handleDragOver(e: React.DragEvent, targetIndex: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+
+    // 更新悬停指示器
+    setDragHoverIndex(targetIndex)
+
     setDragIndex((from) => {
-      if (from === null || from === i) return from
+      if (from === null || from === targetIndex) return from
+
+      // 节流处理，避免过于频繁的更新
+      const now = Date.now()
+      if (now - (window as any).lastDragUpdate < 50) return from // 减少节流时间，让拖拽更流畅
+        ; (window as any).lastDragUpdate = now
 
       // 基于字段ID在完整列表中移动，避免筛选导致的索引错位
       const fromField = filteredFields[from]
-      const toField = filteredFields[i]
-      if (!fromField || !toField) return i
+      const toField = filteredFields[targetIndex]
+      if (!fromField || !toField) return targetIndex
 
       setFieldDefs((prevFieldDefs) => {
         const newFieldDefs = [...prevFieldDefs]
@@ -293,12 +305,33 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
         }))
       })
 
-      return i
+      return targetIndex
     })
+  }
+
+  function handleDragEnter(i: number) {
+    // 简化 dragEnter，主要用于视觉反馈
+    if (dragIndex !== null && dragIndex !== i) {
+      setDragHoverIndex(i)
+    }
+  }
+
+  function handleDragLeave(e: React.DragEvent, i: number) {
+    // 检查是否真的离开了当前元素
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (dragHoverIndex === i) {
+        setDragHoverIndex(null)
+      }
+    }
   }
 
   function handleDragEnd() {
     setDragIndex(null)
+    setDragHoverIndex(null)
     // 先同步到目录字段顺序（影响记录列表列顺序）
     syncDirFieldsOrderToStore()
     // 再尝试保存到后端（若后端忽略order也不影响前端展示）
@@ -833,43 +866,57 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
 
       <div className="space-y-2">
         {filteredFields.map((f, idx) => {
+          // 插入指示器 - 显示在目标位置的上方
+          const showInsertionIndicator = dragIndex !== null && dragHoverIndex === idx && dragIndex !== idx
           const category = f.categoryId
             ? fieldCategories.find((cat) => cat.id === f.categoryId)
             : fieldCategories.find((cat) => cat.predefinedFields?.some((predefined: any) => predefined.key === f.key))
 
           return (
-            <div
-              key={`field-${f.id}`}
-              className={"rounded-xl " + (dragIndex === idx ? "ring-2 ring-blue-200" : "")}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnter={() => handleDragEnter(idx)}
-            >
-              <FieldRow
-                field={f}
-                idx={idx}
-                total={filteredFields.length}
-                typeNames={typeNames}
-                category={category ? {
-                  id: category.id,
-                  name: category.name,
-                  description: category.description,
-                  order: category.order,
-                  enabled: category.enabled,
-                  system: category.system,
-                  fields: category.predefinedFields || []
-                } : undefined}
-                onToggleEnabled={(v) => toggleFieldEnabled(f.id, v)}
-                onToggleRequired={(v) => toggleFieldRequired(f.id, v)}
-                onToggleList={(v) => toggleFieldShowInList(f.id, v)}
-                onEdit={() => {
-                  setEditing(f)
-                  setEditOpen(true)
-                }}
-                onRemove={() => removeField(f.id)}
-                onDragStart={() => handleDragStart(idx)}
-                onDragEnd={handleDragEnd}
-              />
-            </div>
+            <React.Fragment key={`field-container-${f.id}`}>
+              {/* 插入指示器 */}
+              {showInsertionIndicator && (
+                <div className="h-1 bg-gradient-to-r from-green-400 to-blue-400 rounded-full mx-2 opacity-75 shadow-sm animate-pulse" />
+              )}
+              <div
+                key={`field-${f.id}`}
+                className={`rounded-xl transition-all duration-200 ${dragIndex === idx
+                    ? "ring-2 ring-blue-500 ring-opacity-50"
+                    : dragHoverIndex === idx && dragIndex !== null
+                      ? "ring-2 ring-green-400 ring-opacity-75 scale-[1.01]"
+                      : ""
+                  }`}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragLeave={(e) => handleDragLeave(e, idx)}
+              >
+                <FieldRow
+                  field={f}
+                  idx={idx}
+                  total={filteredFields.length}
+                  typeNames={typeNames}
+                  category={category ? {
+                    id: category.id,
+                    name: category.name,
+                    description: category.description,
+                    order: category.order,
+                    enabled: category.enabled,
+                    system: category.system,
+                    fields: category.predefinedFields || []
+                  } : undefined}
+                  onToggleEnabled={(v) => toggleFieldEnabled(f.id, v)}
+                  onToggleRequired={(v) => toggleFieldRequired(f.id, v)}
+                  onToggleList={(v) => toggleFieldShowInList(f.id, v)}
+                  onEdit={() => {
+                    setEditing(f)
+                    setEditOpen(true)
+                  }}
+                  onRemove={() => removeField(f.id)}
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragEnd={handleDragEnd}
+                />
+              </div>
+            </React.Fragment>
           )
         })}
         {filteredFields.length === 0 && (
@@ -879,22 +926,24 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
         )}
       </div>
 
-      {editing && (
-        <FieldEditor
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          app={app}
-          dir={dir}
-          field={editing}
-          typeNames={typeNames}
-          i18n={i18n}
-          onSubmit={async (fieldData) => {
-            await updateField(editing.id, fieldData)
-            setEditOpen(false)
-            setEditing(null)
-          }}
-        />
-      )}
+      {
+            editing && (
+              <FieldEditor
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                app={app}
+                dir={dir}
+                field={editing}
+                typeNames={typeNames}
+                i18n={i18n}
+                onSubmit={async (fieldData) => {
+                  await updateField(editing.id, fieldData)
+                  setEditOpen(false)
+                  setEditing(null)
+                }}
+              />
+            )
+          }
 
       <AddFieldDialog
         open={addFieldOpen}
@@ -944,5 +993,5 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
         }}
       />
     </div>
-  )
+      )
 }
