@@ -15,6 +15,7 @@ import { BuilderHeader } from "@/components/builder/builder-header"
 import { BulkToolbar } from "@/components/builder/bulk-toolbar"
 import { BackgroundLights } from "@/components/background-lights"
 import { useApiBuilderController } from "@/hooks/use-api-builder-controller"
+import { useModuleManagement } from "@/hooks/use-module-management"
 import { DataTable } from "./data-table"
 import { FieldManager } from "./field-manager"
 
@@ -39,6 +40,7 @@ export default function BuilderPage() {
   const { role, setRole, can } = usePermissions()
 
   const c = useApiBuilderController({ appId: params.appId, can, toast })
+  const { uninstallModule } = useModuleManagement({ applicationId: params.appId })
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>("team")
   const [showModuleManagement, setShowModuleManagement] = useState(false)
   const [selectedModuleCategory, setSelectedModuleCategory] = useState<"internal" | "thirdparty" | "public">("internal")
@@ -742,9 +744,26 @@ export default function BuilderPage() {
         onOpenChange={setUninstallDialogOpen}
         module={selectedModule}
         type="uninstall"
-        onConfirm={() => {
-          console.log('卸载模块:', selectedModule?.name)
-          toast({ description: locale === "zh" ? "模块已卸载" : "Module uninstalled" })
+        onConfirm={async () => {
+          if (selectedModule) {
+            try {
+              // 调用真正的卸载API
+              await uninstallModule(selectedModule.key || selectedModule.name, false)
+              toast({ 
+                title: locale === "zh" ? "卸载成功" : "Uninstall Success",
+                description: locale === "zh" ? "模块已卸载" : "Module uninstalled" 
+              })
+              setUninstallDialogOpen(false)
+              setSelectedModule(null)
+            } catch (error) {
+              console.error('卸载模块失败:', error)
+              toast({ 
+                title: locale === "zh" ? "卸载失败" : "Uninstall Failed",
+                description: locale === "zh" ? "模块卸载失败，请重试" : "Module uninstall failed, please try again",
+                variant: "destructive"
+              })
+            }
+          }
         }}
       />
     </main>
