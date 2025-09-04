@@ -319,8 +319,8 @@ const PRESETS: PresetDef[] = [
   { key: "education_experience", label: "教育经历", desc: "学校、专业、学历等", baseType: "experience" },
   { key: "certificate_experience", label: "证书资质", desc: "证书、颁发机构等", baseType: "experience" },
   { key: "custom_experience", label: "其他经历", desc: "自定义经历名称和事件", baseType: "experience" },
-  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "text" },
-  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "text" },
+  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "realname" },
+  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "certification" },
   { key: "barcode", label: "条码", desc: "二维码、条形码等", baseType: "text" },
   { key: "cascader", label: "级联选项", desc: "多级分类选择", baseType: "cascader" },
   { key: "relation", label: "关联", desc: "关联其他表的数据", baseType: "relation_one" },
@@ -331,7 +331,7 @@ function getLocalizedPresets(locale: string): PresetDef[] {
   if (locale === "zh") {
     return PRESETS
   }
-  
+
   return [
     { key: "user_select", label: "User Selection", desc: "Link to user list", baseType: "relation_one" },
     { key: "city", label: "City (Province/City/District)", desc: "Support district display", baseType: "text" },
@@ -401,7 +401,7 @@ export function AddFieldDialog({
   const [cascaderOptions, setCascaderOptions] = useState<CatNode[]>([])
   const [openCategory, setOpenCategory] = useState(false)
   const [openSkillsConfig, setOpenSkillsConfig] = useState(false)
-  
+
   // 字段分类相关状态
   const [fieldCategories, setFieldCategories] = useState<any[]>([])
   const [fieldCategoriesLoading, setFieldCategoriesLoading] = useState(false)
@@ -514,15 +514,15 @@ export function AddFieldDialog({
     try {
       setFieldCategoriesLoading(true)
       console.log("🔍 获取字段分类参数:", { appId: app.id, dirId: currentDir.id })
-      
+
       const response = await fieldCategoriesApi.getFieldCategories({
         applicationId: app.id,
         directoryId: currentDir.id,
         enabled: true,
       })
-      
+
       console.log("📡 字段分类API响应:", response)
-      
+
       if (response.success && response.data?.categories) {
         setFieldCategories(response.data.categories)
       } else {
@@ -532,7 +532,7 @@ export function AddFieldDialog({
     } catch (error) {
       // ✅ 必须：为所有API调用添加try-catch错误处理
       console.error("获取字段分类出错:", error)
-      
+
       // ✅ 必须：错误信息要用户友好
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch')) {
@@ -541,7 +541,7 @@ export function AddFieldDialog({
           console.error("❌ API调用失败:", error.message)
         }
       }
-      
+
       // ✅ 必须：错误恢复机制 - 使用默认数据而不是空数组
       setFieldCategories([])
     } finally {
@@ -552,10 +552,10 @@ export function AddFieldDialog({
   // 初始化（支持编辑模式）
   useEffect(() => {
     if (!open) return
-    
+
     // 获取字段分类数据
     fetchFieldCategories()
-    
+
     if (mode === "edit" && initialDraft) {
       setLabel(initialDraft.label ?? "")
       setKey(initialDraft.key ?? "")
@@ -1004,7 +1004,7 @@ export function AddFieldDialog({
                       disabled={isDefault}
                       className={cn(
                         "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
-                        isDefault 
+                        isDefault
                           ? "bg-gray-100 cursor-not-allowed opacity-60"
                           : "bg-white/70 hover:bg-white/90",
                         type === tp && !preset && !isDefault
@@ -1036,7 +1036,7 @@ export function AddFieldDialog({
                       disabled={isDefault}
                       className={cn(
                         "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
-                        isDefault 
+                        isDefault
                           ? "bg-gray-100 cursor-not-allowed opacity-60"
                           : "bg-white/70 hover:bg-white/90",
                         type === tp && !preset && !isDefault
@@ -1062,7 +1062,7 @@ export function AddFieldDialog({
                       disabled={isDefault}
                       className={cn(
                         "w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
-                        isDefault 
+                        isDefault
                           ? "bg-gray-100 cursor-not-allowed opacity-60"
                           : "bg-white/70 hover:bg-white/90",
                         preset === p.key && !isDefault ? "outline outline-2 outline-blue-200 border-blue-200" : "border-white/60",
@@ -1228,16 +1228,16 @@ export function AddFieldDialog({
             {type === "image" && (
               <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
                 <div className="text-sm font-medium text-gray-800">{locale === "zh" ? "图片字段配置" : "Image Field Configuration"}</div>
-                
+
                 {/* 单图/多图选项 */}
                 <div className="flex items-center justify-between rounded-lg border border-white/60 bg-white/70 px-3 py-2">
                   <div className="space-y-0.5">
                     <div className="text-sm">{locale === "zh" ? "多图上传" : "Multiple Images"}</div>
                     <div className="text-xs text-muted-foreground">{locale === "zh" ? "开启后支持上传多张图片" : "Enable to allow multiple image uploads"}</div>
                   </div>
-                  <Switch 
-                    checked={imageConfig.multiple} 
-                    onCheckedChange={(v) => setImageConfig(prev => ({ ...prev, multiple: v }))} 
+                  <Switch
+                    checked={imageConfig.multiple}
+                    onCheckedChange={(v) => setImageConfig(prev => ({ ...prev, multiple: v }))}
                   />
                 </div>
 
@@ -1245,7 +1245,7 @@ export function AddFieldDialog({
                 <div className="space-y-2">
                   <div className="text-sm text-gray-700">{locale === "zh" ? "默认图片" : "Default Image"}</div>
                   <div className="text-xs text-gray-500 mb-2">{locale === "zh" ? "可选：为字段设置一个默认图片" : "Optional: Set a default image for this field"}</div>
-                  
+
                   {imageConfig.defaultImage ? (
                     <div className="relative inline-block">
                       <img
@@ -1287,8 +1287,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "上传模式：" : "Upload Mode: "}
                       <span className={imageConfig.multiple ? "text-blue-600" : "text-green-600"}>
-                        {imageConfig.multiple 
-                          ? (locale === "zh" ? "多图" : "Multiple") 
+                        {imageConfig.multiple
+                          ? (locale === "zh" ? "多图" : "Multiple")
                           : (locale === "zh" ? "单图" : "Single")
                         }
                       </span>
@@ -1296,8 +1296,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "默认图片：" : "Default Image: "}
                       <span className={imageConfig.defaultImage ? "text-green-600" : "text-gray-400"}>
-                        {imageConfig.defaultImage 
-                          ? (locale === "zh" ? "已设置" : "Set") 
+                        {imageConfig.defaultImage
+                          ? (locale === "zh" ? "已设置" : "Set")
                           : (locale === "zh" ? "未设置" : "Not set")
                         }
                       </span>
@@ -1311,24 +1311,24 @@ export function AddFieldDialog({
             {type === "profile" && (
               <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
                 <div className="text-sm font-medium text-gray-800">{locale === "zh" ? "标识字段配置" : "Profile Field Configuration"}</div>
-                
+
                 {/* 单图/多图选项 */}
                 <div className="flex items-center justify-between rounded-lg border border-white/60 bg-white/70 px-3 py-2">
                   <div className="space-y-0.5">
                     <div className="text-sm">{locale === "zh" ? "多图上传" : "Multiple Images"}</div>
                     <div className="text-xs text-muted-foreground">{locale === "zh" ? "开启后支持上传多张标识图片" : "Enable to allow multiple profile image uploads"}</div>
                   </div>
-                  <Switch 
-                    checked={imageConfig.multiple} 
-                    onCheckedChange={(v) => setImageConfig(prev => ({ ...prev, multiple: v }))} 
+                  <Switch
+                    checked={imageConfig.multiple}
+                    onCheckedChange={(v) => setImageConfig(prev => ({ ...prev, multiple: v }))}
                   />
                 </div>
-                
+
                 {/* 默认图片 */}
                 <div className="space-y-2">
                   <div className="text-sm text-gray-700">{locale === "zh" ? "默认标识" : "Default Profile"}</div>
                   <div className="text-xs text-gray-500 mb-2">{locale === "zh" ? "可选：为字段设置一个默认标识图片" : "Optional: Set a default profile image for this field"}</div>
-                  
+
                   {imageConfig.defaultImage ? (
                     <div className="relative inline-block">
                       <img
@@ -1370,8 +1370,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "上传模式：" : "Upload Mode: "}
                       <span className={imageConfig.multiple ? "text-blue-600" : "text-green-600"}>
-                        {imageConfig.multiple 
-                          ? (locale === "zh" ? "多图" : "Multiple") 
+                        {imageConfig.multiple
+                          ? (locale === "zh" ? "多图" : "Multiple")
                           : (locale === "zh" ? "单图" : "Single")
                         }
                       </span>
@@ -1385,8 +1385,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "默认标识：" : "Default Profile: "}
                       <span className={imageConfig.defaultImage ? "text-green-600" : "text-gray-400"}>
-                        {imageConfig.defaultImage 
-                          ? (locale === "zh" ? "已设置" : "Set") 
+                        {imageConfig.defaultImage
+                          ? (locale === "zh" ? "已设置" : "Set")
                           : (locale === "zh" ? "未设置" : "Not set")
                         }
                       </span>
@@ -1400,16 +1400,16 @@ export function AddFieldDialog({
             {type === "video" && (
               <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
                 <div className="text-sm font-medium text-gray-800">{locale === "zh" ? "视频字段配置" : "Video Field Configuration"}</div>
-                
+
                 {/* 单视频/多视频选项 */}
                 <div className="flex items-center justify-between rounded-lg border border-white/60 bg-white/70 px-3 py-2">
                   <div className="space-y-0.5">
                     <div className="text-sm">{locale === "zh" ? "多视频上传" : "Multiple Videos"}</div>
                     <div className="text-xs text-muted-foreground">{locale === "zh" ? "开启后支持上传多个视频" : "Enable to allow multiple video uploads"}</div>
                   </div>
-                  <Switch 
-                    checked={videoConfig.multiple} 
-                    onCheckedChange={(v) => setVideoConfig(prev => ({ ...prev, multiple: v }))} 
+                  <Switch
+                    checked={videoConfig.multiple}
+                    onCheckedChange={(v) => setVideoConfig(prev => ({ ...prev, multiple: v }))}
                   />
                 </div>
 
@@ -1417,7 +1417,7 @@ export function AddFieldDialog({
                 <div className="space-y-2">
                   <div className="text-sm text-gray-700">{locale === "zh" ? "默认视频" : "Default Video"}</div>
                   <div className="text-xs text-gray-500 mb-2">{locale === "zh" ? "可选：为字段设置一个默认视频" : "Optional: Set a default video for this field"}</div>
-                  
+
                   {videoConfig.defaultVideo ? (
                     <div className="relative inline-block">
                       <video
@@ -1460,8 +1460,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "上传模式：" : "Upload Mode: "}
                       <span className={videoConfig.multiple ? "text-blue-600" : "text-green-600"}>
-                        {videoConfig.multiple 
-                          ? (locale === "zh" ? "多视频" : "Multiple") 
+                        {videoConfig.multiple
+                          ? (locale === "zh" ? "多视频" : "Multiple")
                           : (locale === "zh" ? "单视频" : "Single")
                         }
                       </span>
@@ -1469,8 +1469,8 @@ export function AddFieldDialog({
                     <div>
                       {locale === "zh" ? "默认视频：" : "Default Video: "}
                       <span className={videoConfig.defaultVideo ? "text-green-600" : "text-gray-400"}>
-                        {videoConfig.defaultVideo 
-                          ? (locale === "zh" ? "已设置" : "Set") 
+                        {videoConfig.defaultVideo
+                          ? (locale === "zh" ? "已设置" : "Set")
                           : (locale === "zh" ? "未设置" : "Not set")
                         }
                       </span>
@@ -1679,7 +1679,7 @@ export function AddFieldDialog({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="h-2 rounded-full transition-all duration-300 bg-blue-500"
                             style={{
                               width: `${Math.min(75, progressConfig.maxValue || 100)}%`
@@ -1823,7 +1823,7 @@ export function AddFieldDialog({
                     <div className="text-xs text-blue-600 space-y-1">
                       <div>
                         {locale === "zh" ? "证书名称：" : "Certificate Name: "}
-                        {certificateConfig.allowCustomCertificateName 
+                        {certificateConfig.allowCustomCertificateName
                           ? (locale === "zh" ? "用户自定义" : "User customizable")
                           : certificateConfig.certificateNames.length > 0
                             ? `${certificateConfig.certificateNames.length} ${locale === "zh" ? "个选项" : "options"}`
@@ -1832,7 +1832,7 @@ export function AddFieldDialog({
                       </div>
                       <div>
                         {locale === "zh" ? "颁发单位：" : "Issuing Authority: "}
-                        {certificateConfig.allowCustomIssuingAuthority 
+                        {certificateConfig.allowCustomIssuingAuthority
                           ? (locale === "zh" ? "用户自定义" : "User customizable")
                           : (certificateConfig.issuingAuthority || (locale === "zh" ? "未设置" : "Not set"))
                         }
@@ -2020,14 +2020,14 @@ export function AddFieldDialog({
                     <div className="text-xs text-blue-600 space-y-1">
                       <div>
                         {locale === "zh" ? "文字字段：" : "Text Fields: "}
-                        {otherVerificationConfig.textFields.length > 0 
+                        {otherVerificationConfig.textFields.length > 0
                           ? `${otherVerificationConfig.textFields.length} ${locale === "zh" ? "个" : ""}`
                           : (locale === "zh" ? "无" : "None")
                         }
                       </div>
                       <div>
                         {locale === "zh" ? "图片字段：" : "Image Fields: "}
-                        {otherVerificationConfig.imageFields.length > 0 
+                        {otherVerificationConfig.imageFields.length > 0
                           ? `${otherVerificationConfig.imageFields.length} ${locale === "zh" ? "个" : ""}`
                           : (locale === "zh" ? "无" : "None")
                         }
@@ -2192,7 +2192,7 @@ export function AddFieldDialog({
                       />
                     </div>
                   </div>
-                  
+
                   {/* 显示样式配置 */}
                   <div className="mt-4 space-y-2">
                     <label className="text-xs font-medium text-blue-700">
@@ -2261,7 +2261,7 @@ export function AddFieldDialog({
                   <div className="text-sm font-medium text-blue-800 mb-3">
                     {locale === "zh" ? "单选字段配置" : "Single Select Configuration"}
                   </div>
-                  
+
                   {/* 选项配置 */}
                   <div className="space-y-3">
                     <div className="text-sm text-blue-700">{i18n.optionLabel}</div>
@@ -2348,7 +2348,7 @@ export function AddFieldDialog({
                   <div className="text-sm font-medium text-green-800 mb-3">
                     {locale === "zh" ? "多选字段配置" : "Multi Select Configuration"}
                   </div>
-                  
+
                   {/* 多选限制配置 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
@@ -2359,9 +2359,9 @@ export function AddFieldDialog({
                         type="number"
                         min="0"
                         value={multiselectConfig?.minSelection || ""}
-                        onChange={(e) => setMultiselectConfig(prev => ({ 
-                          ...prev, 
-                          minSelection: e.target.value ? parseInt(e.target.value) : undefined 
+                        onChange={(e) => setMultiselectConfig(prev => ({
+                          ...prev,
+                          minSelection: e.target.value ? parseInt(e.target.value) : undefined
                         }))}
                         placeholder={locale === "zh" ? "不限制" : "No limit"}
                         className="h-9 bg-white/80"
@@ -2375,16 +2375,16 @@ export function AddFieldDialog({
                         type="number"
                         min="1"
                         value={multiselectConfig?.maxSelection || ""}
-                        onChange={(e) => setMultiselectConfig(prev => ({ 
-                          ...prev, 
-                          maxSelection: e.target.value ? parseInt(e.target.value) : undefined 
+                        onChange={(e) => setMultiselectConfig(prev => ({
+                          ...prev,
+                          maxSelection: e.target.value ? parseInt(e.target.value) : undefined
                         }))}
                         placeholder={locale === "zh" ? "不限制" : "No limit"}
                         className="h-9 bg-white/80"
                       />
                     </div>
                   </div>
-                  
+
                   {/* 选项配置 */}
                   <div className="space-y-3">
                     <div className="text-sm text-green-700">{i18n.optionLabel}</div>
@@ -2550,14 +2550,14 @@ export function AddFieldDialog({
                           const newCategoryName = e.target.value
                           const newCategories = [...skillsConfig.customCategories]
                           newCategories[index] = { ...newCategories[index], name: newCategoryName }
-                          
+
                           // 同步更新 allowedCategories
-                          const newAllowedCategories = skillsConfig.allowedCategories.map(c => 
+                          const newAllowedCategories = skillsConfig.allowedCategories.map(c =>
                             c === oldCategoryName ? newCategoryName : c
                           )
-                          
-                          setSkillsConfig(prev => ({ 
-                            ...prev, 
+
+                          setSkillsConfig(prev => ({
+                            ...prev,
                             customCategories: newCategories,
                             allowedCategories: newAllowedCategories
                           }))
@@ -2573,8 +2573,8 @@ export function AddFieldDialog({
                           const newCategories = skillsConfig.customCategories.filter((_, i) => i !== index)
                           // 同时从 allowedCategories 中移除
                           const newAllowedCategories = skillsConfig.allowedCategories.filter(c => c !== categoryToRemove.name)
-                          setSkillsConfig(prev => ({ 
-                            ...prev, 
+                          setSkillsConfig(prev => ({
+                            ...prev,
                             customCategories: newCategories,
                             allowedCategories: newAllowedCategories
                           }))
@@ -2650,7 +2650,7 @@ export function AddFieldDialog({
                           ))}
                         </SelectContent>
                       </Select>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -2687,7 +2687,7 @@ export function AddFieldDialog({
               <Button variant="secondary" onClick={() => setOpenSkillsConfig(false)}>
                 {locale === "zh" ? "取消" : "Cancel"}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   // 保存配置并关闭对话框
                   setOpenSkillsConfig(false)

@@ -34,15 +34,15 @@ export const userModuleTemplate: ModuleTemplate = {
         // 基础信息 (10个字段)
         { key: 'avatar', label: '头像', type: 'profile', required: true, showInList: true, showInForm: true, category: '基础信息' },
         { key: 'name', label: '姓名', type: 'text', required: true, showInList: true, showInForm: true, category: '基础信息' },
-        { key: 'email', label: '邮箱', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
-        { key: 'phone_number', label: '手机号', type: 'text', required: true, showInList: true, showInForm: true, category: '基础信息' },
+        { key: 'email', label: '邮箱', type: 'email', required: false, showInList: true, showInForm: true, category: '基础信息', preset: 'email' as any },
+        { key: 'phone_number', label: '手机号', type: 'phone', required: true, showInList: true, showInForm: true, category: '基础信息', preset: 'phone' as any },
         { key: 'gender', label: '性别', type: 'select', required: true, showInList: true, showInForm: true, options: ['男', '女', '其他'], category: '基础信息' },
         { key: 'birthday', label: '生日', type: 'date', required: false, showInList: true, showInForm: true, category: '基础信息' },
-        { key: 'city', label: '居住城市', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
+        { key: 'city', label: '居住城市', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息', preset: 'city' as any },
         { key: 'industry', label: '行业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
         { key: 'occupation', label: '职业', type: 'text', required: false, showInList: true, showInForm: true, category: '基础信息' },
         { key: 'bio', label: '个人介绍', type: 'textarea', required: false, showInList: true, showInForm: true, category: '基础信息' },
-        
+
         // 用户履历 (7个字段)
         { key: 'work_exp', label: '工作经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
         { key: 'edu_exp', label: '教育经历', type: 'experience', required: false, showInList: true, showInForm: true, category: '用户履历' },
@@ -51,10 +51,10 @@ export const userModuleTemplate: ModuleTemplate = {
         { key: 'skills', label: '技能', type: 'multiselect', required: false, showInList: true, showInForm: true, category: '用户履历' },
         { key: 'zodiac_sign', label: '星座', type: 'select', required: false, showInList: true, showInForm: true, options: ['白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座'], category: '用户履历' },
         { key: 'user_id', label: '用户ID', type: 'text', required: false, showInList: true, showInForm: true, category: '用户履历' },
-        
+
         // 实名与认证 (2个字段)
-        { key: 'realname_status', label: '实名认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' },
-        { key: 'socid_status', label: '社会身份认证', type: 'text', required: false, showInList: true, showInForm: true, category: '实名与认证' }
+        { key: 'realname_status', label: '实名认证', type: 'identity_verification', required: false, showInList: true, showInForm: true, category: '实名与认证', preset: 'identity_verification' as any },
+        { key: 'socid_status', label: '社会身份认证', type: 'other_verification', required: false, showInList: true, showInForm: true, category: '实名与认证', preset: 'other_verification' as any }
       ]
     }
   ]

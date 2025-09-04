@@ -15,6 +15,7 @@ import { BuilderHeader } from "@/components/builder/builder-header"
 import { BulkToolbar } from "@/components/builder/bulk-toolbar"
 import { BackgroundLights } from "@/components/background-lights"
 import { useApiBuilderController } from "@/hooks/use-api-builder-controller"
+import { useModuleManagement } from "@/hooks/use-module-management"
 import { DataTable } from "./data-table"
 import { FieldManager } from "./field-manager"
 
@@ -39,6 +40,7 @@ export default function BuilderPage() {
   const { role, setRole, can } = usePermissions()
 
   const c = useApiBuilderController({ appId: params.appId, can, toast })
+  const { uninstallModule } = useModuleManagement({ applicationId: params.appId })
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>("team")
   const [showModuleManagement, setShowModuleManagement] = useState(false)
   const [selectedModuleCategory, setSelectedModuleCategory] = useState<"internal" | "thirdparty" | "public">("internal")
@@ -95,9 +97,9 @@ export default function BuilderPage() {
     if (draft.type === "multiselect")
       def = draft.defaultRaw
         ? draft.defaultRaw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
         : []
     if (draft.type === "boolean" || draft.type === "checkbox")
       def = draft.defaultRaw === "true" ? true : draft.defaultRaw === "false" ? false : undefined
@@ -132,13 +134,13 @@ export default function BuilderPage() {
       ...(draft.multiselectConfig ? { multiselectConfig: draft.multiselectConfig } : {}),
     }
     if (draft.type === "relation_one" || draft.type === "relation_many") {
-      ;(fld as any).relation = {
+      ; (fld as any).relation = {
         targetDirId: draft.relationTargetId || null,
         mode: draft.type === "relation_one" ? "one" : "many",
         ...(draft.relationDisplayFieldKey ? { displayFieldKey: draft.relationDisplayFieldKey } : {}),
       }
-      ;(fld as any).relationBidirectional = draft.relationBidirectional || false
-      ;(fld as any).relationAllowDuplicate = draft.relationAllowDuplicate || false
+        ; (fld as any).relationBidirectional = draft.relationBidirectional || false
+        ; (fld as any).relationAllowDuplicate = draft.relationAllowDuplicate || false
     }
     const next = structuredClone(c.app)
     if (!next) return
@@ -168,6 +170,21 @@ export default function BuilderPage() {
         onHome={() => router.push("/")}
         tSave={t("save")}
       />
+
+      <div className="px-4 -mt-2 pointer-events-none" style={{ position: 'absolute', zIndex: 1000, top: 24, right: 340 }}>
+        <div className="max-w-full flex items-center justify-end pointer-events-auto">
+          <button
+            onClick={() => router.push(`/app/${params.appId}/auth-test`)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors cursor-pointer"
+            title="前往登录测试页"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+            登录测试页
+          </button>
+        </div>
+      </div>
 
       <div className="w-full p-4 grid grid-cols-1 md:grid-cols-[76px_260px_1fr] gap-4">
         <ModuleRail
@@ -211,31 +228,28 @@ export default function BuilderPage() {
               <div className="space-y-2">
                 <button
                   onClick={() => setSelectedModuleCategory("internal")}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedModuleCategory === "internal"
-                      ? "bg-gray-100 text-gray-900 font-medium"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selectedModuleCategory === "internal"
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   {locale === "zh" ? "内部模块" : "Internal Modules"}
                 </button>
                 <button
                   onClick={() => setSelectedModuleCategory("thirdparty")}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedModuleCategory === "thirdparty"
-                      ? "bg-gray-100 text-gray-900 font-medium"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selectedModuleCategory === "thirdparty"
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   {locale === "zh" ? "第三方模块" : "Third-party Modules"}
                 </button>
                 <button
                   onClick={() => setSelectedModuleCategory("public")}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedModuleCategory === "public"
-                      ? "bg-gray-100 text-gray-900 font-medium"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selectedModuleCategory === "public"
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   {locale === "zh" ? "上传到公用模块" : "Upload to Public Modules"}
                 </button>
@@ -329,7 +343,7 @@ export default function BuilderPage() {
                           </div>
 
                           <p className="text-xs text-gray-600 mb-2 leading-relaxed">
-                            {locale === "zh" 
+                            {locale === "zh"
                               ? `${module.name}模块包含 ${module.directories?.length || 0} 个数据表，提供完整的${module.name}管理功能。`
                               : `${module.name} module contains ${module.directories?.length || 0} data tables, providing complete ${module.name} management functionality.`
                             }
@@ -351,7 +365,7 @@ export default function BuilderPage() {
                           </div>
 
                           <div className="flex gap-1.5">
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedModule(module)
                                 setConfigDialogOpen(true)
@@ -360,7 +374,7 @@ export default function BuilderPage() {
                             >
                               {locale === "zh" ? "配置" : "Configure"}
                             </button>
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedModule(module)
                                 setUninstallDialogOpen(true)
@@ -378,37 +392,37 @@ export default function BuilderPage() {
                 {((selectedModuleCategory === "internal" && (c.app?.modules || []).length === 0) ||
                   selectedModuleCategory === "thirdparty" ||
                   selectedModuleCategory === "public") && (
-                  <div className="col-span-2 text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                        />
-                      </svg>
+                    <div className="col-span-2 text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {selectedModuleCategory === "internal" && (locale === "zh" ? "暂无内部模块" : "No Internal Modules")}
+                        {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "暂无第三方模块" : "No Third-party Modules")}
+                        {selectedModuleCategory === "public" && (locale === "zh" ? "暂无公用模块" : "No Public Modules")}
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        {selectedModuleCategory === "internal" && (locale === "zh" ? "开始创建您的第一个内部模块" : "Start creating your first internal module")}
+                        {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "从市场安装第三方模块" : "Install third-party modules from marketplace")}
+                        {selectedModuleCategory === "public" && (locale === "zh" ? "上传模块到公用市场" : "Upload modules to public marketplace")}
+                      </p>
+                      <button
+                        onClick={() => c.setOpenAddModule(true)}
+                        className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                      >
+                        {selectedModuleCategory === "internal" && (locale === "zh" ? "创建模块" : "Create Module")}
+                        {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "浏览模块市场" : "Browse Marketplace")}
+                        {selectedModuleCategory === "public" && (locale === "zh" ? "上传模块" : "Upload Module")}
+                      </button>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {selectedModuleCategory === "internal" && (locale === "zh" ? "暂无内部模块" : "No Internal Modules")}
-                      {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "暂无第三方模块" : "No Third-party Modules")}
-                      {selectedModuleCategory === "public" && (locale === "zh" ? "暂无公用模块" : "No Public Modules")}
-                    </h3>
-                    <p className="text-gray-500 mb-4">
-                      {selectedModuleCategory === "internal" && (locale === "zh" ? "开始创建您的第一个内部模块" : "Start creating your first internal module")}
-                      {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "从市场安装第三方模块" : "Install third-party modules from marketplace")}
-                      {selectedModuleCategory === "public" && (locale === "zh" ? "上传模块到公用市场" : "Upload modules to public marketplace")}
-                    </p>
-                    <button
-                      onClick={() => c.setOpenAddModule(true)}
-                      className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                    >
-                      {selectedModuleCategory === "internal" && (locale === "zh" ? "创建模块" : "Create Module")}
-                      {selectedModuleCategory === "thirdparty" && (locale === "zh" ? "浏览模块市场" : "Browse Marketplace")}
-                      {selectedModuleCategory === "public" && (locale === "zh" ? "上传模块" : "Upload Module")}
-                    </button>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </>
@@ -504,6 +518,9 @@ export default function BuilderPage() {
                       const d = findDir(next, dir.id)
                       Object.assign(d, dir)
                       c.persist(next)
+                      if (c.moduleId && dir?.fields) {
+                        c.updateDirectoryFields(c.moduleId, dir.id, dir.fields as any)
+                      }
                     }}
                     onAddField={c.quickOpenAddField}
                   />
@@ -555,37 +572,37 @@ export default function BuilderPage() {
         i18n={
           locale === "zh"
             ? {
-                title: "配置三级内容分类",
-                l1: "一级分类",
-                l2: "二级分类",
-                l3: "三级分类",
-                selectL1: "选择一级分类",
-                selectL2: "选择二级分类",
-                selectL3: "选择三级分类（可选）",
-                none: "未选择",
-                add: "添加",
-                save: "保存",
-                cancel: "取消",
-                preview: "预览：",
-                delete: "删除",
-                confirmDelete: "确认删除内容分类",
-              }
+              title: "配置三级内容分类",
+              l1: "一级分类",
+              l2: "二级分类",
+              l3: "三级分类",
+              selectL1: "选择一级分类",
+              selectL2: "选择二级分类",
+              selectL3: "选择三级分类（可选）",
+              none: "未选择",
+              add: "添加",
+              save: "保存",
+              cancel: "取消",
+              preview: "预览：",
+              delete: "删除",
+              confirmDelete: "确认删除内容分类",
+            }
             : {
-                title: "Configure 3-level Content Categories",
-                l1: "Level 1",
-                l2: "Level 2",
-                l3: "Level 3",
-                selectL1: "Select Level 1",
-                selectL2: "Select Level 2",
-                selectL3: "Select Level 3 (optional)",
-                none: "None",
-                add: "Add",
-                save: "Save",
-                cancel: "Cancel",
-                preview: "Preview:",
-                delete: "Delete",
-                confirmDelete: "Confirm delete content category",
-              }
+              title: "Configure 3-level Content Categories",
+              l1: "Level 1",
+              l2: "Level 2",
+              l3: "Level 3",
+              selectL1: "Select Level 1",
+              selectL2: "Select Level 2",
+              selectL3: "Select Level 3 (optional)",
+              none: "None",
+              add: "Add",
+              save: "Save",
+              cancel: "Cancel",
+              preview: "Preview:",
+              delete: "Delete",
+              confirmDelete: "Confirm delete content category",
+            }
         }
       />
       <AddFieldDialog
@@ -598,60 +615,60 @@ export default function BuilderPage() {
         currentDir={c.currentDir}
         i18n={
           locale === "zh"
-                          ? {
-                title: "添加字段",
-                displayName: "显示名",
-                displayNamePh: "请输入显示名",
-                key: "内部名（唯一）",
-                keyPh: "请输入内部名",
-                keyInvalid: "需以字母或下划线开头，仅含字母数字下划线，≤40字符",
-                keyDuplicate: "内部名已存在",
-                dataType: "数据类型",
-                required: "必填",
-                requiredHint: "表单校验时要求必填",
-                unique: "唯一",
-                uniqueHint: "该字段值不可重复",
-                showInList: "显示在列表",
-                showInListHint: "控制列表是否展示",
-                default: "默认值",
-                none: "无",
-                true: "是",
-                false: "否",
-                optionLabel: "选项",
-                optionPlaceholder: "选项",
-                addOption: "添加选项",
-                optionsHint: "提示：默认值会根据当前选项生成；修改选项后请重新确认默认值。",
-                relationTarget: "关联目标表",
-                cancel: "取消",
-                submit: "添加字段",
-              }
+            ? {
+              title: "添加字段",
+              displayName: "显示名",
+              displayNamePh: "请输入显示名",
+              key: "内部名（唯一）",
+              keyPh: "请输入内部名",
+              keyInvalid: "需以字母或下划线开头，仅含字母数字下划线，≤40字符",
+              keyDuplicate: "内部名已存在",
+              dataType: "数据类型",
+              required: "必填",
+              requiredHint: "表单校验时要求必填",
+              unique: "唯一",
+              uniqueHint: "该字段值不可重复",
+              showInList: "显示在列表",
+              showInListHint: "控制列表是否展示",
+              default: "默认值",
+              none: "无",
+              true: "是",
+              false: "否",
+              optionLabel: "选项",
+              optionPlaceholder: "选项",
+              addOption: "添加选项",
+              optionsHint: "提示：默认值会根据当前选项生成；修改选项后请重新确认默认值。",
+              relationTarget: "关联目标表",
+              cancel: "取消",
+              submit: "添加字段",
+            }
             : {
-                title: "Add Field",
-                displayName: "Label",
-                displayNamePh: "Enter label",
-                key: "Key (unique)",
-                keyPh: "Enter key",
-                keyInvalid: "Must start with a letter/underscore, only letters/digits/underscore, ≤ 40 chars",
-                keyDuplicate: "Key already exists",
-                dataType: "Data Type",
-                required: "Required",
-                requiredHint: "Enforce required in forms",
-                unique: "Unique",
-                uniqueHint: "Value cannot be duplicated",
-                showInList: "Show in List",
-                showInListHint: "Control visibility in list",
-                default: "Default",
-                none: "None",
-                true: "True",
-                false: "False",
-                optionLabel: "Options",
-                optionPlaceholder: "Option",
-                addOption: "Add option",
-                optionsHint: "Tip: default value depends on options; re-verify after changes.",
-                relationTarget: "Relation Target Table",
-                cancel: "Cancel",
-                submit: "Add Field",
-              }
+              title: "Add Field",
+              displayName: "Label",
+              displayNamePh: "Enter label",
+              key: "Key (unique)",
+              keyPh: "Enter key",
+              keyInvalid: "Must start with a letter/underscore, only letters/digits/underscore, ≤ 40 chars",
+              keyDuplicate: "Key already exists",
+              dataType: "Data Type",
+              required: "Required",
+              requiredHint: "Enforce required in forms",
+              unique: "Unique",
+              uniqueHint: "Value cannot be duplicated",
+              showInList: "Show in List",
+              showInListHint: "Control visibility in list",
+              default: "Default",
+              none: "None",
+              true: "True",
+              false: "False",
+              optionLabel: "Options",
+              optionPlaceholder: "Option",
+              addOption: "Add option",
+              optionsHint: "Tip: default value depends on options; re-verify after changes.",
+              relationTarget: "Relation Target Table",
+              cancel: "Cancel",
+              submit: "Add Field",
+            }
         }
         typeNames={typeNames}
       />
@@ -690,7 +707,7 @@ export default function BuilderPage() {
         options={[
           { key: "custom", label: locale === "zh" ? "自定义表" : "Custom Table" },
           { key: "ecom-product", label: locale === "zh" ? "商品管理（电商）" : "Product Management (E-commerce)" },
-          
+
           { key: "ecom-order", label: locale === "zh" ? "订单管理（电商）" : "Order Management (E-commerce)" },
           { key: "ecom-logistics", label: locale === "zh" ? "物流管理（电商）" : "Logistics Management (E-commerce)" },
           { key: "edu-teacher", label: locale === "zh" ? "老师表（教育）" : "Teacher Table (Education)" },
@@ -700,7 +717,7 @@ export default function BuilderPage() {
         defaultOptionKey="custom"
         onSubmit={(p) => c.handleCreateDirectoryFromDialog(p as any)}
       />
-      
+
       {/* Category Selection Dialog */}
       <CategorySelectionDialog
         open={c.openCategorySelection}
@@ -721,15 +738,32 @@ export default function BuilderPage() {
           toast({ description: locale === "zh" ? "配置已保存" : "Configuration saved" })
         }}
       />
-      
+
       <SimpleModuleDialog
         open={uninstallDialogOpen}
         onOpenChange={setUninstallDialogOpen}
         module={selectedModule}
         type="uninstall"
-        onConfirm={() => {
-          console.log('卸载模块:', selectedModule?.name)
-          toast({ description: locale === "zh" ? "模块已卸载" : "Module uninstalled" })
+        onConfirm={async () => {
+          if (selectedModule) {
+            try {
+              // 调用真正的卸载API
+              await uninstallModule(selectedModule.key || selectedModule.name, false)
+              toast({ 
+                title: locale === "zh" ? "卸载成功" : "Uninstall Success",
+                description: locale === "zh" ? "模块已卸载" : "Module uninstalled" 
+              })
+              setUninstallDialogOpen(false)
+              setSelectedModule(null)
+            } catch (error) {
+              console.error('卸载模块失败:', error)
+              toast({ 
+                title: locale === "zh" ? "卸载失败" : "Uninstall Failed",
+                description: locale === "zh" ? "模块卸载失败，请重试" : "Module uninstall failed, please try again",
+                variant: "destructive"
+              })
+            }
+          }
         }}
       />
     </main>

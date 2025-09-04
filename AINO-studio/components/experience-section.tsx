@@ -178,6 +178,7 @@ export function ExperienceSection({
         <Button
           variant="outline"
           size="sm"
+          type="button"
           onClick={handleAdd}
           className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
         >

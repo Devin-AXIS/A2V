@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Upload, X, User } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
+import { api } from "@/lib/api"
 
 interface AvatarInputProps {
   value?: string | string[]
@@ -23,23 +24,23 @@ export function AvatarInput({
   size = "md",
 }: AvatarInputProps) {
   const { locale } = useLocale()
-  
+
   // 处理值的统一格式
-  const images = multiple 
+  const images = multiple
     ? (Array.isArray(value) ? value : (value ? [value] : []))
     : (Array.isArray(value) ? (value[0] || "") : value || "")
-  
+
   const hasImages = multiple ? (images as string[]).length > 0 : Boolean(images)
   const canUploadMore = multiple || !hasImages
   const showDefaultImage = !hasImages && defaultImage
-  const displayImages = showDefaultImage 
-    ? [defaultImage] 
+  const displayImages = showDefaultImage
+    ? [defaultImage]
     : (multiple ? images as string[] : [images as string])
 
   // Size classes
   const sizeClasses = {
     sm: "w-12 h-12",
-    md: "w-20 h-20", 
+    md: "w-20 h-20",
     lg: "w-32 h-32"
   }
 
@@ -49,36 +50,53 @@ export function AvatarInput({
     lg: "h-12 w-12"
   }
 
+  const [uploading, setUploading] = useState(false)
+
   const handleImageUpload = () => {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = "image/*"
     input.multiple = multiple
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files
       if (files && files.length > 0) {
-        const newImages: string[] = []
-        
-        Array.from(files).forEach((file) => {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const result = e.target?.result as string
-            newImages.push(result)
-            
-            // 当所有图片都读取完成时更新数据
-            if (newImages.length === files.length) {
-              if (multiple) {
-                // 多图模式：追加到现有图片
-                const currentImages = (images as string[]) || []
-                onChange?.([...currentImages, ...newImages])
-              } else {
-                // 单图模式：替换现有图片
-                onChange?.(newImages[0])
-              }
+        setUploading(true)
+        try {
+          const uploadOne = async (file: File) => {
+            const form = new FormData()
+            form.append("file", file)
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/upload`, {
+              method: "POST",
+              headers: {
+                // 让浏览器自动设置 multipart 边界
+              },
+              body: form,
+            })
+            const data = await res.json()
+            if (!res.ok || !data?.success || !data?.url) {
+              throw new Error(data?.message || "上传失败")
             }
+            return data.url as string
           }
-          reader.readAsDataURL(file)
-        })
+
+          const urls = [] as string[]
+          for (const file of Array.from(files)) {
+            const url = await uploadOne(file)
+            urls.push(url)
+          }
+
+          if (multiple) {
+            const currentImages = (images as string[]) || []
+            onChange?.([...currentImages, ...urls])
+          } else {
+            onChange?.(urls[0])
+          }
+        } catch (err) {
+          console.error("头像上传失败", err)
+          // 可以在此处集成全局 toast
+        } finally {
+          setUploading(false)
+        }
       }
     }
     input.click()
@@ -141,13 +159,15 @@ export function AvatarInput({
             variant="outline"
             size="sm"
             onClick={handleImageUpload}
-            disabled={disabled}
+            disabled={disabled || uploading}
             className="gap-1"
           >
             <Upload className="h-4 w-4" />
-            {locale === "zh" 
-              ? `上传标识${multiple && hasImages ? "（追加）" : ""}`
-              : `Upload Profile${multiple && hasImages ? " (Add)" : ""}`
+            {uploading
+              ? (locale === "zh" ? "正在上传..." : "Uploading...")
+              : (locale === "zh"
+                ? `上传标识${multiple && hasImages ? "（追加）" : ""}`
+                : `Upload Profile${multiple && hasImages ? " (Add)" : ""}`)
             }
           </Button>
         </div>
@@ -156,8 +176,8 @@ export function AvatarInput({
       {/* Hint text */}
       {multiple && (
         <div className="text-xs text-gray-500">
-          {locale === "zh" 
-            ? "支持选择多个图片文件进行批量上传" 
+          {locale === "zh"
+            ? "支持选择多个图片文件进行批量上传"
             : "Select multiple image files for batch upload"
           }
         </div>

@@ -117,7 +117,39 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+
+  /* 全局文字换行与长词断行优化（对窄屏友好） */
+  .prose,
+  body,
+  html,
+  :root {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  /* 常见文本容器兜底规则 */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  li,
+  td,
+  th,
+  span,
+  div {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
   }
 }

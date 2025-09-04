@@ -24,7 +24,13 @@ export function RelationOneTab({
   const targetDirId = field.relation?.targetDirId
   const targetDir = findDirByIdAcrossModules(app, targetDirId)
   const selectedId = (rec as any)[field.key] || null
-  const selectedRecord = selectedId && targetDir ? targetDir.records.find((r) => r.id === selectedId) : null
+  const [fetchedSelectedId, setFetchedSelectedId] = useState<string | null>(null)
+  // 优先在已加载的目标目录记录中查找选中项，其次回退到静态的 targetDir.records
+  const [targetDirRecords, setTargetDirRecords] = useState<RecordRow[]>([])
+  const effectiveSelectedId = selectedId || fetchedSelectedId
+  const selectedRecord = effectiveSelectedId
+    ? (targetDirRecords.find((r) => r.id === effectiveSelectedId) || (targetDir ? targetDir.records.find((r) => r.id === effectiveSelectedId) : null))
+    : null
 
   // Debug logging
   console.log("RelationOneTab Debug:", {
@@ -36,7 +42,6 @@ export function RelationOneTab({
   })
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [targetDirRecords, setTargetDirRecords] = useState<RecordRow[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
 
   // Load target directory records
@@ -46,7 +51,7 @@ export function RelationOneTab({
       console.log("RelationOneTab: Skipping record load", { targetDirId, recordsLoading })
       return
     }
-    
+
     console.log("RelationOneTab: Loading records for targetDirId:", targetDirId)
     setRecordsLoading(true)
     try {
@@ -63,9 +68,9 @@ export function RelationOneTab({
         page: 1,
         pageSize: 100
       })
-      
+
       console.log("RelationOneTab: API response:", response)
-      
+
       if (response.success && response.data) {
         // 后端返回的data直接是记录数组，不是{records: [...]}
         const records = Array.isArray(response.data) ? response.data : []
@@ -90,7 +95,39 @@ export function RelationOneTab({
     }
   }, [targetDirId])
 
+  // 当选中的正式值变化时，清空临时填充的 fetched 值，避免覆盖新选择
+  useEffect(() => {
+    setFetchedSelectedId(null)
+  }, [selectedId])
+
+  // 如果记录中未存储选中值，则从关联表查询补充（详情模式下常见）
+  useEffect(() => {
+    const currentDirId = (() => {
+      for (const mod of app.modules) {
+        for (const d of mod.directories) {
+          if (d.fields.some((f) => f.id === field.id)) return d.id
+        }
+      }
+      return null
+    })()
+    if (!selectedId && app.id && currentDirId && rec.id) {
+      ; (async () => {
+        try {
+          const res = await fetch(`/api/relation-records/records/${app.id}/${currentDirId}/${rec.id}/${field.key}`)
+          if (res.ok) {
+            const data = await res.json()
+            const records = data?.data?.records || []
+            if (Array.isArray(records) && records.length > 0) {
+              setFetchedSelectedId(records[0].id)
+            }
+          }
+        } catch { }
+      })()
+    }
+  }, [app.id, rec.id, field.id, field.key, selectedId, app.modules])
+
   const handleSaveFromDialog = (newIdSet: Set<string>) => {
+    setFetchedSelectedId(null)
     onChange(Array.from(newIdSet)[0] || null)
     setDialogOpen(false)
   }
@@ -109,12 +146,19 @@ export function RelationOneTab({
             key={selectedRecord.id}
             className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
           >
-            <span className="font-medium">{getRecordName(targetDir!, selectedRecord)}</span>
+            <span className="font-medium">
+              {field.relation?.displayFieldKey
+                ? String((selectedRecord as any)[field.relation.displayFieldKey] ?? getRecordName(targetDir!, selectedRecord))
+                : getRecordName(targetDir!, selectedRecord)}
+            </span>
             <Button
               variant="ghost"
               size="icon"
               className="text-muted-foreground hover:text-destructive"
-              onClick={() => onChange(null)}
+              onClick={() => {
+                setFetchedSelectedId(null)
+                onChange(null)
+              }}
             >
               <X className="size-4" />
             </Button>
@@ -125,19 +169,19 @@ export function RelationOneTab({
           </div>
         )}
       </div>
-      <Button 
-        variant="outline" 
-        className="w-full bg-white" 
+      <Button
+        variant="outline"
+        className="w-full bg-white"
         onClick={() => {
           console.log("🔍 RelationOneTab: Select button clicked", {
             fieldKey: field.key,
             targetDirId,
             targetDir: targetDir ? { id: targetDir.id, name: targetDir.name } : null,
             targetDirRecords: targetDirRecords.length,
-            targetDirWithRecords: targetDirWithRecords ? { 
-              id: targetDirWithRecords.id, 
-              name: targetDirWithRecords.name, 
-              recordsCount: targetDirWithRecords.records?.length 
+            targetDirWithRecords: targetDirWithRecords ? {
+              id: targetDirWithRecords.id,
+              name: targetDirWithRecords.name,
+              recordsCount: targetDirWithRecords.records?.length
             } : null,
             dialogOpen,
             recordsLoading
@@ -154,7 +198,7 @@ export function RelationOneTab({
           onOpenChange={setDialogOpen}
           targetDir={targetDirWithRecords}
           isMulti={false}
-          selectedIds={selectedId ? new Set([selectedId]) : new Set()}
+          selectedIds={effectiveSelectedId ? new Set([effectiveSelectedId]) : new Set()}
           onSave={handleSaveFromDialog}
         />
       ) : (
@@ -162,8 +206,8 @@ export function RelationOneTab({
           {locale === "zh" ? "无法加载目标目录数据" : "Cannot load target directory data"}
           <br />
           <span className="text-xs">
-            targetDirId: {targetDirId || "null"}, 
-            targetDir: {targetDir ? "exists" : "null"}, 
+            targetDirId: {targetDirId || "null"},
+            targetDir: {targetDir ? "exists" : "null"},
             records: {targetDirRecords.length}
           </span>
         </div>

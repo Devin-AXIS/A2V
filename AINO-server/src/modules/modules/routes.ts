@@ -350,7 +350,7 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
 
 // 用户模块处理器
 async function handleUserModule(c: any, user: any) {
-  const path = c.req.path.replace("/api/modules/system/user", "")
+  const originalPath = c.req.path
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
   
   if (!applicationId) {
@@ -363,8 +363,20 @@ async function handleUserModule(c: any, user: any) {
   // 设置应用ID到请求头，供子路由使用
   c.req.header("x-application-id", applicationId)
   
+  // 创建新的请求对象，调整路径
+  const newPath = originalPath.replace("/api/modules/system/user", "")
+  const newUrl = new URL(c.req.url)
+  newUrl.pathname = newPath
+  
+  // 创建新的请求
+  const newReq = new Request(newUrl.toString(), {
+    method: c.req.method,
+    headers: c.req.header(),
+    body: c.req.method !== 'GET' ? await c.req.text() : undefined,
+  })
+  
   // 路由到应用用户模块
-  return applicationUsersRoute.fetch(c.req, {
+  return applicationUsersRoute.fetch(newReq, {
     applicationId,
   })
 }

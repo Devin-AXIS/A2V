@@ -10,6 +10,7 @@ import { runSerialize } from '../lib/processors'
 import { buildOrderBy, projectProps, buildJsonbWhere } from '../lib/jsonb'
 import { mockRequireAuthMiddleware } from '../middleware/auth'
 import { fieldProcessorManager } from '../lib/field-processors'
+import { RelationSyncService } from '../lib/relation-sync'
 
 // 定义Context类型
 type AppContext = {
@@ -79,8 +80,8 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
 
     // 获取表实例
     const t = tableFor(dirId)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 使用目录对应的 applicationId 作为租户隔离标识
+    const tenantId = directory.applicationId
 
     // 计算偏移量
     const offset = (query.page - 1) * query.pageSize
@@ -163,15 +164,102 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
   }
 })
 
+// 创建记录（按目录隔离）
+records.post('/:dir', async (c) => {
+  const dirId = c.req.param('dir')
+  const body = await c.req.json()
+  const { props } = body
+
+  try {
+    console.log('🔍 创建记录:', { dirId, props })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 添加目录ID到props中
+    const recordData = {
+      ...props,
+      __dirId: dirId
+    }
+
+    const [row] = await db.insert(t).values({
+      tenantId,
+      props: recordData,
+      createdBy: user?.id || 'system',
+      updatedBy: user?.id || 'system'
+    }).returning()
+
+    // 同步关联关系（基于字段定义）
+    try {
+      // 加载目录字段定义
+      const [dirDef] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dirId)).limit(1)
+      if (dirDef) {
+        const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, dirDef.id))
+        const fieldDefinitions = fieldDefsResult.map(fd => ({
+          id: fd.id,
+          key: fd.key,
+          kind: fd.kind,
+          type: fd.type,
+          schema: fd.schema,
+          relation: fd.relation,
+          lookup: fd.lookup,
+          computed: fd.computed,
+          validators: fd.validators,
+          readRoles: fd.readRoles || [],
+          writeRoles: fd.writeRoles || [],
+          required: fd.required
+        }))
+
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          recordData,
+          {},
+          { applicationId: tenantId, directoryId: dirId, recordId: row.id }
+        )
+      }
+    } catch (e) {
+      console.error('同步关联关系失败(创建):', e)
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        id: row.id,
+        ...(row.props as Record<string, any>),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        createdBy: row.createdBy,
+        updatedBy: row.updatedBy
+      }
+    }, 201)
+  } catch (error) {
+    console.error('创建记录失败:', error)
+    return c.json({ success: false, error: '创建记录失败' }, 500)
+  }
+})
+
 // 详情查询（按目录隔离）
 records.get('/:dir/:id', async (c) => {
   const dir = c.req.param('dir')
   const id = c.req.param('id')
 
   try {
+    // 获取目录信息以确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
     const t = tableFor(dir)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
 
     const [row] = await db.select()
       .from(t)
@@ -198,6 +286,181 @@ records.get('/:dir/:id', async (c) => {
   } catch (error) {
     console.error('获取记录详情失败:', error)
     return c.json({ success: false, error: '获取记录详情失败' }, 500)
+  }
+})
+
+// 更新记录（按目录隔离）
+records.patch('/:dir/:id', async (c) => {
+  const dirId = c.req.param('dir')
+  const recordId = c.req.param('id')
+  const body = await c.req.json()
+  const { props } = body
+
+  try {
+    console.log('🔍 更新记录:', { dirId, recordId, props })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 检查记录是否存在
+    const [existingRecord] = await db.select()
+      .from(t)
+      .where(and(
+        eq(t.id, recordId),
+        eq(t.tenantId, tenantId),
+        sql`${t.deletedAt} is null`,
+        sql`(${t.props} ->> '__dirId') = ${dirId}`
+      ))
+      .limit(1)
+
+    if (!existingRecord) {
+      return c.json({ success: false, error: '记录不存在' }, 404)
+    }
+
+    // 更新记录
+    const updatedProps = {
+      ...existingRecord.props,
+      ...props,
+      __dirId: dirId
+    }
+
+    const [updatedRow] = await db.update(t)
+      .set({
+        props: updatedProps,
+        updatedBy: user?.id || 'system',
+        updatedAt: new Date()
+      })
+      .where(eq(t.id, recordId))
+      .returning()
+
+    // 同步关联关系（基于字段定义）
+    try {
+      const [dirDef] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dirId)).limit(1)
+      if (dirDef) {
+        const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, dirDef.id))
+        const fieldDefinitions = fieldDefsResult.map(fd => ({
+          id: fd.id,
+          key: fd.key,
+          kind: fd.kind,
+          type: fd.type,
+          schema: fd.schema,
+          relation: fd.relation,
+          lookup: fd.lookup,
+          computed: fd.computed,
+          validators: fd.validators,
+          readRoles: fd.readRoles || [],
+          writeRoles: fd.writeRoles || [],
+          required: fd.required
+        }))
+
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          updatedProps,
+          existingRecord.props as any,
+          { applicationId: tenantId, directoryId: dirId, recordId: updatedRow.id }
+        )
+      }
+    } catch (e) {
+      console.error('同步关联关系失败(更新):', e)
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        id: updatedRow.id,
+        props: updatedRow.props,
+        createdAt: updatedRow.createdAt,
+        updatedAt: updatedRow.updatedAt,
+        createdBy: updatedRow.createdBy,
+        updatedBy: updatedRow.updatedBy
+      }
+    })
+  } catch (error) {
+    console.error('更新记录失败:', error)
+    return c.json({ success: false, error: '更新记录失败' }, 500)
+  }
+})
+
+// 删除记录（按目录隔离）
+records.delete('/:dir/:id', async (c) => {
+  const dirId = c.req.param('dir')
+  const recordId = c.req.param('id')
+
+  try {
+    console.log('🔍 删除记录:', { dirId, recordId })
+
+    // 获取目录信息
+    const directory = await getDirectoryById(dirId)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
+    const t = tableFor(dirId)
+    const user = c.get('user') as any
+    const tenantId = directory.applicationId
+
+    // 检查记录是否存在
+    const [existingRecord] = await db.select()
+      .from(t)
+      .where(and(
+        eq(t.id, recordId),
+        eq(t.tenantId, tenantId),
+        sql`${t.deletedAt} is null`,
+        sql`(${t.props} ->> '__dirId') = ${dirId}`
+      ))
+      .limit(1)
+
+    if (!existingRecord) {
+      return c.json({ success: false, error: '记录不存在' }, 404)
+    }
+
+    // 软删除记录
+    await db.update(t)
+      .set({
+        deletedAt: new Date(),
+        updatedBy: user?.id || 'system',
+        updatedAt: new Date()
+      })
+      .where(eq(t.id, recordId))
+
+    // 如果是用户模块的记录，同时删除对应的application_users记录
+    const isUserModule = directory.name === '用户列表'
+    if (isUserModule) {
+      try {
+        // 检查是否有对应的application_users记录
+        const { applicationUsers } = await import('../db/schema')
+        const [appUser] = await db.select()
+          .from(applicationUsers)
+          .where(and(
+            eq(applicationUsers.id, recordId),
+            eq(applicationUsers.applicationId, tenantId)
+          ))
+          .limit(1)
+
+        if (appUser) {
+          // 删除application_users记录
+          await db.delete(applicationUsers)
+            .where(eq(applicationUsers.id, recordId))
+          console.log('🔍 同时删除了对应的application_users记录:', recordId)
+        }
+      } catch (error) {
+        console.error('删除application_users记录失败:', error)
+        // 不抛出错误，因为主要记录已经删除成功
+      }
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('删除记录失败:', error)
+    return c.json({ success: false, error: '删除记录失败' }, 500)
   }
 })
 
@@ -230,7 +493,8 @@ records.post('/:dir', async (c) => {
 
     const t = tableFor(dir)
     const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 使用目录对应的 applicationId 作为租户隔离标识
+    const tenantId = directory.applicationId
 
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
@@ -311,6 +575,32 @@ records.post('/:dir', async (c) => {
         props: decoratedData
       }).returning()
 
+      // 同步关联关系（无字段定义分支）
+      try {
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          [] as any,
+          decoratedData,
+          {},
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(创建-基础分支):', e)
+      }
+
+      // 同步关联关系（基于字段定义）
+      try {
+        const relationSync = new RelationSyncService()
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          decoratedData,
+          {},
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(创建-高级分支):', e)
+      }
+
       return c.json({
         success: true,
         data: {
@@ -360,9 +650,15 @@ records.patch('/:dir/:id', async (c) => {
       return c.json({ success: false, error: '目录ID格式无效' }, 400)
     }
 
+    // 获取目录信息以确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+
     const t = tableFor(dir)
     const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
 
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
@@ -409,6 +705,17 @@ records.patch('/:dir/:id', async (c) => {
       const transformedData = fieldProcessorManager.transformRecord(propsData, fieldsToValidate)
       console.log('🔍 验证和转换后的更新数据:', transformedData)
 
+      // 先获取旧记录以便比较变更
+      const [prevRowAdv] = await db.select()
+        .from(t)
+        .where(and(
+          eq(t.id, id),
+          eq(t.tenantId, tenantId),
+          sql`${t.deletedAt} is null`,
+          sql`(${t.props} ->> '__dirId') = ${dir}`
+        ))
+        .limit(1)
+
       const [row] = await db.update(t)
         .set({
           // 合并更新，保留原有props中的目录标识等
@@ -426,6 +733,21 @@ records.patch('/:dir/:id', async (c) => {
 
       if (!row) {
         return c.json({ success: false, error: '记录不存在' }, 404)
+      }
+
+      // 同步关联关系（基于字段定义）
+      try {
+        const relationSync = new RelationSyncService()
+        const oldProps = (prevRowAdv?.props as any) || {}
+        const newPropsForSync = { ...oldProps, ...transformedData, __dirId: dir }
+        await relationSync.syncRelationFields(
+          fieldDefinitions as any,
+          newPropsForSync,
+          oldProps,
+          { applicationId: tenantId, directoryId: dir, recordId: row.id }
+        )
+      } catch (e) {
+        console.error('同步关联关系失败(更新-高级分支):', e)
       }
 
       return c.json({
@@ -482,8 +804,13 @@ records.delete('/:dir/batch', zValidator('json', bulkDeleteSchema), async (c) =>
   const user = c.get('user') as any
 
   try {
+    // 获取目录信息确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
     const t = tableFor(dir)
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    const tenantId = directory.applicationId
     const results = []
 
     for (const recordId of recordIds) {
@@ -536,8 +863,12 @@ records.delete('/:dir/:id', async (c) => {
 
   try {
     const t = tableFor(dir)
-    const user = c.get('user') as any
-    const tenantId = user?.id || 'f09ebe12-f517-42a2-b41a-7092438b79c3'
+    // 获取目录信息确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+    const tenantId = directory.applicationId
 
     const [row] = await db.update(t)
       .set({

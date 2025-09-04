@@ -22,11 +22,11 @@ interface InlineExperienceEditorProps {
   field?: any // 添加字段配置参数
 }
 
-export function InlineExperienceEditor({ 
-  experience, 
+export function InlineExperienceEditor({
+  experience,
   type,
-  onSave, 
-  onCancel, 
+  onSave,
+  onCancel,
   onDelete,
   field
 }: InlineExperienceEditorProps) {
@@ -62,12 +62,12 @@ export function InlineExperienceEditor({
     console.log("🔍 InlineExperienceEditor - FormData type:", formData.type);
     console.log("🔍 InlineExperienceEditor - Field preset:", field?.preset);
     console.log("🔍 InlineExperienceEditor - CustomExperienceConfig:", field?.customExperienceConfig);
-    
+
     // 如果是自定义经历字段，使用配置的标签
     if (field?.preset === "custom_experience" && field?.customExperienceConfig) {
       const experienceName = field.customExperienceConfig.experienceName || (locale === "zh" ? "经历" : "Experience")
       const eventName = field.customExperienceConfig.eventName || (locale === "zh" ? "事件" : "Event")
-      
+
       return {
         title: experienceName,
         organization: eventName,
@@ -75,24 +75,24 @@ export function InlineExperienceEditor({
         organizationPlaceholder: locale === "zh" ? `请输入${eventName}` : `Enter ${eventName}`,
       }
     }
-    
+
     // 如果是证书资质字段，使用配置的标签
     if (field?.preset === "certificate_experience" && field?.certificateConfig) {
       const certificateName = (locale === "zh" ? "证书" : "Certificate")
       const issuingAuthority = field.certificateConfig.issuingAuthority || (locale === "zh" ? "颁发机构" : "Issuing Authority")
-      
+
       return {
         title: certificateName,
         organization: issuingAuthority,
-        titlePlaceholder: field.certificateConfig.allowCustomCertificateName 
+        titlePlaceholder: field.certificateConfig.allowCustomCertificateName
           ? (locale === "zh" ? "请输入证书名称" : "Enter certificate name")
           : (locale === "zh" ? "请选择证书" : "Select certificate"),
-        organizationPlaceholder: field.certificateConfig.allowCustomIssuingAuthority 
+        organizationPlaceholder: field.certificateConfig.allowCustomIssuingAuthority
           ? (locale === "zh" ? "请输入颁发单位" : "Enter issuing authority")
           : (locale === "zh" ? `请输入${issuingAuthority}` : `Enter ${issuingAuthority}`),
       }
     }
-    
+
     // 传统经历字段的标签
     switch (formData.type) {
       case "education":
@@ -114,7 +114,7 @@ export function InlineExperienceEditor({
         if (field?.preset === "custom_experience" && field?.customExperienceConfig) {
           const experienceName = field.customExperienceConfig.experienceName || (locale === "zh" ? "经历" : "Experience")
           const eventName = field.customExperienceConfig.eventName || (locale === "zh" ? "事件" : "Event")
-          
+
           return {
             title: experienceName,
             organization: eventName,
@@ -151,6 +151,8 @@ export function InlineExperienceEditor({
   const handleSave = () => {
     if (formData) {
       onSave(formData)
+      // 保存后退出编辑态
+      setIsEditing(false)
     }
   }
 
@@ -167,7 +169,7 @@ export function InlineExperienceEditor({
             <h3 className="font-medium text-gray-900">{formData.title || (locale === "zh" ? "未填写" : "Not filled")}</h3>
             <p className="text-sm text-gray-600 mt-1">{formData.organization || (locale === "zh" ? "未填写" : "Not filled")}</p>
             <p className="text-xs text-gray-500 mt-1">
-              {formData.startDate ? new Date(formData.startDate).toLocaleDateString() : (locale === "zh" ? "未设置" : "Not set")} - 
+              {formData.startDate ? new Date(formData.startDate).toLocaleDateString() : (locale === "zh" ? "未设置" : "Not set")} -
               {formData.isCurrent ? (locale === "zh" ? "至今" : "Present") : (formData.endDate ? new Date(formData.endDate).toLocaleDateString() : (locale === "zh" ? "未设置" : "Not set"))}
             </p>
           </div>
@@ -209,10 +211,10 @@ export function InlineExperienceEditor({
           <div>
             <Label className="text-sm font-medium">{labels.title}</Label>
             {/* 如果是证书资质字段且有预设选项，使用证书选择组件 */}
-            {field?.preset === "certificate_experience" && 
-             field?.certificateConfig && 
-             !field.certificateConfig.allowCustomCertificateName && 
-             field.certificateConfig.certificateNames?.length > 0 ? (
+            {field?.preset === "certificate_experience" &&
+              field?.certificateConfig &&
+              !field.certificateConfig.allowCustomCertificateName &&
+              field.certificateConfig.certificateNames?.length > 0 ? (
               <CertificateSelect
                 value={formData.title}
                 onChange={(value) => updateField("title", value)}
@@ -274,13 +276,13 @@ export function InlineExperienceEditor({
                 }}
               />
               <Label className="text-sm">
-                {field?.preset === "custom_experience" 
+                {field?.preset === "custom_experience"
                   ? (locale === "zh" ? "进行中" : "In progress")
-                  : formData.type === "work" 
-                  ? (locale === "zh" ? "目前在职" : "Currently employed")
-                  : formData.type === "education" 
-                  ? (locale === "zh" ? "目前在读" : "Currently studying")
-                  : (locale === "zh" ? "进行中" : "In progress")
+                  : formData.type === "work"
+                    ? (locale === "zh" ? "目前在职" : "Currently employed")
+                    : formData.type === "education"
+                      ? (locale === "zh" ? "目前在读" : "Currently studying")
+                      : (locale === "zh" ? "进行中" : "In progress")
                 }
               </Label>
             </div>

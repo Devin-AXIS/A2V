@@ -92,14 +92,14 @@ export function RelationChooserDialog({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="my-2 bg-white/70"
         />
-        <ScrollArea className="h-[300px] border rounded-md bg-white/60">
+        <ScrollArea className="h-[60vh] max-h-[480px] border rounded-md bg-white/60">
           <div className="p-2">
             {isMulti ? (
               <div className="space-y-1">
                 {filteredRecords.map((r) => (
                   <div
                     key={r.id}
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/90 cursor-pointer"
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/90 cursor-pointer overflow-hidden"
                     onClick={() => handleSelect(r.id)}
                   >
                     <Checkbox
@@ -111,7 +111,9 @@ export function RelationChooserDialog({
                       }}
                       onCheckedChange={() => handleSelect(r.id)}
                     />
-                    <RecordPreviewRow dir={targetDir} record={r} />
+                    <div className="min-w-0 flex-1">
+                      <RecordPreviewRow dir={targetDir} record={r} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -121,10 +123,12 @@ export function RelationChooserDialog({
                   <label
                     key={r.id}
                     htmlFor={`rel-${r.id}`}
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/90 cursor-pointer"
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/90 cursor-pointer overflow-hidden"
                   >
                     <RadioGroupItem value={r.id} id={`rel-${r.id}`} />
-                    <RecordPreviewRow dir={targetDir} record={r} />
+                    <div className="min-w-0 flex-1">
+                      <RecordPreviewRow dir={targetDir} record={r} />
+                    </div>
                   </label>
                 ))}
               </RadioGroup>

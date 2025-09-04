@@ -27,15 +27,27 @@ export function RelationInput({
   const selectedIds = new Set(isMulti ? (Array.isArray(value) ? value : []) : value ? [value] : [])
   const isBidirectional = field.relation?.bidirectional
 
+  // 计算当前记录所在目录ID（用于反向关联查询）
+  const currentDirId = ((): string | undefined => {
+    for (const mod of app.modules) {
+      for (const dir of mod.directories) {
+        if (dir.fields.some((f) => f.id === field.id)) {
+          return dir.id
+        }
+      }
+    }
+    return undefined
+  })()
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [reverseRelations, setReverseRelations] = useState<any[]>([])
   const [loadingReverse, setLoadingReverse] = useState(false)
 
   // 获取反向关联记录
   useEffect(() => {
-    if (isBidirectional && currentRecordId && field.relation?.reverseFieldKey) {
+    if (isBidirectional && currentRecordId && field.relation?.reverseFieldKey && currentDirId) {
       setLoadingReverse(true)
-      
+
       // 调用API获取反向关联记录
       const fetchReverseRelations = async () => {
         try {
@@ -46,9 +58,9 @@ export function RelationInput({
             setReverseRelations([])
             return
           }
-          
+
           // 调用关联记录API获取反向关联记录
-          const response = await fetch(`/api/relation-records/records/${applicationId}/${targetDirId}/${currentRecordId}/${field.relation.reverseFieldKey}`)
+          const response = await fetch(`/api/relation-records/records/${applicationId}/${currentDirId}/${currentRecordId}/${field.relation.reverseFieldKey}`)
           if (response.ok) {
             const data = await response.json()
             setReverseRelations(data.data?.records || [])
@@ -63,10 +75,10 @@ export function RelationInput({
           setLoadingReverse(false)
         }
       }
-      
+
       fetchReverseRelations()
     }
-  }, [isBidirectional, currentRecordId, field.relation?.reverseFieldKey, targetDirId])
+  }, [isBidirectional, currentRecordId, field.relation?.reverseFieldKey, currentDirId])
 
   const handleUnselect = (id: string) => {
     const newSelected = new Set(selectedIds)
@@ -82,14 +94,21 @@ export function RelationInput({
         <div className="w-full p-2 border rounded-md bg-white flex flex-wrap items-center gap-2 min-h-10">
           {Array.from(selectedIds).map((id) => {
             const record = targetDir?.records.find((r) => r.id === id)
-            return record ? (
+            const label = record
+              ? (
+                field.relation?.displayFieldKey
+                  ? String((record as any)[field.relation.displayFieldKey] ?? getRecordName(targetDir!, record))
+                  : getRecordName(targetDir!, record)
+              )
+              : id
+            return (
               <Badge key={id} variant="secondary">
-                {getRecordName(targetDir!, record)}
+                {label}
                 <button onClick={() => handleUnselect(id)} className="ml-1 rounded-full outline-none">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
-            ) : null
+            )
           })}
           <Button variant="outline" size="sm" className="h-7 bg-white" onClick={() => setDialogOpen(true)}>
             选择...

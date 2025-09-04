@@ -28,6 +28,17 @@ export interface LoginResponse {
   user: User
 }
 
+export interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+}
+
+export interface RegisterResponse {
+  token: string
+  user: User
+}
+
 // 应用相关类型
 export interface Application {
   id: string
@@ -87,6 +98,11 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+
+  // 开发环境：如果没有token，使用默认的test-token
+  if (!token) {
+    token = 'test-token'
+  }
 
   const config: RequestInit = {
     headers: {
@@ -181,6 +197,15 @@ export const authApi = {
     })
   },
 
+  // 用户注册
+  async register(data: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
+    // 后端已在 /api/users 和 /users 前缀挂载
+    return apiRequest<RegisterResponse>('/api/users/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
   // 获取当前用户信息（从后端读取）
   async getCurrentUser(): Promise<ApiResponse<User>> {
     return apiRequest<User>('/api/users/me')
@@ -190,6 +215,87 @@ export const authApi = {
     return apiRequest<User>('/api/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    })
+  }
+}
+
+// 应用用户相关 API
+export const applicationUsersApi = {
+  // 应用用户登录
+  async loginUser(applicationId: string, data: { phone_number: string; password: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/login?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 应用用户修改密码
+  async changePassword(applicationId: string, data: { phone_number: string; old_password: string; new_password: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/change-password?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+  // 获取应用用户列表
+  async getApplicationUsers(applicationId: string, params?: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+    role?: string
+    department?: string
+    sortBy?: string
+    sortOrder?: string
+  }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams()
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.search) queryParams.append('search', params.search)
+    if (params?.status) queryParams.append('status', params.status)
+    if (params?.role) queryParams.append('role', params.role)
+    if (params?.department) queryParams.append('department', params.department)
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
+
+    const queryString = queryParams.toString()
+    const endpoint = `/api/modules/system/user?applicationId=${applicationId}${queryString ? `&${queryString}` : ''}`
+
+    return apiRequest<any>(endpoint)
+  },
+
+  // 创建应用用户
+  async createApplicationUser(applicationId: string, data: any): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 用户注册
+  async registerUser(applicationId: string, data: any): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/register?applicationId=${applicationId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 获取用户详情
+  async getApplicationUser(applicationId: string, userId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/${userId}?applicationId=${applicationId}`)
+  },
+
+  // 更新用户
+  async updateApplicationUser(applicationId: string, userId: string, data: any): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/${userId}?applicationId=${applicationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  // 删除用户
+  async deleteApplicationUser(applicationId: string, userId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/system/user/${userId}?applicationId=${applicationId}`, {
+      method: 'DELETE',
     })
   }
 }
@@ -575,7 +681,7 @@ export const recordsApi = {
     filter?: string
   } = {}): Promise<ApiResponse<any>> {
     const searchParams = new URLSearchParams()
-    
+
     // 转换参数名：pageSize -> limit
     const backendParams = {
       page: params.page,
@@ -584,7 +690,7 @@ export const recordsApi = {
       fields: params.fields,
       filter: params.filter
     }
-    
+
     Object.entries(backendParams).forEach(([key, value]) => {
       if (value !== undefined) {
         searchParams.append(key, value.toString())
@@ -847,7 +953,7 @@ export const modulesApi = {
 
   // 获取模块详情
   async getModuleDetail(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/installed/${moduleKey}?applicationId=${applicationId}`)
+    return apiRequest<any>(`/api/modules/installed/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`)
   },
 
   // 安装模块
@@ -866,7 +972,7 @@ export const modulesApi = {
   async uninstallModule(applicationId: string, moduleKey: string, data: {
     keepData?: boolean
   } = {}): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/uninstall/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/uninstall/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'DELETE',
       body: JSON.stringify(data),
     })
@@ -874,7 +980,7 @@ export const modulesApi = {
 
   // 更新模块配置
   async updateModuleConfig(applicationId: string, moduleKey: string, config: any): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/config/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/config/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'PUT',
       body: JSON.stringify({ config }),
     })
@@ -898,7 +1004,7 @@ export const modulesApi = {
 
   // 更新模块状态
   async updateModuleStatus(applicationId: string, moduleKey: string, status: 'active' | 'disabled' | 'uninstalling'): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/status/${moduleKey}?applicationId=${applicationId}`, {
+    return apiRequest<any>(`/api/modules/status/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     })
@@ -906,7 +1012,7 @@ export const modulesApi = {
 
   // 检查模块依赖
   async checkModuleDependencies(applicationId: string, moduleKey: string): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/modules/dependencies/${moduleKey}?applicationId=${applicationId}`)
+    return apiRequest<any>(`/api/modules/dependencies/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`)
   },
 
   // 获取模块统计信息
@@ -927,10 +1033,13 @@ export const modulesApi = {
   }
 }
 
+
+
 // 导出默认 API 对象
 export const api = {
   auth: authApi,
   applications: applicationsApi,
+  applicationUsers: applicationUsersApi,
   directories: directoriesApi,
   directoryDefs: directoryDefsApi,
   fieldCategories: fieldCategoriesApi,

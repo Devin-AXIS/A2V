@@ -43,7 +43,7 @@ export function ModuleUninstallDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="size-5" />
-            {moduleType === 'system' 
+            {moduleType === 'system'
               ? (locale === "zh" ? "确认删除系统模块" : "Confirm System Module Deletion")
               : (locale === "zh" ? "确认卸载模块" : "Confirm Module Uninstall")
             }
@@ -116,17 +116,17 @@ export function ModuleUninstallDialog({
             )}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex justify-end space-x-2 pt-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
             {locale === "zh" ? "取消" : "Cancel"}
           </Button>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             onClick={handleConfirm}
             disabled={isLoading}
           >
@@ -135,12 +135,12 @@ export function ModuleUninstallDialog({
             ) : (
               <Trash2 className="size-4 mr-2" />
             )}
-            {isLoading 
+            {isLoading
               ? (locale === "zh" ? "处理中..." : "Processing...")
-              : (moduleType === 'system' 
-                  ? (locale === "zh" ? "确认删除" : "Confirm Delete")
-                  : (locale === "zh" ? "确认卸载" : "Confirm Uninstall")
-                )
+              : (moduleType === 'system'
+                ? (locale === "zh" ? "确认删除" : "Confirm Delete")
+                : (locale === "zh" ? "确认卸载" : "Confirm Uninstall")
+              )
             }
           </Button>
         </div>

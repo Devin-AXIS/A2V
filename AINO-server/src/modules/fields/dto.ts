@@ -2,9 +2,9 @@ import { z } from "zod"
 
 // 字段类型枚举
 export const FieldTypeEnum = z.enum([
-  "text", "textarea", "number", "select", "multiselect", 
-  "boolean", "date", "time", "tags", "image", "video", 
-  "file", "richtext", "percent", "barcode", "checkbox", 
+  "text", "textarea", "number", "select", "multiselect",
+  "boolean", "date", "time", "tags", "image", "video",
+  "file", "richtext", "percent", "barcode", "checkbox",
   "cascader", "relation_one", "relation_many", "experience"
 ])
 
@@ -50,42 +50,42 @@ export const CreateFieldRequest = z.object({
   desc: z.string().optional(),
   placeholder: z.string().optional(),
 
-  
+
   // 数值配置
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
   unit: z.string().optional(),
-  
+
   // 选择配置
   options: z.array(z.string()).optional(),
   default: z.any().optional(),
-  
+
   // 显示配置
   showInList: z.boolean().default(true),
   showInForm: z.boolean().default(true),
   showInDetail: z.boolean().default(true),
-  
+
   // 布尔配置
   trueLabel: z.string().optional(),
   falseLabel: z.string().optional(),
-  
+
   // 媒体配置
   accept: z.string().optional(),
   maxSizeMB: z.number().optional(),
-  
+
   // 关联配置
   relation: RelationMetaSchema.optional(),
-  
+
   // 级联配置
   cascaderOptions: z.array(CascaderNodeSchema).optional(),
-  
+
   // 日期配置
   dateMode: DateModeEnum.optional(),
-  
+
   // 预设配置
   preset: z.string().optional(),
-  
+
   // 特殊配置
   skillsConfig: z.record(z.string(), z.any()).optional(),
   progressConfig: z.record(z.string(), z.any()).optional(),
@@ -97,7 +97,7 @@ export const CreateFieldRequest = z.object({
   videoConfig: z.record(z.string(), z.any()).optional(),
   booleanConfig: z.record(z.string(), z.any()).optional(),
   multiselectConfig: z.record(z.string(), z.any()).optional(),
-  
+
   order: z.number().int().min(0).default(0),
 })
 
@@ -131,42 +131,42 @@ export const FieldResponse = z.object({
   desc: z.string().nullable(),
   placeholder: z.string().nullable(),
 
-  
+
   // 数值配置
   min: z.number().nullable(),
   max: z.number().nullable(),
   step: z.number().nullable(),
   unit: z.string().nullable(),
-  
+
   // 选择配置
   options: z.array(z.string()).nullable(),
   default: z.any().nullable(),
-  
+
   // 显示配置
   showInList: z.boolean(),
   showInForm: z.boolean(),
   showInDetail: z.boolean(),
-  
+
   // 布尔配置
   trueLabel: z.string().nullable(),
   falseLabel: z.string().nullable(),
-  
+
   // 媒体配置
   accept: z.string().nullable(),
   maxSizeMB: z.number().nullable(),
-  
+
   // 关联配置
   relation: z.any().nullable(),
-  
+
   // 级联配置
   cascaderOptions: z.any().nullable(),
-  
+
   // 日期配置
   dateMode: z.string().nullable(),
-  
+
   // 预设配置
   preset: z.string().nullable(),
-  
+
   // 特殊配置
   skillsConfig: z.any().nullable(),
   progressConfig: z.any().nullable(),
@@ -178,7 +178,7 @@ export const FieldResponse = z.object({
   videoConfig: z.any().nullable(),
   booleanConfig: z.any().nullable(),
   multiselectConfig: z.any().nullable(),
-  
+
   order: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),

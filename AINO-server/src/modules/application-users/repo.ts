@@ -1,5 +1,5 @@
 import { db } from '../../db'
-import { applicationUsers } from '../../db/schema'
+import { applicationUsers, dirUsers, directories, modules } from '../../db/schema'
 import { eq, and, or, like, desc, asc, count, sql } from 'drizzle-orm'
 import type { 
   TCreateApplicationUserRequest, 
@@ -7,28 +7,24 @@ import type {
   TGetApplicationUsersQuery 
 } from './dto'
 
-// 创建应用用户
+// 创建应用用户（只创建账号，业务数据存储在用户模块中）
 export async function createApplicationUser(
   applicationId: string, 
   data: TCreateApplicationUserRequest
 ) {
   const [result] = await db.insert(applicationUsers).values({
     applicationId,
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    avatar: data.avatar,
-    role: data.role,
-    department: data.department,
-    position: data.position,
-    tags: data.tags,
-    metadata: data.metadata,
+    phone: data.phone_number,
+    password: data.password,
+    role: data.role || 'user',
+    status: data.status || 'active',
+    metadata: data.metadata || {},
   }).returning()
 
   return result
 }
 
-// 获取应用用户列表
+// 获取应用用户列表（联表查询账号和业务数据）
 export async function getApplicationUsers(
   applicationId: string, 
   query: TGetApplicationUsersQuery
@@ -36,17 +32,14 @@ export async function getApplicationUsers(
   const { page, limit, search, status, role, department, sortBy, sortOrder } = query
   const offset = (page - 1) * limit
 
+  // 直接从 dir_users 表获取业务数据，不需要查找用户目录
+  console.log('🔍 开始获取用户列表:', { applicationId })
+  
   // 构建查询条件
   const conditions = [eq(applicationUsers.applicationId, applicationId)]
   
   if (search) {
-    conditions.push(
-      or(
-        like(applicationUsers.name, `%${search}%`),
-        like(applicationUsers.email, `%${search}%`),
-        like(applicationUsers.phone || '', `%${search}%`)
-      )
-    )
+    conditions.push(like(applicationUsers.phone, `%${search}%`))
   }
   
   if (status) {
@@ -55,10 +48,6 @@ export async function getApplicationUsers(
   
   if (role) {
     conditions.push(eq(applicationUsers.role, role))
-  }
-  
-  if (department) {
-    conditions.push(eq(applicationUsers.department || '', department))
   }
 
   const whereClause = and(...conditions)
@@ -82,8 +71,48 @@ export async function getApplicationUsers(
     .limit(limit)
     .offset(offset)
 
+  // 为每个用户查询业务数据
+  const mergedUsers = await Promise.all(
+    users.map(async (user) => {
+      // 查询该用户的业务数据
+      let businessData = {}
+      try {
+        const businessRecords = await db
+          .select({ props: dirUsers.props })
+          .from(dirUsers)
+          .where(
+            and(
+              eq(dirUsers.tenantId, applicationId),
+              sql`${dirUsers.props}->>'userId' = ${user.id}`
+            )
+          )
+          .limit(1)
+
+        const businessRecord = businessRecords[0]
+        businessData = businessRecord?.props || {}
+        console.log('🔍 业务数据查询结果:', { userPhone: user.phone, businessRecord, businessData })
+      } catch (error) {
+        console.error('❌ 业务数据查询失败:', error)
+        businessData = {}
+      }
+      
+      return {
+        ...user,
+        // 从业务数据中提取字段
+        name: businessData.name || '',
+        email: businessData.email || '',
+        avatar: businessData.avatar || '',
+        department: businessData.department || '',
+        position: businessData.position || '',
+        tags: businessData.tags || [],
+        // 添加phone_number字段（业务数据中的手机号）
+        phone_number: businessData.phone_number || user.phone,
+      }
+    })
+  )
+
   return {
-    users,
+    users: mergedUsers,
     pagination: {
       page,
       limit,
@@ -111,7 +140,7 @@ export async function getApplicationUserById(
   return result
 }
 
-// 更新应用用户
+// 更新应用用户（只更新账号信息，业务数据通过用户模块更新）
 export async function updateApplicationUser(
   applicationId: string, 
   userId: string, 
@@ -119,15 +148,11 @@ export async function updateApplicationUser(
 ) {
   const updateData: any = {}
   
-  if (data.name !== undefined) updateData.name = data.name
-  if (data.email !== undefined) updateData.email = data.email
-  if (data.phone !== undefined) updateData.phone = data.phone
-  if (data.avatar !== undefined) updateData.avatar = data.avatar
+  // 只更新账号相关字段
+  if (data.phone_number !== undefined) updateData.phone = data.phone_number
+  if (data.password !== undefined) updateData.password = data.password
   if (data.status !== undefined) updateData.status = data.status
   if (data.role !== undefined) updateData.role = data.role
-  if (data.department !== undefined) updateData.department = data.department
-  if (data.position !== undefined) updateData.position = data.position
-  if (data.tags !== undefined) updateData.tags = data.tags
   if (data.metadata !== undefined) updateData.metadata = data.metadata
   
   updateData.updatedAt = new Date()
@@ -164,24 +189,48 @@ export async function deleteApplicationUser(
   return result
 }
 
-// 检查邮箱是否已存在
+// 检查邮箱是否已存在（在用户模块的业务数据中检查）
 export async function checkEmailExists(
   applicationId: string, 
   email: string, 
   excludeUserId?: string
 ) {
+  // 找到用户模块的用户列表目录
+  const [userDirectory] = await db
+    .select({ id: directories.id })
+    .from(directories)
+    .innerJoin(modules, eq(directories.moduleId, modules.id))
+    .where(
+      and(
+        eq(modules.applicationId, applicationId),
+        eq(modules.name, '用户管理'),
+        eq(directories.name, '用户列表')
+      )
+    )
+    .limit(1)
+
+  if (!userDirectory) {
+    return false
+  }
+
+  // 在业务数据中检查邮箱
   const conditions = [
-    eq(applicationUsers.applicationId, applicationId),
-    eq(applicationUsers.email, email)
+    eq(records.directoryId, userDirectory.id),
+    sql`${records.data}->>'email' = ${email}`
   ]
   
   if (excludeUserId) {
-    conditions.push(sql`${applicationUsers.id} != ${excludeUserId}`)
+    // 通过手机号关联到账号表，然后排除指定用户
+    conditions.push(sql`NOT EXISTS (
+      SELECT 1 FROM application_users au 
+      WHERE au.id = ${excludeUserId} 
+      AND au.phone = ${records.data}->>'phone'
+    )`)
   }
 
   const [result] = await db
     .select({ count: count() })
-    .from(applicationUsers)
+    .from(records)
     .where(and(...conditions))
 
   return result.count > 0
@@ -207,4 +256,26 @@ export async function updateLastLoginTime(
     .returning()
 
   return result
+}
+
+// 根据手机号查找用户
+export async function findUserByPhone(applicationId: string, phone: string) {
+  const [user] = await db
+    .select()
+    .from(applicationUsers)
+    .where(
+      and(
+        eq(applicationUsers.applicationId, applicationId),
+        eq(applicationUsers.phone, phone)
+      )
+    )
+    .limit(1)
+
+  return user
+}
+
+// 检查手机号是否存在
+export async function checkPhoneExists(applicationId: string, phone: string) {
+  const user = await findUserByPhone(applicationId, phone)
+  return !!user
 }

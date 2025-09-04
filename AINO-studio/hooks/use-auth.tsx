@@ -52,7 +52,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = async () => {
     console.log("🔍 开始认证检查...")
     try {
-      const token = getStoredToken()
+      let token = getStoredToken()
+
+      // 开发环境：如果没有token，设置默认的test-token
+      if (!token) {
+        console.log("🔧 设置默认test-token")
+        token = 'test-token'
+        setStoredToken(token)
+      }
+
       console.log("🔑 Token 状态:", token ? "存在" : "不存在")
       if (token) {
         console.log("🔄 尝试获取用户信息...")
@@ -123,23 +131,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: any) => {
     setIsLoading(true)
     try {
-      // 暂时保持原有的注册逻辑，等后端实现
-      console.log("📝 注册功能暂时使用原有逻辑")
-
-      // 这里可以后续替换为 api.auth.register(data)
-      const response = await fetch('/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+      const res = await api.auth.register({
+        name: data.name,
+        email: data.email,
+        password: data.password,
       })
 
-      const result = await response.json()
-      if (result.success) {
-        setUser(result.user)
-        setStoredToken(result.token)
-        localStorage.setItem('user', JSON.stringify(result.user))
+      if (res.success && res.data) {
+        const { token, user } = res.data
+        setUser(user)
+        setStoredToken(token)
+        localStorage.setItem('user', JSON.stringify(user))
       } else {
-        throw new Error(result.error || '注册失败')
+        throw new Error(res.error || res.message || '注册失败')
       }
     } catch (error) {
       console.error('❌ 注册失败:', error)

@@ -26,7 +26,7 @@ export function SimpleModuleDialog({
 }: SimpleModuleDialogProps) {
   const { locale } = useLocale()
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // 根据模块类型初始化配置
   const [config, setConfig] = useState({
     // 用户模块配置
@@ -84,21 +84,21 @@ export function SimpleModuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
+      <DialogContent
         className="sm:max-w-[480px] bg-white/70 backdrop-blur border-white/60"
         aria-describedby="module-dialog-description"
       >
         <DialogHeader>
           <DialogTitle>
-            {type === "config" 
+            {type === "config"
               ? (locale === "zh" ? "配置模块" : "Configure Module")
               : (locale === "zh" ? "卸载模块" : "Uninstall Module")
             }
           </DialogTitle>
         </DialogHeader>
-        
+
         <div id="module-dialog-description" className="sr-only">
-          {type === "config" 
+          {type === "config"
             ? "Configure module settings and parameters"
             : "Confirm module uninstallation"
           }
@@ -142,8 +142,8 @@ export function SimpleModuleDialog({
 
                 <div className="space-y-2">
                   <Label>{locale === "zh" ? "默认角色" : "Default Role"}</Label>
-                  <Select 
-                    value={config.defaultRole} 
+                  <Select
+                    value={config.defaultRole}
                     onValueChange={(value) => setConfig(prev => ({ ...prev, defaultRole: value }))}
                   >
                     <SelectTrigger>
@@ -159,7 +159,7 @@ export function SimpleModuleDialog({
 
                 <div className="space-y-3">
                   <Label>{locale === "zh" ? "密码策略" : "Password Policy"}</Label>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm">{locale === "zh" ? "最小长度" : "Minimum Length"}</Label>
                     <Input
@@ -245,7 +245,7 @@ export function SimpleModuleDialog({
                 {locale === "zh" ? "确认卸载模块" : "Confirm Module Uninstall"}
               </h3>
               <p className="text-gray-500">
-                {locale === "zh" 
+                {locale === "zh"
                   ? `确定要卸载模块 "${module.name}" 吗？此操作不可撤销，相关数据将被删除。`
                   : `Are you sure you want to uninstall module "${module.name}"? This action cannot be undone and related data will be deleted.`
                 }
@@ -253,12 +253,12 @@ export function SimpleModuleDialog({
             </div>
           </div>
         )}
-        
+
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isLoading}>
             {locale === "zh" ? "取消" : "Cancel"}
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
             disabled={isLoading}
             variant={type === "uninstall" ? "destructive" : "default"}

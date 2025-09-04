@@ -90,15 +90,15 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
   function validateRequired(): { ok: boolean; firstMissing?: string } {
     for (const field of basicFields) {
       if (!field.required) continue
-      
+
       const value = formData[field.key]
-      const isEmpty = 
+      const isEmpty =
         value === null ||
         value === undefined ||
         (typeof value === "string" && value.trim() === "") ||
         (Array.isArray(value) && value.length === 0) ||
         (typeof value === "object" && Object.keys(value).length === 0)
-      
+
       if (field.type === "number" || field.type === "percent") {
         if (value === null || value === undefined || Number.isNaN(Number(value))) {
           return { ok: false, firstMissing: field.label || field.key }
@@ -116,8 +116,8 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
     const validation = validateRequired()
     if (!validation.ok) {
       toast({
-        description: locale === "zh" 
-          ? `请填写必填字段: ${validation.firstMissing}` 
+        description: locale === "zh"
+          ? `请填写必填字段: ${validation.firstMissing}`
           : `Please fill required field: ${validation.firstMissing}`,
         variant: "destructive",
       })
@@ -134,8 +134,8 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
     } catch (error) {
       console.error("保存记录失败:", error)
       toast({
-        description: locale === "zh" 
-          ? `保存失败: ${error instanceof Error ? error.message : "未知错误"}` 
+        description: locale === "zh"
+          ? `保存失败: ${error instanceof Error ? error.message : "未知错误"}`
           : `Save failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       })
@@ -168,9 +168,9 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
           <div className="flex items-center gap-2">
             {isEditing ? (
               <>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="text-gray-600"
                   onClick={() => {
                     setIsEditing(false)
@@ -181,8 +181,8 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
                 >
                   {locale === "zh" ? "取消" : "Cancel"}
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="bg-gray-900 hover:bg-gray-800 text-white"
                   onClick={handleSave}
                   disabled={isSaving}
@@ -191,9 +191,9 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
                 </Button>
               </>
             ) : (
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="text-gray-600"
                 onClick={() => setIsEditing(true)}
               >
@@ -244,19 +244,19 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
               >
                 {(() => {
                   // 将字段分为单排和双排布局
-                  const singleRowFields = basicFields.filter(f => 
-                    f.type === "textarea" || 
-                    f.type === "rich_text" || 
+                  const singleRowFields = basicFields.filter(f =>
+                    f.type === "textarea" ||
+                    f.type === "rich_text" ||
                     f.type === "markdown" ||
                     f.type === "json" ||
                     f.type === "experience" ||
                     f.type === "identity_verification" ||
                     f.type === "other_verification"
                   )
-                  const doubleRowFields = basicFields.filter(f => 
+                  const doubleRowFields = basicFields.filter(f =>
                     !singleRowFields.includes(f)
                   )
-                  
+
                   return (
                     <>
                       {/* 双排布局字段 */}
@@ -272,7 +272,7 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
                           />
                         ))}
                       </div>
-                      
+
                       {/* 单排布局字段 */}
                       {singleRowFields.map((field) => (
                         <FormField
@@ -292,19 +292,19 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
               <div className="space-y-6">
                 {(() => {
                   // 将字段分为单排和双排布局
-                  const singleRowFields = basicFields.filter(f => 
-                    f.type === "textarea" || 
-                    f.type === "rich_text" || 
+                  const singleRowFields = basicFields.filter(f =>
+                    f.type === "textarea" ||
+                    f.type === "rich_text" ||
                     f.type === "markdown" ||
                     f.type === "json" ||
                     f.type === "experience" ||
                     f.type === "identity_verification" ||
                     f.type === "other_verification"
                   )
-                  const doubleRowFields = basicFields.filter(f => 
+                  const doubleRowFields = basicFields.filter(f =>
                     !singleRowFields.includes(f)
                   )
-                  
+
                   return (
                     <>
                       {/* 双排布局字段 */}
@@ -324,7 +324,7 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
                           </div>
                         ))}
                       </div>
-                      
+
                       {/* 单排布局字段 */}
                       {singleRowFields.map((field) => (
                         <div key={field.id} className="space-y-2">
@@ -357,14 +357,14 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
                 <RelationManyTab
                   app={app}
                   field={field}
-                  rec={rec}
+                  rec={{ ...rec, ...formData }}
                   onChange={(newIds) => updateField(field.key, newIds)}
                 />
               ) : (
                 <RelationOneTab
                   app={app}
                   field={field}
-                  rec={rec}
+                  rec={{ ...rec, ...formData }}
                   onChange={(newId) => updateField(field.key, newId)}
                 />
               )}
@@ -382,13 +382,13 @@ export function ApiRecordDrawerContent({ dir, rec, app, onClose, onSave }: Props
 function getSkillNameById(skillId: string): string {
   // Import skills data
   const { skillsData } = require('@/lib/data/skills-data')
-  
+
   // Find skill in predefined skills
   const predefinedSkill = skillsData.find((skill: any) => skill.id === skillId)
   if (predefinedSkill) {
     return predefinedSkill.name
   }
-  
+
   // If not found in predefined skills, return the ID as fallback
   return skillId
 }
@@ -397,13 +397,13 @@ function getSkillNameById(skillId: string): string {
 function getConstellationNameById(constellationId: string): string {
   // Import constellation data
   const { constellationData } = require('@/lib/data/constellation-data')
-  
+
   // Find constellation in data
   const constellation = constellationData.find((item: any) => item.id === constellationId)
   if (constellation) {
     return constellation.name
   }
-  
+
   // If not found, return the ID as fallback
   return constellationId
 }
@@ -434,21 +434,21 @@ function renderDisplayValue(field: any, value: any) {
               if (predefinedSkill !== skillId) {
                 return predefinedSkill
               }
-              
+
               // Then try to get from custom skills
               const customSkill = field.skillsConfig?.customSkills?.find((s: any) => s.id === skillId)
               if (customSkill) {
                 return customSkill.name
               }
-              
+
               // If not found, return the ID
               return skillId
             })
-            
+
             return (
               <div className="flex flex-wrap gap-1">
                 {skillNames.map((skillName: string, index: number) => (
-                  <span 
+                  <span
                     key={index}
                     className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
                   >
@@ -480,26 +480,26 @@ function renderDisplayValue(field: any, value: any) {
         // 处理单图/多图模式
         const images = Array.isArray(value) ? value : [value]
         const validImages = images.filter(Boolean)
-        
+
         if (validImages.length === 0) {
           return "未上传"
         }
-        
+
         // 多图模式：折叠显示，最多显示3个
         if (validImages.length > 1) {
           const maxDisplay = 3
           const displayImages = validImages.slice(0, maxDisplay)
           const hiddenCount = validImages.length - maxDisplay
-          
+
           return (
             <div className="space-y-1">
               <div className="flex items-center gap-1">
                 {displayImages.map((img, index) => (
-                  <img 
+                  <img
                     key={index}
-                    src={img} 
-                    alt={`Image ${index + 1}`} 
-                    className="w-8 h-8 rounded object-cover border" 
+                    src={img}
+                    alt={`Image ${index + 1}`}
+                    className="w-8 h-8 rounded object-cover border"
                   />
                 ))}
                 {hiddenCount > 0 && (
@@ -512,7 +512,7 @@ function renderDisplayValue(field: any, value: any) {
             </div>
           )
         }
-        
+
         // 单图模式：正常显示
         return (
           <div className="flex items-center gap-2">
@@ -526,9 +526,9 @@ function renderDisplayValue(field: any, value: any) {
       if (value) {
         const images = Array.isArray(value) ? value : [value]
         const validImages = images.filter(Boolean)
-        
+
         if (validImages.length === 0) return "未上传"
-        
+
         return (
           <div className="flex items-center gap-2">
             <img src={validImages[0]} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-gray-200" />
@@ -604,7 +604,7 @@ function renderDisplayValue(field: any, value: any) {
                     <div className="text-base font-semibold text-gray-900">
                       {exp.title || exp.name || `经历 ${index + 1}`}
                     </div>
-                    
+
                     {/* Organization/Company */}
                     {exp.organization && (
                       <div className="text-sm text-gray-700">
@@ -661,8 +661,8 @@ function renderDisplayValue(field: any, value: any) {
                     {/* Description */}
                     {exp.description && (
                       <div className="text-sm text-gray-700 mt-2 p-2 bg-gray-50 rounded">
-                        {exp.description.length > 150 
-                          ? `${exp.description.substring(0, 150)}...` 
+                        {exp.description.length > 150
+                          ? `${exp.description.substring(0, 150)}...`
                           : exp.description
                         }
                       </div>
@@ -674,7 +674,7 @@ function renderDisplayValue(field: any, value: any) {
                         <div className="text-xs text-gray-500 mb-1">相关技能:</div>
                         <div className="flex flex-wrap gap-1">
                           {exp.skills.slice(0, 6).map((skill: string, skillIndex: number) => (
-                            <span 
+                            <span
                               key={skillIndex}
                               className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
                             >
@@ -696,7 +696,7 @@ function renderDisplayValue(field: any, value: any) {
                         <div className="text-xs text-gray-500 mb-1">成就/荣誉:</div>
                         <div className="flex flex-wrap gap-1">
                           {exp.achievements.slice(0, 3).map((achievement: string, achievementIndex: number) => (
-                            <span 
+                            <span
                               key={achievementIndex}
                               className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
                             >
@@ -734,16 +734,16 @@ function renderDisplayValue(field: any, value: any) {
         }
         return <span className="text-gray-400">未认证</span>
       }
-      
+
       if (field.preset === "other_verification") {
         if (value && typeof value === "object") {
           const hasData = Object.keys(value).length > 0
           if (hasData) {
             // Get the first text field value
-            const textFields = Object.entries(value).filter(([key, val]) => 
+            const textFields = Object.entries(value).filter(([key, val]) =>
               typeof val === "string" && val.trim() !== ""
             )
-            
+
             if (textFields.length > 0) {
               const firstTextValue = textFields[0][1]
               return (
@@ -763,7 +763,7 @@ function renderDisplayValue(field: any, value: any) {
         }
         return <span className="text-gray-400">未认证</span>
       }
-      
+
       // Default text field
       return String(value)
     default:

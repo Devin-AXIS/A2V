@@ -1,9 +1,9 @@
 import { ModuleRepository } from "./repo"
 import { moduleRegistry, registerSystemModules } from "../../platform/modules/registry"
-import type { 
-  TInstallModuleRequest, 
-  TUninstallModuleRequest, 
-  TUpdateModuleConfigRequest, 
+import type {
+  TInstallModuleRequest,
+  TUninstallModuleRequest,
+  TUpdateModuleConfigRequest,
   TUpdateModuleStatusRequest,
   TGetModulesQuery,
   TModuleDependencyResponse
@@ -38,34 +38,35 @@ export class ModuleService {
     }
   }
 
-  // 安装模块
+  // 安装模块（支持同类型多实例）
   async installModule(
-    applicationId: string, 
-    data: TInstallModuleRequest, 
+    applicationId: string,
+    data: TInstallModuleRequest,
     createdBy?: string
   ) {
-    // 检查模块是否已安装
-    const isInstalled = await this.repo.isInstalled(applicationId, data.moduleKey)
-    if (isInstalled) {
-      throw new Error("模块已安装")
-    }
+    // 以基础 key 查 manifest（允许传入 base 或含实例后缀的 key）
+    const baseKey = data.moduleKey.split('#')[0]
 
-    // 检查模块依赖
-    const dependencyCheck = await this.checkModuleDependencies(applicationId, data.moduleKey)
+    // 检查模块依赖（基于 baseKey）
+    const dependencyCheck = await this.checkModuleDependencies(applicationId, baseKey)
     if (!dependencyCheck.canInstall) {
       throw new Error(`模块依赖不满足: ${dependencyCheck.errors?.join(", ")}`)
     }
 
     // 获取模块信息
-    const manifest = moduleRegistry.get(data.moduleKey)
+    const manifest = moduleRegistry.get(baseKey)
     if (!manifest) {
       throw new Error("模块不存在")
     }
 
+    // 生成实例 key：若 base 已存在则生成 base#N
+    const { instanceKey } = await this.repo.generateInstanceKey(applicationId, baseKey)
+
     try {
-      // 安装模块
       const module = await this.repo.install({
-        ...data,
+        moduleKey: instanceKey,
+        moduleVersion: data.moduleVersion ?? manifest.version,
+        installConfig: data.installConfig ?? {},
         applicationId,
         moduleName: manifest.name,
         moduleType: manifest.kind === "local" ? "local" : "remote",
@@ -73,15 +74,13 @@ export class ModuleService {
         createdBy,
       })
 
-      // 如果是系统模块，自动注册到模块注册表
       if (manifest.kind === "local") {
         registerSystemModules()
       }
 
       return module
     } catch (error) {
-      // 设置安装错误
-      await this.repo.setInstallError(applicationId, data.moduleKey, error instanceof Error ? error.message : "安装失败")
+      await this.repo.setInstallError(applicationId, baseKey, error instanceof Error ? error.message : "安装失败")
       throw error
     }
   }
@@ -138,10 +137,11 @@ export class ModuleService {
 
   // 检查模块依赖
   async checkModuleDependencies(applicationId: string, moduleKey: string): Promise<TModuleDependencyResponse> {
-    const manifest = moduleRegistry.get(moduleKey)
+    const baseKey = moduleKey.split('#')[0]
+    const manifest = moduleRegistry.get(baseKey)
     if (!manifest) {
       return {
-        moduleKey,
+        moduleKey: baseKey,
         dependencies: [],
         canInstall: false,
         errors: ["模块不存在"],
@@ -158,7 +158,7 @@ export class ModuleService {
     const errors = []
 
     return {
-      moduleKey,
+      moduleKey: baseKey,
       dependencies,
       canInstall,
       errors: errors.length > 0 ? errors : undefined,
@@ -170,7 +170,7 @@ export class ModuleService {
     // 这里应该检查哪些模块依赖了当前模块
     // 简化实现，实际应该从模块manifest中获取依赖关系
     const installedModules = await this.repo.getInstalledModules(applicationId)
-    
+
     // 示例：检查是否有其他模块依赖当前模块
     const dependents: string[] = []
     for (const module of installedModules) {
