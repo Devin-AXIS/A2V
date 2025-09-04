@@ -1,4 +1,8 @@
 import { Hono } from "hono"
+import { env } from "./env"
+import { promises as fs } from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
 import { cors } from "hono/cors"
 import { usersRoute } from "./modules/users/routes"
 import applicationsRoute from "./modules/applications/routes"
@@ -20,8 +24,8 @@ const app = new Hono()
 
 app.use("*", cors({
   origin: (origin) => origin ?? "*",
-  allowMethods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowHeaders: ["Content-Type","Authorization"],
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   maxAge: 86400,
 }))
@@ -78,7 +82,92 @@ app.route("/api/relation-records", relationRecordsRoute)
 // API 文档路由
 app.route("/docs", docsRoute)
 
+// 静态文件：上传目录（基于运行时代码位置计算，dist/../uploads）
+const runtimeDir = path.dirname(fileURLToPath(import.meta.url))
+const uploadsDir = path.resolve(runtimeDir, "../uploads")
+
+app.get("/uploads/*", async (c) => {
+  try {
+    const reqPathRaw = c.req.path.replace(/^\/uploads\//, "")
+    const reqPath = decodeURIComponent(reqPathRaw)
+    if (reqPath.includes("..")) {
+      return c.json({ success: false, message: "Invalid path" }, 400)
+    }
+    const filePath = path.join(uploadsDir, reqPath)
+    console.log("🖼️ 静态文件请求:", { reqPath, filePath })
+    const stat = await fs.stat(filePath)
+    if (!stat.isFile()) {
+      console.warn("🖼️ 非文件或不存在:", filePath)
+      return c.json({ success: false, message: "Not Found" }, 404)
+    }
+    const buf = await fs.readFile(filePath)
+    const ext = path.extname(filePath).toLowerCase()
+    const type = ext === ".png" ? "image/png"
+      : (ext === ".jpg" || ext === ".jpeg") ? "image/jpeg"
+        : ext === ".webp" ? "image/webp"
+          : ext === ".gif" ? "image/gif"
+            : ext === ".svg" ? "image/svg+xml"
+              : "application/octet-stream"
+    c.header("Content-Type", type)
+    return c.body(buf)
+  } catch (e) {
+    console.error("🖼️ 读取静态文件失败:", e)
+    return c.json({ success: false, message: "Not Found" }, 404)
+  }
+})
+
+// 上传接口：接收单文件并保存，返回 URL
+app.post("/api/upload", async (c) => {
+  try {
+    const contentType = c.req.header("content-type") || ""
+    if (!contentType.startsWith("multipart/form-data")) {
+      return c.json({ success: false, message: "Content-Type must be multipart/form-data" }, 400)
+    }
+
+    const form = await c.req.formData()
+    const file = form.get("file") as File | null
+    if (!file) {
+      return c.json({ success: false, message: "file is required" }, 400)
+    }
+
+    // 文件类型与大小简单校验（最大 10MB）
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"]
+    // @ts-ignore size is available in Node File
+    const fileSize = (file as any).size as number | undefined
+    if (file.type && !allowed.includes(file.type)) {
+      return c.json({ success: false, message: "unsupported file type" }, 400)
+    }
+    if (fileSize && fileSize > 10 * 1024 * 1024) {
+      return c.json({ success: false, message: "file too large" }, 400)
+    }
+
+    // 确保目录存在
+    await fs.mkdir(uploadsDir, { recursive: true })
+
+    // 生成文件名
+    const ext = (() => {
+      const m = (file.name || "").match(/\.([a-zA-Z0-9]+)$/)
+      if (m) return `.${m[1].toLowerCase()}`
+      const map: Record<string, string> = { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif" }
+      return map[file.type] || ""
+    })()
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`
+    const filepath = path.join(uploadsDir, filename)
+
+    // 写入磁盘
+    const arrayBuffer = await file.arrayBuffer()
+    await fs.writeFile(filepath, Buffer.from(arrayBuffer))
+
+    const origin = `http://localhost:${env.PORT}`
+    const url = `${origin}/uploads/${filename}`
+    return c.json({ success: true, url })
+  } catch (err) {
+    console.error("File upload error", err)
+    return c.json({ success: false, message: "upload failed" }, 500)
+  }
+})
+
 // 兜底 404（结构化，不会是空对象）
-app.notFound((c) => c.json({ success:false, code:"NOT_FOUND", message:"Not Found" }, 404))
+app.notFound((c) => c.json({ success: false, code: "NOT_FOUND", message: "Not Found" }, 404))
 
 export default app

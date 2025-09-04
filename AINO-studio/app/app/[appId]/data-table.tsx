@@ -8,6 +8,7 @@ import type { AppModel, DirectoryModel } from "@/lib/store"
 import { findDirByIdAcrossModules, getRecordName } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
+import { api } from "@/lib/api"
 import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,
@@ -50,6 +51,8 @@ export function DataTable({
   const [currentPage, setCurrentPage] = useState(1)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
+  const [relationDirRecords, setRelationDirRecords] = useState<Record<string, any[]>>({})
+  const [relationDirLoading, setRelationDirLoading] = useState<Record<string, boolean>>({})
 
   const enabledFields = useMemo(() => {
     const list = dir.fields.filter((f) => f.enabled && (f.showInList ?? true))
@@ -57,6 +60,32 @@ export function DataTable({
     const hasOrder = list.some((f: any) => typeof (f as any).order === 'number')
     return hasOrder ? [...list].sort((a: any, b: any) => (a.order ?? 1e12) - (b.order ?? 1e12)) : list
   }, [dir.fields])
+
+  // 收集当前列表中需要显示的关联目标目录ID，并在本地按需加载记录
+  const relationTargetDirIds = useMemo(() => {
+    const ids = enabledFields
+      .filter((f: any) => (f.type === "relation_one" || f.type === "relation_many") && f.relation?.targetDirId)
+      .map((f: any) => String(f.relation!.targetDirId))
+    return Array.from(new Set(ids))
+  }, [enabledFields])
+
+  useMemo(() => {
+    // 按需拉取每个目标目录的记录（用于把ID渲染为显示字段）
+    relationTargetDirIds.forEach(async (dirId) => {
+      if (!dirId) return
+      if (relationDirLoading[dirId] || relationDirRecords[dirId]) return
+      setRelationDirLoading((s) => ({ ...s, [dirId]: true }))
+      try {
+        const res = await api.records.listRecords(dirId, { page: 1, pageSize: 100 })
+        const records = res.success && res.data ? (Array.isArray(res.data) ? res.data : res.data.records || []) : []
+        setRelationDirRecords((s) => ({ ...s, [dirId]: records }))
+      } catch {
+        setRelationDirRecords((s) => ({ ...s, [dirId]: [] }))
+      } finally {
+        setRelationDirLoading((s) => ({ ...s, [dirId]: false }))
+      }
+    })
+  }, [relationTargetDirIds, relationDirLoading, relationDirRecords])
 
   const filteredRows = useMemo(() => {
     const kw = filters.kw.trim().toLowerCase()
@@ -254,7 +283,7 @@ export function DataTable({
                       className="bg-white/60 backdrop-blur border border-white/60 py-2 px-4 first:rounded-l-xl last:rounded-r-xl cursor-pointer align-top text-sm min-w-[120px]"
                       onClick={() => onOpen(row.id)}
                     >
-                      {renderCell(app, f.type, v, f, locale)}
+                      {renderCell(app, f.type, v, f, locale, relationDirRecords)}
                     </td>
                   )
                 })}
@@ -329,13 +358,13 @@ export function DataTable({
   )
 }
 
-function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: string) {
+function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: string, loadedRelationRecords?: Record<string, any[]>) {
   const valueStr = String(v ?? "")
   if (type === "relation_one") {
     const targetDirId = f?.relation?.targetDirId
     const targetDir = targetDirId ? findDirByIdAcrossModules(app, targetDirId) : null
     if (typeof v === "string" && v) {
-      const rec = targetDir?.records.find((r: any) => r.id === v)
+      const rec = (loadedRelationRecords?.[targetDirId] || targetDir?.records || []).find((r: any) => r.id === v)
       const label = rec
         ? (f?.relation?.displayFieldKey
           ? String((rec as any)[f.relation.displayFieldKey] ?? getRecordName(targetDir!, rec))
@@ -353,7 +382,7 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     const targetDir = targetDirId ? findDirByIdAcrossModules(app, targetDirId) : null
     const ids: string[] = Array.isArray(v) ? v : []
     const labels = ids.map((id) => {
-      const rec = targetDir?.records.find((r: any) => r.id === id)
+      const rec = (loadedRelationRecords?.[targetDirId] || targetDir?.records || []).find((r: any) => r.id === id)
       if (!rec) return id
       return f?.relation?.displayFieldKey
         ? String((rec as any)[f.relation.displayFieldKey] ?? getRecordName(targetDir!, rec))
