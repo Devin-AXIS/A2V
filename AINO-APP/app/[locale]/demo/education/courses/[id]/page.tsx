@@ -452,7 +452,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </div>
         </div>
       </div>
-      <EducationBottomNavigation />
+      <EducationBottomNavigation locale={locale as string} />
     </>
   )
 }

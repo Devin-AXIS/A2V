@@ -48,7 +48,7 @@ export function MobileLogin({
 
   // 使用统一设计配置
   const { tokens } = useDesignTokens()
-  const primaryColor = tokens?.colors?.primary?.500 || '#3b82f6'
+  const primaryColor = tokens?.colors?.primary?.[500] || '#3b82f6'
   const loginButtonTextColor = getOptimalTextColor(primaryColor, 'primary')
 
   const handlePhoneChange = (value: string) => {
@@ -77,7 +77,7 @@ export function MobileLogin({
       setErrors(prev => ({ ...prev, phone: '请输入手机号' }))
       return
     }
-    
+
     // 这里应该调用发送验证码的API
     console.log('发送验证码到:', phone)
   }
@@ -89,11 +89,11 @@ export function MobileLogin({
     try {
       // 验证输入
       const newErrors: typeof errors = {}
-      
+
       if (!phone) {
         newErrors.phone = '请输入手机号'
       }
-      
+
       if (loginMethod === 'phone') {
         if (!code) {
           newErrors.code = '请输入验证码'
@@ -111,7 +111,7 @@ export function MobileLogin({
 
       // 模拟登录请求
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       onLogin?.({
         phone,
         code: loginMethod === 'phone' ? code : undefined,
@@ -181,7 +181,7 @@ export function MobileLogin({
                     error={errors.code}
                     onComplete={(code) => console.log('验证码完成:', code)}
                   />
-                  
+
                   <div className="mt-4 flex justify-center">
                     <SendCodeButton
                       onSend={handleSendCode}
@@ -268,7 +268,7 @@ export function MobileLogin({
                     </Button>
                   </div>
                 )}
-                
+
                 <div className="text-center">
                   <span className="text-sm text-muted-foreground">还没有账号？</span>
                   <Button

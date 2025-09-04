@@ -4,16 +4,16 @@ import { AppCard } from "@/components/layout/app-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Save, 
-  Undo, 
-  Redo, 
-  Copy, 
-  Paste, 
-  Cut, 
-  Search, 
-  Filter, 
-  Download, 
+import {
+  Save,
+  Undo,
+  Redo,
+  Copy,
+  Paste,
+  Cut,
+  Search,
+  Filter,
+  Download,
   Upload,
   Settings,
   Maximize2,
@@ -42,17 +42,23 @@ interface PCToolbarCardProps extends BusinessCardProps {
 }
 
 export function PCToolbarCard({ data, onAction, deviceType = 'pc' }: PCToolbarCardProps) {
+  const safeData = {
+    title: data?.title ?? "",
+    items: Array.isArray(data?.items) ? data.items : [],
+    showShortcuts: data?.showShortcuts ?? false,
+    isCollapsed: data?.isCollapsed ?? false,
+  }
   const handleItemClick = (item: ToolbarItem) => {
     if (item.isDisabled) return
     onAction?.("toolbarAction", { itemId: item.id, label: item.label })
   }
 
   const handleToggleCollapse = () => {
-    onAction?.("toggleCollapse", { isCollapsed: !data.isCollapsed })
+    onAction?.("toggleCollapse", { isCollapsed: !safeData.isCollapsed })
   }
 
   // 按组分类工具项
-  const groupedItems = data.items.reduce((acc, item) => {
+  const groupedItems = safeData.items.reduce((acc, item) => {
     const group = item.group || 'default'
     if (!acc[group]) acc[group] = []
     acc[group].push(item)
@@ -65,7 +71,7 @@ export function PCToolbarCard({ data, onAction, deviceType = 'pc' }: PCToolbarCa
         {/* 标题栏 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold">{data.title}</h3>
+            <h3 className="text-lg font-semibold">{safeData.title}</h3>
             <Badge variant="secondary" className="text-xs">
               💻 PC端
             </Badge>
@@ -77,18 +83,18 @@ export function PCToolbarCard({ data, onAction, deviceType = 'pc' }: PCToolbarCa
               onClick={handleToggleCollapse}
               className="h-6 w-6 p-0"
             >
-              {data.isCollapsed ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+              {safeData.isCollapsed ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
             </Button>
           </div>
         </div>
 
-        {!data.isCollapsed && (
+        {!safeData.isCollapsed && (
           <>
             {/* 工具组 */}
             {Object.entries(groupedItems).map(([groupName, items], groupIndex) => (
               <div key={groupName} className="space-y-2">
                 {groupIndex > 0 && <Separator />}
-                
+
                 <div className="flex flex-wrap gap-1">
                   {items.map((item) => (
                     <Button
@@ -103,9 +109,9 @@ export function PCToolbarCard({ data, onAction, deviceType = 'pc' }: PCToolbarCa
                         {item.icon}
                         <span className="text-xs">{item.label}</span>
                       </div>
-                      
+
                       {/* 快捷键提示 */}
-                      {data.showShortcuts && item.shortcut && (
+                      {safeData.showShortcuts && item.shortcut && (
                         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                           {item.shortcut}
                         </div>

@@ -26,8 +26,15 @@ interface UniversalInfoCardProps extends BusinessCardProps {
 }
 
 export function UniversalInfoCard({ data, onAction, deviceType = 'universal' }: UniversalInfoCardProps) {
+  const safeData = {
+    title: data?.title ?? "",
+    description: data?.description ?? undefined,
+    items: Array.isArray(data?.items) ? data.items : [],
+    showActions: data?.showActions ?? false,
+    source: data?.source ?? undefined,
+  }
   const handleAction = (action: string) => {
-    onAction?.(action, { cardId: data.title })
+    onAction?.(action, { cardId: safeData.title })
   }
 
   const formatValue = (item: InfoItem) => {
@@ -63,20 +70,20 @@ export function UniversalInfoCard({ data, onAction, deviceType = 'universal' }: 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">{data.title}</h3>
+              <h3 className="text-lg font-semibold">{safeData.title}</h3>
               <Badge variant="outline" className="text-xs">
                 🌐 通用
               </Badge>
             </div>
-            {data.description && (
-              <p className="text-sm text-muted-foreground">{data.description}</p>
+            {safeData.description && (
+              <p className="text-sm text-muted-foreground">{safeData.description}</p>
             )}
           </div>
         </div>
 
         {/* 信息项 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {data.items.map((item, index) => (
+          {safeData.items.map((item, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
@@ -98,12 +105,12 @@ export function UniversalInfoCard({ data, onAction, deviceType = 'universal' }: 
         </div>
 
         {/* 操作按钮 */}
-        {data.showActions && (
+        {safeData.showActions && (
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="flex items-center gap-2">
-              {data.source && (
+              {safeData.source && (
                 <span className="text-xs text-muted-foreground">
-                  数据来源: {data.source}
+                  数据来源: {safeData.source}
                 </span>
               )}
             </div>

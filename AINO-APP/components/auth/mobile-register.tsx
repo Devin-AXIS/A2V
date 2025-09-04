@@ -53,7 +53,7 @@ export function MobileRegister({
 
   // 使用统一设计配置
   const { tokens } = useDesignTokens()
-  const primaryColor = tokens?.colors?.primary?.500 || '#3b82f6'
+  const primaryColor = tokens?.colors?.primary?.[500] || '#3b82f6'
   const registerButtonTextColor = getOptimalTextColor(primaryColor, 'primary')
 
   const handlePhoneChange = (value: string) => {
@@ -89,18 +89,18 @@ export function MobileRegister({
       setErrors(prev => ({ ...prev, phone: '请输入手机号' }))
       return
     }
-    
+
     // 这里应该调用发送验证码的API
     console.log('发送验证码到:', countryCode + phone)
   }
 
   const validateStep1 = () => {
     const newErrors: typeof errors = {}
-    
+
     if (!phone) {
       newErrors.phone = '请输入手机号'
     }
-    
+
     if (!code) {
       newErrors.code = '请输入验证码'
     }
@@ -111,19 +111,19 @@ export function MobileRegister({
 
   const validateStep2 = () => {
     const newErrors: typeof errors = {}
-    
+
     if (!password) {
       newErrors.password = '请输入密码'
     } else if (password.length < 6) {
       newErrors.password = '密码至少6位'
     }
-    
+
     if (!confirmPassword) {
       newErrors.confirmPassword = '请确认密码'
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = '两次密码不一致'
     }
-    
+
     if (!agreeTerms) {
       newErrors.agreeTerms = '请同意用户协议和隐私政策'
     }
@@ -146,7 +146,7 @@ export function MobileRegister({
     try {
       // 模拟注册请求
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       onRegister?.({
         phone,
         countryCode,
@@ -155,7 +155,7 @@ export function MobileRegister({
         confirmPassword,
         agreeTerms
       })
-      
+
       setStep(3)
     } catch (error) {
       console.error('注册失败:', error)
@@ -171,21 +171,19 @@ export function MobileRegister({
         <p className="text-gray-600">请输入您的手机号码</p>
       </div>
 
-      {/* 国家代码选择器 */}
-      <div className="mb-6">
+      {/* 国家代码 + 手机号（同一行） */}
+      <div className="mb-6 flex items-stretch gap-3 w-full">
         <CountryCodeSelector
           value={countryCode}
           onChange={setCountryCode}
+          className="shrink-0 w-28 sm:w-32"
         />
-      </div>
-
-      {/* 手机号输入 */}
-      <div className="mb-6">
         <PhoneInput
           value={phone}
           onChange={handlePhoneChange}
           error={errors.phone}
           placeholder="请输入手机号"
+          className="flex-1 min-w-0"
         />
       </div>
 
@@ -197,7 +195,7 @@ export function MobileRegister({
           error={errors.code}
           onComplete={(code) => console.log('验证码完成:', code)}
         />
-        
+
         <div className="mt-4 flex justify-center">
           <SendCodeButton
             onSend={handleSendCode}
@@ -321,8 +319,8 @@ export function MobileRegister({
             <div className={cn(
               "w-5 h-5 rounded border-2 flex items-center justify-center",
               "transition-all duration-200",
-              agreeTerms 
-                ? "bg-blue-500 border-blue-500" 
+              agreeTerms
+                ? "bg-blue-500 border-blue-500"
                 : "border-gray-300 hover:border-gray-400"
             )}>
               {agreeTerms && <Check className="w-3 h-3 text-white" />}
@@ -373,7 +371,7 @@ export function MobileRegister({
         </div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">注册成功！</h1>
         <p className="text-gray-600 mb-8">欢迎加入我们，现在可以开始使用了</p>
-        
+
         <Button
           type="button"
           onClick={onLogin}
@@ -421,9 +419,9 @@ export function MobileRegister({
           {/* 注册表单 */}
           <AppCard className="max-w-sm mx-auto">
             <div className="p-8">
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
+              {step === 1 && renderStep1()}
+              {step === 2 && renderStep2()}
+              {step === 3 && renderStep3()}
             </div>
           </AppCard>
         </div>

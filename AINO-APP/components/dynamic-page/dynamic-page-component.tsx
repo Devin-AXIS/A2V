@@ -144,7 +144,7 @@ const BASIC_CARDS = [
           </div>
           <Button
             variant="outline"
-                          className="w-full hover:bg-accent hover:text-accent-foreground transition-colors mt-4 bg-transparent"
+            className="w-full hover:bg-accent hover:text-accent-foreground transition-colors mt-4 bg-transparent"
           >
             <Settings className="w-4 h-4 mr-2" />
             编辑资料
@@ -351,7 +351,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
     registeredCards.forEach((card) => {
       if (card.component) {
         const CardComponent = card.component
-        
+
         // 为特定卡片提供默认数据
         const getDefaultData = (cardName: string) => {
           switch (cardName) {
@@ -366,19 +366,43 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
                 ],
                 showQuickActions: true
               }
+            case 'pc-toolbar':
+              return {
+                title: '编辑工具栏',
+                showShortcuts: true,
+                isCollapsed: false,
+                items: [
+                  { id: 'save', label: '保存', icon: <Save className="w-4 h-4" />, shortcut: 'Ctrl+S', group: 'file' },
+                  { id: 'edit', label: '编辑', icon: <Edit3 className="w-4 h-4" />, group: 'edit' },
+                  { id: 'favorite', label: '收藏', icon: <Star className="w-4 h-4" />, group: 'view' },
+                ]
+              }
+            case 'universal-info':
+              return {
+                title: '平台概况',
+                description: '关键指标总览',
+                showActions: true,
+                source: '系统统计',
+                items: [
+                  { label: '活跃用户', value: 12890, type: 'number', trend: 'up' },
+                  { label: '日访问量', value: 52340, type: 'number', trend: 'up' },
+                  { label: '转化率', value: 3.2, type: 'percentage', trend: 'stable' },
+                  { label: '营收', value: 98765, type: 'currency', trend: 'down' },
+                ]
+              }
             default:
               return {}
           }
         }
-        
+
         const defaultData = getDefaultData(card.name)
-        
+
         allCards.push({
           id: card.name,
           name: card.displayName || card.name,
           category: card.category,
           width: card.width,
-          component: React.createElement(CardComponent as any, { 
+          component: React.createElement(CardComponent as any, {
             data: defaultData,
             onAction: (action: string, data: any) => console.log("Card action:", action, data)
           }),

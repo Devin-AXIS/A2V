@@ -53,7 +53,7 @@ export function VerificationCodeInput({
   const handleInputChange = (index: number, inputValue: string) => {
     // 只允许数字
     const numericValue = inputValue.replace(/\D/g, '')
-    
+
     if (numericValue.length > 1) {
       // 如果输入多个字符，取最后一个
       const lastChar = numericValue.slice(-1)
@@ -68,7 +68,7 @@ export function VerificationCodeInput({
     newValue[index] = char
     const updatedValue = newValue.join('').slice(0, length)
     onChange(updatedValue)
-    
+
     // 自动跳转到下一个输入框
     if (char && index < length - 1) {
       inputRefs.current[index + 1]?.focus()
@@ -95,7 +95,7 @@ export function VerificationCodeInput({
     e.preventDefault()
     const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length)
     onChange(pastedData)
-    
+
     // 跳转到最后一个有值的输入框或最后一个输入框
     const nextIndex = Math.min(pastedData.length, length - 1)
     inputRefs.current[nextIndex]?.focus()
@@ -195,10 +195,10 @@ export function SendCodeButton({
   className
 }: SendCodeButtonProps) {
   const [timeLeft, setTimeLeft] = useState(countdown)
-  
+
   // 使用统一设计配置
   const { tokens } = useDesignTokens()
-  const secondaryColor = tokens?.colors?.secondary?.500 || '#6b7280'
+  const secondaryColor = tokens?.colors?.secondary?.[500] || '#6b7280'
   const sendCodeButtonTextColor = getOptimalTextColor(secondaryColor, 'secondary')
 
   useEffect(() => {
