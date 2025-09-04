@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # AINO 项目一键启动脚本
-# 启动后端、前端和 Drizzle Studio 服务
+# 启动后端、前端、aino-app 和 Drizzle Studio 服务
 
 echo "🚀 启动 AINO 项目所有服务..."
 
@@ -37,7 +37,6 @@ pnpm dev > ../logs/aino-app.log 2>&1 &
 AINO_APP_PID=$!
 echo $AINO_APP_PID > ../logs/aino-app.pid
 cd ..
-
 # 启动 Drizzle Studio
 echo "🗄️  启动 Drizzle Studio..."
 cd AINO-server
