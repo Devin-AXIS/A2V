@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 主色调 - 基于设计令牌 */
+  --primary-50: 213 100% 96%;
+  --primary-100: 214 95% 93%;
+  --primary-200: 214 95% 87%;
+  --primary-300: 214 95% 80%;
+  --primary-400: 214 95% 73%;
+  --primary-500: 217 91% 60%;
+  --primary-600: 221 83% 53%;
+  --primary-700: 224 76% 48%;
+  --primary-800: 226 70% 44%;
+  --primary-900: 222 84% 5%;
+  
+  /* 辅色调 - 基于设计令牌 */
+  --secondary-50: 210 40% 98%;
+  --secondary-100: 210 40% 96%;
+  --secondary-200: 214 32% 91%;
+  --secondary-300: 213 27% 84%;
+  --secondary-400: 215 20% 65%;
+  --secondary-500: 215 16% 47%;
+  --secondary-600: 215 19% 35%;
+  --secondary-700: 215 25% 27%;
+  --secondary-800: 217 33% 17%;
+  --secondary-900: 222 47% 11%;
+  
+  /* 中性色 - 基于设计令牌 */
+  --neutral-50: 0 0% 98%;
+  --neutral-100: 0 0% 96%;
+  --neutral-200: 0 0% 90%;
+  --neutral-300: 0 0% 83%;
+  --neutral-400: 0 0% 64%;
+  --neutral-500: 0 0% 45%;
+  --neutral-600: 0 0% 32%;
+  --neutral-700: 0 0% 25%;
+  --neutral-800: 0 0% 15%;
+  --neutral-900: 0 0% 9%;
+  
+  /* 语义色 - 基于设计令牌 */
+  --success-50: 138 76% 97%;
+  --success-100: 141 84% 93%;
+  --success-200: 141 79% 85%;
+  --success-300: 142 77% 73%;
+  --success-400: 142 69% 58%;
+  --success-500: 142 76% 36%;
+  --success-600: 142 72% 29%;
+  --success-700: 142 69% 24%;
+  --success-800: 143 65% 20%;
+  --success-900: 144 61% 17%;
+  
+  --warning-50: 48 96% 89%;
+  --warning-100: 48 96% 89%;
+  --warning-200: 48 96% 89%;
+  --warning-300: 48 96% 89%;
+  --warning-400: 48 96% 89%;
+  --warning-500: 38 92% 50%;
+  --warning-600: 32 95% 44%;
+  --warning-700: 26 95% 37%;
+  --warning-800: 23 95% 32%;
+  --warning-900: 23 95% 32%;
+  
+  --error-50: 0 93% 94%;
+  --error-100: 0 96% 89%;
+  --error-200: 0 93% 81%;
+  --error-300: 0 90% 71%;
+  --error-400: 0 84% 60%;
+  --error-500: 0 84% 60%;
+  --error-600: 0 72% 51%;
+  --error-700: 0 74% 42%;
+  --error-800: 0 71% 35%;
+  --error-900: 0 63% 31%;
+  
+  --info-50: 213 100% 96%;
+  --info-100: 214 95% 93%;
+  --info-200: 214 95% 87%;
+  --info-300: 214 95% 80%;
+  --info-400: 214 95% 73%;
+  --info-500: 217 91% 60%;
+  --info-600: 221 83% 53%;
+  --info-700: 224 76% 48%;
+  --info-800: 226 70% 44%;
+  --info-900: 222 84% 5%;
+  
+  /* 背景色 - 基于设计令牌 */
+  --background: 0 0% 100%;
+  --background-secondary: 210 40% 98%;
+  --background-tertiary: 210 40% 96%;
+  
+  /* 前景色 - 基于设计令牌 */
+  --foreground: 222 47% 11%;
+  --foreground-secondary: 215 16% 47%;
+  --foreground-tertiary: 215 20% 65%;
+  --foreground-inverse: 0 0% 100%;
+  
+  /* 输入相关 */
+  --input: 214 32% 91%;
+  --input-foreground: 222 47% 11%;
+  
+  /* 边框 */
+  --border: 214 32% 91%;
+  --border-input: 214 32% 91%;
+  
+  /* 聚焦 */
+  --ring: 217 91% 60%;
+  
+  /* 卡片 */
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  
+  /* 弹出框 */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  
+  /* 主要操作 */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* 次要操作 */
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  
+  /* 静音 */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  
+  /* 强调 */
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  
+  /* 破坏性操作 */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* 字体大小CSS变量 - 默认值（正常档位） */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
+  --font-size-7xl: 4.5rem;
+  --font-size-8xl: 6rem;
+  --font-size-9xl: 8rem;
+  
+  /* 圆角CSS变量 - 基于设计令牌 */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+  
+  /* 阴影CSS变量 - 基于设计令牌 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  
+  /* 间距CSS变量 - 基于设计令牌 */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+}
+
+/* 深色主题 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 222 47% 11%;
+    --background-secondary: 217 33% 17%;
+    --background-tertiary: 215 25% 27%;
+    
+    --foreground: 210 40% 98%;
+    --foreground-secondary: 215 20% 65%;
+    --foreground-tertiary: 215 16% 47%;
+    --foreground-inverse: 222 47% 11%;
+    
+    --input: 217 33% 17%;
+    --input-foreground: 210 40% 98%;
+    
+    --border: 217 33% 17%;
+    --border-input: 217 33% 17%;
+    
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+  }
+}
+
+/* 字体大小类覆盖 - 让所有Tailwind字体大小类都能响应字体大小设置 */
+.text-xs { font-size: var(--font-size-xs) !important; }
+.text-sm { font-size: var(--font-size-sm) !important; }
+.text-base { font-size: var(--font-size-base) !important; }
+.text-lg { font-size: var(--font-size-lg) !important; }
+.text-xl { font-size: var(--font-size-xl) !important; }
+.text-2xl { font-size: var(--font-size-2xl) !important; }
+.text-3xl { font-size: var(--font-size-3xl) !important; }
+.text-4xl { font-size: var(--font-size-4xl) !important; }
+.text-5xl { font-size: var(--font-size-5xl) !important; }
+.text-6xl { font-size: var(--font-size-6xl) !important; }
+.text-7xl { font-size: var(--font-size-7xl) !important; }
+.text-8xl { font-size: var(--font-size-8xl) !important; }
+.text-9xl { font-size: var(--font-size-9xl) !important; }
+
+/* 基础样式 */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 毛玻璃效果和动画 */
+@layer utilities {
+  /* 毛玻璃背景模糊效果 */
+  .backdrop-blur-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* 柔和阴影 */
+  .shadow-soft {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .shadow-soft-lg {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* 磨砂质感 */
+  .frosted-glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* 背景模糊效果 */
+  .bg-blur {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  /* 动画效果 */
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+  
+  /* 渐变背景动画 */
+  .animate-gradient {
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  /* 输入框聚焦效果 */
+  .input-focus {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .input-focus:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* 按钮悬停效果 */
+  .btn-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* 卡片悬停效果 */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+}
