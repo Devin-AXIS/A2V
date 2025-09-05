@@ -55,7 +55,10 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
 
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en)
 
-  const dayOptions = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+  const dayKeys = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] as const
+  const dayZhMap: Record<string, string> = { Mon: "周一", Tue: "周二", Wed: "周三", Thu: "周四", Fri: "周五", Sat: "周六", Sun: "周日" }
+  const dayEnMap: Record<string, string> = { Mon: "Mon", Tue: "Tue", Wed: "Wed", Thu: "Thu", Fri: "Fri", Sat: "Sat", Sun: "Sun" }
+  const dayText = (k: string) => (lang === "zh" ? dayZhMap[k] : dayEnMap[k])
 
   const cronPreview = useMemo(() => {
     // if interval provided, prefer it
@@ -134,16 +137,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                   </section>
 
                   <section className="space-y-3">
-                    <div className="text-sm font-medium">{t("目标与映射","Target & mapping")}</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1 col-span-2">
-                        <Label>{t("目标目录","Directory")}</Label>
-                        <div className="px-3 py-2 rounded-md border bg-white/60 dark:bg-neutral-900/60 text-sm">
-                          {dirName || dirId || t("当前目录","Current directory")}
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="space-y-1">
                       <Label>{t("去重与更新策略","Dedup & update strategy")}</Label>
                       <RadioGroup value={dedupKey} onValueChange={(v: any) => setDedupKey(v)} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -195,8 +188,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       </div>
                       {schedulePreset === "custom" || schedulePreset === "weekly" ? (
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {dayOptions.map(d => (
-                            <button key={d} className={`px-2.5 py-1 rounded-md text-xs border ${customDays.includes(d) ? "bg-blue-600 text-white border-blue-600" : "bg-white/60 dark:bg-neutral-900/60"}`} onClick={() => toggleCustomDay(d)} type="button">{d}</button>
+                          {dayKeys.map((d) => (
+                            <button key={d} className={`px-2.5 py-1 rounded-md text-xs border ${customDays.includes(d) ? "bg-blue-600 text-white border-blue-600" : "bg-white/60 dark:bg-neutral-900/60"}`} onClick={() => toggleCustomDay(d)} type="button">{dayText(d)}</button>
                           ))}
                         </div>
                       ) : null}
