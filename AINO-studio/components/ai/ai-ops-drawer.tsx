@@ -44,6 +44,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [dom, setDom] = useState<string>("1")
   const [oneDate, setOneDate] = useState<string>("")
 
+  // i18n helper must be declared before any use (e.g., in mockFields)
+  const t = (zh: string, en: string) => (lang === "zh" ? zh : en)
+
   // mock fields for mapping UI
   const mockFields = useMemo(() => {
     // simulate 24 fields
@@ -86,7 +89,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
   }, [open, dirId])
 
-  const t = (zh: string, en: string) => (lang === "zh" ? zh : en)
 
   const dayKeys = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] as const
   const dayZhMap: Record<string, string> = { Mon: "周一", Tue: "周二", Wed: "周三", Thu: "周四", Fri: "周五", Sat: "周六", Sun: "周日" }
