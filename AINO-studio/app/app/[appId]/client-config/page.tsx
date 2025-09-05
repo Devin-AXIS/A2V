@@ -527,7 +527,7 @@ export default function ClientConfigPage() {
                     <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
                     <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
-                    <a href="http://localhost:3001/docs/swagger" target="_blank" rel="noreferrer">
+                    <a href={`http://localhost:3001/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
                       <Button variant="secondary">API</Button>
                     </a>
                   </div>
