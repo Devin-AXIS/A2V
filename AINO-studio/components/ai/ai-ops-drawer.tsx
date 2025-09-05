@@ -44,6 +44,39 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [dom, setDom] = useState<string>("1")
   const [oneDate, setOneDate] = useState<string>("")
 
+  // mock fields for mapping UI
+  const mockFields = useMemo(() => {
+    // simulate 24 fields
+    const base = [
+      { key: "title", label: t("标题","Title") },
+      { key: "description", label: t("描述","Description") },
+      { key: "salary", label: t("薪资","Salary") },
+      { key: "city", label: t("城市","City") },
+      { key: "company", label: t("公司","Company") },
+      { key: "url", label: "URL" },
+    ]
+    const extra = Array.from({ length: 18 }).map((_, i) => ({ key: `field_${i+1}`, label: `${t("字段","Field")} ${i+1}` }))
+    return [...base, ...extra]
+  }, [lang])
+  const [mapPage, setMapPage] = useState(1)
+  const pageSize = 10
+  const totalPages = Math.max(1, Math.ceil(mockFields.length / pageSize))
+  const pageFields = useMemo(() => mockFields.slice((mapPage-1)*pageSize, mapPage*pageSize), [mockFields, mapPage])
+  const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
+  const sampleSourceKeys = ["title","desc","salary","city","company","link","posted_at"]
+  function autoMatch() {
+    const next: Record<string, string> = {}
+    for (const f of mockFields) {
+      const guess = sampleSourceKeys.find((s) => s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)))
+      if (guess) next[f.key] = guess
+    }
+    setMapping(next)
+    toast({ description: t("已自动匹配相近字段","Auto matched similar fields") })
+  }
+  function clearMapping() {
+    setMapping({})
+  }
+
   // ensure we have a directory context
   useEffect(() => {
     if (!open) return
@@ -240,6 +273,44 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                   </section>
 
                   <section className="space-y-3 lg:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">{t("字段映射","Field Mapping")}</div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配","Auto match")}</Button>
+                        <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空","Clear")}</Button>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-0">
+                      <div className="max-h-[240px] overflow-auto">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/70 backdrop-blur">
+                            <tr>
+                              <th className="text-left px-3 py-2 w-[30%]">{t("字段","Field")}</th>
+                              <th className="text-left px-3 py-2">{t("来源键","Source key")}</th>
+                              <th className="text-left px-3 py-2 w-[30%]">{t("示例","Sample")}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageFields.map((f) => (
+                              <tr key={f.key} className="border-t">
+                                <td className="px-3 py-2"><div className="font-medium">{f.label}</div><div className="text-xs text-muted-foreground">{f.key}</div></td>
+                                <td className="px-3 py-2">
+                                  <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
+                                </td>
+                                <td className="px-3 py-2 text-xs text-muted-foreground truncate">—</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex items-center justify-between p-2 text-xs text-muted-foreground">
+                        <div>{t("第","Page")} {mapPage}/{totalPages}</div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" disabled={mapPage<=1} onClick={() => setMapPage((p)=>Math.max(1,p-1))}>Prev</Button>
+                          <Button variant="outline" size="sm" disabled={mapPage>=totalPages} onClick={() => setMapPage((p)=>Math.min(totalPages,p+1))}>Next</Button>
+                        </div>
+                      </div>
+                    </div>
                     <div className="text-sm font-medium">{t("预览","Preview")}</div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-3 text-xs text-muted-foreground min-h-[120px]">
                       {t("Dry-run 后将在此显示：原始→规范化→字段映射对照。","After dry-run, original → normalized → field mapping diffs will appear here.")}
