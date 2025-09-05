@@ -730,7 +730,14 @@ export default function BuilderPage() {
         title={locale === "zh" ? "选择内容分类" : "Select Content Category"}
       />
 
-      <AIOpsDrawer open={aiOpsOpen} onOpenChange={setAiOpsOpen} appId={String(params.appId)} lang={locale === "zh" ? "zh" : "en"} />
+      <AIOpsDrawer
+        open={aiOpsOpen}
+        onOpenChange={setAiOpsOpen}
+        appId={String(params.appId)}
+        lang={locale === "zh" ? "zh" : "en"}
+        dirId={c.currentDir?.id}
+        dirName={c.currentDir?.name}
+      />
 
       {/* Simple Module Dialogs */}
       <SimpleModuleDialog

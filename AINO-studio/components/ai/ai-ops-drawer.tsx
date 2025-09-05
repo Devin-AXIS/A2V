@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api"
 
@@ -17,71 +19,66 @@ type Props = {
   onOpenChange: (open: boolean) => void
   appId: string
   lang?: "zh" | "en"
+  dirId?: string
+  dirName?: string
 }
 
-type ModuleItem = { id: string; name: string }
-type DirectoryItem = { id: string; name: string; moduleId: string }
+// Directory context is passed in from the caller; no cross-directory selection here
 
-export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
+export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dirName }: Props) {
   const { toast } = useToast()
 
   const [provider, setProvider] = useState<"firecrawl" | "scrapegraph">("firecrawl")
   const [urls, setUrls] = useState("")
   const [domain, setDomain] = useState("")
   const [nlRule, setNlRule] = useState("")
-  const [schedulePreset, setSchedulePreset] = useState<"daily" | "weekend" | "weekdays" | "custom">("weekdays")
-  const [timeOfDay, setTimeOfDay] = useState("09:30")
+  const [schedulePreset, setSchedulePreset] = useState<"daily" | "weekend" | "weekdays" | "weekly" | "monthly" | "custom">("weekdays")
+  const [timeOfDay, setTimeOfDay] = useState("06:00")
   const [customDays, setCustomDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"])
+  const [tz, setTz] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai")
+  const [intervalHours, setIntervalHours] = useState<string>("")
   const [dedupKey, setDedupKey] = useState<"url" | "externalId" | "titleWindow">("url")
 
-  const [modules, setModules] = useState<ModuleItem[]>([])
-  const [directories, setDirectories] = useState<DirectoryItem[]>([])
-  const [targetModuleId, setTargetModuleId] = useState<string>("")
-  const [targetDirId, setTargetDirId] = useState<string>("")
   const [loadingMeta, setLoadingMeta] = useState(false)
+  const [runOnce, setRunOnce] = useState(false)
+  const [dom, setDom] = useState<string>("1")
+  const [oneDate, setOneDate] = useState<string>("")
 
-  // load modules and directories for current app
+  // ensure we have a directory context
   useEffect(() => {
     if (!open) return
-    let cancelled = false
-    async function load() {
-      setLoadingMeta(true)
-      try {
-        const modsRes = await api.applications.getApplicationModules(appId)
-        const mods = (modsRes.success && modsRes.data?.modules) ? modsRes.data.modules : []
-        const mList = mods.map((m: any) => ({ id: m.id, name: m.name })) as ModuleItem[]
-        if (cancelled) return
-        setModules(mList)
-
-        // load dirs per module
-        const dirLists = await Promise.all(mList.map(async (m) => {
-          try {
-            const dres = await api.directories.getDirectories({ applicationId: appId, moduleId: m.id })
-            const list = (dres.success && dres.data?.directories) ? dres.data.directories : []
-            return list.map((d: any) => ({ id: d.id, name: d.name, moduleId: m.id })) as DirectoryItem[]
-          } catch {
-            return [] as DirectoryItem[]
-          }
-        }))
-        if (cancelled) return
-        const all = dirLists.flat()
-        setDirectories(all)
-        if (mList.length && !targetModuleId) setTargetModuleId(mList[0].id)
-        const firstDir = all.find(d => d.moduleId === (targetModuleId || mList[0]?.id))
-        if (firstDir && !targetDirId) setTargetDirId(firstDir.id)
-      } finally {
-        if (!cancelled) setLoadingMeta(false)
-      }
+    setLoadingMeta(false)
+    if (!dirId) {
+      toast({ description: t("请先选择目录","Please select a directory first"), variant: "destructive" as any })
     }
-    load()
-    return () => { cancelled = true }
-  }, [open, appId])
+  }, [open, dirId])
 
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en)
 
   const dayOptions = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 
-  const selectedDirs = useMemo(() => directories.filter(d => d.moduleId === targetModuleId), [directories, targetModuleId])
+  const cronPreview = useMemo(() => {
+    // if interval provided, prefer it
+    const hours = parseInt(intervalHours || "0", 10)
+    if (!Number.isNaN(hours) && hours > 0) {
+      return `0 */${hours} * * * (${tz})`
+    }
+    const [hh, mm] = (timeOfDay || "06:00").split(":")
+    const map: Record<string, string> = { Sun: "0", Mon: "1", Tue: "2", Wed: "3", Thu: "4", Fri: "5", Sat: "6" }
+    if (runOnce) {
+      const dateStr = oneDate ? new Date(oneDate).toLocaleDateString() : "?"
+      return `ONCE ${dateStr} ${timeOfDay} (${tz})`
+    }
+    if (schedulePreset === "daily") return `${mm} ${hh} * * * (${tz})`
+    if (schedulePreset === "weekdays") return `${mm} ${hh} * * 1-5 (${tz})`
+    if (schedulePreset === "weekend") return `${mm} ${hh} * * 6,0 (${tz})`
+    if (schedulePreset === "monthly") return `${mm} ${hh} ${dom} * * (${tz})`
+    // weekly/custom use selected days
+    const ds = customDays.map(d => map[d] ?? "").filter(Boolean).join(",") || "1-5"
+    return `${mm} ${hh} * * ${ds} (${tz})`
+  }, [schedulePreset, timeOfDay, customDays, tz, intervalHours, runOnce, dom, oneDate])
+
+  // no cross-directory selection; use current dir
 
   function toggleCustomDay(day: string) {
     setCustomDays((s) => s.includes(day) ? s.filter(d => d !== day) : [...s, day])
@@ -99,8 +96,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="border-none">
         <div className="mx-auto w-full max-w-6xl px-4 py-3">
-          <div className="rounded-2xl border bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md shadow-sm">
-            <DrawerHeader className="pb-2">
+          <div className="rounded-2xl border border-white/40 bg-white/60 dark:bg-neutral-900/50 backdrop-blur-xl shadow-lg ring-1 ring-black/5">
+            <DrawerHeader className="pb-2 bg-gradient-to-r from-transparent to-white/10 dark:to-neutral-900/10 rounded-t-2xl">
               <DrawerTitle>{t("AI 运营（采集/抽取/入库）","AI Ops (Crawl/Extract/Upsert)")}</DrawerTitle>
               <DrawerDescription>{t("配置数据源、规则、目标与调度；支持 Dry-run 预览后再落库。","Configure sources, rules, target and schedule; Dry-run before upsert.")}</DrawerDescription>
             </DrawerHeader>
@@ -139,23 +136,11 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
                   <section className="space-y-3">
                     <div className="text-sm font-medium">{t("目标与映射","Target & mapping")}</div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label>{t("目标模块","Module")}</Label>
-                        <Select value={targetModuleId} onValueChange={(v) => setTargetModuleId(v)} disabled={loadingMeta || modules.length === 0}>
-                          <SelectTrigger><SelectValue placeholder={t("选择模块","Select module")} /></SelectTrigger>
-                          <SelectContent>
-                            {modules.map(m => (<SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1 col-span-2">
                         <Label>{t("目标目录","Directory")}</Label>
-                        <Select value={targetDirId} onValueChange={(v) => setTargetDirId(v)} disabled={loadingMeta || selectedDirs.length === 0}>
-                          <SelectTrigger><SelectValue placeholder={t("选择目录","Select directory")} /></SelectTrigger>
-                          <SelectContent>
-                            {selectedDirs.map(d => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
-                          </SelectContent>
-                        </Select>
+                        <div className="px-3 py-2 rounded-md border bg-white/60 dark:bg-neutral-900/60 text-sm">
+                          {dirName || dirId || t("当前目录","Current directory")}
+                        </div>
                       </div>
                     </div>
 
@@ -171,7 +156,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
 
                     <div className="space-y-2">
                       <div className="text-sm font-medium">{t("调度","Schedule")}</div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="space-y-1">
                           <Label>{t("预设","Preset")}</Label>
                           <Select value={schedulePreset} onValueChange={(v: any) => setSchedulePreset(v)}>
@@ -180,6 +165,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
                               <SelectItem value="weekdays">{t("工作日","Weekdays")}</SelectItem>
                               <SelectItem value="weekend">{t("周末","Weekend")}</SelectItem>
                               <SelectItem value="daily">{t("每天","Daily")}</SelectItem>
+                              <SelectItem value="weekly">{t("每周","Weekly")}</SelectItem>
+                              <SelectItem value="monthly">{t("每月","Monthly")}</SelectItem>
                               <SelectItem value="custom">{t("自定义","Custom")}</SelectItem>
                             </SelectContent>
                           </Select>
@@ -188,14 +175,74 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh" }: Props) {
                           <Label>{t("时间","Time")}</Label>
                           <Input type="time" value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)} />
                         </div>
+                        <div className="space-y-1">
+                          <Label>{t("时区","Timezone")}</Label>
+                          <Select value={tz} onValueChange={(v: any) => setTz(v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Asia/Shanghai">Asia/Shanghai</SelectItem>
+                              <SelectItem value="UTC">UTC</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>{t("运行模式","Run mode")}</Label>
+                          <RadioGroup value={runOnce ? "once" : "repeat"} onValueChange={(v: any) => setRunOnce(v === "once")} className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="repeat" id="rm1" /><Label htmlFor="rm1">{t("重复","Repeat")}</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="once" id="rm2" /><Label htmlFor="rm2">{t("仅一次","Once")}</Label></div>
+                          </RadioGroup>
+                        </div>
                       </div>
-                      {schedulePreset === "custom" && (
+                      {schedulePreset === "custom" || schedulePreset === "weekly" ? (
                         <div className="flex flex-wrap gap-2 pt-1">
                           {dayOptions.map(d => (
                             <button key={d} className={`px-2.5 py-1 rounded-md text-xs border ${customDays.includes(d) ? "bg-blue-600 text-white border-blue-600" : "bg-white/60 dark:bg-neutral-900/60"}`} onClick={() => toggleCustomDay(d)} type="button">{d}</button>
                           ))}
                         </div>
+                      ) : null}
+                      {schedulePreset === "monthly" && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <Label>{t("每月第几天","Day of month")}</Label>
+                            <Select value={dom} onValueChange={(v: any) => setDom(v)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 31 }).map((_, i) => (
+                                  <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       )}
+                      {runOnce && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <Label>{t("执行日期","Run date")}</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start font-normal">
+                                  {oneDate ? new Date(oneDate).toLocaleDateString() : t("选择日期","Pick a date")}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-0" align="start">
+                                <Calendar mode="single" selected={oneDate ? new Date(oneDate) : undefined} onSelect={(d: any) => setOneDate(d ? d.toISOString() : "")}/>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-1 md:col-span-2">
+                          <div className="text-xs text-muted-foreground">
+                            {t("CRON 预览","CRON Preview")}：<span className="font-mono">{cronPreview}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>{t("间隔(小时，可选)","Interval (hours, optional)")}</Label>
+                          <Input inputMode="numeric" pattern="[0-9]*" value={intervalHours} onChange={(e) => setIntervalHours(e.target.value.replace(/[^0-9]/g, ''))} placeholder={t("留空则按上面时间执行","Leave empty to use time above")} />
+                        </div>
+                      </div>
                     </div>
                   </section>
 
