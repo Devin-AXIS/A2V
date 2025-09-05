@@ -71,18 +71,19 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }, [arrayPath, mockExtracted])
 
   // mock fields for mapping UI
-  const mockFields = useMemo(() => {
+  type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect' }
+  const mockFields = useMemo<MockField[]>(() => {
     // simulate 24 fields
     const base = [
-      { key: "title", label: t("标题","Title") },
-      { key: "description", label: t("描述","Description") },
-      { key: "salary", label: t("薪资","Salary") },
-      { key: "city", label: t("城市","City") },
-      { key: "company", label: t("公司","Company") },
-      { key: "url", label: "URL" },
+      { key: "title", label: t("标题","Title"), type: 'text' },
+      { key: "description", label: t("描述","Description"), type: 'text' },
+      { key: "salary", label: t("薪资","Salary"), type: 'number' },
+      { key: "city", label: t("城市","City"), type: 'text' },
+      { key: "company", label: t("公司","Company"), type: 'text' },
+      { key: "url", label: "URL", type: 'url' },
     ]
-    const extra = Array.from({ length: 18 }).map((_, i) => ({ key: `field_${i+1}`, label: `${t("字段","Field")} ${i+1}` }))
-    return [...base, ...extra]
+    const extra: MockField[] = Array.from({ length: 18 }).map((_, i) => ({ key: `field_${i+1}`, label: `${t("字段","Field")} ${i+1}`, type: 'text' }))
+    return [...base, ...extra] as MockField[]
   }, [lang])
   const [mapPage, setMapPage] = useState(1)
   const pageSize = 10
@@ -111,6 +112,22 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     { value: "parseDate", label: "parseDate" },
     { value: "splitTags", label: "splitTags" },
   ]
+
+  function suggestTransform(targetType: MockField['type'], sample: any): string {
+    if (targetType === 'number') {
+      return typeof sample === 'number' ? 'none' : 'toNumber'
+    }
+    if (targetType === 'date') {
+      return typeof sample === 'string' ? 'parseDate' : 'parseDate'
+    }
+    if (targetType === 'tags' || targetType === 'multiselect') {
+      return Array.isArray(sample) ? 'none' : 'splitTags'
+    }
+    if (targetType === 'text') {
+      return 'trim'
+    }
+    return 'none'
+  }
 
   // ensure we have a directory context
   useEffect(() => {
@@ -351,7 +368,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                                   <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
                                 </td>
                                 <td className="px-3 py-2">
-                                  <Select value={mappingTransform[f.key] || "none"} onValueChange={(v: any) => setMappingTransform((m) => ({ ...m, [f.key]: v }))}>
+                                  <Select value={mappingTransform[f.key] || suggestTransform(f.type, (sampleRecords?.[0] ?? {})[mapping[f.key] || ""]) } onValueChange={(v: any) => setMappingTransform((m) => ({ ...m, [f.key]: v }))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {transformOptions.map(o => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
