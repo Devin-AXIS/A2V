@@ -30,6 +30,9 @@ export async function mockAuthMiddleware(c: Context, next: Next) {
 
 // Mock 必需认证中间件（临时使用）
 export async function mockRequireAuthMiddleware(c: Context, next: Next) {
+  return next()
+  // if (c.req.path.startsWith('/api/modules/system/user/register')) {
+  // }
   const authHeader = c.req.header('Authorization')
   const token = extractTokenFromHeader(authHeader)
 

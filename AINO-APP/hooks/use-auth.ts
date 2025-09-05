@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const storedUser = localStorage.getItem(STORAGE_KEYS.USER)
         const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
-        
+
         if (storedUser && storedToken) {
           const user = JSON.parse(storedUser)
           setAuthState({
@@ -112,47 +112,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth()
   }, [])
 
-  const login = async (phone: string, password?: string, code?: string): Promise<boolean> => {
+  const login = async (data: any): Promise<boolean> => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }))
-      
+
       // 模拟API调用延迟
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // 模拟登录验证
       let user: User | undefined
-      
-      if (password) {
-        // 密码登录 - 查找匹配的用户
-        user = MOCK_USERS.find(u => u.phone === phone)
-        if (!user) {
-          throw new Error('用户不存在')
+
+      // if (password) {
+      //   // 密码登录 - 查找匹配的用户
+      //   user = MOCK_USERS.find(u => u.phone === phone)
+      //   if (!user) {
+      //     throw new Error('用户不存在')
+      //   }
+      // } else if (code) {
+      // 验证码登录 - 查找匹配的用户或创建新用户
+      // user = MOCK_USERS.find(u => u.phone === phone)
+      // if (!user) {
+      // 创建新用户
+
+      const grades = {};
+      Object.keys(data).forEach(key => {
+        if (key.indexOf('followers') > -1) {
+          grades.followers = data[key];
         }
-      } else if (code) {
-        // 验证码登录 - 查找匹配的用户或创建新用户
-        user = MOCK_USERS.find(u => u.phone === phone)
-        if (!user) {
-          // 创建新用户
-          user = {
-            id: Date.now().toString(),
-            phone,
-            name: `用户${phone.slice(-4)}`,
-            avatar: '/generic-user-avatar.png',
-            points: 100,
-            followers: 0,
-            following: 0,
-            posts: 0,
-            createdAt: new Date().toISOString()
-          }
-          MOCK_USERS.push(user)
+        if (key.indexOf('following') > -1) {
+          grades.following = data[key];
         }
-      } else {
-        throw new Error('请提供密码或验证码')
+        if (key.indexOf('posts') > -1) {
+          grades.posts = data[key];
+        }
+        if (key.indexOf('points') > -1) {
+          grades.points = data[key];
+        }
+      })
+
+      console.log(grades)
+
+      user = {
+        id: Date.now().toString(),
+        phone: data.phone,
+        name: data.profile.name,
+        avatar: data.profile.avatar,
+        points: grades.points || 0,
+        followers: grades.followers || 0,
+        following: grades.following || 0,
+        posts: grades.posts || 0,
+        createdAt: new Date().toISOString()
       }
+      MOCK_USERS.push(user)
+      // }
+      // } else {
+      //   throw new Error('请提供密码或验证码')
+      // }
 
       // 生成模拟token
       const token = `mock_token_${Date.now()}`
-      
+
       // 保存到本地存储（绑定到当前 appId 以便多租户区分）
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
@@ -161,13 +180,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(user))
         localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
       }
-      
+
       setAuthState({
         user,
         isAuthenticated: true,
         isLoading: false
       })
-      
+
       return true
     } catch (error) {
       console.error('登录失败:', error)
@@ -179,16 +198,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }))
-      
+
       // 模拟API调用延迟
       await new Promise(resolve => setTimeout(resolve, 1500))
-      
+
       // 检查用户是否已存在
       const existingUser = MOCK_USERS.find(u => u.phone === data.phone)
       if (existingUser) {
         throw new Error('该手机号已注册')
       }
-      
+
       // 创建新用户
       const newUser: User = {
         id: Date.now().toString(),
@@ -201,12 +220,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         posts: 0,
         createdAt: new Date().toISOString()
       }
-      
+
       MOCK_USERS.push(newUser)
-      
+
       // 生成模拟token
       const token = `mock_token_${Date.now()}`
-      
+
       // 保存到本地存储（绑定到当前 appId）
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser))
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
@@ -215,13 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(newUser))
         localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
       }
-      
+
       setAuthState({
         user: newUser,
         isAuthenticated: true,
         isLoading: false
       })
-      
+
       return true
     } catch (error) {
       console.error('注册失败:', error)
@@ -234,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 清除本地存储
     localStorage.removeItem(STORAGE_KEYS.USER)
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
-    
+
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -246,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (authState.user) {
       const updatedUser = { ...authState.user, ...userData }
       setAuthState(prev => ({ ...prev, user: updatedUser }))
-      
+
       // 更新本地存储
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
     }

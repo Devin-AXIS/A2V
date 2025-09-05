@@ -1,5 +1,5 @@
 "use client"
-
+import axios from 'axios'
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, User, Lock, Smartphone } from 'lucide-react'
@@ -109,14 +109,13 @@ export function MobileLogin({
         return
       }
 
-      // 模拟登录请求
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      onLogin?.({
-        phone,
-        code: loginMethod === 'phone' ? code : undefined,
-        password: loginMethod === 'password' ? password : undefined
+      const applicationId = window.localStorage.getItem('APP_ID')
+      const loginRes = await axios.post(`http://localhost:3001/api/modules/system/user/login?applicationId=${applicationId}`, {
+        password,
+        phone_number: phone
       })
+      const loginResult = loginRes.data?.data;
+      onLogin?.(loginResult)
     } catch (error) {
       console.error('登录失败:', error)
     } finally {

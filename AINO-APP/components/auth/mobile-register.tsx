@@ -1,5 +1,6 @@
 "use client"
 
+import axios from 'axios'
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, ArrowLeft, User, Lock, Smartphone, Check, AlertCircle } from 'lucide-react'
@@ -146,11 +147,18 @@ export function MobileRegister({
     try {
       // 模拟注册请求
       await new Promise(resolve => setTimeout(resolve, 1000))
+      const applicationId = window.localStorage.getItem('APP_ID')
+
+      const res = await axios.post(`http://localhost:3001/api/modules/system/user/register?applicationId=${applicationId}`, {
+        password,
+        phone_number: phone
+      })
+      const result = res.data?.data;
 
       onRegister?.({
-        phone,
+        phone: result.phone,
         countryCode,
-        code,
+        code: result.userId,
         password,
         confirmPassword,
         agreeTerms

@@ -10,6 +10,9 @@ export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
   const sp = useSearchParams()
   const router = useRouter()
+  const qs = new URLSearchParams(window.location.search)
+  const applicationId = qs.get('appId')
+  window.localStorage.setItem('APP_ID', applicationId || '')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +38,7 @@ export default function PreviewPage() {
             if (typeof window !== 'undefined' && mf?.app?.appKey) {
               localStorage.setItem('CURRENT_APP_ID', String(mf.app.appKey))
             }
-          } catch {}
+          } catch { }
           setManifest(mf)
         }
       } catch (e: any) {
@@ -74,8 +77,8 @@ export default function PreviewPage() {
           return { href, label: i.label || i.key, iconName: i.icon }
         }) : []
         localStorage.setItem('CURRENT_APP_NAV_ITEMS', JSON.stringify(navItems))
-      } catch {}
-    } catch {}
+      } catch { }
+    } catch { }
   }, [manifest, locale])
 
   const pageCategory = useMemo(() => {
@@ -87,10 +90,10 @@ export default function PreviewPage() {
     const list = manifest?.app?.bottomNav || []
     return Array.isArray(list)
       ? list.map((i: any) => {
-          let href = i.route || "/"
-          if (href === "/me") href = "/profile"
-          return { href, label: i.label || i.key }
-        })
+        let href = i.route || "/"
+        if (href === "/me") href = "/profile"
+        return { href, label: i.label || i.key }
+      })
       : []
   }, [manifest])
 

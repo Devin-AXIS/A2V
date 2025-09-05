@@ -18,16 +18,16 @@ export default function RegisterPage() {
 
   const handleRegister = async (data: any) => {
     console.log('注册数据:', data)
-    
-    const success = await register(data)
-    
-    if (success) {
-      // 注册成功，自动登录并跳转到个人中心
-      router.push('/profile')
-    } else {
-      // 注册失败，显示错误提示
-      alert('注册失败，请检查信息或稍后重试')
-    }
+
+    // const success = await register(data)
+
+    // if (success) {
+    // 注册成功，自动登录并跳转到个人中心
+    router.push('/profile')
+    // } else {
+    // 注册失败，显示错误提示
+    //   alert('注册失败，请检查信息或稍后重试')
+    // }
   }
 
   const handleLogin = () => {

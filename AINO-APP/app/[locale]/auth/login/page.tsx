@@ -18,9 +18,9 @@ export default function LoginPage() {
 
   const handleLogin = async (data: any) => {
     console.log('登录数据:', data)
-    
-    const success = await login(data.phone, data.password, data.code)
-    
+
+    const success = await login(data)
+
     if (success) {
       // 登录成功，跳转到个人中心
       router.push('/profile')

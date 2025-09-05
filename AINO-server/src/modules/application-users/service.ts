@@ -400,75 +400,80 @@ export class ApplicationUserService {
     // 更新最后登录时间
     await repo.updateLastLoginTime(applicationId, user.id)
 
-    // 读取业务数据：兼容 tenantId 两种存法（applicationId 或 用户列表目录ID）
+    // 读取业务数据：优先按手机号在 dir_users.props 中查找，兼容 tenantId 两种存法（applicationId 或 用户列表目录ID）
     let businessData: any = {}
     try {
       const userListDirId = await this.getUserListDirectoryId(applicationId)
+      const phoneToFind = user.phone
 
-      // 先按 userId
+      // 优先：按手机号（兼容 phone/phone_number）
       let rec = await db
         .select({ props: dirUsers.props })
         .from(dirUsers)
-        .where(
-          and(
-            eq(dirUsers.tenantId, applicationId),
-            sql`${dirUsers.props}->>'userId' = ${user.id}`
-          )
-        )
+        // .where(
+        //   and(
+        //     eq(dirUsers.tenantId, applicationId),
+        //     sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
+        //   )
+        // )
         .limit(1)
 
-      if ((!rec || rec.length === 0) && userListDirId) {
-        rec = await db
-          .select({ props: dirUsers.props })
-          .from(dirUsers)
-          .where(
-            and(
-              eq(dirUsers.tenantId, userListDirId),
-              sql`${dirUsers.props}->>'userId' = ${user.id}`
-            )
-          )
-          .limit(1)
+      console.log(23232323, phoneToFind)
+      if (rec && rec.length > 0) {
+        rec.forEach(item => {
+          if (item.props.phone_number.indexOf(phoneToFind) > -1) {
+            businessData = item.props
+          }
+        })
       }
 
-      if (!rec || rec.length === 0) {
-        // 再按手机号（兼容 phone/phone_number）
-        rec = await db
-          .select({ props: dirUsers.props })
-          .from(dirUsers)
-          .where(
-            and(
-              eq(dirUsers.tenantId, applicationId),
-              sql`( ${dirUsers.props}->>'phone_number' = ${user.phone} OR ${dirUsers.props}->>'phone' = ${user.phone} )`
-            )
-          )
-          .limit(1)
+      // if ((!rec || rec.length === 0) && userListDirId) {
+      //   rec = await db
+      //     .select({ props: dirUsers.props })
+      //     .from(dirUsers)
+      //     .where(
+      //       and(
+      //         eq(dirUsers.tenantId, userListDirId),
+      //         sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
+      //       )
+      //     )
+      //     .limit(1)
+      // }
 
-        if ((!rec || rec.length === 0) && userListDirId) {
-          rec = await db
-            .select({ props: dirUsers.props })
-            .from(dirUsers)
-            .where(
-              and(
-                eq(dirUsers.tenantId, userListDirId),
-                sql`( ${dirUsers.props}->>'phone_number' = ${user.phone} OR ${dirUsers.props}->>'phone' = ${user.phone} )`
-              )
-            )
-            .limit(1)
-        }
-      }
+      // // 备选：若手机号未找到，再按 userId
+      // if (!rec || rec.length === 0) {
+      //   rec = await db
+      //     .select({ props: dirUsers.props })
+      //     .from(dirUsers)
+      //     .where(
+      //       and(
+      //         eq(dirUsers.tenantId, applicationId),
+      //         sql`${dirUsers.props}->>'userId' = ${user.id}`
+      //       )
+      //     )
+      //     .limit(1)
 
-      businessData = rec && rec[0] ? (rec[0].props || {}) : {}
+      //   if ((!rec || rec.length === 0) && userListDirId) {
+      //     rec = await db
+      //       .select({ props: dirUsers.props })
+      //       .from(dirUsers)
+      //       .where(
+      //         and(
+      //           eq(dirUsers.tenantId, userListDirId),
+      //           sql`${dirUsers.props}->>'userId' = ${user.id}`
+      //         )
+      //       )
+      //       .limit(1)
+      //   }
+      // }
+
+      // businessData = rec && rec[0] ? (rec[0].props || {}) : {}
     } catch { }
 
     return {
       ...user,
-      name: businessData.name || '',
-      email: businessData.email || '',
-      avatar: businessData.avatar || '',
-      department: businessData.department || '',
-      position: businessData.position || '',
-      tags: businessData.tags || [],
-      phone_number: businessData.phone_number || user.phone,
+      ...businessData,
+      phone_number: businessData.phone_number || businessData.phone || user.phone,
       profile: businessData,
     }
   }

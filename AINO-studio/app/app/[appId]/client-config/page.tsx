@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -12,16 +12,19 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2 } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
+import { api } from "@/lib/api"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
- type BottomNavItem = { key: string; label: string; icon?: string; route: string }
+type BottomNavItem = { key: string; label: string; icon?: string; route: string }
 
- type DraftManifest = {
+type DraftManifest = {
   schemaVersion: string
   app: {
     appKey: string
@@ -29,9 +32,9 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
     theme: string
     bottomNav: BottomNavItem[]
   }
- }
+}
 
- export default function ClientConfigPage() {
+export default function ClientConfigPage() {
   const params = useParams<{ appId: string }>()
   const router = useRouter()
   const { locale } = useLocale()
@@ -58,11 +61,104 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
         { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/profile" },
       ],
     },
+    dataSources: {},
   })
 
   // 代码编辑范围
   const [codeScope, setCodeScope] = useState<"manifest" | "app" | "page" | "dataSources">("manifest")
   const [activePage, setActivePage] = useState<string>("home")
+
+  // 数据定义对话框与状态
+  type TableItem = { id: string; name: string; moduleName: string }
+  type RecordItem = { id: string; label: string; raw: any }
+  const [dataDialogOpen, setDataDialogOpen] = useState(false)
+  const [tables, setTables] = useState<TableItem[]>([])
+  const [tablesLoading, setTablesLoading] = useState(false)
+  const [tableSearch, setTableSearch] = useState("")
+  const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
+  const [recordsByDir, setRecordsByDir] = useState<Record<string, RecordItem[]>>({})
+  const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
+
+  const filteredTables = useMemo(() => {
+    const kw = tableSearch.trim().toLowerCase()
+    if (!kw) return tables
+    return tables.filter(t =>
+      t.name.toLowerCase().includes(kw) || t.moduleName.toLowerCase().includes(kw),
+    )
+  }, [tables, tableSearch])
+
+  async function loadTables() {
+    if (tablesLoading || tables.length > 0) return
+    setTablesLoading(true)
+    try {
+      const appId = String(params.appId)
+      const modsRes = await api.applications.getApplicationModules(appId)
+      const mods = modsRes.success && modsRes.data ? modsRes.data.modules : []
+      const dirLists = await Promise.all(
+        mods.map(async (m: any) => {
+          try {
+            const dres = await api.directories.getDirectories({ applicationId: appId, moduleId: m.id })
+            const list = dres.success && dres.data ? dres.data.directories || [] : []
+            return list
+              .filter((d: any) => d.type === "table")
+              .map((d: any) => ({ id: d.id, name: d.name, moduleName: m.name })) as TableItem[]
+          } catch {
+            return [] as TableItem[]
+          }
+        }),
+      )
+      setTables(dirLists.flat())
+    } finally {
+      setTablesLoading(false)
+    }
+  }
+
+  async function ensureRecords(dirId: string) {
+    if (recordsLoading[dirId] || recordsByDir[dirId]) return
+    setRecordsLoading((s) => ({ ...s, [dirId]: true }))
+    try {
+      const res = await api.records.listRecords(dirId, { page: 1, pageSize: 100 })
+      const rows: any[] = res.success && res.data ? (Array.isArray(res.data) ? res.data : res.data.records || []) : []
+      const items: RecordItem[] = rows.map((r: any) => ({ id: r.id, label: r.name || r.title || r.id, raw: r }))
+      setRecordsByDir((s) => ({ ...s, [dirId]: items }))
+    } catch {
+      setRecordsByDir((s) => ({ ...s, [dirId]: [] }))
+    } finally {
+      setRecordsLoading((s) => ({ ...s, [dirId]: false }))
+    }
+  }
+
+  function addTableDataSource(t: TableItem) {
+    const key = `table_${t.id}`
+    setDraft((s: any) => {
+      const next = { ...s }
+      next.dataSources = next.dataSources || {}
+      next.dataSources[key] = { type: "table", tableId: t.id, tableName: t.name, moduleName: t.moduleName, label: `${t.moduleName}/${t.name}` }
+      return next
+    })
+    setDataDialogOpen(false)
+  }
+
+  function addRecordDataSource(t: TableItem, rec: RecordItem) {
+    const key = `record_${t.id}_${rec.id}`
+    setDraft((s: any) => {
+      const next = { ...s }
+      next.dataSources = next.dataSources || {}
+      next.dataSources[key] = { type: "record", tableId: t.id, tableName: t.name, moduleName: t.moduleName, recordId: rec.id, label: `${t.moduleName}/${t.name}#${rec.label}` }
+      return next
+    })
+    setDataDialogOpen(false)
+  }
+
+  function removeDataSource(key: string) {
+    setDraft((s: any) => {
+      const next = { ...s }
+      const ds = { ...(next.dataSources || {}) }
+      delete ds[key]
+      next.dataSources = ds
+      return next
+    })
+  }
 
   useEffect(() => {
     try {
@@ -106,7 +202,7 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
       if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
       const id = data.data.id
       setPreviewId(id)
-      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}`
+      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}`
       setPreviewUrl(url)
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
@@ -164,7 +260,7 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
           { uri: 'aino://manifest.schema.json', fileMatch: ['*'], schema: manifestSchema }
         ]
       })
-    } catch {}
+    } catch { }
     setMonacoMounted(true)
   }
 
@@ -197,7 +293,7 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
           u.pathname = parts.join("/")
         }
         setPreviewUrl(u.toString())
-      } catch {}
+      } catch { }
     }
   }, [device, lang])
 
@@ -286,6 +382,34 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
                     )}
                   </div>
                 </div>
+                {/* 数据定义 */}
+                <div className="pt-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
+                    <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
+                    </Button>
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-auto pr-1">
+                    {Object.entries(draft.dataSources || {}).length === 0 && (
+                      <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
+                    )}
+                    {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
+                      <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
+                        <div className="flex items-center gap-1 text-xs">
+                          <Database className="w-3.5 h-3.5" />
+                          <span className="font-medium">{item?.label || key}</span>
+                        </div>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
+                          <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 {/* 页面列表 */}
                 <div className="pt-2 space-y-2">
                   <div className="flex items-center justify-between">
@@ -301,6 +425,88 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
                 </div>
               </div>
             </ResizablePanel>
+            {/* 添加数据弹窗 */}
+            <Dialog open={dataDialogOpen} onOpenChange={setDataDialogOpen}>
+              <DialogContent className="max-w-[880px] w-[95vw] max-h-[80vh] bg-white">
+                <DialogHeader>
+                  <DialogTitle>{lang === "zh" ? "选择数据源" : "Choose Data Source"}</DialogTitle>
+                </DialogHeader>
+                <div className="p-0">
+                  <div className="p-3 text-xs text-muted-foreground">
+                    {lang === "zh" ? "可选择整张表作为数据源，或展开表选择某条记录作为数据源。" : "Choose a whole table or expand to pick a specific record."}
+                  </div>
+                  <div className="px-3 pb-3 flex items-center gap-3">
+                    <div className="relative">
+                      <Input placeholder={lang === "zh" ? "搜索表/模块" : "Search tables/modules"} value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} className="pl-8 w-64" />
+                      <Search className="w-4 h-4 absolute left-2 top-2.5 text-gray-400" />
+                    </div>
+                    <Button variant="outline" onClick={loadTables} disabled={tablesLoading}>{lang === "zh" ? "刷新" : "Refresh"}</Button>
+                  </div>
+                  <div className="px-3 pb-3">
+                    <ScrollArea className="h-[52vh] border rounded-lg">
+                      <div className="divide-y">
+                        {tablesLoading && (
+                          <div className="p-4 text-sm text-muted-foreground">{lang === "zh" ? "加载中..." : "Loading..."}</div>
+                        )}
+                        {!tablesLoading && filteredTables.length === 0 && (
+                          <div className="p-4 text-sm text-muted-foreground">{lang === "zh" ? "暂无数据表" : "No tables found"}</div>
+                        )}
+                        {filteredTables.map((t) => {
+                          const expanded = expandedTableId === t.id
+                          const recs = recordsByDir[t.id]
+                          const loading = !!recordsLoading[t.id]
+                          return (
+                            <div key={t.id} className="p-3">
+                              <div className="flex items-center gap-2">
+                                <button className="p-1 rounded hover:bg-gray-100" onClick={async () => {
+                                  const next = expanded ? null : t.id
+                                  setExpandedTableId(next)
+                                  if (next) await ensureRecords(t.id)
+                                }} aria-label={expanded ? "collapse" : "expand"}>
+                                  {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                </button>
+                                <Database className="w-4 h-4 text-blue-600" />
+                                <div className="font-medium">{t.name}</div>
+                                <div className="text-xs text-muted-foreground">/ {t.moduleName}</div>
+                                <div className="ml-auto flex items-center gap-2">
+                                  <Button size="sm" onClick={() => addTableDataSource(t)}>{lang === "zh" ? "整表" : "Whole Table"}</Button>
+                                  <Button variant="secondary" size="sm" onClick={async () => { setExpandedTableId(t.id); await ensureRecords(t.id) }}>{lang === "zh" ? "选择记录" : "Pick Record"}</Button>
+                                </div>
+                              </div>
+                              {expanded && (
+                                <div className="mt-2 ml-7">
+                                  {loading && (
+                                    <div className="text-xs text-muted-foreground p-2">{lang === "zh" ? "加载记录..." : "Loading records..."}</div>
+                                  )}
+                                  {!loading && (recs && recs.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      {recs.map((r) => (
+                                        <div key={r.id} className="border rounded-md px-2 py-1.5 flex items-center gap-2">
+                                          <ListIcon className="w-3.5 h-3.5 text-gray-500" />
+                                          <div className="text-sm truncate" title={r.label}>{r.label}</div>
+                                          <div className="ml-auto">
+                                            <Button size="sm" onClick={() => addRecordDataSource(t, r)}>{lang === "zh" ? "选择" : "Select"}</Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-muted-foreground p-2">{lang === "zh" ? "暂无记录" : "No records"}</div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDataDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={35} className="bg-gray-50">
               <div className="h-full p-3 flex flex-col gap-2">
@@ -401,4 +607,4 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default)
       </div>
     </main>
   )
- }
+}
