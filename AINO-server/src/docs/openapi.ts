@@ -27,6 +27,7 @@ export const openApiConfig = {
     { name: '目录定义', description: '目录定义管理相关接口' },
     { name: '记录管理', description: '记录管理相关接口' },
     { name: '健康检查', description: '系统健康检查' },
+    { name: '预览', description: 'Manifest 预览接口' },
   ],
 }
 
@@ -375,6 +376,60 @@ export const apiRoutes = {
           },
         },
       },
+    },
+  },
+
+  // 预览：提交 Manifest
+  previewCreate: {
+    method: 'post' as const,
+    path: '/preview-manifests',
+    tags: ['预览'],
+    summary: '提交预览 Manifest',
+    description: '提交一份 Manifest，返回预览ID',
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: z.object({ manifest: z.any() }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: '提交成功',
+        content: {
+          'application/json': {
+            schema: z.object({ success: z.boolean(), data: z.object({ id: z.string() }) }),
+          },
+        },
+      },
+      400: { description: '参数错误', content: { 'application/json': { schema: ErrorResponse } } },
+    },
+  },
+
+  // 预览：获取 Manifest
+  previewGet: {
+    method: 'get' as const,
+    path: '/preview-manifests/{id}',
+    tags: ['预览'],
+    summary: '获取预览 Manifest',
+    description: '根据预览ID获取 Manifest',
+    request: {
+      params: z.object({
+        id: z.string().openapi({ param: { name: 'id', in: 'path' } }),
+      }),
+    },
+    responses: {
+      200: {
+        description: '获取成功',
+        content: {
+          'application/json': {
+            schema: z.object({ success: z.boolean(), data: z.object({ id: z.string(), manifest: z.any() }) }),
+          },
+        },
+      },
+      404: { description: '不存在', content: { 'application/json': { schema: ErrorResponse } } },
     },
   },
 
@@ -3080,4 +3135,4 @@ export const apiRoutes = {
   },
 
 
-}
+} as const
