@@ -59,6 +59,169 @@
 4. **模块化架构**：支持模块的插拔和扩展
 5. **统一用户体系**：平台管理员、应用管理员、业务用户三层用户体系
 
+### 动态应用生成流程
+1. 用户在 AINO-studio 中配置模块、字段、视图与权限。
+2. 系统将配置保存为 Manifest，并同步至 AINO-server。
+3. AINO-server 根据 Manifest 自动生成 API、数据模型和索引策略。
+4. AINO-APP 前端根据 Manifest 渲染 UI，支持热更新与动态扩展。
+
+### 近期落地进展（2025-09）
+- 预览链路：
+  - 后端新增 `POST/GET/PUT /api/preview-manifests[:id]`，以文件存储保存预览 Manifest。
+  - Studio 生成 `previewId` 后在右侧 iframe 渲染 `/{locale}/preview/{id}`；仅移动端优先。
+  - AINO-APP 预览页读取 Manifest，并将 `app.bottomNav` 同步为全局导航（`CURRENT_APP_NAV_ITEMS`）。
+- Studio 编辑体验：
+  - 引入 Monaco Editor（JSONC），绑定 Manifest Schema，支持校验/自动补全/格式化。
+  - 采用“文件树”分层编辑：manifest.json、app.json、pages/{key}.json、data-sources.json。
+  - 保存仅回写当前范围，再 PUT 预览；导航新增会自动创建对应页面。
+- 导航与页面：
+  - 默认“我的”指向 `/profile` 并使用各应用自定义导航；旧 `/me` 自动映射。
+  - App 底部全局导航在预览与运行时统一渲染（shared BottomNavigation，支持 `iconName`）。
+
+### Manifest 分层（编辑与运行的统一契约）
+```json
+{
+  "schemaVersion": "1.0",
+  "app": {
+    "appKey": "xxx",
+    "locale": "zh-CN",
+    "theme": "default",
+    "bottomNav": [
+      { "key": "home", "label": "首页", "page": "home", "iconName": "home" },
+      { "key": "me", "label": "我的", "page": "profile", "iconName": "user" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "route": "/home",
+      "layout": "mobile",
+      "data": { "users": { "source": "records", "params": { "dirId": "users" } } },
+      "cards": [
+        { "id": "listA", "type": "list", "bind": { "context": "users", "select": "$.data.records" } }
+      ]
+    },
+    "profile": { "route": "/profile", "layout": "mobile", "cards": [] }
+  },
+  "dataSources": {
+    "records": { "type": "rest", "method": "GET", "url": "/api/records/{dirId}", "auth": "server" },
+    "me": { "type": "rest", "method": "GET", "url": "/api/application-users/me", "auth": "appUser" }
+  },
+  "actions": {
+    "openDetail": { "type": "navigate", "to": "page:detail", "params": { "id": "{{id}}" } }
+  }
+}
+```
+
+要点：
+- App 层仅放跨页项（主题、语言、bottomNav 等）。
+- Page 层存布局/卡片/页面共享数据（context），卡片 `bind` 可引用 `context` 或直接指定 `source` 并覆盖参数。
+- DataSources 独立命名，统一鉴权策略（`auth: server|appUser`），前端自动携带 `x-application-id`。
+
+### 预览运行时行为
+- AINO-APP `/[locale]/preview/[id]`：
+  - 拉取预览 Manifest 后，如无首页布局，注入 `mobile-navigation` 兜底卡片。
+  - 将 `app.bottomNav` 映射为通用底部导航（支持 `iconName`）。
+  - 兼容 `/me` → `/profile`。
+
+### 下一步里程碑（短期）
+1) 页面编辑器（布局/数据/样式）：
+   - 布局：从卡片库拖入、排序、保存到 `pages.{key}.cards`。
+   - 数据：为卡片选择 `bind.source/context`、填写 `params`、`select` 路径与可选 `transform`。
+   - 样式：引用 `styleRef/designTokens`，不在卡片内散落颜色。
+2) 预览稳定化：
+   - 预览内路由留在 iframe（`?route=/xxx`），编辑侧只刷新 iframe。
+   - “重置预览/清空缓存”与保存状态提示。
+3) 发布与版本：
+   - `GET/PUT /api/apps/:appId/manifest` 版本化存储（draft/published）。
+   - AINO-APP 按 appKey 读取“已发布版本”，预览仍走 previewId。
+
+## 📋 平台愿景与目标
+
+- **业务驱动**：以业务为中心设计模块、字段、视图和权限，避免纯技术视角。
+- **统一契约**：以 Manifest 为唯一真相源，确保前后端一致性与高可维护性。
+- **智能化规划**：为未来 AI 自动配置（MCP）预留入口，实现智能化开发与运营。
+- **多租户架构**：提供企业级安全、可扩展的多租户 SaaS 体系。
+
+## 📝 Manifest 契约标准
+
+Manifest 是 AINO 平台的唯一真相源（Single Source of Truth），描述模块、字段、关系、权限、视图与性能优化策略。所有平台组件均以 Manifest 作为唯一输入：
+
+- **AINO-studio**：负责产出与演进 Manifest。
+- **AINO-server**：基于 Manifest 自动注册 API、生成数据模型与索引策略。
+- **AINO-APP**：基于 Manifest 渲染 UI（字段、表单、表格、详情、流程等）。
+
+> 详细规范请参考 `AINO-APP/文档/Manifest规范文档.md`，本节聚焦框架级契约与核心结构。
+
+### Manifest 核心结构
+
+```typescript
+interface ModuleManifest {
+  moduleKey: string;
+  schemaVersion: string;
+  title: string;
+  fields: FieldDefinition[];
+  relations: RelationDefinition[];
+  views: ViewDefinition[];
+  policies: PolicyDefinition;
+  indexHints: IndexHint[];
+  materialize: MaterializeConfig[];
+  changelog: ChangelogEntry[];
+  metadata: {
+    author?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+```
+
+Manifest 支持：
+
+- **字段定义**：类型、标签、占位文案、校验规则、枚举/选项、显示/编辑行为。
+- **关系管理**：模块间引用、聚合与联动（含级联行为与显示联动）。
+- **权限策略**：字段级/记录级访问控制（读/写/删除/导出等），支持角色与条件表达式。
+- **视图配置**：列表/看板/表单/详情等多样化 UI 布局与交互定义（筛选、排序、分页）。
+- **性能优化**：索引提示、物化视图声明、缓存策略提示。
+- **版本追踪**：变更记录（changelog）与回滚支持；支持多环境差异（dev/stage/prod）。
+
+### 与平台组件的契约边界
+
+- **Studio → Server**：提交/发布 Manifest；Server 校验后生成模型、注册路由、生成 OpenAPI。
+- **Server → App**：提供 Manifest 与 OpenAPI；App 通过 Schema 渲染器生成 UI 与交互逻辑。
+- **Studio ↔ App**：在设计期可预览 Manifest 渲染效果，支持热更新与差量发布。
+
+### 版本与变更管理
+
+- **Schema 版本**：通过 `schemaVersion` 明确兼容性，破坏式变更需显式升级。
+- **Changelog 机制**：每次字段/关系/视图/策略变更记录在 `changelog` 中，支持审计与回滚。
+- **迁移生成**：后端基于 Manifest 生成迁移（面向 Drizzle ORM），并透出审阅/执行流程。
+
+## 🔌 API 层设计
+
+- **通用 CRUD 接口**：统一增删改查逻辑与错误/权限处理。
+- **动态模块接口**：通过 Manifest 自动注册，支持查询、过滤、排序、分页与聚合。
+- **Schema 渲染器**：前端根据 Manifest 渲染页面，无需硬编码字段，支持自定义渲染器扩展。
+- **SDK 自动生成**：基于 OpenAPI 自动生成客户端 SDK，统一错误类型与重试策略。
+
+## 🤖 MCP 与 AI 规划（预留）
+
+MCP（Module Config Protocol）是面向 AI 与低代码用户的简化表达层：
+
+- **简化配置表达**：以更友好的 JSON/自然语言描述模块配置。
+- **AI 驱动开发**：AI 根据业务需求生成 MCP，后端自动转为 Manifest 与迁移建议。
+- **统一入口**：为 AI 智能体与低代码设计器提供统一接入与权限控制边界。
+
+规划阶段：
+
+- **短期**：仅预留接口定义与转化管道（MCP → Manifest），不实现完整能力。
+- **中期**：实现 AI 生成配置与自动测试用例生成/回放。
+- **长期**：模块级智能化推荐、自动部署与可观测优化闭环。
+
+## 🛠️ 部署与运维要点
+
+- **多租户架构**：租户级数据隔离与访问控制（用户、角色、策略、审计）。
+- **云原生**：水平扩展、滚动发布与灰度控制；配置与密钥分离管理。
+- **安全策略**：API 权限、字段级脱敏、传输与存储加密、审计日志。
+- **工程流程**：CI/CD、Manifest 校验与迁移审阅、版本化发布与回滚工具链。
 ## 🔧 技术架构设计
 
 ### 1. 应用实例管理系统
@@ -405,7 +568,7 @@ CREATE TABLE app_user_permissions (
 
 ## 🚀 实施计划
 
-### 阶段1：基础架构搭建（1-2周）
+### 阶段1：基础架构搭建
 
 #### 1.1 应用实例管理系统
 - [ ] 创建应用实例配置表
@@ -421,7 +584,7 @@ CREATE TABLE app_user_permissions (
 - [ ] 实现路由权限控制
 - [ ] 实现路由缓存机制
 
-### 阶段2：卡片系统对接（2-3周）
+### 阶段2：卡片系统对接
 
 #### 2.1 动态卡片生成
 - [ ] 实现模块配置解析器
@@ -437,7 +600,7 @@ CREATE TABLE app_user_permissions (
 - [ ] 实现数据缓存机制
 - [ ] 实现数据同步机制
 
-### 阶段3：用户系统集成（1-2周）
+### 阶段3：用户系统集成
 
 #### 3.1 应用级认证
 - [ ] 实现应用用户登录
@@ -453,7 +616,7 @@ CREATE TABLE app_user_permissions (
 - [ ] 实现权限缓存
 - [ ] 实现权限审计
 
-### 阶段4：前端应用生成（2-3周）
+### 阶段4：前端应用生成
 
 #### 4.1 应用模板系统
 - [ ] 创建应用模板
