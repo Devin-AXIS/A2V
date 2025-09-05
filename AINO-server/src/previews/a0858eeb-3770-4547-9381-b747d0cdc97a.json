@@ -1,0 +1,34 @@
+{
+  "id": "a0858eeb-3770-4547-9381-b747d0cdc97a",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c226bcaf-2593-41dc-8164-713b7e7e28ff",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/me"
+        },
+        {
+          "key": "k1757044623688",
+          "label": "1111",
+          "route": "/new"
+        },
+        {
+          "key": "k1757044839476",
+          "label": "新项额v",
+          "route": "/new"
+        }
+      ]
+    }
+  },
+  "createdAt": "2025-09-05T04:02:04.027Z"
+}

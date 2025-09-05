@@ -103,6 +103,14 @@ import { useIsMobile } from "@/components/ui/use-mobile"
     }
   }
 
+  // 若默认就在“预览”页且还没有 URL，则自动生成一次预览
+  useEffect(() => {
+    if (viewTab === "preview" && !previewUrl) {
+      openPreview()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewTab])
+
   useEffect(() => {
     // 设备/语言变化时，如果已经有预览URL，刷新URL
     if (previewUrl) {
@@ -121,10 +129,10 @@ import { useIsMobile } from "@/components/ui/use-mobile"
   }, [device, lang])
 
   return (
-    <main className="min-h-[100dvh] bg-gradient-to-br from-white via-blue-50 to-green-50">
-      <div className="max-w-[100rem] mx-auto p-3">
-        <Card className="p-0 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal" className="h-[80vh]">
+    <main className="h-[100dvh] overflow-hidden bg-gradient-to-br from-white via-blue-50 to-green-50">
+      <div className="max-w-[100rem] mx-auto p-3 h-full">
+        <Card className="p-0 overflow-hidden h-full">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
               <div className="h-full p-3 space-y-3">
                 <div className="flex items-center justify-between">
@@ -174,7 +182,10 @@ import { useIsMobile } from "@/components/ui/use-mobile"
                     </TabsList>
                   </Tabs>
                   <div className="flex items-center gap-2">
-                    <Button variant={device === "pc" ? "default" : "outline"} onClick={() => setDevice("pc")}>PC</Button>
+                    <Button onClick={openPreview}>
+                      {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
+                    </Button>
+                    <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
                     <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
                     <a href="http://localhost:3001/docs/swagger" target="_blank" rel="noreferrer">

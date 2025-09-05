@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { LayoutGrid, LayoutDashboard, MessageCircle, Search, User } from "lucide-react"
@@ -21,17 +22,20 @@ function isColorDark(hexColor: string): boolean {
   return luma < 128
 }
 
+type NavItemInput = { href: string; label: string; icon?: React.ComponentType<any> }
+
 interface BottomNavigationProps {
-  dict: {
+  dict?: {
     browseComponents: string
     dashboard: string
     chat: string
     search: string
     profile: string
   }
+  items?: NavItemInput[]
 }
 
-export function BottomNavigation({ dict }: BottomNavigationProps) {
+export function BottomNavigation({ dict, items }: BottomNavigationProps) {
   const pathname = usePathname()
   const { theme } = useCardTheme()
   const locale = pathname.split("/")[1]
@@ -46,13 +50,24 @@ export function BottomNavigation({ dict }: BottomNavigationProps) {
     return null
   }
 
-  const navItems = [
-    { href: "/", label: dict.browseComponents, icon: LayoutGrid },
-    { href: "/dashboard", label: dict.dashboard, icon: LayoutDashboard },
-    { href: "/chat", label: dict.chat, icon: MessageCircle },
-    { href: "/search", label: dict.search, icon: Search },
-    { href: "/profile", label: dict.profile, icon: User },
+  const fallbackDict = {
+    browseComponents: "组件",
+    dashboard: "仪表板",
+    chat: "AI",
+    search: "搜索",
+    profile: "我的",
+  }
+  const D = dict || fallbackDict
+
+  const defaultItems: NavItemInput[] = [
+    { href: "/", label: D.browseComponents, icon: LayoutGrid },
+    { href: "/dashboard", label: D.dashboard, icon: LayoutDashboard },
+    { href: "/chat", label: D.chat, icon: MessageCircle },
+    { href: "/search", label: D.search, icon: Search },
+    { href: "/profile", label: D.profile, icon: User },
   ]
+
+  const navItems: NavItemInput[] = items && items.length > 0 ? items : defaultItems
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
@@ -61,6 +76,7 @@ export function BottomNavigation({ dict }: BottomNavigationProps) {
           {navItems.map(({ href, icon: Icon, label }) => {
             const fullHref = `/${locale}${href === "/" ? "" : href}`
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
+            const IconComp = Icon ?? LayoutGrid
 
             return (
               <Link href={fullHref} key={label}>
@@ -71,10 +87,11 @@ export function BottomNavigation({ dict }: BottomNavigationProps) {
                     backgroundColor: isActive ? activeBgColor : "transparent",
                   }}
                 >
-                  <Icon
+                  <IconComp
                     className="w-6 h-6 transition-colors"
                     style={{
-                      color: isActive ? theme.titleColor : theme.textColor,
+                      color: theme.fontColor,
+                      opacity: isActive ? 1 : 0.7,
                     }}
                   />
                   <span className="sr-only">{label}</span>

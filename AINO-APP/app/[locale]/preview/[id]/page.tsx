@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
+import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 
 export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -14,7 +15,8 @@ export default function PreviewPage() {
   const [error, setError] = useState<string | null>(null)
   const [manifest, setManifest] = useState<any>(null)
 
-  const device = sp.get("device") === "pc" ? "pc" : "mobile"
+  // 仅做 App(移动) 版本预览；PC 版本后续再做
+  const device = "mobile"
   const locale = params.locale || "zh"
   const id = params.id
 
@@ -38,9 +40,34 @@ export default function PreviewPage() {
     return () => { canceled = true }
   }, [id])
 
+  // Seed default cards to localStorage once (for demo preview only)
+  const [renderKey, setRenderKey] = useState(0)
+  useEffect(() => {
+    if (!manifest) return
+    try {
+      const cat = manifest?.pages?.home?.category || "workspace"
+      const storageKey = `dynamic_page_layout_${cat}_${locale}`
+      const exists = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+      if (!exists) {
+        const cardsDefault: string[] = (manifest?.pages?.home?.cardsDefault && manifest.pages.home.cardsDefault.length > 0)
+          ? manifest.pages.home.cardsDefault
+          : ["mobile-navigation"]
+        const payload = { cards: cardsDefault.map((t) => ({ type: t })), themes: {}, updatedAt: Date.now() }
+        localStorage.setItem(storageKey, JSON.stringify(payload))
+        // 触发重新挂载以让动态页读取到最新布局
+        setRenderKey((k) => k + 1)
+      }
+    } catch {}
+  }, [manifest, locale])
+
   const pageCategory = useMemo(() => {
     const cat = manifest?.pages?.home?.category || "workspace"
     return typeof cat === "string" ? cat : "workspace"
+  }, [manifest])
+
+  const bottomItems = useMemo(() => {
+    const list = manifest?.app?.bottomNav || []
+    return Array.isArray(list) ? list.map((i: any) => ({ href: i.route || "/", label: i.label || i.key })) : []
   }, [manifest])
 
   if (loading) {
@@ -62,7 +89,10 @@ export default function PreviewPage() {
 
   return (
     <main className="min-h-[100dvh] bg-transparent">
-      <DynamicPageComponent category={pageCategory} locale={locale} layout={device === "pc" ? "pc" : "mobile"} />
+      <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
+      {bottomItems.length > 0 && (
+        <BottomNavigation items={bottomItems} />
+      )}
     </main>
   )
 }
