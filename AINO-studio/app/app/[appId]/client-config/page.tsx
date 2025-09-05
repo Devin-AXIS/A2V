@@ -36,6 +36,7 @@ import { useIsMobile } from "@/components/ui/use-mobile"
   const [lang, setLang] = useState(locale === "zh" ? "zh" : "en")
   const [jsonText, setJsonText] = useState("")
   const [viewTab, setViewTab] = useState<"preview" | "code">("preview")
+  const [previewUrl, setPreviewUrl] = useState<string>("")
 
   const [draft, setDraft] = useState<DraftManifest>({
     schemaVersion: "1.0",
@@ -73,21 +74,51 @@ import { useIsMobile } from "@/components/ui/use-mobile"
     }))
   }, [lang])
 
+  async function openPreview() {
+    try {
+      const body = JSON.parse(jsonText)
+      const res = await fetch("http://localhost:3001/api/preview-manifests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manifest: body }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
+      const id = data.data.id
+      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}`
+      setPreviewUrl(url)
+      setViewTab("preview")
+      toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
+    } catch (e: any) {
+      toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
+      setViewTab("code")
+    }
+  }
+
   function onSwitchTab(next: "preview" | "code") {
     if (next === "preview") {
-      try {
-        const obj = JSON.parse(jsonText)
-        setDraft(obj)
-        setViewTab("preview")
-        toast({ description: lang === "zh" ? "已应用修改" : "Changes applied" })
-      } catch (e) {
-        toast({ description: lang === "zh" ? "JSON 格式错误" : "Invalid JSON", variant: "destructive" as any })
-        setViewTab("code")
-      }
+      openPreview()
     } else {
       setViewTab("code")
     }
   }
+
+  useEffect(() => {
+    // 设备/语言变化时，如果已经有预览URL，刷新URL
+    if (previewUrl) {
+      try {
+        const u = new URL(previewUrl)
+        u.searchParams.set("device", device)
+        const parts = u.pathname.split("/")
+        // /{lang}/preview/{id}
+        if (parts.length >= 3) {
+          parts[1] = lang
+          u.pathname = parts.join("/")
+        }
+        setPreviewUrl(u.toString())
+      } catch {}
+    }
+  }, [device, lang])
 
   return (
     <main className="min-h-[100dvh] bg-gradient-to-br from-white via-blue-50 to-green-50">
@@ -157,22 +188,14 @@ import { useIsMobile } from "@/components/ui/use-mobile"
                     <Textarea className="h-full min-h-[520px] font-mono text-xs" value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
                   </div>
                 ) : (
-                  <div className={device === "mobile" ? "mx-auto w-[360px] border rounded-xl bg-white overflow-hidden" : "mx-auto w-full border rounded-xl bg-white overflow-hidden"}>
-                    <div className="h-12 border-b flex items-center justify-between px-3 text-sm">
-                      <div>{draft.app.appKey}</div>
-                      <div className="text-muted-foreground">{lang === "zh" ? (device === "mobile" ? "移动" : "PC") : (device === "mobile" ? "Mobile" : "PC")}</div>
-                    </div>
-                    <div className="h-[420px] flex items-center justify-center text-xs text-muted-foreground">
-                      {lang === "zh" ? "此处展示根据 Manifest 渲染的应用页面占位。" : "Preview placeholder rendered from Manifest."}
-                    </div>
-                    <div className="h-14 border-t grid grid-cols-5 text-xs">
-                      {draft.app.bottomNav.map((i) => (
-                        <div key={i.key} className="flex items-center justify-center gap-1 hover:bg-gray-50 cursor-default">
-                          <span className="inline-block w-4 h-4 rounded-full bg-gray-200" />
-                          <span>{i.label}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex-1 border rounded-xl bg-white overflow-hidden">
+                    {previewUrl ? (
+                      <iframe src={previewUrl} className="w-full h-full" />
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                        {lang === "zh" ? "点击上方预览按钮生成预览" : "Switch to Preview to generate"}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
