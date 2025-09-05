@@ -41,7 +41,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // 本地存储键名
 const STORAGE_KEYS = {
   USER: 'aino_user',
-  AUTH_TOKEN: 'aino_auth_token'
+  AUTH_TOKEN: 'aino_auth_token',
+  APP_ID: 'CURRENT_APP_ID'
 }
 
 // 模拟用户数据
@@ -152,9 +153,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 生成模拟token
       const token = `mock_token_${Date.now()}`
       
-      // 保存到本地存储
+      // 保存到本地存储（绑定到当前 appId 以便多租户区分）
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
+      const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
+      if (appId) {
+        localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(user))
+        localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+      }
       
       setAuthState({
         user,
@@ -201,9 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 生成模拟token
       const token = `mock_token_${Date.now()}`
       
-      // 保存到本地存储
+      // 保存到本地存储（绑定到当前 appId）
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser))
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
+      const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
+      if (appId) {
+        localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(newUser))
+        localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+      }
       
       setAuthState({
         user: newUser,

@@ -3,7 +3,7 @@
 import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LayoutGrid, LayoutDashboard, MessageCircle, Search, User } from "lucide-react"
+import { LayoutGrid, LayoutDashboard, MessageCircle, Search, User, Home, Settings, Bell, Star, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppCard } from "@/components/layout/app-card"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
@@ -22,7 +22,7 @@ function isColorDark(hexColor: string): boolean {
   return luma < 128
 }
 
-type NavItemInput = { href: string; label: string; icon?: React.ComponentType<any> }
+type NavItemInput = { href: string; label: string; icon?: React.ComponentType<any>; iconName?: string }
 
 interface BottomNavigationProps {
   dict?: {
@@ -69,14 +69,30 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
 
   const navItems: NavItemInput[] = items && items.length > 0 ? items : defaultItems
 
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    home: Home,
+    user: User,
+    profile: User,
+    search: Search,
+    dashboard: LayoutDashboard,
+    grid: LayoutGrid,
+    menu: LayoutGrid,
+    chat: MessageCircle,
+    message: MessageCircle,
+    settings: Settings,
+    bell: Bell,
+    star: Star,
+    heart: Heart,
+  }
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
       <AppCard className="px-4 py-1">
         <div className="flex items-center space-x-2 md:space-x-3">
-          {navItems.map(({ href, icon: Icon, label }) => {
+          {navItems.map(({ href, icon: Icon, iconName, label }) => {
             const fullHref = `/${locale}${href === "/" ? "" : href}`
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
-            const IconComp = Icon ?? LayoutGrid
+            const IconComp = Icon ?? (iconName ? iconMap[iconName] : undefined) ?? LayoutGrid
 
             return (
               <Link href={fullHref} key={label}>

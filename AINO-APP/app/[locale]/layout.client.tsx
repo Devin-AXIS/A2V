@@ -9,19 +9,29 @@ import { cn } from "@/lib/utils"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import type { Locale } from "@/lib/dictionaries"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
 
 const inter = Inter({ subsets: ["latin"] })
 
 function DemoAwareBottomNavigation({ dict }: { dict: any }) {
   const pathname = usePathname()
+  const [items, setItems] = useState<any[] | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('CURRENT_APP_NAV_ITEMS')
+      if (raw) setItems(JSON.parse(raw))
+      else setItems(null)
+    } catch { setItems(null) }
+  }, [pathname])
 
   // 如果是Demo页面、PC页面或组件页面，不显示底部导航（这些页面有自己的专用导航或不需要导航）
   if (pathname.includes("/demo/") || pathname.includes("/pc") || pathname.includes("/components/") || pathname.includes("/preview/")) {
     return null
   }
 
-  return <BottomNavigation dict={dict} />
+  return <BottomNavigation dict={dict} items={items || undefined} />
 }
 
 export function LayoutClient({

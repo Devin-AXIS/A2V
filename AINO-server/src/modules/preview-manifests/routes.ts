@@ -60,4 +60,25 @@ route.get("/:id", async (c) => {
 	}
 })
 
+// 更新已存在的预览 manifest（覆盖写入）
+route.put("/:id", async (c) => {
+  try {
+    const id = c.req.param("id")
+    if (!id) return c.json({ success: false, message: "id required" }, 400)
+    const body = await c.req.json().catch(() => ({}))
+    const parsed = CreateSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ success: false, message: "invalid manifest" }, 400)
+    }
+    await ensureDir(previewsDir)
+    const file = path.join(previewsDir, `${id}.json`)
+    const payload = { id, manifest: parsed.data.manifest, updatedAt: new Date().toISOString() }
+    await fs.writeFile(file, JSON.stringify(payload, null, 2), "utf8")
+    return c.json({ success: true, data: { id } })
+  } catch (e) {
+    console.error("update preview manifest error", e)
+    return c.json({ success: false, message: "server error" }, 500)
+  }
+})
+
 export default route

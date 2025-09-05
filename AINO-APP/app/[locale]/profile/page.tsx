@@ -1,5 +1,7 @@
 import { getDictionary, type Locale } from "@/lib/dictionaries"
 import { AppHeader } from "@/components/navigation/app-header"
+import { BottomNavigation } from "@/components/navigation/bottom-navigation"
+import { usePathname } from "next/navigation"
 import { ProfileClientView } from "./client-view"
 
 export default async function ProfilePage({ params }: { params: Promise<{ locale: Locale }> }) {

@@ -29,7 +29,15 @@ export default function PreviewPage() {
         const res = await fetch(`http://localhost:3001/api/preview-manifests/${id}`)
         const data = await res.json()
         if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
-        if (!canceled) setManifest(data.data?.manifest || {})
+        if (!canceled) {
+          const mf = data.data?.manifest || {}
+          try {
+            if (typeof window !== 'undefined' && mf?.app?.appKey) {
+              localStorage.setItem('CURRENT_APP_ID', String(mf.app.appKey))
+            }
+          } catch {}
+          setManifest(mf)
+        }
       } catch (e: any) {
         if (!canceled) setError(e?.message || "error")
       } finally {
@@ -57,6 +65,16 @@ export default function PreviewPage() {
         // 触发重新挂载以让动态页读取到最新布局
         setRenderKey((k) => k + 1)
       }
+      // 同步底部导航到全局以便 profile 页面也显示一致
+      try {
+        const list = manifest?.app?.bottomNav || []
+        const navItems = Array.isArray(list) ? list.map((i: any) => {
+          let href = i.route || "/"
+          if (href === "/me") href = "/profile"
+          return { href, label: i.label || i.key, iconName: i.icon }
+        }) : []
+        localStorage.setItem('CURRENT_APP_NAV_ITEMS', JSON.stringify(navItems))
+      } catch {}
     } catch {}
   }, [manifest, locale])
 
@@ -67,7 +85,13 @@ export default function PreviewPage() {
 
   const bottomItems = useMemo(() => {
     const list = manifest?.app?.bottomNav || []
-    return Array.isArray(list) ? list.map((i: any) => ({ href: i.route || "/", label: i.label || i.key })) : []
+    return Array.isArray(list)
+      ? list.map((i: any) => {
+          let href = i.route || "/"
+          if (href === "/me") href = "/profile"
+          return { href, label: i.label || i.key }
+        })
+      : []
   }, [manifest])
 
   if (loading) {

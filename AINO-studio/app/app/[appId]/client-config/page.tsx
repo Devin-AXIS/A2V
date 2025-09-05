@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
+import { GripVertical, Trash2 } from "lucide-react"
 
  type BottomNavItem = { key: string; label: string; icon?: string; route: string }
 
@@ -37,6 +38,7 @@ import { useIsMobile } from "@/components/ui/use-mobile"
   const [jsonText, setJsonText] = useState("")
   const [viewTab, setViewTab] = useState<"preview" | "code">("preview")
   const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [previewId, setPreviewId] = useState<string>("")
 
   const [draft, setDraft] = useState<DraftManifest>({
     schemaVersion: "1.0",
@@ -46,7 +48,7 @@ import { useIsMobile } from "@/components/ui/use-mobile"
       theme: "default",
       bottomNav: [
         { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/home" },
-        { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/me" },
+        { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/profile" },
       ],
     },
   })
@@ -85,6 +87,7 @@ import { useIsMobile } from "@/components/ui/use-mobile"
       const data = await res.json()
       if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
       const id = data.data.id
+      setPreviewId(id)
       const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}`
       setPreviewUrl(url)
       setViewTab("preview")
@@ -92,6 +95,25 @@ import { useIsMobile } from "@/components/ui/use-mobile"
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
       setViewTab("code")
+    }
+  }
+
+  async function savePreview() {
+    if (!previewId) {
+      return openPreview()
+    }
+    try {
+      const body = JSON.parse(jsonText)
+      const res = await fetch(`http://localhost:3001/api/preview-manifests/${previewId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manifest: body }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
+      toast({ description: lang === "zh" ? "已保存" : "Saved" })
+    } catch (e: any) {
+      toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
     }
   }
 
@@ -157,9 +179,41 @@ import { useIsMobile } from "@/components/ui/use-mobile"
                   <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
                   <div className="space-y-2">
                     {draft.app.bottomNav.map((item, idx) => (
-                      <div key={item.key} className="grid grid-cols-2 gap-2">
+                      <div
+                        key={item.key}
+                        className="grid grid-cols-[20px_1fr_1fr_auto] items-center gap-2"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", String(idx))
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          const from = Number(e.dataTransfer.getData("text/plain"))
+                          const to = idx
+                          if (Number.isNaN(from) || from === to) return
+                          setDraft((s) => {
+                            const next = [...s.app.bottomNav]
+                            const [moved] = next.splice(from, 1)
+                            next.splice(to, 0, moved)
+                            return { ...s, app: { ...s.app, bottomNav: next } }
+                          })
+                        }}
+                      >
+                        <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
                         <Input value={item.label} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it, i) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
                         <Input value={item.route} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it, i) => i === idx ? { ...it, route: e.target.value } : it) } }))} placeholder="/route" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_, i) => i !== idx) } }))
+                            // 自动保存
+                            setTimeout(() => { savePreview() }, 0)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     ))}
                     {draft.app.bottomNav.length < 5 && (
@@ -182,6 +236,9 @@ import { useIsMobile } from "@/components/ui/use-mobile"
                     </TabsList>
                   </Tabs>
                   <div className="flex items-center gap-2">
+                    <Button variant="default" onClick={savePreview}>
+                      {lang === "zh" ? "保存" : "Save"}
+                    </Button>
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
                     </Button>

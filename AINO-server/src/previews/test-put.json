@@ -1,0 +1,15 @@
+{
+  "id": "test-put",
+  "manifest": {
+    "app": {
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        }
+      ]
+    }
+  },
+  "updatedAt": "2025-09-05T04:16:53.963Z"
+}
