@@ -19,19 +19,34 @@ else
     echo "📡 后端服务未运行"
 fi
 
-# 停止前端服务
+# 停止前端服务 (AINO-studio)
 if [ -f "logs/frontend.pid" ]; then
     FRONTEND_PID=$(cat logs/frontend.pid)
     if kill -0 $FRONTEND_PID 2>/dev/null; then
-        echo "🎨 停止前端服务 (PID: $FRONTEND_PID)..."
+        echo "🎨 停止前端服务 (AINO-studio) (PID: $FRONTEND_PID)..."
         kill $FRONTEND_PID
         rm logs/frontend.pid
     else
-        echo "🎨 前端服务已停止"
+        echo "🎨 前端服务 (AINO-studio) 已停止"
         rm logs/frontend.pid
     fi
 else
-    echo "🎨 前端服务未运行"
+    echo "🎨 前端服务 (AINO-studio) 未运行"
+fi
+
+# 停止 aino-app 服务
+if [ -f "logs/aino-app.pid" ]; then
+    AINO_APP_PID=$(cat logs/aino-app.pid)
+    if kill -0 $AINO_APP_PID 2>/dev/null; then
+        echo "📱 停止 aino-app 服务 (PID: $AINO_APP_PID)..."
+        kill $AINO_APP_PID
+        rm logs/aino-app.pid
+    else
+        echo "📱 aino-app 服务已停止"
+        rm logs/aino-app.pid
+    fi
+else
+    echo "📱 aino-app 服务未运行"
 fi
 
 # 停止 Drizzle Studio

@@ -1,0 +1,122 @@
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import { useParams, useSearchParams, useRouter } from "next/navigation"
+import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
+import { Button } from "@/components/ui/button"
+import { BottomNavigation } from "@/components/navigation/bottom-navigation"
+
+export default function PreviewPage() {
+  const params = useParams<{ locale: string; id: string }>()
+  const sp = useSearchParams()
+  const router = useRouter()
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [manifest, setManifest] = useState<any>(null)
+
+  // 仅做 App(移动) 版本预览；PC 版本后续再做
+  const device = "mobile"
+  const locale = params.locale || "zh"
+  const id = params.id
+
+  useEffect(() => {
+    let canceled = false
+    async function run() {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`http://localhost:3001/api/preview-manifests/${id}`)
+        const data = await res.json()
+        if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+        if (!canceled) {
+          const mf = data.data?.manifest || {}
+          try {
+            if (typeof window !== 'undefined' && mf?.app?.appKey) {
+              localStorage.setItem('CURRENT_APP_ID', String(mf.app.appKey))
+            }
+          } catch {}
+          setManifest(mf)
+        }
+      } catch (e: any) {
+        if (!canceled) setError(e?.message || "error")
+      } finally {
+        if (!canceled) setLoading(false)
+      }
+    }
+    run()
+    return () => { canceled = true }
+  }, [id])
+
+  // Seed default cards to localStorage once (for demo preview only)
+  const [renderKey, setRenderKey] = useState(0)
+  useEffect(() => {
+    if (!manifest) return
+    try {
+      const cat = manifest?.pages?.home?.category || "workspace"
+      const storageKey = `dynamic_page_layout_${cat}_${locale}`
+      const exists = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+      if (!exists) {
+        const cardsDefault: string[] = (manifest?.pages?.home?.cardsDefault && manifest.pages.home.cardsDefault.length > 0)
+          ? manifest.pages.home.cardsDefault
+          : ["mobile-navigation"]
+        const payload = { cards: cardsDefault.map((t) => ({ type: t })), themes: {}, updatedAt: Date.now() }
+        localStorage.setItem(storageKey, JSON.stringify(payload))
+        // 触发重新挂载以让动态页读取到最新布局
+        setRenderKey((k) => k + 1)
+      }
+      // 同步底部导航到全局以便 profile 页面也显示一致
+      try {
+        const list = manifest?.app?.bottomNav || []
+        const navItems = Array.isArray(list) ? list.map((i: any) => {
+          let href = i.route || "/"
+          if (href === "/me") href = "/profile"
+          return { href, label: i.label || i.key, iconName: i.icon }
+        }) : []
+        localStorage.setItem('CURRENT_APP_NAV_ITEMS', JSON.stringify(navItems))
+      } catch {}
+    } catch {}
+  }, [manifest, locale])
+
+  const pageCategory = useMemo(() => {
+    const cat = manifest?.pages?.home?.category || "workspace"
+    return typeof cat === "string" ? cat : "workspace"
+  }, [manifest])
+
+  const bottomItems = useMemo(() => {
+    const list = manifest?.app?.bottomNav || []
+    return Array.isArray(list)
+      ? list.map((i: any) => {
+          let href = i.route || "/"
+          if (href === "/me") href = "/profile"
+          return { href, label: i.label || i.key }
+        })
+      : []
+  }, [manifest])
+
+  if (loading) {
+    return (
+      <main className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">
+        Loading...
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-[100dvh] flex flex-col items-center justify-center gap-3">
+        <div className="text-sm text-red-600">{error}</div>
+        <Button variant="outline" onClick={() => router.refresh()}>Retry</Button>
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-[100dvh] bg-transparent">
+      <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
+      {bottomItems.length > 0 && (
+        <BottomNavigation items={bottomItems} />
+      )}
+    </main>
+  )
+}

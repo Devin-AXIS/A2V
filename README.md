@@ -8,6 +8,7 @@ AINO 无代码系统构建平台，包含前端应用、后端API服务和数据
 AINO/
 ├── AINO-server/          # 后端API服务
 ├── AINO-studio/          # 前端应用
+├── AINO-APP/             # 前台客户端应用
 ├── docs/                 # 项目文档
 ├── start-all.sh          # 一键启动所有服务
 ├── stop-all.sh           # 停止所有服务
@@ -25,6 +26,7 @@ AINO/
 
 这将启动：
 - 🎨 前端应用 (AINO-studio): http://localhost:3000
+- 📱 前台客户端 (AINO-APP): http://localhost:3002
 - 📡 后端API (AINO-server): http://localhost:3001
 - 🗄️ 数据库管理 (Drizzle Studio): https://local.drizzle.studio
 
@@ -56,6 +58,13 @@ cd AINO-studio
 pnpm dev
 ```
 
+### 启动前台客户端
+
+```bash
+cd AINO-APP
+pnpm dev
+```
+
 ### 启动 Drizzle Studio
 
 ```bash
@@ -65,7 +74,8 @@ pnpm studio
 
 ## 服务地址
 
-- **前端应用**: http://localhost:3000
+- **前端应用 (AINO-studio)**: http://localhost:3000
+- **前台客户端 (AINO-APP)**: http://localhost:3002
 - **后端API**: http://localhost:3001
 - **健康检查**: http://localhost:3001/health
 - **数据库管理**: https://local.drizzle.studio
@@ -75,6 +85,7 @@ pnpm studio
 服务日志保存在 `logs/` 目录：
 - `backend.log` - 后端服务日志
 - `frontend.log` - 前端服务日志
+- `aino-app.log` - 前台客户端日志
 - `drizzle.log` - Drizzle Studio 日志
 
 ## 开发说明

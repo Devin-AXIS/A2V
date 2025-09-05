@@ -19,6 +19,7 @@ import { directoryDefs } from "./modules/directory-defs/routes"
 import relationRecordsRoute from "./modules/relation-records/routes"
 
 import { docsRoute } from "./docs/routes"
+import previewManifestsRoute from "./modules/preview-manifests/routes"
 
 const app = new Hono()
 
@@ -59,8 +60,6 @@ app.route("/api/application-users", applicationUsersRoute)
 // 目录管理路由
 app.route("/api/directories", directoriesRoute)
 
-
-
 // 字段分类管理路由
 app.route("/api/field-categories", fieldCategoriesRoute)
 
@@ -81,6 +80,9 @@ app.route("/api/relation-records", relationRecordsRoute)
 
 // API 文档路由
 app.route("/docs", docsRoute)
+
+// 预览 Manifest 路由
+app.route("/api/preview-manifests", previewManifestsRoute)
 
 // 静态文件：上传目录（基于运行时代码位置计算，dist/../uploads）
 const runtimeDir = path.dirname(fileURLToPath(import.meta.url))

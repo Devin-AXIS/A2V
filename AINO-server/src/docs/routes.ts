@@ -1109,6 +1109,15 @@ openApiApp.openapi(apiRoutes.deleteRecord, (c) => {
   })
 })
 
+// 预览接口（仅文档呈现；实际逻辑在 /api/preview-manifests 模块）
+openApiApp.openapi(apiRoutes.previewCreate, (c) => {
+  return c.json({ success: true, data: { id: 'preview-id' } })
+})
+
+openApiApp.openapi(apiRoutes.previewGet, (c) => {
+  const { id } = c.req.valid('param')
+  return c.json({ success: true, data: { id, manifest: { app: { appKey: 'demo' } } } })
+})
 
 
 // 生成 OpenAPI 规范

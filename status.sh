@@ -25,7 +25,7 @@ else
     echo "   ❌ 未运行"
 fi
 
-# 检查前端服务
+# 检查前端服务 (AINO-studio)
 echo ""
 echo "🎨 前端服务 (AINO-studio):"
 if [ -f "logs/frontend.pid" ]; then
@@ -40,6 +40,26 @@ if [ -f "logs/frontend.pid" ]; then
     else
         echo "   ❌ 进程已停止"
         rm logs/frontend.pid
+    fi
+else
+    echo "   ❌ 未运行"
+fi
+
+# 检查 aino-app 服务
+echo ""
+echo "📱 aino-app 服务:"
+if [ -f "logs/aino-app.pid" ]; then
+    AINO_APP_PID=$(cat logs/aino-app.pid)
+    if kill -0 $AINO_APP_PID 2>/dev/null; then
+        echo "   ✅ 进程运行中 (PID: $AINO_APP_PID)"
+        if curl -s http://localhost:3002 > /dev/null 2>&1; then
+            echo "   ✅ 服务响应正常: http://localhost:3002"
+        else
+            echo "   ⚠️  进程运行但服务无响应"
+        fi
+    else
+        echo "   ❌ 进程已停止"
+        rm logs/aino-app.pid
     fi
 else
     echo "   ❌ 未运行"

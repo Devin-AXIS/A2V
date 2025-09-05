@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Plus, SquarePen, Copy, Trash2, Languages } from "lucide-react"
+import { Plus, SquarePen, Copy, Trash2, Languages, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -159,6 +159,15 @@ export default function Page() {
       saveStore(s)
       setLocalApps([...s.apps])
     }
+  }
+
+  // 客户端配置
+  function doClientConfig(id: string) {
+    const app = applications.find(a => a.id === id)
+    if (!app) return
+    
+    // 跳转到客户端配置页面
+    window.open(`/app/${id}/client-config`, '_blank')
   }
 
   // 删除应用
@@ -319,24 +328,32 @@ export default function Page() {
                       }
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Link
-                      href={`/app/${app.id}`}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 text-white px-3 py-2 text-sm shadow",
-                      )}
-                    >
-                      <SquarePen className="size-4" />
-                      {t("enter")}
-                    </Link>
-                    <Button variant="secondary" className="shadow-sm" onClick={() => doClone(app.id)}>
-                      <Copy className="mr-1 size-4" />
-                      {t("clone")}
-                    </Button>
-                    <Button variant="destructive" className="shadow-sm" onClick={() => doDelete(app.id)}>
-                      <Trash2 className="mr-1 size-4" />
-                      {t("delete")}
-                    </Button>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/app/${app.id}`}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 text-white px-3 py-2 text-sm shadow",
+                        )}
+                      >
+                        <SquarePen className="size-4" />
+                        {t("enter")}
+                      </Link>
+                      <Button variant="secondary" className="shadow-sm" onClick={() => doClone(app.id)}>
+                        <Copy className="mr-1 size-4" />
+                        {t("clone")}
+                      </Button>
+                      <Button variant="destructive" className="shadow-sm" onClick={() => doDelete(app.id)}>
+                        <Trash2 className="mr-1 size-4" />
+                        {t("delete")}
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" className="shadow-sm" onClick={() => doClientConfig(app.id)}>
+                        <Settings className="mr-1 size-4" />
+                        客户端配置
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
