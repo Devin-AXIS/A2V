@@ -202,7 +202,8 @@ export default function ClientConfigPage() {
       if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
       const id = data.data.id
       setPreviewId(id)
-      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}`
+      const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
@@ -244,7 +245,20 @@ export default function ClientConfigPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
-      toast({ description: lang === "zh" ? "已保存" : "Saved" })
+      // 更新预览URL上的 data 参数，保持与当前数据源一致
+      try {
+        const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}`)
+        u.searchParams.set("device", device)
+        u.searchParams.set("appId", String(params.appId))
+        const dataParam = JSON.stringify(draft?.dataSources || {})
+        u.searchParams.set("data", encodeURIComponent(dataParam))
+        setPreviewUrl(u.toString())
+      } catch {
+        const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+        const fallback = `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}&data=${dataParam}`
+        setPreviewUrl(fallback)
+      }
+      toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
     }

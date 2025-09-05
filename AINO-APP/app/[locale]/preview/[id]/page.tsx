@@ -13,6 +13,15 @@ export default function PreviewPage() {
   const qs = new URLSearchParams(window.location.search)
   const applicationId = qs.get('appId')
   window.localStorage.setItem('APP_ID', applicationId || '')
+  const dataParam = qs.get('data')
+  if (dataParam) {
+    try {
+      const parsed = JSON.parse(dataParam)
+      window.localStorage.setItem('PREVIEW_SELECTED_DATA', JSON.stringify(parsed))
+    } catch {
+      window.localStorage.setItem('PREVIEW_SELECTED_DATA_RAW', dataParam)
+    }
+  }
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
