@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,6 +13,11 @@ import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { GripVertical, Trash2 } from "lucide-react"
+import dynamic from "next/dynamic"
+import type { editor } from "monaco-editor"
+import { manifestSchema } from "./manifest-schema"
+
+const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
  type BottomNavItem = { key: string; label: string; icon?: string; route: string }
 
@@ -39,8 +44,10 @@ import { GripVertical, Trash2 } from "lucide-react"
   const [viewTab, setViewTab] = useState<"preview" | "code">("preview")
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [previewId, setPreviewId] = useState<string>("")
+  const [monacoMounted, setMonacoMounted] = useState(false)
+  const monacoRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
-  const [draft, setDraft] = useState<DraftManifest>({
+  const [draft, setDraft] = useState<any>({
     schemaVersion: "1.0",
     app: {
       appKey: params.appId,
@@ -53,10 +60,21 @@ import { GripVertical, Trash2 } from "lucide-react"
     },
   })
 
-  // 同步JSON文本
+  // 代码编辑范围
+  const [codeScope, setCodeScope] = useState<"manifest" | "app" | "page" | "dataSources">("manifest")
+  const [activePage, setActivePage] = useState<string>("home")
+
   useEffect(() => {
-    setJsonText(JSON.stringify(draft, null, 2))
-  }, [draft])
+    try {
+      let data: any
+      if (codeScope === "manifest") data = draft
+      else if (codeScope === "app") data = draft.app || {}
+      else if (codeScope === "dataSources") data = draft.dataSources || {}
+      else if (codeScope === "page") data = (draft.pages && draft.pages[activePage]) || {}
+      else data = draft
+      setJsonText(JSON.stringify(data, null, 2))
+    } catch { setJsonText("{}") }
+  }, [draft, codeScope, activePage])
 
   // 语言切换同步显示文案
   useEffect(() => {
@@ -78,7 +96,7 @@ import { GripVertical, Trash2 } from "lucide-react"
 
   async function openPreview() {
     try {
-      const body = JSON.parse(jsonText)
+      const body = draft
       const res = await fetch("http://localhost:3001/api/preview-manifests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,11 +117,30 @@ import { GripVertical, Trash2 } from "lucide-react"
   }
 
   async function savePreview() {
-    if (!previewId) {
-      return openPreview()
-    }
     try {
-      const body = JSON.parse(jsonText)
+      // 合并当前范围
+      try {
+        const parsed = JSON.parse(jsonText || "{}")
+        setDraft((s: any) => {
+          const next = { ...s }
+          if (codeScope === "manifest") Object.assign(next, parsed)
+          else if (codeScope === "app") next.app = parsed
+          else if (codeScope === "dataSources") next.dataSources = parsed
+          else if (codeScope === "page") {
+            next.pages = next.pages || {}
+            next.pages[activePage] = parsed
+          }
+          return next
+        })
+      } catch (e: any) {
+        toast({ description: e?.message || (lang === "zh" ? "JSON 无法解析" : "JSON parse error"), variant: "destructive" as any })
+        return
+      }
+
+      if (!previewId) {
+        return openPreview()
+      }
+      const body = draft
       const res = await fetch(`http://localhost:3001/api/preview-manifests/${previewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -115,6 +152,20 @@ import { GripVertical, Trash2 } from "lucide-react"
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
     }
+  }
+
+  function handleMonacoMount(editor: editor.IStandaloneCodeEditor, monaco: any) {
+    monacoRef.current = editor
+    try {
+      monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+        validate: true,
+        allowComments: true,
+        schemas: [
+          { uri: 'aino://manifest.schema.json', fileMatch: ['*'], schema: manifestSchema }
+        ]
+      })
+    } catch {}
+    setMonacoMounted(true)
   }
 
   function onSwitchTab(next: "preview" | "code") {
@@ -217,10 +268,35 @@ import { GripVertical, Trash2 } from "lucide-react"
                       </div>
                     ))}
                     {draft.app.bottomNav.length < 5 && (
-                      <Button variant="secondary" onClick={() => setDraft(s => ({ ...s, app: { ...s.app, bottomNav: [...s.app.bottomNav, { key: `k${Date.now()}`, label: lang === "zh" ? "新项" : "Item", route: "/new" }] } }))}>
+                      <Button variant="secondary" onClick={() => setDraft(s => {
+                        const key = `k${Date.now()}`
+                        const route = `/p-${key}`
+                        const next = { ...s }
+                        next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
+                        // 导航新增时自动创建页面（若不存在）
+                        const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
+                        next.pages = next.pages || {}
+                        if (!next.pages[pageKey]) {
+                          next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+                        }
+                        return next
+                      })}>
                         {lang === "zh" ? "添加项" : "Add Item"}
                       </Button>
                     )}
+                  </div>
+                </div>
+                {/* 页面列表 */}
+                <div className="pt-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">{lang === "zh" ? "页面" : "Pages"}</div>
+                  </div>
+                  <div className="space-y-1 max-h-48 overflow-auto pr-1">
+                    {Object.keys(draft.pages || {}).map((k: string) => (
+                      <Button key={k} variant={activePage === k ? "default" : "outline"} size="sm" className="w-full justify-start" onClick={() => setActivePage(k)}>
+                        {k}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -252,8 +328,60 @@ import { GripVertical, Trash2 } from "lucide-react"
                 </div>
 
                 {viewTab === "code" ? (
-                  <div className="flex-1">
-                    <Textarea className="h-full min-h-[520px] font-mono text-xs" value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
+                  <div className="flex-1 min-h-[520px]">
+                    <ResizablePanelGroup direction="horizontal" className="h-full">
+                      <ResizablePanel defaultSize={20} minSize={14} className="bg-white border rounded-xl overflow-auto">
+                        <div className="p-2 text-xs text-muted-foreground">{lang === "zh" ? "文件" : "Files"}</div>
+                        <div className="px-2 pb-2 space-y-1">
+                          <Button
+                            variant={codeScope === "manifest" ? "default" : "ghost"}
+                            className="w-full justify-start text-xs"
+                            onClick={() => setCodeScope("manifest")}
+                          >manifest.json</Button>
+                          <Button
+                            variant={codeScope === "app" ? "default" : "ghost"}
+                            className="w-full justify-start text-xs"
+                            onClick={() => setCodeScope("app")}
+                          >app.json</Button>
+                          <div className="pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">{lang === "zh" ? "页面" : "Pages"}</div>
+                          <div className="space-y-1">
+                            {Object.keys(draft.pages || {}).map((k: string) => (
+                              <Button
+                                key={k}
+                                variant={codeScope === "page" && activePage === k ? "default" : "ghost"}
+                                className="w-full justify-start text-xs"
+                                onClick={() => { setActivePage(k); setCodeScope("page") }}
+                              >pages/{k}.json</Button>
+                            ))}
+                          </div>
+                          <div className="pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">data</div>
+                          <Button
+                            variant={codeScope === "dataSources" ? "default" : "ghost"}
+                            className="w-full justify-start text-xs"
+                            onClick={() => setCodeScope("dataSources")}
+                          >data-sources.json</Button>
+                        </div>
+                      </ResizablePanel>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={80} minSize={40}>
+                        <Monaco
+                          height="100%"
+                          defaultLanguage="json"
+                          language="json"
+                          theme="vs"
+                          value={jsonText}
+                          onChange={(v) => setJsonText(v || "")}
+                          options={{
+                            wordWrap: 'on',
+                            minimap: { enabled: false },
+                            formatOnPaste: true,
+                            formatOnType: true,
+                            tabSize: 2,
+                          }}
+                          onMount={handleMonacoMount}
+                        />
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
                   </div>
                 ) : (
                   <div className="flex-1 border rounded-xl bg-white overflow-hidden">
