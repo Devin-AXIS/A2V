@@ -19,6 +19,7 @@ import { manifestSchema } from "./manifest-schema"
 import { api } from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
@@ -49,6 +50,8 @@ export default function ClientConfigPage() {
   const [previewId, setPreviewId] = useState<string>("")
   const [monacoMounted, setMonacoMounted] = useState(false)
   const monacoRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+
+  const [aiOpsOpen, setAiOpsOpen] = useState(false)
 
   const [draft, setDraft] = useState<any>({
     schemaVersion: "1.0",
@@ -541,7 +544,10 @@ export default function ClientConfigPage() {
                     <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
                     <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
-                    <a href="http://localhost:3001/docs/swagger" target="_blank" rel="noreferrer">
+                    <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
+                      {lang === "zh" ? "AI运营" : "AI Ops"}
+                    </Button>
+                    <a href={`http://localhost:3001/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
                       <Button variant="secondary">API</Button>
                     </a>
                   </div>
@@ -619,6 +625,7 @@ export default function ClientConfigPage() {
           </ResizablePanelGroup>
         </Card>
       </div>
+      <AIOpsDrawer open={aiOpsOpen} onOpenChange={setAiOpsOpen} appId={String(params.appId)} lang={lang as any} />
     </main>
   )
 }
