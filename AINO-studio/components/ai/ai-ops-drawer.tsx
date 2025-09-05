@@ -47,6 +47,29 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   // i18n helper must be declared before any use (e.g., in mockFields)
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en)
 
+  // ===== Mock extracted JSON & array path selection (local only) =====
+  const mockExtracted = useMemo(() => ({
+    items: Array.from({ length: 6 }).map((_, i) => ({
+      title: `Senior Frontend Engineer ${i+1}`,
+      desc: `React/Next.js · TypeScript · UI/UX`,
+      salary: 20_000 + i * 1000,
+      city: ["北京","上海","深圳"][i % 3],
+      company: ["AINO","Axis","Nova"][i % 3],
+      link: `https://jobs.example.com/${i+1}`,
+      posted_at: "2025-09-01",
+    })),
+    data: [{ name: "fallback" }],
+    results: [],
+  }), [])
+  const arrayPathOptions = ["$.items","$.data","$.results"]
+  const [arrayPath, setArrayPath] = useState<string>("$.items")
+  const sampleRecords = useMemo<any[]>(() => {
+    if (arrayPath === "$.items") return mockExtracted.items
+    if (arrayPath === "$.data") return (mockExtracted as any).data
+    if (arrayPath === "$.results") return (mockExtracted as any).results
+    return []
+  }, [arrayPath, mockExtracted])
+
   // mock fields for mapping UI
   const mockFields = useMemo(() => {
     // simulate 24 fields
@@ -66,6 +89,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const totalPages = Math.max(1, Math.ceil(mockFields.length / pageSize))
   const pageFields = useMemo(() => mockFields.slice((mapPage-1)*pageSize, mapPage*pageSize), [mockFields, mapPage])
   const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
+  const [mappingTransform, setMappingTransform] = useState<Record<string, string>>({}) // fieldKey -> transform
   const sampleSourceKeys = ["title","desc","salary","city","company","link","posted_at"]
   function autoMatch() {
     const next: Record<string, string> = {}
@@ -79,6 +103,14 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   function clearMapping() {
     setMapping({})
   }
+
+  const transformOptions = [
+    { value: "none", label: t("无","None") },
+    { value: "trim", label: "trim" },
+    { value: "toNumber", label: "toNumber" },
+    { value: "parseDate", label: "parseDate" },
+    { value: "splitTags", label: "splitTags" },
+  ]
 
   // ensure we have a directory context
   useEffect(() => {
@@ -275,6 +307,24 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                   </section>
 
                   <section className="space-y-3 lg:col-span-2">
+                    {/* Extracted sample + array path selection */}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">{t("抽取样例","Extracted Samples")}</div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">{t("数据数组路径","Array path")}</Label>
+                        <Select value={arrayPath} onValueChange={(v: any) => setArrayPath(v)}>
+                          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {arrayPathOptions.map(p => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                        <div className="text-xs text-muted-foreground">{t("将基于此路径读取记录数组","We will read records from this path")}</div>
+                      </div>
+                      <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-2 max-h-[160px] overflow-auto text-xs">
+                        <pre className="whitespace-pre-wrap break-all">{JSON.stringify(sampleRecords.slice(0,3), null, 2)}</pre>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{t("字段映射","Field Mapping")}</div>
                       <div className="flex items-center gap-2">
@@ -287,9 +337,10 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/70 backdrop-blur">
                             <tr>
-                              <th className="text-left px-3 py-2 w-[30%]">{t("字段","Field")}</th>
-                              <th className="text-left px-3 py-2">{t("来源键","Source key")}</th>
-                              <th className="text-left px-3 py-2 w-[30%]">{t("示例","Sample")}</th>
+                              <th className="text-left px-3 py-2 w-[26%]">{t("字段","Field")}</th>
+                              <th className="text-left px-3 py-2 w-[30%]">{t("来源键","Source key")}</th>
+                              <th className="text-left px-3 py-2 w-[22%]">{t("转换","Transform")}</th>
+                              <th className="text-left px-3 py-2">{t("示例","Sample")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -299,7 +350,15 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                                 <td className="px-3 py-2">
                                   <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
                                 </td>
-                                <td className="px-3 py-2 text-xs text-muted-foreground truncate">—</td>
+                                <td className="px-3 py-2">
+                                  <Select value={mappingTransform[f.key] || "none"} onValueChange={(v: any) => setMappingTransform((m) => ({ ...m, [f.key]: v }))}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {transformOptions.map(o => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                                <td className="px-3 py-2 text-xs text-muted-foreground truncate">{String(sampleRecords?.[0]?.[mapping[f.key] || ""]) || "—"}</td>
                               </tr>
                             ))}
                           </tbody>
