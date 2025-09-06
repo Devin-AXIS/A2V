@@ -131,6 +131,41 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       )
     }
 
+    // 再兜底：若存在 progressConfig 且值为数组，也按进度字段展示
+    if (field.progressConfig && Array.isArray(value)) {
+      const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+      const items = value as Array<{ label?: string; value?: number; weight?: number }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const mode = cfg.aggregation || 'weightedAverage'
+      const agg = ((){
+        if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {cfg.showProgressBar && (
+              <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {cfg.showPercentage && (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     switch (field.type) {
       case "textarea":
       case "rich_text":
