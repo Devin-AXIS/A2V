@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useRouter, useParams } from "next/navigation"
+import { Search, Bell } from "lucide-react"
 
 export type NavEventConfig = {
   action?: "navigate" | "switchTab"
@@ -24,6 +25,7 @@ export type ContentNavConfig = {
   type: "iconText" | "text"
   layout?: "grid-4" | "grid-5" | "scroll"
   items: ContentNavItem[]
+  header?: { title?: string; search?: boolean; notify?: boolean }
 }
 
 type Props = {
@@ -62,20 +64,45 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
 
   if (config.type === "text") {
     return (
-      <div className={cn("w-full border-b border-border bg-background", className)}>
-        <div className={cn("flex items-center justify-between px-4 py-3", cols === 5 ? "gap-2" : "gap-3")}>          
-          {config.items.map((it, idx) => (
-            <button
-              key={idx}
-              className={cn(
-                "text-sm font-medium transition-colors",
-                idx === activeIndex ? "text-primary" : "text-muted-foreground hover:text-foreground"
+      <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)}>
+        {/* Header with title and optional actions */}
+        {(config.header?.title || config.header?.search || config.header?.notify) && (
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <div className="flex-1" />
+            <div className="text-base font-semibold select-none">{config.header?.title}</div>
+            <div className="flex-1 flex items-center justify-end gap-2">
+              {config.header?.search && (
+                <button className="size-8 rounded-full flex items-center justify-center hover:bg-muted/70 text-muted-foreground" aria-label="search">
+                  <Search className="w-4 h-4" />
+                </button>
               )}
-              onClick={() => handleClick(idx, it)}
-            >
-              {it.title || `Tab ${idx + 1}`}
-            </button>
-          ))}
+              {config.header?.notify && (
+                <button className="size-8 rounded-full flex items-center justify-center hover:bg-muted/70 text-muted-foreground" aria-label="notify">
+                  <Bell className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Scrollable text tabs */}
+        <div className="px-2 py-2 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-6 px-2 min-w-max">
+            {config.items.map((it, idx) => (
+              <button
+                key={idx}
+                className={cn(
+                  "relative text-sm font-medium transition-colors pb-2",
+                  idx === activeIndex ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => handleClick(idx, it)}
+              >
+                {it.title || `Tab ${idx + 1}`}
+                {idx === activeIndex && (
+                  <span className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-0.5 w-6 bg-primary rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -84,7 +111,7 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
   // icon + text
   if (config.layout === "scroll") {
     return (
-      <div className={cn("w-full px-4 py-3", className)}>
+      <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm px-4 py-3", className)}>
         <div className="flex items-stretch gap-4 overflow-x-auto scrollbar-hide">
           {config.items.map((it, idx) => (
             <button key={idx} className="flex-shrink-0 w-20 flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>
@@ -107,7 +134,7 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
 
   // grid 4/5 with auto wrap
   return (
-    <div className={cn("w-full px-4 py-4", className)}>
+    <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm px-4 py-4", className)}>
       <div className={cn("grid gap-4", cols === 5 ? "grid-cols-5" : "grid-cols-4")}>        
         {config.items.map((it, idx) => (
           <button key={idx} className="flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>

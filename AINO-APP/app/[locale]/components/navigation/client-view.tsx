@@ -106,6 +106,7 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
   // Demo configs for ContentNavigation
   const navTextConfig: ContentNavConfig = {
     type: "text",
+    header: { title: "标题内容", search: true, notify: true },
     items: [
       { title: "默认" },
       { title: "导航1" },
