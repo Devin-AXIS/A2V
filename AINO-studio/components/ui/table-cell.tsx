@@ -72,7 +72,7 @@ export function TableCell({ type, value, field, className }: TableCellProps) {
       )
     }
 
-    if (type === "progress" && field?.progressConfig) {
+    if ((type === "progress" || field?.preset === "progress") && field?.progressConfig) {
       if (Array.isArray(value)) {
         const items = value as Array<{ value?: number; weight?: number; label?: string }>
         const mode = field.progressConfig.aggregation || 'weightedAverage'

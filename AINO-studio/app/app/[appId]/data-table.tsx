@@ -539,7 +539,7 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     )
   }
 
-  if (type === "progress") {
+  if (type === "progress" || f?.preset === 'progress') {
     const cfg = f?.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
     const aggMode = cfg.aggregation || 'weightedAverage'
     if (Array.isArray(v)) {
