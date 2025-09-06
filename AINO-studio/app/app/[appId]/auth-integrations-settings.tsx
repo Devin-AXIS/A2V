@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useLocale } from "@/hooks/use-locale"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 type AppAuthConfig = {
   firecrawlKey?: string
@@ -43,6 +44,8 @@ export function AuthIntegrationsSettings() {
 
   const [state, setState] = useState<AppAuthConfig>({})
   const [show, setShow] = useState<{ firecrawl: boolean; fastgpt: boolean }>({ firecrawl: false, fastgpt: false })
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState<{ openai?: boolean; firecrawl?: boolean }>({})
 
   useEffect(() => {
     const all = loadAll() as Record<string, AppAuthConfig>
@@ -54,7 +57,7 @@ export function AuthIntegrationsSettings() {
     })
   }, [appId])
 
-  function save() {
+  async function save() {
     const all = loadAll() as Record<string, AppAuthConfig>
     all[appId] = {
       firecrawlKey: state.firecrawlKey,
@@ -64,8 +67,47 @@ export function AuthIntegrationsSettings() {
       fastgptEndpoint: state.openaiEndpoint,
       fastgptKey: state.openaiKey,
     }
-    saveAll(all)
-    toast({ description: locale === "zh" ? "已保存授权配置" : "Authorization settings saved" })
+    try {
+      setSaving(true)
+      saveAll(all)
+      toast({ description: locale === "zh" ? "已保存授权配置" : "Authorization settings saved" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function testOpenAI() {
+    setTesting((s) => ({ ...s, openai: true }))
+    try {
+      const endpoint = state.openaiEndpoint?.trim()
+      const key = state.openaiKey?.trim()
+      if (!endpoint || !key) throw new Error('missing')
+      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-aino-openai-endpoint': endpoint, 'x-aino-openai-key': key },
+        body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'ping' }] })
+      })
+      if (r.ok) toast({ description: locale === 'zh' ? 'OpenAI 接通' : 'OpenAI OK' })
+      else toast({ description: locale === 'zh' ? 'OpenAI 测试失败' : 'OpenAI test failed', variant: 'destructive' as any })
+    } catch {
+      toast({ description: locale === 'zh' ? '请填写 Endpoint/Key 后再测试' : 'Fill Endpoint/Key and retry', variant: 'destructive' as any })
+    } finally { setTesting((s) => ({ ...s, openai: false })) }
+  }
+
+  async function testFirecrawl() {
+    setTesting((s) => ({ ...s, firecrawl: true }))
+    try {
+      const key = state.firecrawlKey?.trim()
+      if (!key) throw new Error('missing')
+      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/crawl/scrape`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': key },
+        body: JSON.stringify({ url: 'https://example.com', options: { formats: ['markdown'] } })
+      })
+      if (r.ok) toast({ description: locale === 'zh' ? 'Firecrawl 接通' : 'Firecrawl OK' })
+      else toast({ description: locale === 'zh' ? 'Firecrawl 测试失败' : 'Firecrawl test failed', variant: 'destructive' as any })
+    } catch {
+      toast({ description: locale === 'zh' ? '请填写 Key 后再测试' : 'Fill key and retry', variant: 'destructive' as any })
+    } finally { setTesting((s) => ({ ...s, firecrawl: false })) }
   }
 
   return (
@@ -91,10 +133,16 @@ export function AuthIntegrationsSettings() {
               <Button variant="outline" size="sm" onClick={() => setShow((s) => ({ ...s, firecrawl: !s.firecrawl }))} className="shrink-0">
                 {show.firecrawl ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </Button>
+              <Button variant="secondary" size="sm" onClick={testFirecrawl} disabled={!!testing.firecrawl} className="shrink-0">
+                {testing.firecrawl ? <><Loader2 className="size-4 mr-1 animate-spin" />{locale === 'zh' ? '测试中' : 'Testing'}</> : (locale === 'zh' ? '测试' : 'Test')}
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {locale === "zh" ? "用于抓取与渲染网页内容。" : "Used for crawling and rendering web content."}
             </p>
+            <div className="text-xs flex items-center gap-1 text-green-600" hidden={!state.firecrawlKey}>
+              <ShieldCheck className="size-3" /> {locale === 'zh' ? '已配置' : 'Configured'}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -122,15 +170,21 @@ export function AuthIntegrationsSettings() {
               <Button variant="outline" size="sm" onClick={() => setShow((s) => ({ ...s, fastgpt: !s.fastgpt }))} className="shrink-0">
                 {show.fastgpt ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </Button>
+              <Button variant="secondary" size="sm" onClick={testOpenAI} disabled={!!testing.openai} className="shrink-0">
+                {testing.openai ? <><Loader2 className="size-4 mr-1 animate-spin" />{locale === 'zh' ? '测试中' : 'Testing'}</> : (locale === 'zh' ? '测试' : 'Test')}
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {locale === "zh" ? "用于自然语言规则解析与结构化抽取（兼容 OpenAI）。" : "For rule parsing and structured extraction (OpenAI-compatible)."}
             </p>
+            <div className="text-xs flex items-center gap-1 text-green-600" hidden={!(state.openaiEndpoint && state.openaiKey)}>
+              <ShieldCheck className="size-3" /> {locale === 'zh' ? '已配置' : 'Configured'}
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button onClick={save}>{locale === "zh" ? "保存" : "Save"}</Button>
+          <Button onClick={save} disabled={saving}>{saving ? <><Loader2 className="size-4 mr-1 animate-spin" />{locale === 'zh' ? '保存中' : 'Saving'}</> : (locale === "zh" ? "保存" : "Save")}</Button>
         </div>
       </div>
     </FrostPanel>

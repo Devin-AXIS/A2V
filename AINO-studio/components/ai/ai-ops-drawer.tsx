@@ -186,6 +186,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       toast({ description: t("请先在设置/授权管理中配置 OpenAI Endpoint 与 Key","Please configure OpenAI Endpoint & Key in Settings/Authorization first"), variant: "destructive" as any })
       return
     }
+    toast({ description: t("已提交 Dry-run，请稍等…","Dry-run submitted, please wait…") })
     // demo call: send a tiny parse task to server AI gateway
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/chat`, {
       method: 'POST',
@@ -197,7 +198,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'ping' }] }),
     }).then(async (r) => {
       if (!r.ok) throw new Error(await r.text())
-      toast({ description: t("已提交 Dry-run，请稍等…","Dry-run submitted, please wait…") })
+      toast({ description: t("AI 网关已响应","AI gateway responded") })
     }).catch((e) => {
       console.error(e)
       toast({ description: t("AI 网关调用失败","AI gateway call failed"), variant: "destructive" as any })
