@@ -313,9 +313,10 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
         <MetaItemsInput
           items={value || []}
           onChange={onChange}
+          schema={field.metaItemsConfig?.fields || []}
           helpEnabled={field.metaItemsConfig?.showHelp}
           helpText={field.metaItemsConfig?.helpText}
-          allowedTypes={field.metaItemsConfig?.allowedTypes as any}
+          allowAddInForm={field.metaItemsConfig?.allowAddInForm !== false}
         />
       )
     case "multivideo":

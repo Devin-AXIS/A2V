@@ -273,17 +273,27 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Drawer
       case "meta_items": {
         const cfg = field.metaItemsConfig || {}
         const items = Array.isArray(value) ? value : []
+        const schema = cfg.fields || []
         return (
           <div className="space-y-2">
             {cfg.showHelp && <div className="text-xs text-gray-500">{cfg.helpText || ''}</div>}
-            <div className="space-y-1 text-sm">
+            <div className="space-y-2 text-sm">
               {items.length === 0 && <span className="text-gray-400">{locale==='zh'?'暂无数据':'No data'}</span>}
               {items.map((it:any, i:number)=> (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-gray-700">{it.label}</span>
-                  {it.type === 'number' && <span className="ml-auto">{typeof it.value==='number'? it.value : ''}{it.unit?it.unit:''}</span>}
-                  {it.type === 'text' && <span className="ml-auto truncate max-w-[60%] text-gray-700">{it.value||''}</span>}
-                  {it.type === 'image' && it.value ? <img src={it.value} alt="" className="h-6 w-10 object-cover rounded border"/> : null}
+                <div key={i} className="space-y-1 border rounded-md bg-white/70 p-2">
+                  <div className="font-medium text-gray-700">{it.label}</div>
+                  {schema.filter((fd: any)=>fd.type==='text').map((fd: any)=>{
+                    const row = (it.texts||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{row?.value||''}</span></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='number').map((fd: any)=>{
+                    const row = (it.numbers||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{typeof row?.value==='number'? row?.value: ''}{fd.unit||''}</span></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='image').map((fd: any)=>{
+                    const row = (it.images||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span>{row?.url ? <img src={row.url} className="h-10 w-16 object-cover rounded border"/> : <span className="text-gray-400">-</span>}</div>
+                  })}
                 </div>
               ))}
             </div>

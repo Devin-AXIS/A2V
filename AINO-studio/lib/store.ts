@@ -126,14 +126,20 @@ export type FieldModel = {
   metaItemsConfig?: {
     showHelp?: boolean
     helpText?: string
-    allowedTypes?: Array<'text' | 'number' | 'image'>
-    defaultItems?: Array<{
+    // 统一字段结构：配置层定义字段类型与名称，输入层仅填写值
+    fields?: Array<{
+      id: string
+      type: 'text' | 'number' | 'image'
       label: string
-      texts?: Array<{ label: string }>
-      numbers?: Array<{ label: string; unit?: string }>
-      images?: Array<{ label: string }>
+      unit?: string // 仅 number 使用
     }>
+    // 初始化用的子项名称列表（可为空）
+    defaultItemLabels?: string[]
+    // 是否允许在输入层增/删子项
     allowAddInForm?: boolean
+    // 列表聚合显示（可选）
+    primaryNumberFieldId?: string
+    aggregationMode?: 'sum' | 'avg' | 'min' | 'max'
   }
   // 其他经历字段特殊配置
   customExperienceConfig?: {
@@ -507,15 +513,15 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
         break
       }
       case "meta_items": {
-        const defaults = f.metaItemsConfig?.defaultItems || []
-        ;(rec as any)[f.key] = defaults.map((d, idx) => ({
-          id: uid(),
-          label: d.label || `项 ${idx + 1}`,
-          order: idx,
-          texts: (d.texts || []).map(x => ({ id: uid(), label: x.label, value: "" })),
-          numbers: (d.numbers || []).map(x => ({ id: uid(), label: x.label, value: 0, unit: x.unit })),
-          images: (d.images || []).map(x => ({ id: uid(), label: x.label, url: "" })),
-        }))
+        const fieldDefs = f.metaItemsConfig?.fields || []
+        const labels = f.metaItemsConfig?.defaultItemLabels || []
+        ;(rec as any)[f.key] = (labels.length ? labels : ["项 1", "项 2"]).map((label, idx) => {
+          const item: any = { id: uid(), label, order: idx }
+          item.texts = fieldDefs.filter(fd=>fd.type==='text').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: "" }))
+          item.numbers = fieldDefs.filter(fd=>fd.type==='number').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: 0, unit: fd.unit }))
+          item.images = fieldDefs.filter(fd=>fd.type==='image').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, url: "" }))
+          return item
+        })
         break
       }
       case "image":
