@@ -23,6 +23,18 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
   helpText?: string
   allowAddInForm?: boolean
 }) {
+  // 兼容：schema 为空时，从现有数据的行推断出临时 schema
+  const fallbackSchema: MetaFieldDef[] = (schema && schema.length > 0) ? schema : (() => {
+    const fds: MetaFieldDef[] = []
+    const first = items?.[0]
+    if (first?.texts?.length) first.texts.forEach(r => fds.push({ id: r.fieldId || r.id, type: 'text', label: r.label }))
+    if (first?.numbers?.length) first.numbers.forEach(r => fds.push({ id: r.fieldId || r.id, type: 'number', label: r.label, unit: r.unit }))
+    if (first?.images?.length) first.images.forEach(r => fds.push({ id: r.fieldId || r.id, type: 'image', label: r.label }))
+    if ((first as any)?.selects?.length) (first as any).selects.forEach((r: any) => fds.push({ id: r.fieldId || r.id, type: 'select', label: r.label, options: [] }))
+    if ((first as any)?.multiselects?.length) (first as any).multiselects.forEach((r: any) => fds.push({ id: r.fieldId || r.id, type: 'multiselect', label: r.label, options: [] }))
+    return fds
+  })()
+  const effSchema = fallbackSchema
   const set = (idx: number, patch: Partial<MetaItem>) => {
     const arr = [...items]
     arr[idx] = { ...arr[idx], ...patch }
@@ -50,7 +62,7 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
           </div>
 
           {/* 固定渲染：根据 schema 输出行 */}
-          {schema.filter(fd=>fd.type==='text').map(fd => {
+          {effSchema.filter(fd=>fd.type==='text').map(fd => {
             const row = (it.texts||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: '' }
             return (
               <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
@@ -60,7 +72,7 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
             )
           })}
 
-          {schema.filter(fd=>fd.type==='number').map(fd => {
+          {effSchema.filter(fd=>fd.type==='number').map(fd => {
             const row = (it.numbers||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: 0, unit: fd.unit }
             return (
               <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
@@ -70,7 +82,7 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
             )
           })}
 
-          {schema.filter(fd=>fd.type==='image').map(fd => {
+          {effSchema.filter(fd=>fd.type==='image').map(fd => {
             const row = (it.images||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, url: '' }
             return (
               <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
@@ -80,7 +92,7 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
             )
           })}
 
-          {schema.filter(fd=>fd.type==='select').map(fd => {
+          {effSchema.filter(fd=>fd.type==='select').map(fd => {
             const row = (it.selects||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: '' }
             return (
               <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
@@ -93,7 +105,7 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
             )
           })}
 
-          {schema.filter(fd=>fd.type==='multiselect').map(fd => {
+          {effSchema.filter(fd=>fd.type==='multiselect').map(fd => {
             const row = (it.multiselects||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: [] as string[] }
             const selected = new Set(row.value)
             const toggle = (opt: string) => {

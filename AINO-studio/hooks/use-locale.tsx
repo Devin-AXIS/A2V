@@ -82,6 +82,7 @@ const zh: Dict = {
   ft_multivideo: "多视频",
   ft_identity_verification: "实名认证",
   ft_other_verification: "其他认证",
+  ft_meta_items: "数据项集合",
   // 字段管理相关
   fieldManagement: "字段管理",
   fieldCategoryManagement: "字段分类",
@@ -248,6 +249,7 @@ const en: Dict = {
   ft_multivideo: "Multi Video",
   ft_identity_verification: "Identity Verification",
   ft_other_verification: "Other Verification",
+  ft_meta_items: "Meta Items",
   // Field management related
   fieldManagement: "Field Management",
   fieldCategoryManagement: "Field Categories",

@@ -744,7 +744,8 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Drawer
                       f.type === "richtext" || 
                       f.type === "relation_many" ||
                       f.type === "relation_one" ||
-                      f.type === "experience"
+                      f.type === "experience" ||
+                      f.type === "meta_items"
                     )
                     const doubleRowFields = basicFields.filter(f => 
                       !singleRowFields.includes(f)
