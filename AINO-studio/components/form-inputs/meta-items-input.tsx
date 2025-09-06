@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export type MetaFieldDef = { id: string; type: 'text'|'number'|'image'; label: string; unit?: string }
+export type MetaFieldDef = { id: string; type: 'text'|'number'|'image'|'select'|'multiselect'; label: string; unit?: string; options?: string[] }
 export type MetaItem = {
   id: string
   label: string
@@ -11,6 +11,8 @@ export type MetaItem = {
   texts?: Array<{ id: string; fieldId: string; label: string; value: string }>
   numbers?: Array<{ id: string; fieldId: string; label: string; value: number; unit?: string }>
   images?: Array<{ id: string; fieldId: string; label: string; url: string }>
+  selects?: Array<{ id: string; fieldId: string; label: string; value: string }>
+  multiselects?: Array<{ id: string; fieldId: string; label: string; value: string[] }>
 }
 
 export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, helpText, allowAddInForm = true }: {
@@ -75,6 +77,42 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
               <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-xs text-gray-600">{fd.label}</div>
                 <Input className="col-span-9 bg-white" value={row.url} onChange={(e)=>{ const arr=[...items]; const target=(arr[idx].images||[]); const i=target.findIndex(x=>x.fieldId===fd.id); if(i>=0){target[i]={...target[i], url:e.target.value}} else { if(!arr[idx].images) arr[idx].images=[]; arr[idx].images!.push({ id: fd.id, fieldId: fd.id, label: fd.label, url: e.target.value }) } onChange(arr) }} placeholder="图片URL" />
+              </div>
+            )
+          })}
+
+          {schema.filter(fd=>fd.type==='select').map(fd => {
+            const row = (it.selects||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: '' }
+            return (
+              <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-3 text-xs text-gray-600">{fd.label}</div>
+                <select className="col-span-9 h-9 rounded border bg-white px-2" value={row.value} onChange={(e)=>{ const arr=[...items]; const target=(arr[idx].selects||[]); const i=target.findIndex(x=>x.fieldId===fd.id); if(i>=0){target[i]={...target[i], value:e.target.value}} else { if(!arr[idx].selects) arr[idx].selects=[]; arr[idx].selects!.push({ id: fd.id, fieldId: fd.id, label: fd.label, value: e.target.value }) } onChange(arr) }}>
+                  <option value="">请选择</option>
+                  {(fd.options||[]).map(opt=> (<option key={opt} value={opt}>{opt}</option>))}
+                </select>
+              </div>
+            )
+          })}
+
+          {schema.filter(fd=>fd.type==='multiselect').map(fd => {
+            const row = (it.multiselects||[]).find(r=>r.fieldId===fd.id) || { id: fd.id, fieldId: fd.id, label: fd.label, value: [] as string[] }
+            const selected = new Set(row.value)
+            const toggle = (opt: string) => {
+              const arr=[...items]; const target=(arr[idx].multiselects||[]); const i=target.findIndex(x=>x.fieldId===fd.id)
+              const next = new Set(selected)
+              next.has(opt) ? next.delete(opt) : next.add(opt)
+              const val = Array.from(next)
+              if(i>=0){target[i]={...target[i], value: val}} else { if(!arr[idx].multiselects) arr[idx].multiselects=[]; arr[idx].multiselects!.push({ id: fd.id, fieldId: fd.id, label: fd.label, value: val }) }
+              onChange(arr)
+            }
+            return (
+              <div key={fd.id} className="grid grid-cols-12 gap-2 items-start">
+                <div className="col-span-3 text-xs text-gray-600 pt-2">{fd.label}</div>
+                <div className="col-span-9 flex flex-wrap gap-1">
+                  {(fd.options||[]).map(opt => (
+                    <button key={opt} type="button" className={`text-xs px-2 py-1 rounded border ${selected.has(opt)?'bg-blue-600 text-white border-blue-600':'bg-white'}`} onClick={()=>toggle(opt)}>{opt}</button>
+                  ))}
+                </div>
               </div>
             )
           })}

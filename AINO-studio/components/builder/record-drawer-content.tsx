@@ -294,6 +294,15 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Drawer
                     const row = (it.images||[]).find((r:any)=>r.fieldId===fd.id)
                     return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span>{row?.url ? <img src={row.url} className="h-10 w-16 object-cover rounded border"/> : <span className="text-gray-400">-</span>}</div>
                   })}
+                  {schema.filter((fd: any)=>fd.type==='select').map((fd: any)=>{
+                    const row = (it.selects||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{row?.value||'-'}</span></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='multiselect').map((fd: any)=>{
+                    const row = (it.multiselects||[]).find((r:any)=>r.fieldId===fd.id)
+                    const vals = Array.isArray(row?.value) ? row!.value : []
+                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><div className="flex flex-wrap gap-1">{vals.map((v:any,i:number)=>(<span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">{v}</span>))}{vals.length===0 && <span className="text-gray-400">-</span>}</div></div>
+                  })}
                 </div>
               ))}
             </div>

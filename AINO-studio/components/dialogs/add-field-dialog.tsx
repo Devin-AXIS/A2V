@@ -472,7 +472,7 @@ export function AddFieldDialog({
   })
 
   // meta_items 配置
-  type MetaFieldDef = { id: string; type: 'text'|'number'|'image'; label: string; unit?: string }
+  type MetaFieldDef = { id: string; type: 'text'|'number'|'image'|'select'|'multiselect'; label: string; unit?: string; options?: string[] }
   type MetaItemsConfigState = {
     showHelp: boolean
     helpText: string
@@ -1836,11 +1836,18 @@ export function AddFieldDialog({
                             <option value="text">{locale==='zh'?'文本':'Text'}</option>
                             <option value="number">{locale==='zh'?'数字':'Number'}</option>
                             <option value="image">{locale==='zh'?'图片':'Image'}</option>
+                            <option value="select">{locale==='zh'?'选项':'Select'}</option>
+                            <option value="multiselect">{locale==='zh'?'多选':'Multi-select'}</option>
                           </select>
                           {metaItemsConfig.fields[idx].type==='number' && (
                             <Input className="h-8 text-xs bg-white/80 col-span-2" value={fd.unit||''} onChange={(e)=>{
                               const arr=[...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], unit: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, fields: arr }))
                             }} placeholder={locale==='zh'?'单位(可选)':'Unit (optional)'} />
+                          )}
+                          {(metaItemsConfig.fields[idx].type==='select' || metaItemsConfig.fields[idx].type==='multiselect') && (
+                            <Input className="h-8 text-xs bg-white/80 col-span-4" value={(fd.options||[]).join(',')} onChange={(e)=>{
+                              const arr=[...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], options: e.target.value.split(',').map(s=>s.trim()).filter(Boolean) }; setMetaItemsConfig(prev=>({ ...prev, fields: arr }))
+                            }} placeholder={locale==='zh'?'选项(逗号分隔)':'Options (comma separated)'} />
                           )}
                           <button type="button" className="text-xs text-red-600 col-span-2" onClick={()=>{
                             const arr=[...metaItemsConfig.fields]; arr.splice(idx,1); setMetaItemsConfig(prev=>({ ...prev, fields: arr }))
