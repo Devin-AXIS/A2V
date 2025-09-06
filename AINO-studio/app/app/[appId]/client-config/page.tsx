@@ -172,6 +172,7 @@ export default function ClientConfigPage() {
   const [virtualFiles, setVirtualFiles] = useState<Record<string, string>>({})
   const [activeCardPath, setActiveCardPath] = useState<string>("")
   const [activeCardMeta, setActiveCardMeta] = useState<{ pageKey: string; sectionKey: string; cardType: string } | null>(null)
+  const [monacoLanguage, setMonacoLanguage] = useState<'json' | 'typescript'>('json')
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -460,8 +461,14 @@ export default function ClientConfigPage() {
             // 若是卡片文件，则把内容同步到预览覆盖（虚拟文件）
             if (activeCardMeta && activeCardPath) {
               try {
-                window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: activeCardMeta.pageKey.replace(/^p-/, ''), sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
-                setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: JSON.stringify(parsed, null, 2) }))
+                const pageIdPure = activeCardMeta.pageKey.replace(/^p-/, '')
+                if (activeCardPath.endsWith('.json')) {
+                  window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
+                  setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: JSON.stringify(parsed, null, 2) }))
+                } else if (activeCardPath.endsWith('.tsx')) {
+                  window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, jsx: jsonText }, '*')
+                  setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: jsonText }))
+                }
               } catch {}
             } else {
               next.pages = next.pages || {}
@@ -877,9 +884,29 @@ export default function ClientConfigPage() {
                                     setViewTab('code')
                                     setActiveCardPath(path)
                                     setActiveCardMeta({ pageKey: k, sectionKey, cardType: it.type })
+                                    setMonacoLanguage('json')
                                   }, 100)
                                 } catch {}
                               }}>{lang === 'zh' ? '配置' : 'Config'}</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                try {
+                                  const k = activePageKey as string
+                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  const path = `pages/${k}/cards/${sectionKey}/${it.type}.tsx`
+                                  // 请求预览返回当前覆盖（jsx）
+                                  window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
+                                  setTimeout(() => {
+                                    const defaultTsx = "export default function Card({ props, data, theme, ui }){\n  return (<div>Card</div>)\n}"
+                                    const content = virtualFiles[path] || defaultTsx
+                                    setJsonText(content)
+                                    setCodeScope('page')
+                                    setViewTab('code')
+                                    setActiveCardPath(path)
+                                    setActiveCardMeta({ pageKey: k, sectionKey, cardType: it.type })
+                                    setMonacoLanguage('typescript')
+                                  }, 100)
+                                } catch {}
+                              }}>JSX</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
@@ -1247,8 +1274,8 @@ export default function ClientConfigPage() {
                       <ResizablePanel defaultSize={80} minSize={40}>
                         <Monaco
                           height="100%"
-                          defaultLanguage="json"
-                          language="json"
+                          defaultLanguage={monacoLanguage}
+                          language={monacoLanguage}
                           theme="vs"
                           value={jsonText}
                           onChange={(v) => setJsonText(v || "")}

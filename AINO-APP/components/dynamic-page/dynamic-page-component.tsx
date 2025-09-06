@@ -42,6 +42,7 @@ import {
 import { LocalThemeEditorVisibilityProvider } from "@/components/providers/local-theme-editor-visibility"
 import { LocalThemeKeyProvider } from "@/components/providers/local-theme-key"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
+import { InlineSandbox } from "./inline-sandbox"
 import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
 
 // 页面类别配置
@@ -699,12 +700,18 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               const mode = topTabsConfig ? 'text' : (contentNavConfig ? 'icon' : undefined)
                               const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : mode === 'icon' ? `icon-${activeTabIndex}` : undefined
                               let overrideProps: any = undefined
+                              let overrideJsx: string | undefined
                               if (pageId && sectionKey) {
                                 try {
                                   const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
                                   const cfg = raw ? JSON.parse(raw) : {}
                                   overrideProps = cfg?.overrides?.[sectionKey]?.[card.type]?.props
+                                  overrideJsx = cfg?.overrides?.[sectionKey]?.[card.type]?.jsx
                                 } catch {}
+                              }
+                              if (overrideJsx) {
+                                const themeObj = {}
+                                return (<InlineSandbox code={overrideJsx} data={defaultData} props={overrideProps} theme={themeObj} className="w-full" />)
                               }
                               return React.createElement(CardComponent as any, {
                                 data: defaultData,
