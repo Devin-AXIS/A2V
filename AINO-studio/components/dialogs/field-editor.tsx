@@ -25,6 +25,7 @@ function toDraft(app: AppModel, dir: DirectoryModel, f: FieldModel): FieldDraft 
     cascaderOptions: f.cascaderOptions ? (JSON.parse(JSON.stringify(f.cascaderOptions)) as any) : undefined,
     preset: (f as any).preset || undefined,
     skillsConfig: (f as any).skillsConfig || undefined,
+    progressConfig: (f as any).progressConfig || undefined,
     otherVerificationConfig: (f as any).otherVerificationConfig || undefined,
   }
 
@@ -111,6 +112,9 @@ function applyDraftToFieldModel(
     ;(f as any).preset = draft.preset
     if (draft.preset === "skills" && draft.skillsConfig) {
       ;(f as any).skillsConfig = draft.skillsConfig
+    }
+    if (draft.preset === "progress" && draft.progressConfig) {
+      ;(f as any).progressConfig = draft.progressConfig
     }
     if (draft.preset === "other_verification" && draft.otherVerificationConfig) {
       ;(f as any).otherVerificationConfig = draft.otherVerificationConfig

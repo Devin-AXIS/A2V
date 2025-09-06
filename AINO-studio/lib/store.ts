@@ -472,9 +472,24 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
         break
       case "number":
       case "percent":
-      case "progress":
         ;(rec as any)[f.key] = 0
         break
+      case "progress": {
+        const defaults = f.progressConfig?.defaultItems || []
+        if (defaults.length > 0) {
+          ;(rec as any)[f.key] = defaults.map((d, idx) => ({
+            id: uid(),
+            key: d.key || `p${idx + 1}`,
+            label: d.label || `Item ${idx + 1}`,
+            status: d.status,
+            weight: d.weight ?? 1,
+            value: 0,
+          }))
+        } else {
+          ;(rec as any)[f.key] = [{ id: uid(), key: "progress", label: "Progress", status: "planned", weight: 1, value: 0 }]
+        }
+        break
+      }
       case "image":
       case "file":
       case "text":
