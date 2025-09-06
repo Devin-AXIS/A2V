@@ -63,6 +63,8 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
               aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
               showProgressBar={field.progressConfig?.showProgressBar !== false}
               showPercentage={field.progressConfig?.showPercentage !== false}
+              helpEnabled={field.progressConfig?.showHelp}
+              helpText={field.progressConfig?.helpText}
             />
           )
         }
@@ -73,6 +75,8 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
             aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
             showProgressBar={field.progressConfig?.showProgressBar !== false}
             showPercentage={field.progressConfig?.showPercentage !== false}
+            helpEnabled={field.progressConfig?.showHelp}
+            helpText={field.progressConfig?.helpText}
           />
         )
       case "phone":

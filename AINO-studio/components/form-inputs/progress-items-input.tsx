@@ -20,6 +20,8 @@ export type ProgressItemsInputProps = {
   aggregation?: "weightedAverage" | "max" | "min"
   showProgressBar?: boolean
   showPercentage?: boolean
+  helpEnabled?: boolean
+  helpText?: string
 }
 
 function clamp01(n: number) {
@@ -39,7 +41,7 @@ function aggregate(items: ProgressItem[], mode: "weightedAverage"|"max"|"min" = 
   return clamp01(sum / sw)
 }
 
-export function ProgressItemsInput({ items, onChange, aggregation = "weightedAverage", showProgressBar = true, showPercentage = true }: ProgressItemsInputProps) {
+export function ProgressItemsInput({ items, onChange, aggregation = "weightedAverage", showProgressBar = true, showPercentage = true, helpEnabled, helpText }: ProgressItemsInputProps) {
   const agg = useMemo(() => aggregate(items, aggregation), [items, aggregation])
 
   return (
@@ -65,6 +67,9 @@ export function ProgressItemsInput({ items, onChange, aggregation = "weightedAve
           onChange(arr)
         }}>新增子进度</Button>
       </div>
+      {helpEnabled && helpText && (
+        <div className="text-xs text-gray-500 pt-1">{helpText}</div>
+      )}
     </div>
   )
 }
