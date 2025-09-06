@@ -154,6 +154,45 @@ export default function ClientConfigPage() {
     setRouteDialogOpen(true)
   }
 
+  // 内容导航配置弹窗与临时状态
+  const [contentNavOpen, setContentNavOpen] = useState(false)
+  const [cnType, setCnType] = useState<'iconText' | 'text'>("iconText")
+  const [cnLayout, setCnLayout] = useState<'grid-4' | 'grid-5' | 'scroll'>("grid-4")
+  const [cnItems, setCnItems] = useState<any[]>([])
+
+  function openContentNavDialog() {
+    try {
+      const k = activePageKey as string
+      const cfg = (draft.pages && (draft as any).pages[k]?.contentNav) || {}
+      setCnType((cfg as any).type || 'iconText')
+      setCnLayout((cfg as any).layout || 'grid-4')
+      setCnItems(Array.isArray((cfg as any).items) ? (cfg as any).items : [])
+      setContentNavOpen(true)
+    } catch {
+      setCnType('iconText')
+      setCnLayout('grid-4')
+      setCnItems([])
+      setContentNavOpen(true)
+    }
+  }
+
+  function saveContentNavDialog() {
+    const k = activePageKey as string
+    setDraft((s: any) => {
+      const next = { ...s }
+      next.pages = next.pages || {}
+      const p = next.pages[k] || {}
+      p.contentNav = {
+        type: cnType,
+        layout: cnType === 'iconText' ? cnLayout : undefined,
+        items: cnItems,
+      }
+      next.pages[k] = p
+      return next
+    })
+    setContentNavOpen(false)
+  }
+
   function saveRouteDialog() {
     const route = (routeTemp || "").trim()
     const ok = /^\/[A-Za-z0-9_\-/]*$/.test(route)
@@ -683,12 +722,16 @@ export default function ClientConfigPage() {
                         <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showBottomNav !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showBottomNav: !!v }; next.pages[k] = p; return next })} />
                       </label>
                     </div>
-                    {/* 展示形式：图标或文字 */}
+                    {/* 内容导航配置入口 */}
                     <div className="space-y-2">
-                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "内容导航展示形式" : "Content Nav Type"}</div>
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "内容导航配置" : "Content Navigation"}</div>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant={!activePageKey || draft.pages?.[activePageKey]?.displayType === 'icon' || !draft.pages?.[activePageKey]?.displayType ? 'default' : 'outline'} onClick={() => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.displayType = 'icon'; next.pages[k] = p; return next })}>{lang === "zh" ? "图标" : "Icons"}</Button>
-                        <Button size="sm" variant={activePageKey && draft.pages?.[activePageKey]?.displayType === 'text' ? 'default' : 'outline'} onClick={() => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.displayType = 'text'; next.pages[k] = p; return next })}>{lang === "zh" ? "文字" : "Text"}</Button>
+                        <Button size="sm" variant="outline" onClick={openContentNavDialog}>{lang === "zh" ? "配置内容导航" : "Configure"}</Button>
+                        {activePageKey && draft.pages?.[activePageKey]?.contentNav && (
+                          <div className="text-[11px] text-muted-foreground">
+                            {(draft.pages as any)[activePageKey]?.contentNav?.type === 'iconText' ? (lang === 'zh' ? '图+文' : 'Icon+Text') : (lang === 'zh' ? '文字' : 'Text')} · {(draft.pages as any)[activePageKey]?.contentNav?.layout || '-'} · {Array.isArray((draft.pages as any)[activePageKey]?.contentNav?.items) ? (draft.pages as any)[activePageKey]?.contentNav?.items.length : 0} {lang === 'zh' ? '项' : 'items'}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {/* 主内容 / 其他卡片占位 */}
@@ -892,6 +935,58 @@ export default function ClientConfigPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDataDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* 内容导航配置弹窗 */}
+            <Dialog open={contentNavOpen} onOpenChange={setContentNavOpen}>
+              <DialogContent className="max-w-[760px] w-[95vw] bg-white">
+                <DialogHeader>
+                  <DialogTitle>{lang === 'zh' ? '内容导航配置' : 'Content Navigation'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* 类型选择 */}
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '展示样式' : 'Display Type'}</div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant={cnType === 'iconText' ? 'default' : 'outline'} onClick={() => setCnType('iconText')}>{lang === 'zh' ? '图+文' : 'Icon+Text'}</Button>
+                      <Button size="sm" variant={cnType === 'text' ? 'default' : 'outline'} onClick={() => setCnType('text')}>{lang === 'zh' ? '文字' : 'Text'}</Button>
+                    </div>
+                  </div>
+                  {/* 布局选择（仅图+文时显示） */}
+                  {cnType === 'iconText' && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '排版' : 'Layout'}</div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant={cnLayout === 'grid-4' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-4')}>{lang === 'zh' ? '每行4个' : '4 per row'}</Button>
+                        <Button size="sm" variant={cnLayout === 'grid-5' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-5')}>{lang === 'zh' ? '每行5个' : '5 per row'}</Button>
+                        <Button size="sm" variant={cnLayout === 'scroll' ? 'default' : 'outline'} onClick={() => setCnLayout('scroll')}>{lang === 'zh' ? '横向滑动' : 'Horizontal scroll'}</Button>
+                      </div>
+                    </div>
+                  )}
+                  {/* 导航项列表 */}
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '导航项' : 'Items'}</div>
+                    <div className="space-y-2">
+                      {cnItems.map((it: any, idx: number) => (
+                        <div key={idx} className="grid grid-cols-[20px_1fr_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
+                          <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center opacity-70"><GripVertical className="w-4 h-4" /></div>
+                          <Input placeholder={lang === 'zh' ? '标题(中文/英文皆可)' : 'Title'} value={it.title || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} />
+                          <Input placeholder={lang === 'zh' ? '路由 /p-xxx 或 /home' : 'Route'} value={it.route || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, route: e.target.value } : x))} />
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" onClick={() => {/* 占位：跳转到对应页面配置 */}}>{lang === 'zh' ? '配置卡片' : 'Config Cards'}</Button>
+                            <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={() => setCnItems((s: any[]) => [...s, { title: '', route: '' }])}><Plus className="w-4 h-4 mr-1" />{lang === 'zh' ? '新增导航' : 'Add Item'}</Button>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setContentNavOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
+                  <Button onClick={saveContentNavDialog}>{lang === 'zh' ? '保存' : 'Save'}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
