@@ -165,13 +165,30 @@ export default function ClientConfigPage() {
   const [pageTabIndex, setPageTabIndex] = useState<number>(0)
   const [workspaceCardsByCategory, setWorkspaceCardsByCategory] = useState<Record<string, string[]>>({})
   const [activeWorkspaceCategory, setActiveWorkspaceCategory] = useState<string>("")
+  const [cardConfigOpen, setCardConfigOpen] = useState(false)
+  const [cardConfigType, setCardConfigType] = useState<string>("")
+  const [cardConfigName, setCardConfigName] = useState<string>("")
+  const [cardConfigText, setCardConfigText] = useState<string>("{\n  \"title\": \"\",\n  \"subtitle\": \"\"\n}")
+  const [virtualFiles, setVirtualFiles] = useState<Record<string, string>>({})
+  const [activeCardPath, setActiveCardPath] = useState<string>("")
+  const [activeCardMeta, setActiveCardMeta] = useState<{ pageKey: string; sectionKey: string; cardType: string } | null>(null)
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       const d: any = e.data
       if (d && d.type === "DYN_CARDS" && Array.isArray(d.cards)) {
+        // d.cards: [{ type, displayName }]
         setWorkspaceCardsByCategory((s) => ({ ...s, [d.category]: d.cards }))
         setActiveWorkspaceCategory(d.category || "")
+      } else if (d && d.type === 'OVERRIDE') {
+        const { pageId: pid, sectionKey, cardType, props } = d
+        try {
+          const path = `pages/p-${pid}/cards/${sectionKey}/${cardType}.json`
+          const content = JSON.stringify(props || {}, null, 2)
+          setVirtualFiles((s) => ({ ...s, [path]: content }))
+          setJsonText(content)
+          setViewTab('code')
+        } catch {}
       }
     }
     window.addEventListener("message", handler)
@@ -440,8 +457,16 @@ export default function ClientConfigPage() {
           else if (codeScope === "app") next.app = parsed
           else if (codeScope === "dataSources") next.dataSources = parsed
           else if (codeScope === "page") {
-            next.pages = next.pages || {}
-            next.pages[activePage] = parsed
+            // 若是卡片文件，则把内容同步到预览覆盖（虚拟文件）
+            if (activeCardMeta && activeCardPath) {
+              try {
+                window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: activeCardMeta.pageKey.replace(/^p-/, ''), sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
+                setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: JSON.stringify(parsed, null, 2) }))
+              } catch {}
+            } else {
+              next.pages = next.pages || {}
+              next.pages[activePage] = parsed
+            }
           }
           return next
         })
@@ -506,7 +531,7 @@ export default function ClientConfigPage() {
         setPreviewUrl(`http://localhost:3002/${baseLang}/home`)
         setViewTab("preview")
       } else {
-        openPreview()
+      openPreview()
       }
     } else {
       setViewTab("code")
@@ -547,56 +572,56 @@ export default function ClientConfigPage() {
               <div className="h-full p-3 space-y-3">
                 {!authUIOpen && !pageUIOpen ? (
                   <>
-                    <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">{lang === "zh" ? "配置/构建" : "Config/Build"}</div>
-                      <Tabs value="config" className="-mr-2">
-                        <TabsList>
-                          <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
-                          <TabsTrigger value="ai" disabled>{lang === "zh" ? "AI 对话（稍后）" : "AI (later)"}</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                    </div>
+                  <Tabs value="config" className="-mr-2">
+                    <TabsList>
+                      <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
+                      <TabsTrigger value="ai" disabled>{lang === "zh" ? "AI 对话（稍后）" : "AI (later)"}</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
                     {/* 默认语言（保存为 App 默认语言） */}
-                    <div className="space-y-2">
+                <div className="space-y-2">
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "默认语言（应用）" : "Default Language (App)"}</div>
                       <div className="inline-flex items-center gap-2 bg-gray-50 rounded-md p-1 border">
                         <Button size="sm" variant={draft.app.defaultLanguage === "zh" ? "default" : "ghost"} onClick={() => { setDraft((s: any) => ({ ...s, app: { ...s.app, defaultLanguage: "zh", locale: "zh-CN" } })); }}>中文</Button>
                         <Button size="sm" variant={draft.app.defaultLanguage === "en" ? "default" : "ghost"} onClick={() => { setDraft((s: any) => ({ ...s, app: { ...s.app, defaultLanguage: "en", locale: "en-US" } })); }}>EN</Button>
-                      </div>
+                </div>
                     </div>
                     {/* App Key 隐藏：无需显示 */}
                     {false && (
-                      <div className="space-y-2">
-                        <Label>{lang === "zh" ? "主题" : "Theme"}</Label>
+                <div className="space-y-2">
+                  <Label>{lang === "zh" ? "主题" : "Theme"}</Label>
                         <Input value={draft.app.theme} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, theme: e.target.value } }))} />
-                      </div>
+                </div>
                     )}
-                    <div className="space-y-2">
-                      <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
-                      <div className="space-y-2">
+                <div className="space-y-2">
+                  <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
+                  <div className="space-y-2">
                         {draft.app.bottomNav.map((item: any, idx: number) => (
-                          <div
-                            key={item.key}
+                      <div
+                        key={item.key}
                             className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("text/plain", String(idx))
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              const from = Number(e.dataTransfer.getData("text/plain"))
-                              const to = idx
-                              if (Number.isNaN(from) || from === to) return
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", String(idx))
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          const from = Number(e.dataTransfer.getData("text/plain"))
+                          const to = idx
+                          if (Number.isNaN(from) || from === to) return
                               setDraft((s: any) => {
-                                const next = [...s.app.bottomNav]
-                                const [moved] = next.splice(from, 1)
-                                next.splice(to, 0, moved)
-                                return { ...s, app: { ...s.app, bottomNav: next } }
-                              })
-                            }}
-                          >
-                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                            const next = [...s.app.bottomNav]
+                            const [moved] = next.splice(from, 1)
+                            next.splice(to, 0, moved)
+                            return { ...s, app: { ...s.app, bottomNav: next } }
+                          })
+                        }}
+                      >
+                        <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
                             <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
                             <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
                               <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
@@ -625,36 +650,36 @@ export default function ClientConfigPage() {
                             >
                               <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
                                 setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }))
-                                setTimeout(() => { savePreview() }, 0)
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        {draft.app.bottomNav.length < 5 && (
-                          <Button variant="secondary" onClick={() => setDraft((s: any) => {
-                            const key = `k${Date.now()}`
-                            const route = `/p-${key}`
-                            const next = { ...s }
-                            next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
-                            const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
-                            next.pages = next.pages || {}
-                            if (!next.pages[pageKey]) {
-                              next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
-                            }
-                            return next
-                          })}>
-                            {lang === "zh" ? "添加项" : "Add Item"}
-                          </Button>
-                        )}
+                            setTimeout(() => { savePreview() }, 0)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                    </div>
+                    ))}
+                    {draft.app.bottomNav.length < 5 && (
+                          <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                        const key = `k${Date.now()}`
+                        const route = `/p-${key}`
+                        const next = { ...s }
+                        next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
+                        const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
+                        next.pages = next.pages || {}
+                        if (!next.pages[pageKey]) {
+                          next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+                        }
+                        return next
+                      })}>
+                        {lang === "zh" ? "添加项" : "Add Item"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -689,35 +714,35 @@ export default function ClientConfigPage() {
                       >
                         {lang === "zh" ? "登录配置" : "Login Settings"}
                       </Button>
-                    </div>
-                    {/* 数据定义 */}
-                    <div className="pt-2 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
-                        <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
-                          <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
-                        </Button>
+                </div>
+                {/* 数据定义 */}
+                <div className="pt-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
+                    <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
+                    </Button>
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-auto pr-1">
+                    {Object.entries(draft.dataSources || {}).length === 0 && (
+                      <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
+                    )}
+                    {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
+                      <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
+                        <div className="flex items-center gap-1 text-xs">
+                          <Database className="w-3.5 h-3.5" />
+                          <span className="font-medium">{item?.label || key}</span>
+                        </div>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
+                          <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="space-y-1 max-h-40 overflow-auto pr-1">
-                        {Object.entries(draft.dataSources || {}).length === 0 && (
-                          <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
-                        )}
-                        {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
-                          <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
-                            <div className="flex items-center gap-1 text-xs">
-                              <Database className="w-3.5 h-3.5" />
-                              <span className="font-medium">{item?.label || key}</span>
-                            </div>
-                            <div className="ml-auto flex items-center gap-2">
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
-                              <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
                   </>
                 ) : pageUIOpen ? (
                   // 左侧：页面配置编辑视图
@@ -833,11 +858,28 @@ export default function ClientConfigPage() {
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "主内容" : "Main Content"}</div>
                       {/* 直接显示真实卡片的映射行（不再包裹在占位卡片内） */}
                       <div className="space-y-2">
-                        {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((t) => (
-                          <div key={t} className="px-3 py-2 rounded-xl border bg-white flex items-center justify-between">
-                            <span className="truncate text-sm text-foreground">{t}</span>
+                        {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((it: any) => (
+                          <div key={it.type} className="px-3 py-2 rounded-xl border bg-white flex items-center justify-between">
+                            <span className="truncate text-sm text-foreground">{it.displayName || it.type}</span>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                // 在右侧代码编辑器打开虚拟文件 pages/{pageKey}/cards/{sectionKey}/{cardType}.json
+                                try {
+                                  const k = activePageKey as string
+                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  const path = `pages/${k}/cards/${sectionKey}/${it.type}.json`
+                                  // 请求预览返回当前覆盖，若存在则填充
+                                  window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
+                                  setTimeout(() => {
+                                    const content = virtualFiles[path] || "{\n  \"title\": \"\",\n  \"subtitle\": \"\"\n}"
+                                    setJsonText(content)
+                                    setCodeScope('page')
+                                    setViewTab('code')
+                                    setActiveCardPath(path)
+                                    setActiveCardMeta({ pageKey: k, sectionKey, cardType: it.type })
+                                  }, 100)
+                                } catch {}
+                              }}>{lang === 'zh' ? '配置' : 'Config'}</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
@@ -849,13 +891,13 @@ export default function ClientConfigPage() {
                       </div>
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "其他卡片" : "Other Cards"}</div>
                       <div className="border rounded-xl p-3 opacity-90">
-                        <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                           <div className="text-sm font-medium">{lang === "zh" ? "卡片2" : "Card 2"}</div>
                           <div className="flex items-center gap-2">
                             <Button size="sm" variant="outline">{lang === "zh" ? "配置" : "Config"}</Button>
                             <Button size="sm" variant="outline">{lang === "zh" ? "显示" : "Display"}</Button>
                             <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
-                          </div>
+                  </div>
                         </div>
                       </div>
                     </div>
@@ -947,9 +989,9 @@ export default function ClientConfigPage() {
                               <div className="font-medium text-sm">{p.label}</div>
                               <Switch checked={p.enabled} onCheckedChange={(v) => setAuthConfig((s: any) => ({ ...s, providers: s.providers.map((it: any, i: number) => i === idx ? { ...it, enabled: p.key === "phone" ? true : !!v } : it) }))} disabled={p.key === "phone"} />
                             </div>
-                          ))}
-                        </div>
-                      </div>
+                    ))}
+                  </div>
+                </div>
                     </div>
                   </div>
                 )}
@@ -1260,6 +1302,32 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBgDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 卡片 JSON 配置编辑器（最小可用版） */}
+      <Dialog open={cardConfigOpen} onOpenChange={setCardConfigOpen}>
+        <DialogContent className="max-w-[820px] w-[96vw] max-h-[85vh] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang === 'zh' ? `配置：${cardConfigName}` : `Config: ${cardConfigName}`}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">{lang === 'zh' ? 'JSON 属性（保存后立即应用到右侧预览）' : 'JSON props (applies to preview on save)'}</div>
+            <Textarea value={cardConfigText} onChange={(e) => setCardConfigText(e.target.value)} rows={16} className="font-mono text-xs" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCardConfigOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
+            <Button onClick={() => {
+              try {
+                const k = activePageKey as string
+                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const props = JSON.parse(cardConfigText || '{}')
+                window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: cardConfigType, props }, '*')
+                setCardConfigOpen(false)
+              } catch (e: any) {
+                toast({ description: e?.message || (lang === 'zh' ? 'JSON 无法解析' : 'Invalid JSON'), variant: 'destructive' as any })
+              }
+            }}>{lang === 'zh' ? '保存' : 'Save'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

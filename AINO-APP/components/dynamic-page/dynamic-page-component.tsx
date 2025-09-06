@@ -270,6 +270,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [isEditing, setIsEditing] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
   const [activeTabIndex, setActiveTabIndex] = useState<number>(initialTabIndex ?? 0)
+  const [overrideTick, setOverrideTick] = useState<number>(0)
 
   useEffect(() => {
     if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
@@ -302,7 +303,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           name: tpl.name,
           category: tpl.category,
           component: tpl.component,
-          width: tpl.width,
+          width: (tpl as any).width as any,
         }
         return restored
       })
@@ -330,12 +331,60 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     }
   }
 
-  // 向父窗口（Studio）同步当前卡片类型列表，便于左侧配置显示
+  // 监听来自 Studio 的覆盖配置写入（SET_OVERRIDE）
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      const msg: any = e.data
+      if (!msg || msg.type !== 'SET_OVERRIDE') return
+      try {
+        const { pageId: targetId, sectionKey, cardType, props } = msg
+        if (!targetId || targetId !== pageId) return
+        const key = `APP_PAGE_${targetId}`
+        const raw = localStorage.getItem(key)
+        const cfg = raw ? JSON.parse(raw) : {}
+        const overrides = { ...(cfg.overrides || {}) }
+        const sec = { ...(overrides[sectionKey] || {}) }
+        sec[cardType] = { ...(sec[cardType] || {}), props }
+        overrides[sectionKey] = sec
+        const next = { ...cfg, overrides }
+        localStorage.setItem(key, JSON.stringify(next))
+        setOverrideTick((v) => v + 1)
+      } catch (err) {
+        console.error('SET_OVERRIDE failed:', err)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [pageId])
+
+  // 处理 GET_OVERRIDE：返回当前 props/jsx
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      const msg: any = e.data
+      if (!msg || msg.type !== 'GET_OVERRIDE') return
+      try {
+        const { pageId: targetId, sectionKey, cardType } = msg
+        if (!targetId || targetId !== pageId) return
+        const key = `APP_PAGE_${targetId}`
+        const raw = localStorage.getItem(key)
+        const cfg = raw ? JSON.parse(raw) : {}
+        const props = cfg?.overrides?.[sectionKey]?.[cardType]?.props
+        const jsx = cfg?.overrides?.[sectionKey]?.[cardType]?.jsx
+        window.parent?.postMessage({ type: 'OVERRIDE', pageId: targetId, sectionKey, cardType, props, jsx }, '*')
+      } catch (err) {
+        console.error('GET_OVERRIDE failed:', err)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [pageId])
+
+  // 向父窗口（Studio）同步当前可见卡片列表（含显示名），便于左侧配置显示
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
-        const types = cards.map((c) => c.type)
-        window.parent?.postMessage({ type: 'DYN_CARDS', category: workspaceCategory, cards: types }, '*')
+        const items = (typeof window !== 'undefined' ? cards : []).map((c) => ({ type: c.type, displayName: c.name }))
+        window.parent?.postMessage({ type: 'DYN_CARDS', category: workspaceCategory, cards: items }, '*')
       }
     } catch {}
   }, [cards, workspaceCategory])
@@ -467,6 +516,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           id: card.name,
           name: card.displayName || card.name,
           category: card.category,
+          width: 'full',
           component: (
             <AppCard className="p-6 hover:shadow-lg transition-all duration-300">
               <div className="space-y-4">
@@ -474,7 +524,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                   <Grid3X3 className="w-5 h-5 text-accent" />
                   <h4 className="text-lg font-bold">{card.displayName || card.name}</h4>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">{card.businessFlow}</p>
+                <p className="text-sm text-muted-foreground mb-4">{typeof card.businessFlow === 'string' ? card.businessFlow : (card.businessFlow?.description || '')}</p>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -579,13 +629,6 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           <AppHeader
             title={headerTitle || (pageCategory.type === "education" ? "教育应用Demo" : "自定义动态页面")}
             showBackButton={showBack}
-            actions={
-              pageCategory.config.allowEdit ? (
-                <Button variant="ghost" size="sm" onClick={toggleEditMode}>
-                  {isEditing ? <Save className="w-5 h-5" /> : <Edit3 className="w-5 h-5" />}
-                </Button>
-              ) : undefined
-            }
           />
         )}
 
@@ -647,7 +690,31 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               <X className="w-3 h-3" />
                             </Button>
                           )}
-                          {withInstanceId(card.component, card.id)}
+                          {withInstanceId((() => {
+                            try {
+                              const reg = CardRegistry.getAll().find((r) => r.name === card.type)
+                              if (!reg || !reg.component) return card.component
+                              const CardComponent = reg.component
+                              const defaultData = {}
+                              const mode = topTabsConfig ? 'text' : (contentNavConfig ? 'icon' : undefined)
+                              const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : mode === 'icon' ? `icon-${activeTabIndex}` : undefined
+                              let overrideProps: any = undefined
+                              if (pageId && sectionKey) {
+                                try {
+                                  const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
+                                  const cfg = raw ? JSON.parse(raw) : {}
+                                  overrideProps = cfg?.overrides?.[sectionKey]?.[card.type]?.props
+                                } catch {}
+                              }
+                              return React.createElement(CardComponent as any, {
+                                data: defaultData,
+                                props: overrideProps,
+                                onAction: (action: string, data: any) => console.log('Card action:', action, data),
+                              })
+                            } catch {
+                              return card.component
+                            }
+                          })(), card.id)}
                         </div>
                       </LocalThemeKeyProvider>
                     ),
