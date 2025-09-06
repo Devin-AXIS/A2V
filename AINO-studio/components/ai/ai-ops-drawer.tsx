@@ -172,7 +172,32 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }
 
   function onDryRun() {
-    toast({ description: t("已提交 Dry-run，请稍等…","Dry-run submitted, please wait…") })
+    // read per-app OpenAI config from local authorization store
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('aino_auth_integrations_v1') : null
+    const all = raw ? JSON.parse(raw) : {}
+    const conf = all[appId] || {}
+    const endpoint = conf.openaiEndpoint || conf.fastgptEndpoint
+    const key = conf.openaiKey || conf.fastgptKey
+    if (!endpoint || !key) {
+      toast({ description: t("请先在设置/授权管理中配置 OpenAI Endpoint 与 Key","Please configure OpenAI Endpoint & Key in Settings/Authorization first"), variant: "destructive" as any })
+      return
+    }
+    // demo call: send a tiny parse task to server AI gateway
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-aino-openai-endpoint': endpoint,
+        'x-aino-openai-key': key,
+      },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'ping' }] }),
+    }).then(async (r) => {
+      if (!r.ok) throw new Error(await r.text())
+      toast({ description: t("已提交 Dry-run，请稍等…","Dry-run submitted, please wait…") })
+    }).catch((e) => {
+      console.error(e)
+      toast({ description: t("AI 网关调用失败","AI gateway call failed"), variant: "destructive" as any })
+    })
   }
 
   function onRunNow() {
