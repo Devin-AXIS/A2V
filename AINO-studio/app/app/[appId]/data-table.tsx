@@ -9,6 +9,7 @@ import { findDirByIdAcrossModules, getRecordName } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
 import { api } from "@/lib/api"
+import { Progress } from "@/components/ui/progress"
 import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,

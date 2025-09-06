@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import type { FieldModel } from "@/lib/store"
 import { getSkillById } from "@/lib/data/skills-data"
+import { Progress } from "@/components/ui/progress"
 
 interface TableCellProps {
   type: string
@@ -86,9 +87,7 @@ export function TableCell({ type, value, field, className }: TableCellProps) {
         return (
           <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
             {field.progressConfig.showProgressBar && (
-              <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-                <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
-              </div>
+              <div className="flex-1 min-w-[60px]"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
             )}
             {field.progressConfig.showPercentage ? (
               <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
@@ -103,14 +102,7 @@ export function TableCell({ type, value, field, className }: TableCellProps) {
       return (
         <div className="flex items-center gap-2">
           {field.progressConfig.showProgressBar && (
-            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-              <div 
-                className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-                style={{
-                  width: `${Math.min(percentage, 100)}%`
-                }}
-              />
-            </div>
+            <div className="flex-1 min-w-[60px]"><Progress value={Math.min(percentage, 100)} /></div>
           )}
           {field.progressConfig.showPercentage ? (
             <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>

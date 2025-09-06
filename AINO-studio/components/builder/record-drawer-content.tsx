@@ -15,6 +15,7 @@ import { RelationOneTab } from "@/components/relation-tabs/relation-one-tab"
 import { DynamicRecords } from "./dynamic-records"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
+import { Progress } from "@/components/ui/progress"
 
 export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props) {
   const { toast } = useToast()
@@ -178,9 +179,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               {cfg.showProgressBar && (
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
-                </div>
+                <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
               )}
               {cfg.showPercentage && (
                 <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
