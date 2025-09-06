@@ -76,6 +76,20 @@ export default function PreviewPage() {
         localStorage.setItem(storageKey, JSON.stringify(payload))
         // 触发重新挂载以让动态页读取到最新布局
         setRenderKey((k) => k + 1)
+      } else {
+        // 清理历史缓存中残留的移动导航卡片（mobile-navigation）
+        try {
+          const parsed = JSON.parse(exists)
+          const before = Array.isArray(parsed?.cards) ? parsed.cards.length : 0
+          if (before > 0) {
+            const cleaned = parsed.cards.filter((c: any) => (c?.type || c) !== 'mobile-navigation')
+            if (cleaned.length !== before) {
+              const payload = { ...parsed, cards: cleaned, updatedAt: Date.now() }
+              localStorage.setItem(storageKey, JSON.stringify(payload))
+              setRenderKey((k) => k + 1)
+            }
+          }
+        } catch {}
       }
       // 同步底部导航到全局以便 profile 页面也显示一致
       try {
