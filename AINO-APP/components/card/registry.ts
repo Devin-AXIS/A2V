@@ -12,7 +12,6 @@ import InstructorCoursesListCard from "./business-cards/instructor-courses-list-
 import ExperienceCard from "./business-cards/experience-card"
 import SimplePieCard from "./business-cards/simple-pie-card"
 // 新增设备类型卡片
-import { MobileNavigationCard } from "./business-cards/mobile-navigation-card"
 import { PCToolbarCard } from "./business-cards/pc-toolbar-card"
 import { UniversalInfoCard } from "./business-cards/universal-info-card"
 
@@ -502,20 +501,7 @@ CardRegistry.register({
 
 // ===== 设备类型卡片 =====
 
-// 移动端专用导航卡片
-CardRegistry.register({
-  name: "mobile-navigation",
-  displayName: "移动端导航卡片",
-  category: "导航",
-  type: "navigation",
-  component: MobileNavigationCard,
-  businessFlow: "专为移动端设计的导航卡片，包含触摸友好的交互和快速操作",
-  developer: {
-    name: "Mobile System",
-    version: "1.0.0",
-    description: "移动端专用导航卡片，优化触摸交互体验",
-  },
-})
+// （已移除）移动端专用导航卡片
 
 // PC端专用工具栏卡片
 CardRegistry.register({
