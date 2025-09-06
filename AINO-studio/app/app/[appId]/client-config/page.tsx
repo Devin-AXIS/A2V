@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
+import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-config-dialog"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
@@ -159,6 +160,8 @@ export default function ClientConfigPage() {
   const [cnType, setCnType] = useState<'iconText' | 'text'>("iconText")
   const [cnLayout, setCnLayout] = useState<'grid-4' | 'grid-5' | 'scroll'>("grid-4")
   const [cnItems, setCnItems] = useState<any[]>([])
+  const [eventDialogOpen, setEventDialogOpen] = useState(false)
+  const [eventEditingIndex, setEventEditingIndex] = useState<number | null>(null)
 
   function openContentNavDialog() {
     try {
@@ -208,6 +211,11 @@ export default function ClientConfigPage() {
       }
       input.click()
     } catch {}
+  }
+
+  function openEventDialogForItem(idx: number) {
+    setEventEditingIndex(idx)
+    setEventDialogOpen(true)
   }
 
   function saveRouteDialog() {
@@ -955,6 +963,23 @@ export default function ClientConfigPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            {/* 事件配置通用弹窗 */}
+            <EventConfigDialog
+              open={eventDialogOpen}
+              onOpenChange={setEventDialogOpen}
+              lang={lang as any}
+              pages={Object.keys(draft.pages || { home: {} })}
+              value={(() => {
+                const i = eventEditingIndex
+                if (i == null) return undefined
+                const it = cnItems[i]
+                return it?.event as EventConfig | undefined
+              })()}
+              onSave={(val) => {
+                if (eventEditingIndex == null) return
+                setCnItems((s: any[]) => s.map((x, i) => i === eventEditingIndex ? { ...x, event: val } : x))
+              }}
+            />
 
             {/* 内容导航配置弹窗 */}
             <Dialog open={contentNavOpen} onOpenChange={setContentNavOpen}>
@@ -1022,6 +1047,7 @@ export default function ClientConfigPage() {
                               {cnType === 'iconText' && (
                                 <Button size="sm" variant="outline" onClick={() => handleUploadCnImage(idx)}>{lang === 'zh' ? '上传图片' : 'Upload'}</Button>
                               )}
+                              <Button size="sm" variant="secondary" onClick={() => openEventDialogForItem(idx)}>{lang === 'zh' ? '事件' : 'Event'}</Button>
                               <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
                             </div>
                           </div>
