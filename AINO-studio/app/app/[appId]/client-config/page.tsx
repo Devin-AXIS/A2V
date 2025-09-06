@@ -162,6 +162,7 @@ export default function ClientConfigPage() {
   const [cnItems, setCnItems] = useState<any[]>([])
   const [eventDialogOpen, setEventDialogOpen] = useState(false)
   const [eventEditingIndex, setEventEditingIndex] = useState<number | null>(null)
+  const [pageTabIndex, setPageTabIndex] = useState<number>(0)
 
   function openContentNavDialog() {
     try {
@@ -758,6 +759,32 @@ export default function ClientConfigPage() {
                           </div>
                         )}
                       </div>
+                      {/* 若为文字标签，渲染可切换的预览标签栏 */}
+                      {activePageKey && (draft.pages as any)?.[activePageKey]?.contentNav?.type === 'text' && (
+                        <div className="mt-2 px-1">
+                          <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
+                            {(((draft.pages as any)[activePageKey]?.contentNav?.items) || []).map((it: any, idx: number) => (
+                              <button key={idx}
+                                className={`relative pb-1 text-sm ${pageTabIndex === idx ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                onClick={() => {
+                                  setPageTabIndex(idx)
+                                  try {
+                                    const k = activePageKey as string
+                                    const cfg = draft.pages?.[k] || {}
+                                    const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
+                                    u.searchParams.set('pageCfg', JSON.stringify(cfg))
+                                    u.searchParams.set('tab', String(idx))
+                                    setPreviewUrl(u.toString())
+                                    setViewTab('preview')
+                                  } catch {}
+                                }}>
+                                {it?.title || `${lang === 'zh' ? '标签' : 'Tab'} ${idx + 1}`}
+                                {pageTabIndex === idx && (<span className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-0.5 w-6 bg-primary rounded-full" />)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {/* 主内容 / 其他卡片占位 */}
                     <div className="space-y-3">
