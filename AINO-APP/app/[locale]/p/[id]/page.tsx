@@ -3,6 +3,7 @@
 import { useParams, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
+import type { ContentNavConfig } from "@/components/navigation/content-navigation"
 
 export default function MobileDynamicPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -13,7 +14,7 @@ export default function MobileDynamicPage() {
   // 兼容：若配置层写入 APP_PAGE_{id}，我们尝试作为种子初始化 DynamicPageComponent 的本地布局
   const storageKey = useMemo(() => `dynamic_page_layout_p-${id}_${locale}`,[id, locale])
   const appPageKey = useMemo(() => `APP_PAGE_${id}`,[id])
-  const [pageMeta, setPageMeta] = useState<{ title?: any; layout?: string; route?: string; options?: any } | null>(null)
+  const [pageMeta, setPageMeta] = useState<{ title?: any; layout?: string; route?: string; options?: any; contentNav?: ContentNavConfig } | null>(null)
 
   const [seeded, setSeeded] = useState(false)
 
@@ -32,7 +33,7 @@ export default function MobileDynamicPage() {
           // 写入按路由的页面配置，供底部导航判断显示/隐藏
           const routeKey = `/p-${id}`
           localStorage.setItem(`APP_PAGE_ROUTE_${routeKey}`, JSON.stringify({ ...cfg, options: mergedOptions }))
-          setPageMeta({ title: cfg?.title, layout: cfg?.layout, route: cfg?.route, options: mergedOptions })
+          setPageMeta({ title: cfg?.title, layout: cfg?.layout, route: cfg?.route, options: mergedOptions, contentNav: cfg?.contentNav })
         } catch {}
       }
       const raw = localStorage.getItem(appPageKey)
@@ -40,7 +41,7 @@ export default function MobileDynamicPage() {
         const page = JSON.parse(raw)
         const defaultOptions = { showHeader: true, showBottomNav: false, showBack: false }
         const mergedOptions = { ...defaultOptions, ...(page?.options || {}) }
-        setPageMeta({ title: page?.title, layout: page?.layout, route: page?.route, options: mergedOptions })
+        setPageMeta({ title: page?.title, layout: page?.layout, route: page?.route, options: mergedOptions, contentNav: page?.contentNav })
       }
 
       // Seed initial layout only when not present
@@ -78,6 +79,15 @@ export default function MobileDynamicPage() {
         aiOpsUrl={pageMeta?.options?.aiOpsUrl}
         aiOpsLabel={pageMeta?.options?.aiOpsLabel}
       />
+      {pageMeta?.contentNav && (
+        // 渲染内容导航（位置暂置于页面底部上方，后续可配置位置）
+        <div className="fixed left-0 right-0 bottom-16 z-20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* 使用设计语言颜色 */}
+          {/* @ts-ignore - dynamic import type */}
+          {React.createElement(require("@/components/navigation/content-navigation").ContentNavigation, { config: pageMeta.contentNav })}
+        </div>
+      )}
     </main>
   )
 }
