@@ -186,6 +186,7 @@ export function FieldManager({ app, dir, onChange, onAddField }: Props) {
             certificateConfig: field.schema?.certificateConfig || undefined,
             skillsConfig: field.schema?.skillsConfig || undefined,
             progressConfig: field.schema?.progressConfig || undefined,
+            metaItemsConfig: (field.schema && (field.schema as any).metaItemsConfig) || undefined,
             identityVerificationConfig: field.schema?.identityVerificationConfig || undefined,
             otherVerificationConfig: field.schema?.otherVerificationConfig || undefined,
             imageConfig: field.schema?.imageConfig || undefined,
