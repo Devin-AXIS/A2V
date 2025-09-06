@@ -72,6 +72,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     return []
   }, [arrayPath, mockExtracted, extractedOverride])
   const [crawlId, setCrawlId] = useState<string>("")
+  const [batchId, setBatchId] = useState<string>("")
 
   // mock fields for mapping UI
   type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect' }
@@ -295,6 +296,54 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
   }
 
+  async function onBatchStart() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey) {
+      toast({ description: t("请先在授权管理配置 Firecrawl Key","Please configure Firecrawl Key in Authorization"), variant: "destructive" as any })
+      return
+    }
+    const list = urls.split(/\n+/).map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) {
+      toast({ description: t("请在 URL 列表输入若干地址","Please input some URLs in list") , variant: "destructive" as any })
+      return
+    }
+    try {
+      const r = await fetch(`${getApiBase()}/api/crawl/batch/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
+        body: JSON.stringify({ urls: list, options: { options: { formats: ['markdown'] } } })
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
+      const id = data?.data?.id || data?.data?.jobId || ''
+      setBatchId(id)
+      toast({ description: id ? t("已启动批量抓取","Batch started") : t("已启动","Started") })
+    } catch (e) {
+      console.error(e)
+      toast({ description: t("批量启动失败","Batch start failed"), variant: "destructive" as any })
+    }
+  }
+
+  async function onBatchStatus() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey || !batchId) return
+    try {
+      const r = await fetch(`${getApiBase()}/api/crawl/batch/status/${encodeURIComponent(batchId)}`, {
+        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch status failed')
+      const docs = data?.data?.data || []
+      if (Array.isArray(docs) && docs.length) {
+        setExtractedOverride(docs)
+        toast({ description: t("已更新批量预览","Batch preview updated") })
+      }
+    } catch (e) {
+      console.error(e)
+      toast({ description: t("获取批量状态失败","Fetch batch status failed"), variant: "destructive" as any })
+    }
+  }
+
   function onRunNow() {
     toast({ description: t("已开始运行，后台执行中","Run started in background") })
   }
@@ -468,6 +517,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <Button variant="outline" size="sm" onClick={onScrapeTest}>{t("试抓取","Scrape test")}</Button>
                         <Button variant="outline" size="sm" onClick={onCrawlStart}>{t("开始爬取","Start crawl")}</Button>
                         <Button variant="outline" size="sm" disabled={!crawlId} onClick={onCrawlStatus}>{t("查看状态","Check status")}</Button>
+                        <Button variant="outline" size="sm" onClick={onBatchStart}>{t("批量开始","Batch start")}</Button>
+                        <Button variant="outline" size="sm" disabled={!batchId} onClick={onBatchStatus}>{t("批量状态","Batch status")}</Button>
                         <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配","Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空","Clear")}</Button>
                       </div>
