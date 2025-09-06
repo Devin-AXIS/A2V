@@ -49,11 +49,16 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
       case "constellation":
         return <ConstellationSelect value={value || ""} onChange={onChange} />
       case "progress":
-        // 多进度：当值是数组时使用 items 编辑器，否则回落到单值输入
-        if (Array.isArray(value)) {
+        // 统一为多子进度编辑器：将非数组值规范化为数组
+        if (!Array.isArray(value)) {
+          const defaults = field.progressConfig?.defaultItems || []
+          const items = (defaults.length > 0
+            ? defaults.map((d, idx) => ({ id: `${field.id}-${idx}`, key: d.key || `p${idx+1}`, label: d.label || `Item ${idx+1}`, status: d.status, weight: d.weight ?? 1, value: Number(value||0) }))
+            : [{ id: `${field.id}-0`, key: 'progress', label: 'Progress', status: 'planned', weight: 1, value: Number(value||0) }]
+          ) as any
           return (
             <ProgressItemsInput
-              items={value}
+              items={items}
               onChange={(arr)=>onChange(arr)}
               aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
               showProgressBar={field.progressConfig?.showProgressBar !== false}
@@ -62,13 +67,12 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
           )
         }
         return (
-          <ProgressInput
-            value={value || 0}
-            onChange={onChange}
-            maxValue={field.progressConfig?.maxValue || 100}
+          <ProgressItemsInput
+            items={value}
+            onChange={(arr)=>onChange(arr)}
+            aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
             showProgressBar={field.progressConfig?.showProgressBar !== false}
             showPercentage={field.progressConfig?.showPercentage !== false}
-            placeholder={field.placeholder}
           />
         )
       case "phone":
