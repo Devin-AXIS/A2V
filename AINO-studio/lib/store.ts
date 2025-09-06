@@ -113,9 +113,11 @@ export type FieldModel = {
   }
   // 进度字段特殊配置
   progressConfig?: {
+    aggregation?: 'weightedAverage' | 'max' | 'min' // 聚合规则（统一为多进度，聚合展示）
     maxValue?: number // 最大值，默认100
     showPercentage?: boolean // 是否显示百分比
     showProgressBar?: boolean // 是否显示进度条
+    defaultItems?: Array<{ key: string; label: string; status?: string; weight?: number }>
   }
   // 其他经历字段特殊配置
   customExperienceConfig?: {

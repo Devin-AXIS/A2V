@@ -162,22 +162,51 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       case "percent":
         return <span>{value}%</span>
       case "progress":
+        if (Array.isArray(value)) {
+          const items = value as Array<{ label?: string; value?: number; weight?: number }>
+          const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+          const mode = field.progressConfig?.aggregation || 'weightedAverage'
+          const agg = (()=>{
+            if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+            if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+            const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+            const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+            return Math.round(sum / sw)
+          })()
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {field.progressConfig?.showProgressBar !== false && (
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
+                  </div>
+                )}
+                {field.progressConfig?.showPercentage !== false && (
+                  <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                {items.map((it, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                    <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        }
+        // fallback 单值
         if (field.progressConfig) {
           const progressValue = Number(value ?? 0)
           const maxValue = field.progressConfig.maxValue || 100
           const percentage = Math.round((progressValue / maxValue) * 100)
-          
           return (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 {field.progressConfig.showProgressBar && (
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-                      style={{
-                        width: `${Math.min(percentage, 100)}%`
-                      }}
-                    />
+                    <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
                   </div>
                 )}
                 {field.progressConfig.showPercentage ? (
@@ -185,9 +214,6 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
                 ) : (
                   <span className="text-xs text-gray-600">{progressValue}/{maxValue}</span>
                 )}
-              </div>
-              <div className="text-xs text-gray-500">
-                {field.progressConfig.showPercentage ? `${progressValue}/${maxValue}` : `${percentage}%`}
               </div>
             </div>
           )

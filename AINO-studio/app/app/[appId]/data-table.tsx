@@ -539,29 +539,48 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
   }
 
   if (type === "progress" && f?.progressConfig) {
-    const value = Number(v ?? 0)
-    const maxValue = f.progressConfig.maxValue || 100
-    const percentage = Math.round((value / maxValue) * 100)
-
-    return (
-      <div className="flex items-center gap-2">
-        {f.progressConfig.showProgressBar && (
-          <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-            <div
-              className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-              style={{
-                width: `${Math.min(percentage, 100)}%`
-              }}
-            />
-          </div>
-        )}
-        {f.progressConfig.showPercentage ? (
-          <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
-        ) : (
-          <span className="text-xs text-gray-600">{value}/{maxValue}</span>
-        )}
-      </div>
-    )
+    const aggMode = f.progressConfig.aggregation || 'weightedAverage'
+    if (Array.isArray(v)) {
+      const items = v as Array<{ value?: number; weight?: number; label?: string }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const agg = (()=>{
+        if (aggMode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (aggMode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
+          {f.progressConfig.showProgressBar && (
+            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
+              <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
+            </div>
+          )}
+          {f.progressConfig.showPercentage ? (
+            <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+          ) : null}
+        </div>
+      )
+    } else {
+      const value = Number(v ?? 0)
+      const maxValue = f.progressConfig.maxValue || 100
+      const percentage = Math.round((value / maxValue) * 100)
+      return (
+        <div className="flex items-center gap-2">
+          {f.progressConfig.showProgressBar && (
+            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
+              <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
+            </div>
+          )}
+          {f.progressConfig.showPercentage ? (
+            <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
+          ) : (
+            <span className="text-xs text-gray-600">{value}/{maxValue}</span>
+          )}
+        </div>
+      )
+    }
   }
 
   if ((type === "skills" || (type === "multiselect" && f?.preset === "skills")) && Array.isArray(v) && v.length > 0) {

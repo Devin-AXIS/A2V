@@ -28,6 +28,7 @@ import { TagInput } from "@/components/form-inputs/tag-input"
 import { RelationInput } from "@/components/form-inputs/relation-input"
 import { PhoneInput } from "@/components/form-inputs/phone-input"
 import { ProgressInput } from "@/components/form-inputs/progress-input"
+import { ProgressItemsInput } from "@/components/form-inputs/progress-items-input"
 
 function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) => void, app: AppModel) {
   const value = (record as any)[field.key]
@@ -48,6 +49,18 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
       case "constellation":
         return <ConstellationSelect value={value || ""} onChange={onChange} />
       case "progress":
+        // 多进度：当值是数组时使用 items 编辑器，否则回落到单值输入
+        if (Array.isArray(value)) {
+          return (
+            <ProgressItemsInput
+              items={value}
+              onChange={(arr)=>onChange(arr)}
+              aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
+              showProgressBar={field.progressConfig?.showProgressBar !== false}
+              showPercentage={field.progressConfig?.showPercentage !== false}
+            />
+          )
+        }
         return (
           <ProgressInput
             value={value || 0}
