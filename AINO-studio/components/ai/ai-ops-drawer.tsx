@@ -22,11 +22,12 @@ type Props = {
   lang?: "zh" | "en"
   dirId?: string
   dirName?: string
+  dirFields?: Array<{ key: string; label: string; type: string; required?: boolean }>
 }
 
 // Directory context is passed in from the caller; no cross-directory selection here
 
-export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dirName }: Props) {
+export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dirName, dirFields }: Props) {
   const { toast } = useToast()
 
   const [provider, setProvider] = useState<"firecrawl" | "scrapegraph">("firecrawl")
@@ -78,20 +79,21 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [statusMsg, setStatusMsg] = useState<string>("")
 
   // mock fields for mapping UI
-  type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect' }
+  type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect'; required?: boolean }
   const mockFields = useMemo<MockField[]>(() => {
-    // simulate 24 fields
-    const base = [
-      { key: "title", label: t("标题","Title"), type: 'text' },
+    if (Array.isArray(dirFields) && dirFields.length > 0) {
+      return dirFields.map((f: any) => ({ key: f.key, label: f.label || f.key, type: (f.type || 'text') as any, required: !!f.required }))
+    }
+    // fallback demo
+    return [
+      { key: "title", label: t("标题","Title"), type: 'text', required: true },
       { key: "description", label: t("描述","Description"), type: 'text' },
       { key: "salary", label: t("薪资","Salary"), type: 'number' },
       { key: "city", label: t("城市","City"), type: 'text' },
       { key: "company", label: t("公司","Company"), type: 'text' },
       { key: "url", label: "URL", type: 'url' },
     ]
-    const extra: MockField[] = Array.from({ length: 18 }).map((_, i) => ({ key: `field_${i+1}`, label: `${t("字段","Field")} ${i+1}`, type: 'text' }))
-    return [...base, ...extra] as MockField[]
-  }, [lang])
+  }, [dirFields, lang])
   const [mapPage, setMapPage] = useState(1)
   const pageSize = 10
   const totalPages = Math.max(1, Math.ceil(mockFields.length / pageSize))
@@ -99,6 +101,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
   const [mappingTransform, setMappingTransform] = useState<Record<string, string>>({}) // fieldKey -> transform
   const sampleSourceKeys = ["title","desc","salary","city","company","link","posted_at"]
+  const [keySearch, setKeySearch] = useState("")
+  const [saveMsg, setSaveMsg] = useState("")
   function autoMatch() {
     const next: Record<string, string> = {}
     for (const f of mockFields) {
@@ -134,6 +138,72 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       return 'trim'
     }
     return 'none'
+  }
+
+  // ---------- Source key candidates from sample ----------
+  function flattenKeysFromSample(obj: any, prefix = '', depth = 0, out: string[] = []): string[] {
+    if (!obj || depth > 2) return out
+    if (Array.isArray(obj)) {
+      if (obj.length > 0) flattenKeysFromSample(obj[0], prefix, depth + 1, out)
+      return out
+    }
+    if (typeof obj === 'object') {
+      for (const k of Object.keys(obj)) {
+        const path = prefix ? `${prefix}.${k}` : k
+        out.push(path)
+        if (typeof obj[k] === 'object') flattenKeysFromSample(obj[k], path, depth + 1, out)
+      }
+    }
+    return out
+  }
+  const sampleKeys = useMemo(() => {
+    try {
+      const base = flattenKeysFromSample(sampleRecords?.[0] ?? {})
+      return Array.from(new Set([...base, ...sampleSourceKeys])).sort()
+    } catch { return sampleSourceKeys }
+  }, [sampleRecords])
+  function scoreKey(fieldKey: string, sourceKey: string): number {
+    const fk = fieldKey.toLowerCase()
+    const sk = sourceKey.toLowerCase()
+    if (fk === sk) return 100
+    if (sk.includes(fk)) return 80
+    if (fk.includes(sk)) return 70
+    let s = 0
+    for (const ch of fk.split(/[_-]/)) if (sk.includes(ch)) s += 10
+    return s
+  }
+  function candidatesForField(f: MockField): string[] {
+    const list = sampleKeys
+      .map((k) => ({ k, s: scoreKey(f.key, k) }))
+      .sort((a, b) => b.s - a.s)
+      .map((x) => x.k)
+    const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
+    return filtered.slice(0, 6)
+  }
+
+  // ---------- Mapping template (local) ----------
+  function tplKey() { return `aino_aiops_mapping_${appId}_${dirId || 'dir'}` }
+  function saveTemplate() {
+    try {
+      const payload = { mapping, mappingTransform, when: Date.now() }
+      localStorage.setItem(tplKey(), JSON.stringify(payload))
+      setSaveMsg(t("映射模板已保存","Mapping template saved"))
+      toast({ description: t("映射模板已保存","Mapping template saved") })
+    } catch (e) {
+      toast({ description: t("保存失败","Save failed"), variant: 'destructive' as any })
+    }
+  }
+  function loadTemplate() {
+    try {
+      const raw = localStorage.getItem(tplKey())
+      if (!raw) { toast({ description: t("未找到模板","No template found"), variant: 'destructive' as any }); return }
+      const p = JSON.parse(raw || '{}')
+      setMapping(p.mapping || {})
+      setMappingTransform(p.mappingTransform || {})
+      toast({ description: t("模板已加载","Template loaded") })
+    } catch (e) {
+      toast({ description: t("加载失败","Load failed"), variant: 'destructive' as any })
+    }
   }
 
   // ensure we have a directory context
@@ -542,7 +612,11 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <div className="text-xs text-muted-foreground">{t("将基于此路径读取记录数组","We will read records from this path")}</div>
                       </div>
                       <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-2 max-h-[160px] overflow-auto text-xs">
-                        <pre className="whitespace-pre-wrap break-all">{JSON.stringify(sampleRecords.slice(0,3), null, 2)}</pre>
+                        {sampleRecords.length === 0 ? (
+                          <div className="text-muted-foreground">{t("暂无样例，请先抓取或爬取。","No samples yet. Scrape/crawl first.")}</div>
+                        ) : (
+                          <pre className="whitespace-pre-wrap break-all">{JSON.stringify(sampleRecords.slice(0,3), null, 2)}</pre>
+                        )}
                       </div>
                     </div>
 
@@ -569,6 +643,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         </Button>
                         <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配","Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空","Clear")}</Button>
+                        <Button variant="outline" size="sm" onClick={saveTemplate}>{t("保存模板","Save template")}</Button>
+                        <Button variant="outline" size="sm" onClick={loadTemplate}>{t("加载模板","Load template")}</Button>
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-0">
@@ -583,7 +659,12 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                           <thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/70 backdrop-blur">
                             <tr>
                               <th className="text-left px-3 py-2 w-[26%]">{t("字段","Field")}</th>
-                              <th className="text-left px-3 py-2 w-[30%]">{t("来源键","Source key")}</th>
+                              <th className="text-left px-3 py-2 w-[30%]">
+                                {t("来源键","Source key")}
+                                <div className="mt-1">
+                                  <Input value={keySearch} onChange={(e) => setKeySearch(e.target.value)} placeholder={t("搜索键","Search keys")} className="h-7" />
+                                </div>
+                              </th>
                               <th className="text-left px-3 py-2 w-[22%]">{t("转换","Transform")}</th>
                               <th className="text-left px-3 py-2">{t("示例","Sample")}</th>
                             </tr>
@@ -592,8 +673,16 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                             {pageFields.map((f) => (
                               <tr key={f.key} className="border-t">
                                 <td className="px-3 py-2"><div className="font-medium">{f.label}</div><div className="text-xs text-muted-foreground">{f.key}</div></td>
-                                <td className="px-3 py-2">
+                                <td className="px-3 py-2 space-y-1">
                                   <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
+                                  <div className="flex flex-wrap gap-1">
+                                    {candidatesForField(f).map((k) => (
+                                      <button key={k} type="button" onClick={() => setMapping((m) => ({ ...m, [f.key]: k }))} className={`text-[10px] px-1.5 py-0.5 rounded border ${mapping[f.key] === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70'}`}>{k}</button>
+                                    ))}
+                                    {f.required && !mapping[f.key] && (
+                                      <span className="text-[10px] text-red-600 ml-1">{t("必填","Required")}</span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2">
                                   <Select value={mappingTransform[f.key] || suggestTransform(f.type, (sampleRecords?.[0] ?? {})[mapping[f.key] || ""]) } onValueChange={(v: any) => setMappingTransform((m) => ({ ...m, [f.key]: v }))}>
