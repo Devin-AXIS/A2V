@@ -831,32 +831,21 @@ export default function ClientConfigPage() {
                     {/* 主内容 / 其他卡片占位 */}
                     <div className="space-y-3">
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "主内容" : "Main Content"}</div>
-                      <div className="border rounded-xl p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium">{lang === "zh" ? "卡片" : "Card"}</div>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">{lang === "zh" ? "筛选" : "Filter"}</Button>
-                            <Button size="sm" variant="outline">{lang === "zh" ? "配置" : "Config"}</Button>
-                            <Button size="sm" variant="outline">{lang === "zh" ? "显示" : "Display"}</Button>
-                            <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
-                          </div>
-                        </div>
-                        {/* 自动渲染当前工作区可见的卡片列表 */}
-                        <div className="mt-3 space-y-2 text-muted-foreground">
-                          {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((t) => (
-                            <div key={t} className="px-3 py-2 rounded-xl border bg-white flex items-center justify-between">
-                              <span className="truncate text-sm text-foreground">{t}</span>
-                              <div className="flex items-center gap-2">
-                                <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
-                                <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
-                                <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
-                              </div>
+                      {/* 直接显示真实卡片的映射行（不再包裹在占位卡片内） */}
+                      <div className="space-y-2">
+                        {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((t) => (
+                          <div key={t} className="px-3 py-2 rounded-xl border bg-white flex items-center justify-between">
+                            <span className="truncate text-sm text-foreground">{t}</span>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
+                              <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
+                              <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
-                          ))}
-                          {(!workspaceCardsByCategory[activeWorkspaceCategory] || workspaceCardsByCategory[activeWorkspaceCategory].length === 0) && (
-                            <div className="text-xs opacity-60">{lang === 'zh' ? '右侧新增卡片后，将自动出现在这里以配置显示' : 'New cards added on the right will appear here for display config.'}</div>
-                          )}
-                        </div>
+                          </div>
+                        ))}
+                        {(!workspaceCardsByCategory[activeWorkspaceCategory] || workspaceCardsByCategory[activeWorkspaceCategory].length === 0) && (
+                          <div className="text-xs opacity-60">{lang === 'zh' ? '右侧新增卡片后，将自动出现在这里以配置显示' : 'New cards added on the right will appear here for display config.'}</div>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "其他卡片" : "Other Cards"}</div>
                       <div className="border rounded-xl p-3 opacity-90">
