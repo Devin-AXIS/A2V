@@ -100,9 +100,11 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const pageFields = useMemo(() => mockFields.slice((mapPage-1)*pageSize, mapPage*pageSize), [mockFields, mapPage])
   const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
   const [mappingTransform, setMappingTransform] = useState<Record<string, string>>({}) // fieldKey -> transform
+  const [progressMap, setProgressMap] = useState<Record<string, { arrayPath: string; labelKey: string; valueKey: string; statusKey?: string; weightKey?: string; aggregation: 'weightedAverage'|'max'|'min' }>>({})
   const sampleSourceKeys = ["title","desc","salary","city","company","link","posted_at"]
   const [keySearch, setKeySearch] = useState("")
   const [saveMsg, setSaveMsg] = useState("")
+  const [previewJson, setPreviewJson] = useState<string>("")
   function autoMatch() {
     const next: Record<string, string> = {}
     for (const f of mockFields) {
@@ -179,6 +181,84 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       .map((x) => x.k)
     const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
     return filtered.slice(0, 6)
+  }
+
+  // ---------- Progress helpers ----------
+  function getByPath(obj: any, path: string): any {
+    if (!obj || !path) return undefined
+    const parts = path.replace(/^\$\.?/, '').split('.').filter(Boolean)
+    let cur = obj
+    for (const p of parts) {
+      if (cur && typeof cur === 'object') cur = cur[p]
+      else return undefined
+    }
+    return cur
+  }
+  function calcProgressAggregate(items: Array<{ value?: number; weight?: number }>, mode: 'weightedAverage'|'max'|'min' = 'weightedAverage'): number {
+    const vals = items.map(it => ({ v: Number(it.value ?? 0), w: Number(it.weight ?? 1) }))
+    if (mode === 'max') return Math.max(0, ...vals.map(x => x.v))
+    if (mode === 'min') return Math.min(100, ...vals.map(x => x.v))
+    const sumW = vals.reduce((a,b)=>a+(isFinite(b.w)?b.w:0),0) || 1
+    const sum = vals.reduce((a,b)=>a+((isFinite(b.v)?b.v:0)*(isFinite(b.w)?b.w:0)),0)
+    const r = sum / sumW
+    return Math.max(0, Math.min(100, Math.round(r)))
+  }
+
+  function toNumberLike(v: any): number {
+    if (typeof v === 'number') return v
+    if (typeof v === 'string') {
+      const m = v.match(/([0-9]+(?:\.[0-9]+)?)/)
+      if (m) return Number(m[1])
+    }
+    return Number(v) || 0
+  }
+  function applyTransformVal(raw: any, t: string): any {
+    switch (t) {
+      case 'trim': return typeof raw === 'string' ? raw.trim() : raw
+      case 'toNumber': return toNumberLike(raw)
+      case 'parseDate': return raw
+      case 'splitTags': return typeof raw === 'string' ? raw.split(/[，,\s]+/).filter(Boolean) : Array.isArray(raw) ? raw : []
+      default: return raw
+    }
+  }
+
+  function onLocalPreview() {
+    if (!sampleRecords || sampleRecords.length === 0) {
+      toast({ description: t('暂无样例，请先抓取或爬取。','No samples yet. Scrape/crawl first.'), variant: 'destructive' as any })
+      return
+    }
+    const rec = sampleRecords[0]
+    const out: Record<string, any> = {}
+    // map normal fields
+    for (const f of mockFields) {
+      if (f.key === 'progress') continue
+      const path = mapping[f.key]
+      if (!path) continue
+      const val = getByPath(rec, path)
+      const tv = applyTransformVal(val, mappingTransform[f.key] || suggestTransform(f.type, val))
+      out[f.key] = tv
+    }
+    // progress items
+    const pcfg = progressMap['progress'] || { arrayPath: '$.progress', labelKey: 'label', valueKey: 'value', statusKey: 'status', weightKey: 'weight', aggregation: 'weightedAverage' as const }
+    let arr = getByPath(rec, pcfg.arrayPath)
+    let items: Array<any> = []
+    if (Array.isArray(arr)) {
+      items = arr.map((it: any, idx: number) => ({
+        id: String(idx+1),
+        key: String(it[pcfg.labelKey] || `p${idx+1}`),
+        label: String(it[pcfg.labelKey] || `Progress ${idx+1}`),
+        value: Math.max(0, Math.min(100, toNumberLike(it[pcfg.valueKey]))),
+        status: it[pcfg.statusKey || 'status'] || undefined,
+        weight: it[pcfg.weightKey || 'weight'] !== undefined ? toNumberLike(it[pcfg.weightKey || 'weight']) : 1,
+      }))
+    } else if (mapping['progress']) {
+      // fallback: single numeric path to one item
+      const v = toNumberLike(getByPath(rec, mapping['progress']))
+      items = [{ id: '1', key: 'progress', label: 'Progress', value: Math.max(0, Math.min(100, v)), weight: 1 }]
+    }
+    out['progress'] = { items, aggregated: calcProgressAggregate(items, pcfg.aggregation) }
+    setPreviewJson(JSON.stringify({ original: rec, mapped: out }, null, 2))
+    toast({ description: t('本地预览已生成','Local preview generated') })
   }
 
   // ---------- Mapping template (local) ----------
@@ -674,15 +754,42 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                               <tr key={f.key} className="border-t">
                                 <td className="px-3 py-2"><div className="font-medium">{f.label}</div><div className="text-xs text-muted-foreground">{f.key}</div></td>
                                 <td className="px-3 py-2 space-y-1">
-                                  <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
-                                  <div className="flex flex-wrap gap-1">
-                                    {candidatesForField(f).map((k) => (
-                                      <button key={k} type="button" onClick={() => setMapping((m) => ({ ...m, [f.key]: k }))} className={`text-[10px] px-1.5 py-0.5 rounded border ${mapping[f.key] === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70'}`}>{k}</button>
-                                    ))}
-                                    {f.required && !mapping[f.key] && (
-                                      <span className="text-[10px] text-red-600 ml-1">{t("必填","Required")}</span>
-                                    )}
-                                  </div>
+                                  {f.key === 'progress' ? (
+                                    <div className="space-y-1">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <Input value={progressMap[f.key]?.arrayPath || '$.progress'} onChange={(e)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{ aggregation: 'weightedAverage' }), arrayPath: e.target.value } }))} placeholder={t('数组路径 如 $.progress','Array path e.g. $.progress')} />
+                                        <Select value={(progressMap[f.key]?.aggregation)||'weightedAverage'} onValueChange={(v:any)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{}), aggregation: v } }))}>
+                                          <SelectTrigger><SelectValue /></SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="weightedAverage">weightedAverage</SelectItem>
+                                            <SelectItem value="max">max</SelectItem>
+                                            <SelectItem value="min">min</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="grid grid-cols-4 gap-2">
+                                        <Input value={progressMap[f.key]?.labelKey || 'label'} onChange={(e)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{ aggregation: 'weightedAverage' }), labelKey: e.target.value } }))} placeholder={t('标签键 label','label key')} />
+                                        <Input value={progressMap[f.key]?.valueKey || 'value'} onChange={(e)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{ aggregation: 'weightedAverage' }), valueKey: e.target.value } }))} placeholder={t('数值键 value','value key')} />
+                                        <Input value={progressMap[f.key]?.statusKey || 'status'} onChange={(e)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{ aggregation: 'weightedAverage' }), statusKey: e.target.value } }))} placeholder={t('状态键 status','status key')} />
+                                        <Input value={progressMap[f.key]?.weightKey || 'weight'} onChange={(e)=>setProgressMap(p=>({ ...p, [f.key]: { ...(p[f.key]||{ aggregation: 'weightedAverage' }), weightKey: e.target.value } }))} placeholder={t('权重键 weight','weight key')} />
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground">
+                                        {t('样例: [{label,value,status,weight}] 将按聚合规则展示','Sample: [{label,value,status,weight}] aggregated by rule')}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link","e.g. title/desc/link")} />
+                                      <div className="flex flex-wrap gap-1">
+                                        {candidatesForField(f).map((k) => (
+                                          <button key={k} type="button" onClick={() => setMapping((m) => ({ ...m, [f.key]: k }))} className={`text-[10px] px-1.5 py-0.5 rounded border ${mapping[f.key] === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70'}`}>{k}</button>
+                                        ))}
+                                        {f.required && !mapping[f.key] && (
+                                          <span className="text-[10px] text-red-600 ml-1">{t("必填","Required")}</span>
+                                        )}
+                                      </div>
+                                    </>
+                                  )}
                                 </td>
                                 <td className="px-3 py-2">
                                   <Select value={mappingTransform[f.key] || suggestTransform(f.type, (sampleRecords?.[0] ?? {})[mapping[f.key] || ""]) } onValueChange={(v: any) => setMappingTransform((m) => ({ ...m, [f.key]: v }))}>
@@ -706,9 +813,14 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm font-medium">{t("预览","Preview")}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">{t("预览","Preview")}</div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onLocalPreview}>{t("本地预览","Local preview")}</Button>
+                      </div>
+                    </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-3 text-xs text-muted-foreground min-h-[120px]">
-                      {t("Dry-run 后将在此显示：原始→规范化→字段映射对照。","After dry-run, original → normalized → field mapping diffs will appear here.")}
+                      <pre className="whitespace-pre-wrap break-all">{previewJson || t("Dry-run 后将在此显示：原始→规范化→字段映射对照。","After dry-run, original → normalized → field mapping diffs will appear here.")}</pre>
                     </div>
                   </section>
                 </div>
