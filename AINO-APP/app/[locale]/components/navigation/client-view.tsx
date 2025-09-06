@@ -164,7 +164,7 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
           </AppCard>
         </section>
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">媒体导航</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">分类顶部导航（含搜索/通知）</h3>
           <AppCard className="p-0 overflow-hidden">
             <CategoryTabNavigation
               onSearchChange={(query) => console.log("Search:", query)}
@@ -176,7 +176,7 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
         </section>
 
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">食谱导航</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">筛选胶囊导航</h3>
           <AppCard className="p-0 overflow-hidden">
             <FilterPillNavigation
               onSearchChange={(query) => console.log("Filter search:", query)}
