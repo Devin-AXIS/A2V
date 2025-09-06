@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 
 type Props = {
   open: boolean
@@ -73,6 +74,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }, [arrayPath, mockExtracted, extractedOverride])
   const [crawlId, setCrawlId] = useState<string>("")
   const [batchId, setBatchId] = useState<string>("")
+  const [busy, setBusy] = useState<{ scrape?: boolean; crawlStart?: boolean; crawlStatus?: boolean; batchStart?: boolean; batchStatus?: boolean; cancel?: boolean }>({})
+  const [statusMsg, setStatusMsg] = useState<string>("")
 
   // mock fields for mapping UI
   type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect' }
@@ -232,6 +235,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       return
     }
     try {
+      setBusy((b) => ({ ...b, scrape: true }))
+      setStatusMsg(t("正在抓取样例…","Scraping sample…"))
       const r = await fetch(`${getApiBase()}/api/crawl/scrape`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
@@ -243,10 +248,12 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       const rec = Array.isArray(data?.data?.data) ? data.data.data : [data?.data]
       setExtractedOverride(rec || [])
       toast({ description: t("已抓取样例，已回填到预览","Scraped sample filled into preview") })
+      setStatusMsg(t("抓取完成","Scrape done"))
     } catch (e) {
       console.error(e)
       toast({ description: t("抓取失败","Scrape failed"), variant: "destructive" as any })
-    }
+      setStatusMsg(t("抓取失败","Scrape failed"))
+    } finally { setBusy((b) => ({ ...b, scrape: false })) }
   }
 
   async function onCrawlStart() {
@@ -261,6 +268,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       return
     }
     try {
+      setBusy((b) => ({ ...b, crawlStart: true }))
+      setStatusMsg(t("正在启动爬取…","Starting crawl…"))
       const r = await fetch(`${getApiBase()}/api/crawl/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
@@ -271,16 +280,20 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       const id = data?.data?.id || data?.data?.jobId || ''
       setCrawlId(id)
       toast({ description: id ? t("已启动爬取，点击查看状态","Crawl started, click to check status") : t("已启动爬取","Crawl started") })
+      setStatusMsg(id ? t("爬取已启动：","Crawl started: ") + id : t("爬取已启动","Crawl started"))
     } catch (e) {
       console.error(e)
       toast({ description: t("启动失败","Start failed"), variant: "destructive" as any })
-    }
+      setStatusMsg(t("启动失败","Start failed"))
+    } finally { setBusy((b) => ({ ...b, crawlStart: false })) }
   }
 
   async function onCrawlStatus() {
     const { firecrawlKey } = readAuth()
     if (!firecrawlKey || !crawlId) return
     try {
+      setBusy((b) => ({ ...b, crawlStatus: true }))
+      setStatusMsg(t("正在获取状态…","Fetching status…"))
       const r = await fetch(`${getApiBase()}/api/crawl/status/${encodeURIComponent(crawlId)}`, {
         headers: { 'x-aino-firecrawl-key': firecrawlKey }
       })
@@ -291,10 +304,12 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
         setExtractedOverride(docs)
         toast({ description: t("已更新预览数据","Preview updated") })
       }
+      setStatusMsg(t("状态已更新","Status updated"))
     } catch (e) {
       console.error(e)
       toast({ description: t("获取状态失败","Fetch status failed"), variant: "destructive" as any })
-    }
+      setStatusMsg(t("获取状态失败","Fetch status failed"))
+    } finally { setBusy((b) => ({ ...b, crawlStatus: false })) }
   }
 
   async function onBatchStart() {
@@ -309,6 +324,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       return
     }
     try {
+      setBusy((b) => ({ ...b, batchStart: true }))
+      setStatusMsg(t("正在启动批量抓取…","Starting batch…"))
       const r = await fetch(`${getApiBase()}/api/crawl/batch/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
@@ -319,16 +336,19 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       const id = data?.data?.id || data?.data?.jobId || ''
       setBatchId(id)
       toast({ description: id ? t("已启动批量抓取","Batch started") : t("已启动","Started") })
+      setStatusMsg(id ? t("批量抓取已启动：","Batch started: ") + id : t("批量抓取已启动","Batch started"))
     } catch (e) {
       console.error(e)
       toast({ description: t("批量启动失败","Batch start failed"), variant: "destructive" as any })
-    }
+      setStatusMsg(t("批量启动失败","Batch start failed"))
+    } finally { setBusy((b) => ({ ...b, batchStart: false })) }
   }
 
   async function onBatchStatus() {
     const { firecrawlKey } = readAuth()
     if (!firecrawlKey || !batchId) return
     try {
+      setBusy((b) => ({ ...b, batchStatus: true }))
       const r = await fetch(`${getApiBase()}/api/crawl/batch/status/${encodeURIComponent(batchId)}`, {
         headers: { 'x-aino-firecrawl-key': firecrawlKey }
       })
@@ -339,10 +359,24 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
         setExtractedOverride(docs)
         toast({ description: t("已更新批量预览","Batch preview updated") })
       }
+      setStatusMsg(t("批量状态已更新","Batch status updated"))
     } catch (e) {
       console.error(e)
       toast({ description: t("获取批量状态失败","Fetch batch status failed"), variant: "destructive" as any })
-    }
+      setStatusMsg(t("获取批量状态失败","Fetch batch status failed"))
+    } finally { setBusy((b) => ({ ...b, batchStatus: false })) }
+  }
+
+  async function onCrawlCancel() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey || !crawlId) return
+    try {
+      setBusy((b) => ({ ...b, cancel: true }))
+      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, { method: 'POST', headers: { 'x-aino-firecrawl-key': firecrawlKey } })
+      const ok = r.ok
+      toast({ description: ok ? t("已取消","Cancelled") : t("取消失败","Cancel failed"), variant: ok ? undefined : ("destructive" as any) })
+      setStatusMsg(ok ? t("爬取已取消","Crawl cancelled") : t("取消失败","Cancel failed"))
+    } finally { setBusy((b) => ({ ...b, cancel: false })) }
   }
 
   function onRunNow() {
@@ -515,16 +549,35 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{t("字段映射","Field Mapping")}</div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onScrapeTest}>{t("试抓取","Scrape test")}</Button>
-                        <Button variant="outline" size="sm" onClick={onCrawlStart}>{t("开始爬取","Start crawl")}</Button>
-                        <Button variant="outline" size="sm" disabled={!crawlId} onClick={onCrawlStatus}>{t("查看状态","Check status")}</Button>
-                        <Button variant="outline" size="sm" onClick={onBatchStart}>{t("批量开始","Batch start")}</Button>
-                        <Button variant="outline" size="sm" disabled={!batchId} onClick={onBatchStatus}>{t("批量状态","Batch status")}</Button>
+                        <Button variant="outline" size="sm" onClick={onScrapeTest} disabled={!!busy.scrape}>
+                          {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中","Scraping")}</> : t("试抓取","Scrape test")}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={onCrawlStart} disabled={!!busy.crawlStart}>
+                          {busy.crawlStart ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("启动中","Starting")}</> : t("开始爬取","Start crawl")}
+                        </Button>
+                        <Button variant="outline" size="sm" disabled={!crawlId || !!busy.crawlStatus} onClick={onCrawlStatus}>
+                          {busy.crawlStatus ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("查询中","Fetching")}</> : t("查看状态","Check status")}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={onCrawlCancel} disabled={!crawlId || !!busy.cancel}>
+                          {busy.cancel ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("取消中","Cancelling")}</> : t("取消","Cancel")}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={onBatchStart} disabled={!!busy.batchStart}>
+                          {busy.batchStart ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("批量中","Starting")}</> : t("批量开始","Batch start")}
+                        </Button>
+                        <Button variant="outline" size="sm" disabled={!batchId || !!busy.batchStatus} onClick={onBatchStatus}>
+                          {busy.batchStatus ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("查询中","Fetching")}</> : t("批量状态","Batch status")}
+                        </Button>
                         <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配","Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空","Clear")}</Button>
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-0">
+                      {statusMsg && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-white/50 dark:bg-neutral-900/40 flex items-center gap-2">
+                          <Loader2 className={`size-3 ${Object.values(busy).some(Boolean) ? 'animate-spin' : ''}`} />
+                          <span>{statusMsg}</span>
+                        </div>
+                      )}
                       <div className="max-h-[240px] overflow-auto">
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/70 backdrop-blur">
