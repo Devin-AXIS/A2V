@@ -42,6 +42,7 @@ import {
 import { LocalThemeEditorVisibilityProvider } from "@/components/providers/local-theme-editor-visibility"
 import { LocalThemeKeyProvider } from "@/components/providers/local-theme-key"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
+import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
 
 // 页面类别配置
 export interface PageCategory {
@@ -256,9 +257,11 @@ interface DynamicPageComponentProps {
   showBack?: boolean
   aiOpsUrl?: string
   aiOpsLabel?: string
+  topTabsConfig?: ContentNavConfig | null
+  contentNavConfig?: ContentNavConfig | null
 }
 
-export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel }: DynamicPageComponentProps) {
+export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
@@ -542,6 +545,13 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           />
         )}
 
+        {/* 顶部标签导航：仅当提供 topTabsConfig 且为文本型时显示 */}
+        {topTabsConfig && topTabsConfig.type === 'text' && (
+          <div className={cn("px-4", propLayout === 'pc' ? 'hidden' : 'block')}>
+            <ContentNavigation config={topTabsConfig} />
+          </div>
+        )}
+
         {/* 顶部右侧AI运营入口（可选） */}
         {showHeader && propLayout !== "pc" && aiOpsUrl && (
           <div className="fixed top-3 right-20 z-30">
@@ -556,6 +566,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         {/* 工作台类型 */}
         {pageCategory.type === "workspace" && (
           <div className={cn("relative z-10", propLayout === "pc" ? "p-6" : "p-4 pt-20")}>
+            {/* 图文入口导航容器：仅当提供 contentNavConfig 且为 iconText 时显示 */}
+            {contentNavConfig && contentNavConfig.type === 'iconText' && (
+              <div className="mb-4">
+                <ContentNavigation config={contentNavConfig} />
+              </div>
+            )}
             <div className="mb-6">
               {cards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">

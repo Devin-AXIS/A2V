@@ -59,6 +59,9 @@ export default function MobileDynamicPage() {
   // category 采用 p-{id}，保证各页布局隔离
   const category = useMemo(() => `p-${id}`,[id])
 
+  const topTabsConfig = pageMeta?.contentNav?.type === 'text' ? pageMeta?.contentNav : null
+  const contentNavConfig = pageMeta?.contentNav?.type === 'iconText' ? pageMeta?.contentNav : null
+
   if (!seeded) return null
   return (
     <main className="min-h-[100dvh] bg-transparent">
@@ -78,16 +81,9 @@ export default function MobileDynamicPage() {
         showBack={pageMeta?.options?.showBack}
         aiOpsUrl={pageMeta?.options?.aiOpsUrl}
         aiOpsLabel={pageMeta?.options?.aiOpsLabel}
+        topTabsConfig={topTabsConfig as any}
+        contentNavConfig={contentNavConfig as any}
       />
-      {pageMeta?.contentNav && (
-        // 渲染内容导航（位置暂置于页面底部上方，后续可配置位置）
-        <div className="fixed left-0 right-0 bottom-16 z-20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {/* 使用设计语言颜色 */}
-          {/* @ts-ignore - dynamic import type */}
-          {React.createElement(require("@/components/navigation/content-navigation").ContentNavigation, { config: pageMeta.contentNav })}
-        </div>
-      )}
     </main>
   )
 }
