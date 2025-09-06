@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 
 export type ProgressItem = {
   id: string
@@ -47,19 +48,20 @@ export function ProgressItemsInput({ items, onChange, aggregation = "weightedAve
       <div className="space-y-2">
         {items.map((it, idx) => (
           <div key={it.id || idx} className="grid grid-cols-12 gap-2 items-center">
-            <Input className="col-span-3 bg-white" value={it.label} onChange={(e)=>{
+            <Input className="col-span-5 bg-white" value={it.label} onChange={(e)=>{
               const arr = [...items]; arr[idx] = { ...it, label: e.target.value, key: e.target.value || it.key }; onChange(arr)
-            }} placeholder="Label" />
-            <Input className="col-span-2 bg-white" value={it.status || ''} onChange={(e)=>{ const arr=[...items]; arr[idx] = { ...it, status: e.target.value }; onChange(arr) }} placeholder="Status" />
-            <Input type="number" className="col-span-2 bg-white" value={it.weight ?? 1} onChange={(e)=>{ const arr=[...items]; arr[idx] = { ...it, weight: e.target.value?Number(e.target.value):1 }; onChange(arr) }} placeholder="Weight" />
-            <Input type="number" className="col-span-3 bg-white" value={it.value} onChange={(e)=>{ const arr=[...items]; arr[idx] = { ...it, value: clamp01(Number(e.target.value||0)) }; onChange(arr) }} placeholder="0-100" />
+            }} placeholder="名称" />
+            <div className="col-span-5 flex items-center gap-2">
+              <Slider value={[clamp01(it.value)]} onValueChange={(vals)=>{ const arr=[...items]; arr[idx] = { ...it, value: clamp01(vals[0] || 0) }; onChange(arr) }} max={100} step={1} className="flex-1" />
+              <Input type="number" className="w-16 bg-white" value={it.value} onChange={(e)=>{ const arr=[...items]; arr[idx] = { ...it, value: clamp01(Number(e.target.value||0)) }; onChange(arr) }} />
+            </div>
             <Button type="button" variant="ghost" className="col-span-2 text-red-600" onClick={()=>{ const arr=[...items]; arr.splice(idx,1); onChange(arr) }}>删除</Button>
           </div>
         ))}
       </div>
       <div>
         <Button type="button" variant="outline" onClick={()=>{
-          const arr = [...items, { id: Math.random().toString(36).slice(2), key: `p${items.length+1}`, label: `子进度 ${items.length+1}`, value: 0, status: 'planned', weight: 1 }]
+          const arr = [...items, { id: Math.random().toString(36).slice(2), key: `p${items.length+1}`, label: `子进度 ${items.length+1}`, value: 0 } as any]
           onChange(arr)
         }}>新增子进度</Button>
       </div>
