@@ -63,12 +63,15 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }), [])
   const arrayPathOptions = ["$.items","$.data","$.results"]
   const [arrayPath, setArrayPath] = useState<string>("$.items")
+  const [extractedOverride, setExtractedOverride] = useState<any[] | null>(null)
   const sampleRecords = useMemo<any[]>(() => {
+    if (extractedOverride) return extractedOverride
     if (arrayPath === "$.items") return mockExtracted.items
     if (arrayPath === "$.data") return (mockExtracted as any).data
     if (arrayPath === "$.results") return (mockExtracted as any).results
     return []
-  }, [arrayPath, mockExtracted])
+  }, [arrayPath, mockExtracted, extractedOverride])
+  const [crawlId, setCrawlId] = useState<string>("")
 
   // mock fields for mapping UI
   type MockField = { key: string; label: string; type: 'text'|'number'|'date'|'tags'|'url'|'boolean'|'select'|'multiselect' }
@@ -198,6 +201,98 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       console.error(e)
       toast({ description: t("AI 网关调用失败","AI gateway call failed"), variant: "destructive" as any })
     })
+  }
+
+  function readAuth() {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('aino_auth_integrations_v1') : null
+    const all = raw ? JSON.parse(raw) : {}
+    const conf = all[appId] || {}
+    return {
+      openaiEndpoint: conf.openaiEndpoint || conf.fastgptEndpoint,
+      openaiKey: conf.openaiKey || conf.fastgptKey,
+      firecrawlKey: conf.firecrawlKey,
+    }
+  }
+
+  function getApiBase() {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+  }
+
+  async function onScrapeTest() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey) {
+      toast({ description: t("请先在授权管理配置 Firecrawl Key","Please configure Firecrawl Key in Authorization"), variant: "destructive" as any })
+      return
+    }
+    const firstUrl = (urls.split(/\n+/).map(s => s.trim()).filter(Boolean)[0]) || domain || ''
+    if (!firstUrl) {
+      toast({ description: t("请输入至少一个 URL 或域名","Please enter at least one URL or domain"), variant: "destructive" as any })
+      return
+    }
+    try {
+      const r = await fetch(`${getApiBase()}/api/crawl/scrape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
+        body: JSON.stringify({ url: firstUrl, options: { formats: ['markdown','html'] } })
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'scrape failed')
+      // 以返回对象生成样例记录，具体结构以 Firecrawl 返回为准
+      const rec = Array.isArray(data?.data?.data) ? data.data.data : [data?.data]
+      setExtractedOverride(rec || [])
+      toast({ description: t("已抓取样例，已回填到预览","Scraped sample filled into preview") })
+    } catch (e) {
+      console.error(e)
+      toast({ description: t("抓取失败","Scrape failed"), variant: "destructive" as any })
+    }
+  }
+
+  async function onCrawlStart() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey) {
+      toast({ description: t("请先在授权管理配置 Firecrawl Key","Please configure Firecrawl Key in Authorization"), variant: "destructive" as any })
+      return
+    }
+    const startUrl = domain || (urls.split(/\n+/).map(s => s.trim()).filter(Boolean)[0]) || ''
+    if (!startUrl) {
+      toast({ description: t("请输入域名或 URL","Please enter a domain or URL"), variant: "destructive" as any })
+      return
+    }
+    try {
+      const r = await fetch(`${getApiBase()}/api/crawl/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
+        body: JSON.stringify({ url: startUrl, options: { limit: 10 } })
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'start failed')
+      const id = data?.data?.id || data?.data?.jobId || ''
+      setCrawlId(id)
+      toast({ description: id ? t("已启动爬取，点击查看状态","Crawl started, click to check status") : t("已启动爬取","Crawl started") })
+    } catch (e) {
+      console.error(e)
+      toast({ description: t("启动失败","Start failed"), variant: "destructive" as any })
+    }
+  }
+
+  async function onCrawlStatus() {
+    const { firecrawlKey } = readAuth()
+    if (!firecrawlKey || !crawlId) return
+    try {
+      const r = await fetch(`${getApiBase()}/api/crawl/status/${encodeURIComponent(crawlId)}`, {
+        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'status failed')
+      const docs = data?.data?.data || []
+      if (Array.isArray(docs) && docs.length) {
+        setExtractedOverride(docs)
+        toast({ description: t("已更新预览数据","Preview updated") })
+      }
+    } catch (e) {
+      console.error(e)
+      toast({ description: t("获取状态失败","Fetch status failed"), variant: "destructive" as any })
+    }
   }
 
   function onRunNow() {
@@ -370,6 +465,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{t("字段映射","Field Mapping")}</div>
                       <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onScrapeTest}>{t("试抓取","Scrape test")}</Button>
+                        <Button variant="outline" size="sm" onClick={onCrawlStart}>{t("开始爬取","Start crawl")}</Button>
+                        <Button variant="outline" size="sm" disabled={!crawlId} onClick={onCrawlStatus}>{t("查看状态","Check status")}</Button>
                         <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配","Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空","Clear")}</Button>
                       </div>
