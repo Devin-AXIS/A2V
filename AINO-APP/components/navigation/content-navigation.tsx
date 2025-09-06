@@ -97,7 +97,7 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
                   "relative text-sm font-medium transition-colors pb-2",
                   idx === activeIndex ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => setActiveIndex(idx)}
+                onClick={() => { setActiveIndex(idx); onSwitchTab?.({ index: idx }) }}
               >
                 {it.title || `Tab ${idx + 1}`}
                 {idx === activeIndex && (

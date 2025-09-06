@@ -266,8 +266,16 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
 
-  const STORAGE_KEY = `dynamic_page_layout_${category}_${locale}`
+  const workspaceCategory = useMemo(() => {
+    if (topTabsConfig && topTabsConfig.type === 'text') {
+      return `${category}-tab-${activeTabIndex}`
+    }
+    return category
+  }, [category, topTabsConfig, activeTabIndex])
+
+  const STORAGE_KEY = `dynamic_page_layout_${workspaceCategory}_${locale}`
 
   const serializeCards = (cardList: WorkspaceCard[]) => cardList.map((c) => ({ id: c.id, type: c.type }))
 
@@ -548,7 +556,10 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         {/* 顶部标签导航：仅当提供 topTabsConfig 且为文本型时显示 */}
         {topTabsConfig && topTabsConfig.type === 'text' && (
           <div className={cn("px-4", propLayout === 'pc' ? 'hidden' : 'block')}>
-            <ContentNavigation config={topTabsConfig} />
+            <ContentNavigation
+              config={topTabsConfig}
+              onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }}
+            />
           </div>
         )}
 
