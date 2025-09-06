@@ -970,17 +970,50 @@ export default function ClientConfigPage() {
                     <div className="text-xs text-muted-foreground">{lang === 'zh' ? '导航项' : 'Items'}</div>
                     <div className="space-y-2">
                       {cnItems.map((it: any, idx: number) => (
-                        <div key={idx} className="grid grid-cols-[20px_1fr_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
+                        <div
+                          key={idx}
+                          className={cnType === 'iconText' ? "grid grid-cols-[20px_56px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2" : "grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2"}
+                          draggable
+                          onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(idx)) }}
+                          onDragOver={(e) => { e.preventDefault() }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            const from = Number(e.dataTransfer.getData('text/plain'))
+                            const to = idx
+                            if (Number.isNaN(from) || from === to) return
+                            setCnItems((list: any[]) => {
+                              const next = [...list]
+                              const [m] = next.splice(from, 1)
+                              next.splice(to, 0, m)
+                              return next
+                            })
+                          }}
+                        >
                           <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center opacity-70"><GripVertical className="w-4 h-4" /></div>
+                          {cnType === 'iconText' && (
+                            <div className="flex items-center gap-2">
+                              {it.image ? (
+                                <img src={it.image} alt="icon" className="w-12 h-12 rounded border object-cover" />
+                              ) : (
+                                <div className="w-12 h-12 rounded border bg-gray-50 text-[10px] flex items-center justify-center text-gray-400">img</div>
+                              )}
+                            </div>
+                          )}
                           <Input placeholder={lang === 'zh' ? '标题(中文/英文皆可)' : 'Title'} value={it.title || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} />
-                          <Input placeholder={lang === 'zh' ? '路由 /p-xxx 或 /home' : 'Route'} value={it.route || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, route: e.target.value } : x))} />
                           <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={() => {/* 占位：跳转到对应页面配置 */}}>{lang === 'zh' ? '配置卡片' : 'Config Cards'}</Button>
+                            {cnType === 'iconText' && (
+                              <input type="file" accept="image/*" onChange={async (e) => {
+                                const f = e.target.files?.[0]
+                                if (!f) return
+                                const dataUrl = await readAndResizeImage(f, 256, 256, 0.9)
+                                setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, image: dataUrl } : x))
+                              }} />
+                            )}
                             <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
                           </div>
                         </div>
                       ))}
-                      <Button variant="outline" size="sm" onClick={() => setCnItems((s: any[]) => [...s, { title: '', route: '' }])}><Plus className="w-4 h-4 mr-1" />{lang === 'zh' ? '新增导航' : 'Add Item'}</Button>
+                      <Button variant="outline" size="sm" onClick={() => setCnItems((s: any[]) => [...s, { title: '' }])}><Plus className="w-4 h-4 mr-1" />{lang === 'zh' ? '新增导航' : 'Add Item'}</Button>
                     </div>
                   </div>
                 </div>
