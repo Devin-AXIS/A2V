@@ -958,78 +958,80 @@ export default function ClientConfigPage() {
 
             {/* 内容导航配置弹窗 */}
             <Dialog open={contentNavOpen} onOpenChange={setContentNavOpen}>
-              <DialogContent className="max-w-[760px] w-[95vw] max-h-[80vh] bg-white p-0">
+              <DialogContent className="max-w-[760px] w-[95vw] max-h-[85vh] bg-white">
                 <DialogHeader>
                   <DialogTitle>{lang === 'zh' ? '内容导航配置' : 'Content Navigation'}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 px-4 pb-4 overflow-y-auto">
-                  {/* 类型选择 */}
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '展示样式' : 'Display Type'}</div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant={cnType === 'iconText' ? 'default' : 'outline'} onClick={() => setCnType('iconText')}>{lang === 'zh' ? '图+文' : 'Icon+Text'}</Button>
-                      <Button size="sm" variant={cnType === 'text' ? 'default' : 'outline'} onClick={() => setCnType('text')}>{lang === 'zh' ? '文字' : 'Text'}</Button>
-                    </div>
-                  </div>
-                  {/* 布局选择（仅图+文时显示） */}
-                  {cnType === 'iconText' && (
+                <ScrollArea className="max-h-[62vh] pr-2">
+                  <div className="space-y-4">
+                    {/* 类型选择 */}
                     <div className="space-y-2">
-                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '排版' : 'Layout'}</div>
+                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '展示样式' : 'Display Type'}</div>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant={cnLayout === 'grid-4' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-4')}>{lang === 'zh' ? '每行4个' : '4 per row'}</Button>
-                        <Button size="sm" variant={cnLayout === 'grid-5' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-5')}>{lang === 'zh' ? '每行5个' : '5 per row'}</Button>
-                        <Button size="sm" variant={cnLayout === 'scroll' ? 'default' : 'outline'} onClick={() => setCnLayout('scroll')}>{lang === 'zh' ? '横向滑动' : 'Horizontal scroll'}</Button>
+                        <Button size="sm" variant={cnType === 'iconText' ? 'default' : 'outline'} onClick={() => setCnType('iconText')}>{lang === 'zh' ? '图+文' : 'Icon+Text'}</Button>
+                        <Button size="sm" variant={cnType === 'text' ? 'default' : 'outline'} onClick={() => setCnType('text')}>{lang === 'zh' ? '文字' : 'Text'}</Button>
                       </div>
                     </div>
-                  )}
-                  {/* 导航项列表 */}
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '导航项' : 'Items'}</div>
-                    <div className="space-y-2">
-                      {cnItems.map((it: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className={cnType === 'iconText' ? "grid grid-cols-[20px_56px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2" : "grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2"}
-                          draggable
-                          onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(idx)) }}
-                          onDragOver={(e) => { e.preventDefault() }}
-                          onDrop={(e) => {
-                            e.preventDefault()
-                            const from = Number(e.dataTransfer.getData('text/plain'))
-                            const to = idx
-                            if (Number.isNaN(from) || from === to) return
-                            setCnItems((list: any[]) => {
-                              const next = [...list]
-                              const [m] = next.splice(from, 1)
-                              next.splice(to, 0, m)
-                              return next
-                            })
-                          }}
-                        >
-                          <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center opacity-70"><GripVertical className="w-4 h-4" /></div>
-                          {cnType === 'iconText' && (
-                            <div className="flex items-center gap-2">
-                              {it.image ? (
-                                <img src={it.image} alt="icon" className="w-12 h-12 rounded border object-cover" />
-                              ) : (
-                                <div className="w-12 h-12 rounded border bg-gray-50 text-[10px] flex items-center justify-center text-gray-400">img</div>
-                              )}
-                            </div>
-                          )}
-                          <Input placeholder={lang === 'zh' ? '标题(中文/英文皆可)' : 'Title'} value={it.title || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} />
-                          <div className="flex items-center gap-2">
-                            {cnType === 'iconText' && (
-                              <Button size="sm" variant="outline" onClick={() => handleUploadCnImage(idx)}>{lang === 'zh' ? '上传图片' : 'Upload'}</Button>
-                            )}
-                            <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
-                          </div>
+                    {/* 布局选择（仅图+文时显示） */}
+                    {cnType === 'iconText' && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">{lang === 'zh' ? '排版' : 'Layout'}</div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant={cnLayout === 'grid-4' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-4')}>{lang === 'zh' ? '每行4个' : '4 per row'}</Button>
+                          <Button size="sm" variant={cnLayout === 'grid-5' ? 'default' : 'outline'} onClick={() => setCnLayout('grid-5')}>{lang === 'zh' ? '每行5个' : '5 per row'}</Button>
+                          <Button size="sm" variant={cnLayout === 'scroll' ? 'default' : 'outline'} onClick={() => setCnLayout('scroll')}>{lang === 'zh' ? '横向滑动' : 'Horizontal scroll'}</Button>
                         </div>
-                      ))}
-                      <Button variant="outline" size="sm" onClick={() => setCnItems((s: any[]) => [...s, { title: '' }])}><Plus className="w-4 h-4 mr-1" />{lang === 'zh' ? '新增导航' : 'Add Item'}</Button>
+                      </div>
+                    )}
+                    {/* 导航项列表 */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '导航项' : 'Items'}</div>
+                      <div className="space-y-2">
+                        {cnItems.map((it: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className={cnType === 'iconText' ? "grid grid-cols-[20px_56px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2" : "grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2"}
+                            draggable
+                            onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(idx)) }}
+                            onDragOver={(e) => { e.preventDefault() }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              const from = Number(e.dataTransfer.getData('text/plain'))
+                              const to = idx
+                              if (Number.isNaN(from) || from === to) return
+                              setCnItems((list: any[]) => {
+                                const next = [...list]
+                                const [m] = next.splice(from, 1)
+                                next.splice(to, 0, m)
+                                return next
+                              })
+                            }}
+                          >
+                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center opacity-70"><GripVertical className="w-4 h-4" /></div>
+                            {cnType === 'iconText' && (
+                              <div className="flex items-center gap-2">
+                                {it.image ? (
+                                  <img src={it.image} alt="icon" className="w-12 h-12 rounded border object-cover" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded border bg-gray-50 text-[10px] flex items-center justify-center text-gray-400">img</div>
+                                )}
+                              </div>
+                            )}
+                            <Input placeholder={lang === 'zh' ? '标题(中文/英文皆可)' : 'Title'} value={it.title || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} />
+                            <div className="flex items-center gap-2">
+                              {cnType === 'iconText' && (
+                                <Button size="sm" variant="outline" onClick={() => handleUploadCnImage(idx)}>{lang === 'zh' ? '上传图片' : 'Upload'}</Button>
+                              )}
+                              <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
+                            </div>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={() => setCnItems((s: any[]) => [...s, { title: '' }])}><Plus className="w-4 h-4 mr-1" />{lang === 'zh' ? '新增导航' : 'Add Item'}</Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <DialogFooter className="px-4 pb-3">
+                </ScrollArea>
+                <DialogFooter>
                   <Button variant="outline" onClick={() => setContentNavOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
                   <Button onClick={saveContentNavDialog}>{lang === 'zh' ? '保存' : 'Save'}</Button>
                 </DialogFooter>
