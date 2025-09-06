@@ -472,11 +472,27 @@ export function AddFieldDialog({
   })
 
   // meta_items 配置
-  const [metaItemsConfig, setMetaItemsConfig] = useState({
+  type MetaItemsDefaultRow = { label: string }
+  type MetaItemsDefaultNumberRow = { label: string; unit?: string }
+  type MetaItemsDefaultItem = {
+    label: string
+    texts?: MetaItemsDefaultRow[]
+    numbers?: MetaItemsDefaultNumberRow[]
+    images?: MetaItemsDefaultRow[]
+  }
+  type MetaItemsConfigState = {
+    showHelp: boolean
+    helpText: string
+    allowedTypes: Array<'text'|'number'|'image'>
+    defaultItems: MetaItemsDefaultItem[]
+    allowAddInForm: boolean
+  }
+  const [metaItemsConfig, setMetaItemsConfig] = useState<MetaItemsConfigState>({
     showHelp: false,
     helpText: "",
-    allowedTypes: ["text","number","image"] as Array<'text'|'number'|'image'>,
-    defaultItems: [] as Array<{ label: string; type: 'text'|'number'|'image' }>,
+    allowedTypes: ["text","number","image"],
+    defaultItems: [],
+    allowAddInForm: true,
   })
 
   // Add custom experience configuration state
@@ -918,6 +934,7 @@ export function AddFieldDialog({
 
   const BUSINESS_TYPES: FieldType[] = [
     "profile",
+    "meta_items",
   ]
 
   const asideWrapCls =
@@ -1805,30 +1822,73 @@ export function AddFieldDialog({
                       />
                     )}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={metaItemsConfig.allowAddInForm} onCheckedChange={(v)=>setMetaItemsConfig(prev=>({ ...prev, allowAddInForm: v }))} />
+                    <label className="text-xs text-blue-700">{locale==='zh'?'允许在输入层新增行':'Allow adding rows in form'}</label>
+                  </div>
                   <div>
                     <div className="text-xs text-blue-700 mb-1">{locale==='zh'?'默认子项':'Default Items'}</div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {metaItemsConfig.defaultItems.map((it, idx)=> (
-                        <div key={idx} className="grid grid-cols-6 gap-2 items-center">
-                          <Input className="h-8 text-xs bg-white/80 col-span-3" value={it.label} onChange={(e)=>{
-                            const arr=[...metaItemsConfig.defaultItems]; arr[idx] = { ...arr[idx], label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
-                          }} placeholder={locale==='zh'?'名称':'Label'} />
-                          <select className="h-8 rounded border px-2 bg-white col-span-2" value={it.type} onChange={(e)=>{
-                            const arr=[...metaItemsConfig.defaultItems]; arr[idx] = { ...arr[idx], type: e.target.value as any }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
-                          }}>
-                            <option value="text">{locale==='zh'?'文本':'Text'}</option>
-                            <option value="number">{locale==='zh'?'数字':'Number'}</option>
-                            <option value="image">{locale==='zh'?'图片':'Image'}</option>
-                          </select>
-                          <button type="button" className="text-xs text-red-600" onClick={()=>{
-                            const arr=[...metaItemsConfig.defaultItems]; arr.splice(idx,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
-                          }}>{locale==='zh' ? '删除' : 'Remove'}</button>
+                        <div key={idx} className="space-y-2 border border-white/60 rounded-md p-2 bg-white/60">
+                          <div className="grid grid-cols-12 gap-2 items-center">
+                            <Input className="h-8 text-xs bg-white/80 col-span-6" value={it.label} onChange={(e)=>{
+                              const arr=[...metaItemsConfig.defaultItems]; arr[idx] = { ...arr[idx], label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                            }} placeholder={locale==='zh'?'子项名称':'Item label'} />
+                            <div className="col-span-6 flex items-center gap-2 justify-end">
+                              <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; const cur=arr[idx]; cur.texts = [...(cur.texts||[]), { label: locale==='zh'?'文本':'Text' }]; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>+ {locale==='zh'?'文本':'Text'}</button>
+                              <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; const cur=arr[idx]; cur.numbers = [...(cur.numbers||[]), { label: locale==='zh'?'数字':'Number' }]; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>+ {locale==='zh'?'数字':'Number'}</button>
+                              <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; const cur=arr[idx]; cur.images = [...(cur.images||[]), { label: locale==='zh'?'图片':'Image' }]; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>+ {locale==='zh'?'图片':'Image'}</button>
+                              <button type="button" className="text-xs text-red-600" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; arr.splice(idx,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>{locale==='zh'?'删除子项':'Remove item'}</button>
+                            </div>
+                          </div>
+                          {(it.texts||[]).map((row, i2)=> (
+                            <div key={i2} className="grid grid-cols-12 gap-2 items-center">
+                              <Input className="h-8 text-xs bg-white/80 col-span-6" value={row.label} onChange={(e)=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].texts||[])[i2] = { ...row, label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }} placeholder={locale==='zh'?'标签':'Label'} />
+                              <button type="button" className="text-xs text-red-600" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].texts||[]).splice(i2,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>{locale==='zh'?'删除':'Delete'}</button>
+                            </div>
+                          ))}
+                          {(it.numbers||[]).map((row, i2)=> (
+                            <div key={i2} className="grid grid-cols-12 gap-2 items-center">
+                              <Input className="h-8 text-xs bg-white/80 col-span-5" value={row.label} onChange={(e)=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].numbers||[])[i2] = { ...row, label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }} placeholder={locale==='zh'?'标签':'Label'} />
+                              <Input className="h-8 text-xs bg-white/80 col-span-3" value={row.unit||''} onChange={(e)=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].numbers||[])[i2] = { ...row, unit: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }} placeholder={locale==='zh'?'单位(可选)':'Unit(optional)'} />
+                              <button type="button" className="text-xs text-red-600" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].numbers||[]).splice(i2,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>{locale==='zh'?'删除':'Delete'}</button>
+                            </div>
+                          ))}
+                          {(it.images||[]).map((row, i2)=> (
+                            <div key={i2} className="grid grid-cols-12 gap-2 items-center">
+                              <Input className="h-8 text-xs bg-white/80 col-span-6" value={row.label} onChange={(e)=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].images||[])[i2] = { ...row, label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }} placeholder={locale==='zh'?'标签':'Label'} />
+                              <button type="button" className="text-xs text-red-600" onClick={()=>{
+                                const arr=[...metaItemsConfig.defaultItems]; (arr[idx].images||[]).splice(i2,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                              }}>{locale==='zh'?'删除':'Delete'}</button>
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
                     <div className="mt-2">
                       <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
-                        setMetaItemsConfig(prev=>({ ...prev, defaultItems: [...prev.defaultItems, { label: `${locale==='zh'?'项':'Item'} ${prev.defaultItems.length+1}`, type: 'text' }] }))
+                        setMetaItemsConfig(prev=>({ ...prev, defaultItems: [...prev.defaultItems, { label: `${locale==='zh'?'项':'Item'} ${prev.defaultItems.length+1}` }] }))
                       }}>{locale==='zh'?'新增子项':'Add Item'}</button>
                     </div>
                   </div>

@@ -127,7 +127,13 @@ export type FieldModel = {
     showHelp?: boolean
     helpText?: string
     allowedTypes?: Array<'text' | 'number' | 'image'>
-    defaultItems?: Array<{ label: string; type: 'text' | 'number' | 'image' }>
+    defaultItems?: Array<{
+      label: string
+      texts?: Array<{ label: string }>
+      numbers?: Array<{ label: string; unit?: string }>
+      images?: Array<{ label: string }>
+    }>
+    allowAddInForm?: boolean
   }
   // 其他经历字段特殊配置
   customExperienceConfig?: {
@@ -505,9 +511,10 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
         ;(rec as any)[f.key] = defaults.map((d, idx) => ({
           id: uid(),
           label: d.label || `项 ${idx + 1}`,
-          type: d.type || 'text',
-          value: d.type === 'number' ? 0 : d.type === 'image' ? '' : '' ,
           order: idx,
+          texts: (d.texts || []).map(x => ({ id: uid(), label: x.label, value: "" })),
+          numbers: (d.numbers || []).map(x => ({ id: uid(), label: x.label, value: 0, unit: x.unit })),
+          images: (d.images || []).map(x => ({ id: uid(), label: x.label, url: "" })),
         }))
         break
       }
