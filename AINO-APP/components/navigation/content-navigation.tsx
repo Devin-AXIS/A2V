@@ -64,10 +64,10 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
 
   if (config.type === "text") {
     return (
-      <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)}>
+      <div className={cn("w-full rounded-xl bg-card text-card-foreground shadow-sm", className)}>
         {/* Header with title and optional actions */}
         {(config.header?.title || config.header?.search || config.header?.notify) && (
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex-1" />
             <div className="text-base font-semibold select-none">{config.header?.title}</div>
             <div className="flex-1 flex items-center justify-end gap-2">
@@ -111,11 +111,11 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
   // icon + text
   if (config.layout === "scroll") {
     return (
-      <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm px-4 py-3", className)}>
+      <div className={cn("w-full rounded-xl bg-card text-card-foreground shadow-sm px-4 py-3", className)}>
         <div className="flex items-stretch gap-4 overflow-x-auto scrollbar-hide">
           {config.items.map((it, idx) => (
             <button key={idx} className="flex-shrink-0 w-20 flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>
-              <div className={cn("w-16 h-16 rounded-full bg-muted flex items-center justify-center border border-border overflow-hidden shadow-sm")}>                
+              <div className={cn("w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden shadow-sm")}>                
                 {it.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={it.image} alt={it.title || "icon"} className="w-full h-full object-cover" />
@@ -134,11 +134,11 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
 
   // grid 4/5 with auto wrap
   return (
-    <div className={cn("w-full rounded-xl border border-border bg-card text-card-foreground shadow-sm px-4 py-4", className)}>
+    <div className={cn("w-full rounded-xl bg-card text-card-foreground shadow-sm px-4 py-4", className)}>
       <div className={cn("grid gap-4", cols === 5 ? "grid-cols-5" : "grid-cols-4")}>        
         {config.items.map((it, idx) => (
           <button key={idx} className="flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center border border-border overflow-hidden shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden shadow-sm">
               {it.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={it.image} alt={it.title || "icon"} className="w-full h-full object-cover" />
