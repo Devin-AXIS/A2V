@@ -259,14 +259,19 @@ interface DynamicPageComponentProps {
   aiOpsLabel?: string
   topTabsConfig?: ContentNavConfig | null
   contentNavConfig?: ContentNavConfig | null
+  initialTabIndex?: number
 }
 
-export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig }: DynamicPageComponentProps) {
+export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig, initialTabIndex }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(initialTabIndex ?? 0)
+
+  useEffect(() => {
+    if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
+  }, [initialTabIndex])
 
   const workspaceCategory = useMemo(() => {
     if (topTabsConfig && topTabsConfig.type === 'text') {

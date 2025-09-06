@@ -61,6 +61,10 @@ export default function MobileDynamicPage() {
 
   const topTabsConfig = pageMeta?.contentNav?.type === 'text' ? pageMeta?.contentNav : null
   const contentNavConfig = pageMeta?.contentNav?.type === 'iconText' ? pageMeta?.contentNav : null
+  const initialTabIndex = useMemo(() => {
+    const t = sp?.get('tab')
+    return t ? Number(t) : 0
+  }, [sp])
 
   if (!seeded) return null
   return (
@@ -83,6 +87,7 @@ export default function MobileDynamicPage() {
         aiOpsLabel={pageMeta?.options?.aiOpsLabel}
         topTabsConfig={topTabsConfig as any}
         contentNavConfig={contentNavConfig as any}
+        initialTabIndex={initialTabIndex}
       />
     </main>
   )
