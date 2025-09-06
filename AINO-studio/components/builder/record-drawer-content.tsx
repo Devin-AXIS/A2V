@@ -95,6 +95,41 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       return <span className="text-gray-400">{locale === "zh" ? "暂无数据" : "No data"}</span>
     }
 
+    // 最强兜底：若值是形如 [{label?, value, weight?}, ...] 的数组，按进度渲染
+    if (Array.isArray(value) && value.every((x: any) => x && typeof x === 'object' && typeof x.value !== 'undefined')) {
+      const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+      const items = value as Array<{ label?: string; value?: number; weight?: number }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const mode = cfg.aggregation || 'weightedAverage'
+      const agg = ((){
+        if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {cfg.showProgressBar && (
+              <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {cfg.showPercentage && (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     // 兼容 preset === "progress"（历史上 baseType 不是 progress），避免显示 [object Object]
     if (field.preset === "progress" && field.type !== "progress") {
       const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
