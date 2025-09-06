@@ -299,8 +299,8 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
                 </div>
               ))}
             </div>
-            {cfg.showHelp && cfg.helpText && (
-              <div className="text-xs text-gray-500 pt-1">{cfg.helpText}</div>
+            {cfg.showHelp && (
+              <div className="text-xs text-gray-500 pt-1">{cfg.helpText || ""}</div>
             )}
           </div>
         )

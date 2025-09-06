@@ -67,8 +67,8 @@ export function ProgressItemsInput({ items, onChange, aggregation = "weightedAve
           onChange(arr)
         }}>新增子进度</Button>
       </div>
-      {helpEnabled && helpText && (
-        <div className="text-xs text-gray-500 pt-1">{helpText}</div>
+      {helpEnabled && (
+        <div className="text-xs text-gray-500 pt-1">{helpText || ""}</div>
       )}
     </div>
   )
