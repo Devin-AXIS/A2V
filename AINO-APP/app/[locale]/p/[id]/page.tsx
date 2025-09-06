@@ -88,6 +88,7 @@ export default function MobileDynamicPage() {
         topTabsConfig={topTabsConfig as any}
         contentNavConfig={contentNavConfig as any}
         initialTabIndex={initialTabIndex}
+        pageId={id}
       />
     </main>
   )

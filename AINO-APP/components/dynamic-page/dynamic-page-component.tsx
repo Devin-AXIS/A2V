@@ -244,6 +244,7 @@ interface WorkspaceCard {
   name: string
   category: string
   component: ReactNode
+  width?: 'half' | 'full'
 }
 
 interface DynamicPageComponentProps {
@@ -260,9 +261,10 @@ interface DynamicPageComponentProps {
   topTabsConfig?: ContentNavConfig | null
   contentNavConfig?: ContentNavConfig | null
   initialTabIndex?: number
+  pageId?: string
 }
 
-export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig, initialTabIndex }: DynamicPageComponentProps) {
+export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig, initialTabIndex, pageId }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
@@ -327,6 +329,32 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       console.error("保存布局到本地存储失败", err)
     }
   }
+
+  // 向父窗口（Studio）同步当前卡片类型列表，便于左侧配置显示
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const types = cards.map((c) => c.type)
+        window.parent?.postMessage({ type: 'DYN_CARDS', category: workspaceCategory, cards: types }, '*')
+      }
+    } catch {}
+  }, [cards, workspaceCategory])
+
+  // 根据页面可见性规则（由 Studio 写入 APP_PAGE_{id}.visibility）过滤显示卡片
+  const visibleCards = useMemo(() => {
+    try {
+      const mode = topTabsConfig ? 'text' : (contentNavConfig ? 'icon' : undefined)
+      if (!mode || !pageId) return cards
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(`APP_PAGE_${pageId}`) : null
+      if (!raw) return cards
+      const cfg = JSON.parse(raw || '{}')
+      const list: string[] | undefined = cfg?.visibility?.[mode]?.[activeTabIndex]
+      if (!list || list.length === 0) return cards
+      return cards.filter((c) => list.includes(c.type))
+    } catch {
+      return cards
+    }
+  }, [cards, pageId, topTabsConfig, contentNavConfig, activeTabIndex])
 
   useEffect(() => {
     try {
@@ -604,7 +632,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                 </div>
               ) : (
                 <EnhancedDraggableCardContainer
-                  items={cards.map((card) => ({
+                  items={visibleCards.map((card) => ({
                     id: card.id,
                     content: (
                       <LocalThemeKeyProvider value={card.id}>

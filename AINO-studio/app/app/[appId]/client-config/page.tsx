@@ -163,6 +163,20 @@ export default function ClientConfigPage() {
   const [eventDialogOpen, setEventDialogOpen] = useState(false)
   const [eventEditingIndex, setEventEditingIndex] = useState<number | null>(null)
   const [pageTabIndex, setPageTabIndex] = useState<number>(0)
+  const [workspaceCardsByCategory, setWorkspaceCardsByCategory] = useState<Record<string, string[]>>({})
+  const [activeWorkspaceCategory, setActiveWorkspaceCategory] = useState<string>("")
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      const d: any = e.data
+      if (d && d.type === "DYN_CARDS" && Array.isArray(d.cards)) {
+        setWorkspaceCardsByCategory((s) => ({ ...s, [d.category]: d.cards }))
+        setActiveWorkspaceCategory(d.category || "")
+      }
+    }
+    window.addEventListener("message", handler)
+    return () => window.removeEventListener("message", handler)
+  }, [])
 
   function openContentNavDialog() {
     try {
@@ -826,6 +840,18 @@ export default function ClientConfigPage() {
                             <Button size="sm" variant="outline">{lang === "zh" ? "显示" : "Display"}</Button>
                             <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
                           </div>
+                        </div>
+                        {/* 自动渲染当前工作区可见的卡片列表 */}
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((t) => (
+                            <div key={t} className="px-2 py-1 rounded border bg-white flex items-center justify-between">
+                              <span className="truncate">{t}</span>
+                              <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
+                            </div>
+                          ))}
+                          {(!workspaceCardsByCategory[activeWorkspaceCategory] || workspaceCardsByCategory[activeWorkspaceCategory].length === 0) && (
+                            <div className="text-xs opacity-60">{lang === 'zh' ? '右侧新增卡片后，将自动出现在这里以配置显示' : 'New cards added on the right will appear here for display config.'}</div>
+                          )}
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "其他卡片" : "Other Cards"}</div>
