@@ -12,6 +12,9 @@ import { Eye, EyeOff } from "lucide-react"
 
 type AppAuthConfig = {
   firecrawlKey?: string
+  openaiEndpoint?: string
+  openaiKey?: string
+  // backward-compat keys
   fastgptEndpoint?: string
   fastgptKey?: string
 }
@@ -42,13 +45,25 @@ export function AuthIntegrationsSettings() {
   const [show, setShow] = useState<{ firecrawl: boolean; fastgpt: boolean }>({ firecrawl: false, fastgpt: false })
 
   useEffect(() => {
-    const all = loadAll()
-    setState(all[appId] || {})
+    const all = loadAll() as Record<string, AppAuthConfig>
+    const conf = all[appId] || {}
+    setState({
+      firecrawlKey: conf.firecrawlKey || "",
+      openaiEndpoint: conf.openaiEndpoint || conf.fastgptEndpoint || "",
+      openaiKey: conf.openaiKey || conf.fastgptKey || "",
+    })
   }, [appId])
 
   function save() {
-    const all = loadAll()
-    all[appId] = state
+    const all = loadAll() as Record<string, AppAuthConfig>
+    all[appId] = {
+      firecrawlKey: state.firecrawlKey,
+      openaiEndpoint: state.openaiEndpoint,
+      openaiKey: state.openaiKey,
+      // keep fastgpt fields for compatibility
+      fastgptEndpoint: state.openaiEndpoint,
+      fastgptKey: state.openaiKey,
+    }
     saveAll(all)
     toast({ description: locale === "zh" ? "已保存授权配置" : "Authorization settings saved" })
   }
@@ -83,33 +98,33 @@ export function AuthIntegrationsSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>FastGPT Endpoint</Label>
+            <Label>OpenAI Endpoint</Label>
             <Input
               type="text"
-              placeholder="https://api.fastgpt.run/v1"
-              value={state.fastgptEndpoint || ""}
-              onChange={(e) => setState((s) => ({ ...s, fastgptEndpoint: e.target.value }))}
+              placeholder="https://api.openai.com/v1"
+              value={state.openaiEndpoint || ""}
+              onChange={(e) => setState((s) => ({ ...s, openaiEndpoint: e.target.value }))}
             />
             <p className="text-xs text-muted-foreground">
-              {locale === "zh" ? "与 OpenAI 接口兼容的地址。" : "OpenAI-compatible endpoint URL."}
+              {locale === "zh" ? "OpenAI 或兼容 OpenAI 的接口地址。" : "OpenAI or OpenAI-compatible endpoint URL."}
             </p>
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label>FastGPT API Key</Label>
+            <Label>OpenAI API Key</Label>
             <div className="flex items-center gap-2">
               <Input
                 type={show.fastgpt ? "text" : "password"}
-                placeholder="fk-xxxxxxxx"
-                value={state.fastgptKey || ""}
-                onChange={(e) => setState((s) => ({ ...s, fastgptKey: e.target.value }))}
+                placeholder="sk-xxxxxxxx"
+                value={state.openaiKey || ""}
+                onChange={(e) => setState((s) => ({ ...s, openaiKey: e.target.value }))}
               />
               <Button variant="outline" size="sm" onClick={() => setShow((s) => ({ ...s, fastgpt: !s.fastgpt }))} className="shrink-0">
                 {show.fastgpt ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {locale === "zh" ? "用于自然语言规则解析与结构化抽取。" : "For rule parsing and structured extraction."}
+              {locale === "zh" ? "用于自然语言规则解析与结构化抽取（兼容 OpenAI）。" : "For rule parsing and structured extraction (OpenAI-compatible)."}
             </p>
           </div>
         </div>
