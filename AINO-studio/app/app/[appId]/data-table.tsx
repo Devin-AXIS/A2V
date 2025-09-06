@@ -538,8 +538,9 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     )
   }
 
-  if (type === "progress" && f?.progressConfig) {
-    const aggMode = f.progressConfig.aggregation || 'weightedAverage'
+  if (type === "progress") {
+    const cfg = f?.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+    const aggMode = cfg.aggregation || 'weightedAverage'
     if (Array.isArray(v)) {
       const items = v as Array<{ value?: number; weight?: number; label?: string }>
       const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
@@ -550,30 +551,42 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
         const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
         return Math.round(sum / sw)
       })()
+      const visible = items.slice(0, 3)
+      const more = Math.max(0, items.length - visible.length)
       return (
         <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
-          {f.progressConfig.showProgressBar && (
+          {cfg.showProgressBar && (
             <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
               <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
             </div>
           )}
-          {f.progressConfig.showPercentage ? (
+          {cfg.showPercentage ? (
             <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
           ) : null}
+          <div className="hidden xl:flex items-center gap-1 ml-1">
+            {visible.map((it, i) => (
+              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">
+                {(it.label || `Item ${i+1}`)} {Math.round(Number(it.value||0))}%
+              </span>
+            ))}
+            {more > 0 && (
+              <span className="text-[10px] text-muted-foreground">+{more}</span>
+            )}
+          </div>
         </div>
       )
     } else {
       const value = Number(v ?? 0)
-      const maxValue = f.progressConfig.maxValue || 100
+      const maxValue = cfg.maxValue || 100
       const percentage = Math.round((value / maxValue) * 100)
       return (
         <div className="flex items-center gap-2">
-          {f.progressConfig.showProgressBar && (
+          {cfg.showProgressBar && (
             <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
               <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
             </div>
           )}
-          {f.progressConfig.showPercentage ? (
+          {cfg.showPercentage ? (
             <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
           ) : (
             <span className="text-xs text-gray-600">{value}/{maxValue}</span>
