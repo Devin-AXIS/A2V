@@ -99,6 +99,8 @@ export type FieldDraft = {
     showPercentage?: boolean
     showProgressBar?: boolean
   }
+  // meta items field extras
+  metaItemsConfig?: any
   // custom experience preset extras
   customExperienceConfig?: {
     experienceName?: string // 经历名称
@@ -1818,10 +1820,7 @@ export function AddFieldDialog({
                       />
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={metaItemsConfig.allowAddInForm} onCheckedChange={(v)=>setMetaItemsConfig(prev=>({ ...prev, allowAddInForm: v }))} />
-                    <label className="text-xs text-blue-700">{locale==='zh'?'允许在输入层新增行':'Allow adding rows in form'}</label>
-                  </div>
+                  {/* 输入层增行由业务决定，此处先移除该开关，保持配置最小化 */}
                   <div>
                     <div className="text-xs text-blue-700 mb-1">{locale==='zh'?'字段结构（名称与类型）':'Field schema (name & type)'}</div>
                     <div className="space-y-2">
