@@ -515,7 +515,7 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
       case "meta_items": {
         const fieldDefs = f.metaItemsConfig?.fields || []
         const labels = f.metaItemsConfig?.defaultItemLabels || []
-        ;(rec as any)[f.key] = (labels.length ? labels : ["项 1", "项 2"]).map((label, idx) => {
+        ;(rec as any)[f.key] = (labels.length ? labels : []).map((label, idx) => {
           const item: any = { id: uid(), label, order: idx }
           item.texts = fieldDefs.filter(fd=>fd.type==='text').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: "" }))
           item.numbers = fieldDefs.filter(fd=>fd.type==='number').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: 0, unit: fd.unit }))

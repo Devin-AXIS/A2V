@@ -1852,22 +1852,7 @@ export function AddFieldDialog({
                       }}>{locale==='zh'?'新增字段':'Add field'}</button>
                     </div>
 
-                    <div className="text-xs text-blue-700 mt-4 mb-1">{locale==='zh'?'默认子项名称':'Default item labels'}</div>
-                    <div className="space-y-2">
-                      {metaItemsConfig.defaultItemLabels.map((name, idx)=> (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Input className="h-8 text-xs bg-white/80" value={name} onChange={(e)=>{
-                            const arr=[...metaItemsConfig.defaultItemLabels]; arr[idx] = e.target.value; setMetaItemsConfig(prev=>({ ...prev, defaultItemLabels: arr }))
-                          }} placeholder={`${locale==='zh'?'子项':'Item'} ${idx+1}`} />
-                          <button type="button" className="text-xs text-red-600" onClick={()=>{
-                            const arr=[...metaItemsConfig.defaultItemLabels]; arr.splice(idx,1); setMetaItemsConfig(prev=>({ ...prev, defaultItemLabels: arr }))
-                          }}>{locale==='zh'?'删除':'Delete'}</button>
-                        </div>
-                      ))}
-                      <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
-                        setMetaItemsConfig(prev=>({ ...prev, defaultItemLabels: [...prev.defaultItemLabels, `${locale==='zh'?'项':'Item'} ${prev.defaultItemLabels.length+1}`] }))
-                      }}>{locale==='zh'?'新增子项名':'Add item label'}</button>
-                    </div>
+                    {/* 默认子项名称：按需可恢复，此处先隐藏，保持从空开始由输入层新增 */}
                   </div>
                 </div>
               </div>
