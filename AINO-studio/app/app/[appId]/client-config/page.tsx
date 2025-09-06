@@ -785,6 +785,34 @@ export default function ClientConfigPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* 若为图+文，渲染预览的图文导航并支持点击切换配置的分区（索引） */}
+                      {activePageKey && (draft.pages as any)?.[activePageKey]?.contentNav?.type === 'iconText' && (
+                        <div className="mt-2 px-1">
+                          <div className="text-[11px] text-muted-foreground mb-1">{lang === 'zh' ? '点击图标以切换配置的卡片区域' : 'Click icon to switch section being configured'}</div>
+                          <div className="flex items-center gap-5 overflow-x-auto scrollbar-hide py-2">
+                            {(((draft.pages as any)[activePageKey]?.contentNav?.items) || []).map((it: any, idx: number) => (
+                              <button key={idx}
+                                className={`flex flex-col items-center gap-1 ${pageTabIndex === idx ? 'text-primary' : 'text-foreground'}`}
+                                onClick={() => {
+                                  setPageTabIndex(idx)
+                                  try {
+                                    const k = activePageKey as string
+                                    const cfg = draft.pages?.[k] || {}
+                                    const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
+                                    u.searchParams.set('pageCfg', JSON.stringify(cfg))
+                                    u.searchParams.set('tab', String(idx))
+                                    setPreviewUrl(u.toString())
+                                    setViewTab('preview')
+                                  } catch {}
+                                }}>
+                                <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200" />
+                                <div className="text-xs opacity-70">{it?.title || `Item ${idx + 1}`}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {/* 主内容 / 其他卡片占位 */}
                     <div className="space-y-3">

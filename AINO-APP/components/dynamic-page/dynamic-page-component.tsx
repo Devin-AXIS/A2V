@@ -277,8 +277,11 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     if (topTabsConfig && topTabsConfig.type === 'text') {
       return `${category}-tab-${activeTabIndex}`
     }
+    if (contentNavConfig && contentNavConfig.type === 'iconText') {
+      return `${category}-icon-${activeTabIndex}`
+    }
     return category
-  }, [category, topTabsConfig, activeTabIndex])
+  }, [category, topTabsConfig, contentNavConfig, activeTabIndex])
 
   const STORAGE_KEY = `dynamic_page_layout_${workspaceCategory}_${locale}`
 
@@ -585,7 +588,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
             {/* 图文入口导航容器：仅当提供 contentNavConfig 且为 iconText 时显示 */}
             {contentNavConfig && contentNavConfig.type === 'iconText' && (
               <div className="mb-4">
-                <ContentNavigation config={contentNavConfig} />
+                <ContentNavigation config={contentNavConfig} onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }} />
               </div>
             )}
             <div className="mb-6">
