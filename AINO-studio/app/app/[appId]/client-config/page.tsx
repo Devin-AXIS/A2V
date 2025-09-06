@@ -842,11 +842,15 @@ export default function ClientConfigPage() {
                           </div>
                         </div>
                         {/* 自动渲染当前工作区可见的卡片列表 */}
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div className="mt-3 space-y-2 text-muted-foreground">
                           {(workspaceCardsByCategory[activeWorkspaceCategory] || []).map((t) => (
-                            <div key={t} className="px-2 py-1 rounded border bg-white flex items-center justify-between">
-                              <span className="truncate">{t}</span>
-                              <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
+                            <div key={t} className="px-3 py-2 rounded-xl border bg-white flex items-center justify-between">
+                              <span className="truncate text-sm text-foreground">{t}</span>
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="outline">{lang === 'zh' ? '配置' : 'Config'}</Button>
+                                <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
+                                <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
+                              </div>
                             </div>
                           ))}
                           {(!workspaceCardsByCategory[activeWorkspaceCategory] || workspaceCardsByCategory[activeWorkspaceCategory].length === 0) && (
