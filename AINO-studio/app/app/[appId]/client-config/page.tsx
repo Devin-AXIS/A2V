@@ -55,6 +55,8 @@ export default function ClientConfigPage() {
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
   const [authUIOpen, setAuthUIOpen] = useState(false)
   const [previewSource, setPreviewSource] = useState<"manifest" | "auth-login" | "home">("manifest")
+  const [pageUIOpen, setPageUIOpen] = useState(false)
+  const [activePageKey, setActivePageKey] = useState<string>("")
 
   // 登录配置草稿（仅 UI，不保存到后端）
   type ProviderItem = { key: string; label: string; enabled: boolean }
@@ -464,7 +466,7 @@ export default function ClientConfigPage() {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
               <div className="h-full p-3 space-y-3">
-                {!authUIOpen ? (
+                {!authUIOpen && !pageUIOpen ? (
                   <>
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">{lang === "zh" ? "配置/构建" : "Config/Build"}</div>
@@ -524,11 +526,19 @@ export default function ClientConfigPage() {
                               variant="secondary"
                               size="sm"
                               onClick={() => {
-                                const pageKey = (item.route || '').replace(/^\//, '')
+                                const pageKey = (item.route || '').replace(/^\//, '') || item.key
                                 if (pageKey) {
-                                  setActivePage(pageKey)
-                                  setCodeScope("page")
-                                  setViewTab("code")
+                                  try {
+                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                    const u = new URL(`http://localhost:3002/${lang}${r}`)
+                                    setPreviewUrl(u.toString())
+                                  } catch {
+                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                    setPreviewUrl(`http://localhost:3002/${lang}${r}`)
+                                  }
+                                  setActivePageKey(pageKey)
+                                  setPageUIOpen(true)
+                                  setViewTab("preview")
                                 } else {
                                   toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
                                 }
@@ -630,6 +640,84 @@ export default function ClientConfigPage() {
                       </div>
                     </div>
                   </>
+                ) : pageUIOpen ? (
+                  // 左侧：页面配置编辑视图
+                  <div className="h-full p-1 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setPageUIOpen(false); setPreviewSource("home"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; setPreviewUrl(`http://localhost:3002/${baseLang}`); } catch { } }}>
+                        <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}
+                      </Button>
+                      <div className="text-sm font-semibold">{lang === "zh" ? "页面配置" : "Page Settings"}</div>
+                      {activePageKey && (<div className="text-xs text-muted-foreground">/pages/{activePageKey}.json</div>)}
+                    </div>
+                    {/* 页面名称 */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "页面名称" : "Page Title"}</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input placeholder={lang === "zh" ? "中文标题" : "Title ZH"} value={activePageKey && draft.pages?.[activePageKey]?.title?.zh || ""} onChange={(e) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.title = { ...(p.title || {}), zh: e.target.value }; next.pages[k] = p; return next })} />
+                        <Input placeholder={lang === "zh" ? "英文标题" : "Title EN"} value={activePageKey && draft.pages?.[activePageKey]?.title?.en || ""} onChange={(e) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.title = { ...(p.title || {}), en: e.target.value }; next.pages[k] = p; return next })} />
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">{lang === "zh" ? "保存后右侧预览页标题会跟随显示" : "Title applies to header after save"}</div>
+                      {/* 将当前页面配置同步给运行端预览 */}
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => {
+                          try {
+                            const k = activePageKey as string
+                            const cfg = draft.pages?.[k] || {}
+                            const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
+                            u.searchParams.set('pageCfg', JSON.stringify(cfg))
+                            setPreviewUrl(u.toString())
+                            setViewTab('preview')
+                          } catch {}
+                        }}>{lang === 'zh' ? '应用到预览' : 'Apply to Preview'}</Button>
+                      </div>
+                    </div>
+                    {/* 开关项 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                        <span>{lang === "zh" ? "开启 顶部栏" : "Show Header"}</span>
+                        <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showHeader !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showHeader: !!v }; next.pages[k] = p; return next })} />
+                      </label>
+                      <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                        <span>{lang === "zh" ? "开启 全局底部导航" : "Show Bottom Nav"}</span>
+                        <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showBottomNav !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showBottomNav: !!v }; next.pages[k] = p; return next })} />
+                      </label>
+                    </div>
+                    {/* 展示形式：图标或文字 */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "内容导航展示形式" : "Content Nav Type"}</div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant={!activePageKey || draft.pages?.[activePageKey]?.displayType === 'icon' || !draft.pages?.[activePageKey]?.displayType ? 'default' : 'outline'} onClick={() => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.displayType = 'icon'; next.pages[k] = p; return next })}>{lang === "zh" ? "图标" : "Icons"}</Button>
+                        <Button size="sm" variant={activePageKey && draft.pages?.[activePageKey]?.displayType === 'text' ? 'default' : 'outline'} onClick={() => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.displayType = 'text'; next.pages[k] = p; return next })}>{lang === "zh" ? "文字" : "Text"}</Button>
+                      </div>
+                    </div>
+                    {/* 主内容 / 其他卡片占位 */}
+                    <div className="space-y-3">
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "主内容" : "Main Content"}</div>
+                      <div className="border rounded-xl p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{lang === "zh" ? "卡片" : "Card"}</div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline">{lang === "zh" ? "筛选" : "Filter"}</Button>
+                            <Button size="sm" variant="outline">{lang === "zh" ? "配置" : "Config"}</Button>
+                            <Button size="sm" variant="outline">{lang === "zh" ? "显示" : "Display"}</Button>
+                            <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "其他卡片" : "Other Cards"}</div>
+                      <div className="border rounded-xl p-3 opacity-90">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{lang === "zh" ? "卡片2" : "Card 2"}</div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline">{lang === "zh" ? "配置" : "Config"}</Button>
+                            <Button size="sm" variant="outline">{lang === "zh" ? "显示" : "Display"}</Button>
+                            <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   // 左侧：登录配置编辑视图
                   <div className="h-full p-1 space-y-3">

@@ -20,6 +20,14 @@ function DemoAwareBottomNavigation({ dict }: { dict: any }) {
 
   useEffect(() => {
     try {
+      // 优先读取页面级别配置（由 Studio 以 pageCfg 或本地存储写入）
+      const route = "/" + (pathname?.split("/").slice(2).join("/") || "")
+      const rawPage = localStorage.getItem(`APP_PAGE_ROUTE_${route}`)
+      if (rawPage) {
+        const cfg = JSON.parse(rawPage)
+        const wantHide = cfg?.options?.showBottomNav === false
+        if (wantHide) { setItems(null); return }
+      }
       // 优先使用全局配置 APP_GLOBAL_CONFIG.nav，其次兼容旧的 CURRENT_APP_NAV_ITEMS
       const rawGlobal = localStorage.getItem('APP_GLOBAL_CONFIG')
       if (rawGlobal) {

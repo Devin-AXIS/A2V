@@ -71,7 +71,7 @@ export default function PreviewPage() {
       if (!exists) {
         const cardsDefault: string[] = (manifest?.pages?.home?.cardsDefault && manifest.pages.home.cardsDefault.length > 0)
           ? manifest.pages.home.cardsDefault
-          : ["mobile-navigation"]
+          : []
         const payload = { cards: cardsDefault.map((t) => ({ type: t })), themes: {}, updatedAt: Date.now() }
         localStorage.setItem(storageKey, JSON.stringify(payload))
         // 触发重新挂载以让动态页读取到最新布局

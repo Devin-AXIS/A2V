@@ -1,11 +1,12 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 
 export default function MobileDynamicPage() {
   const params = useParams<{ locale: string; id: string }>()
+  const sp = useSearchParams()
   const locale = params?.locale || "zh"
   const id = params?.id || "unknown"
 
@@ -19,6 +20,21 @@ export default function MobileDynamicPage() {
   useEffect(() => {
     try {
       if (typeof window === 'undefined') return
+      // 优先读取 Studio 传入的 pageCfg 参数
+      const cfgStr = sp?.get('pageCfg')
+      if (cfgStr) {
+        try {
+          const cfg = JSON.parse(cfgStr)
+          const defaultOptions = { showHeader: true, showBottomNav: false, showBack: false }
+          const mergedOptions = { ...defaultOptions, ...(cfg?.options || {}) }
+          // 写入按ID的页面配置
+          localStorage.setItem(appPageKey, JSON.stringify({ ...cfg, options: mergedOptions }))
+          // 写入按路由的页面配置，供底部导航判断显示/隐藏
+          const routeKey = `/p-${id}`
+          localStorage.setItem(`APP_PAGE_ROUTE_${routeKey}`, JSON.stringify({ ...cfg, options: mergedOptions }))
+          setPageMeta({ title: cfg?.title, layout: cfg?.layout, route: cfg?.route, options: mergedOptions })
+        } catch {}
+      }
       const raw = localStorage.getItem(appPageKey)
       if (raw) {
         const page = JSON.parse(raw)
@@ -37,7 +53,7 @@ export default function MobileDynamicPage() {
       }
     } catch {}
     setSeeded(true)
-  }, [storageKey, appPageKey])
+  }, [storageKey, appPageKey, sp, id])
 
   // category 采用 p-{id}，保证各页布局隔离
   const category = useMemo(() => `p-${id}`,[id])
