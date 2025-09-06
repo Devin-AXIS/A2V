@@ -284,24 +284,24 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Drawer
                   <div className="font-medium text-gray-700">{it.label}</div>
                   {schema.filter((fd: any)=>fd.type==='text').map((fd: any)=>{
                     const row = (it.texts||[]).find((r:any)=>r.fieldId===fd.id)
-                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{row?.value||''}</span></div>
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 text-gray-800">{row?.value||''}</div></div>
                   })}
                   {schema.filter((fd: any)=>fd.type==='number').map((fd: any)=>{
                     const row = (it.numbers||[]).find((r:any)=>r.fieldId===fd.id)
-                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{typeof row?.value==='number'? row?.value: ''}{fd.unit||''}</span></div>
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}{fd.unit?`（${fd.unit}）`:''}</div><div className="col-span-12 text-gray-800">{typeof row?.value==='number'? row?.value: ''}</div></div>
                   })}
                   {schema.filter((fd: any)=>fd.type==='image').map((fd: any)=>{
                     const row = (it.images||[]).find((r:any)=>r.fieldId===fd.id)
-                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span>{row?.url ? <img src={row.url} className="h-10 w-16 object-cover rounded border"/> : <span className="text-gray-400">-</span>}</div>
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12">{row?.url ? <img src={row.url} className="h-10 w-16 object-cover rounded border"/> : <span className="text-gray-400">-</span>}</div></div>
                   })}
                   {schema.filter((fd: any)=>fd.type==='select').map((fd: any)=>{
                     const row = (it.selects||[]).find((r:any)=>r.fieldId===fd.id)
-                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><span className="text-gray-800">{row?.value||'-'}</span></div>
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 text-gray-800">{row?.value||'-'}</div></div>
                   })}
                   {schema.filter((fd: any)=>fd.type==='multiselect').map((fd: any)=>{
                     const row = (it.multiselects||[]).find((r:any)=>r.fieldId===fd.id)
                     const vals = Array.isArray(row?.value) ? row!.value : []
-                    return <div key={fd.id} className="flex items-center gap-2"><span className="text-gray-500 w-24">{fd.label}</span><div className="flex flex-wrap gap-1">{vals.map((v:any,i:number)=>(<span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">{v}</span>))}{vals.length===0 && <span className="text-gray-400">-</span>}</div></div>
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 flex flex-wrap gap-1">{vals.map((v:any,i:number)=>(<span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">{v}</span>))}{vals.length===0 && <span className="text-gray-400">-</span>}</div></div>
                   })}
                 </div>
               ))}
