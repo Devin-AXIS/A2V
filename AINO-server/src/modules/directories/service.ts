@@ -81,6 +81,8 @@ export class DirectoryService {
         description: field.schema?.description || "",
         placeholder: field.schema?.placeholder || "",
         preset: field.schema?.preset || undefined,
+        // 关键：透传业务字段的配置，避免前端刷新后丢失
+        metaItemsConfig: (field.schema as any)?.metaItemsConfig || undefined,
         categoryId: field.categoryId || null, // 添加分类ID
       }))
     } catch (error) {
