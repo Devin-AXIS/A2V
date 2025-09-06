@@ -193,6 +193,23 @@ export default function ClientConfigPage() {
     setContentNavOpen(false)
   }
 
+  function handleUploadCnImage(idx: number) {
+    try {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = async (e: any) => {
+        try {
+          const file = (e.target as HTMLInputElement).files?.[0]
+          if (!file) return
+          const dataUrl = await readAndResizeImage(file, 256, 256, 0.9)
+          setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, image: dataUrl } : x))
+        } catch {}
+      }
+      input.click()
+    } catch {}
+  }
+
   function saveRouteDialog() {
     const route = (routeTemp || "").trim()
     const ok = /^\/[A-Za-z0-9_\-/]*$/.test(route)
@@ -473,7 +490,7 @@ export default function ClientConfigPage() {
     }
   }
 
-  // 若默认就在“预览”页且还没有 URL，则自动生成一次预览
+  // 若默认就在"预览"页且还没有 URL，则自动生成一次预览
   useEffect(() => {
     if (viewTab === "preview" && !previewUrl) {
       openPreview()
@@ -941,11 +958,11 @@ export default function ClientConfigPage() {
 
             {/* 内容导航配置弹窗 */}
             <Dialog open={contentNavOpen} onOpenChange={setContentNavOpen}>
-              <DialogContent className="max-w-[760px] w-[95vw] bg-white">
+              <DialogContent className="max-w-[760px] w-[95vw] max-h-[80vh] bg-white p-0">
                 <DialogHeader>
                   <DialogTitle>{lang === 'zh' ? '内容导航配置' : 'Content Navigation'}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 px-4 pb-4 overflow-y-auto">
                   {/* 类型选择 */}
                   <div className="space-y-2">
                     <div className="text-xs text-muted-foreground">{lang === 'zh' ? '展示样式' : 'Display Type'}</div>
@@ -1002,12 +1019,7 @@ export default function ClientConfigPage() {
                           <Input placeholder={lang === 'zh' ? '标题(中文/英文皆可)' : 'Title'} value={it.title || ''} onChange={(e) => setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} />
                           <div className="flex items-center gap-2">
                             {cnType === 'iconText' && (
-                              <input type="file" accept="image/*" onChange={async (e) => {
-                                const f = e.target.files?.[0]
-                                if (!f) return
-                                const dataUrl = await readAndResizeImage(f, 256, 256, 0.9)
-                                setCnItems((s: any[]) => s.map((x, i) => i === idx ? { ...x, image: dataUrl } : x))
-                              }} />
+                              <Button size="sm" variant="outline" onClick={() => handleUploadCnImage(idx)}>{lang === 'zh' ? '上传图片' : 'Upload'}</Button>
                             )}
                             <Button size="icon" variant="ghost" onClick={() => setCnItems((s: any[]) => s.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
                           </div>
@@ -1017,7 +1029,7 @@ export default function ClientConfigPage() {
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="px-4 pb-3">
                   <Button variant="outline" onClick={() => setContentNavOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
                   <Button onClick={saveContentNavDialog}>{lang === 'zh' ? '保存' : 'Save'}</Button>
                 </DialogFooter>
