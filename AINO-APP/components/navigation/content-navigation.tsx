@@ -64,7 +64,10 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
 
   if (config.type === "text") {
     return (
-      <div className={cn("w-full rounded-xl bg-card text-card-foreground shadow-sm", className)}>
+      <div className={cn(
+        "w-full rounded-2xl shadow-md backdrop-blur-md bg-white/60 dark:bg-neutral-900/30",
+        className,
+      )}>
         {/* Header with title and optional actions */}
         {(config.header?.title || config.header?.search || config.header?.notify) && (
           <div className="px-4 py-3 flex items-center justify-between">
