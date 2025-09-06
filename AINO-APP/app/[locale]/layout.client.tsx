@@ -20,14 +20,23 @@ function DemoAwareBottomNavigation({ dict }: { dict: any }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('CURRENT_APP_NAV_ITEMS')
-      if (raw) setItems(JSON.parse(raw))
+      // 优先使用全局配置 APP_GLOBAL_CONFIG.nav，其次兼容旧的 CURRENT_APP_NAV_ITEMS
+      const rawGlobal = localStorage.getItem('APP_GLOBAL_CONFIG')
+      if (rawGlobal) {
+        const cfg = JSON.parse(rawGlobal)
+        if (Array.isArray(cfg?.nav) && cfg.nav.length > 0) {
+          setItems(cfg.nav)
+          return
+        }
+      }
+      const rawLegacy = localStorage.getItem('CURRENT_APP_NAV_ITEMS')
+      if (rawLegacy) setItems(JSON.parse(rawLegacy))
       else setItems(null)
     } catch { setItems(null) }
   }, [pathname])
 
   // 如果是Demo页面、PC页面或组件页面，不显示底部导航（这些页面有自己的专用导航或不需要导航）
-  if (pathname.includes("/demo/") || pathname.includes("/pc") || pathname.includes("/components/") || pathname.includes("/preview/")) {
+  if (pathname.includes("/demo/") || pathname.includes("/pc") || pathname.includes("/components/") || pathname.includes("/preview/") || pathname.includes("/auth/")) {
     return null
   }
 

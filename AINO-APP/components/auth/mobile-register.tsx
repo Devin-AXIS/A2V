@@ -1,7 +1,8 @@
 "use client"
 
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, ArrowLeft, User, Lock, Smartphone, Check, AlertCircle } from 'lucide-react'
 import { PhoneInput, CountryCodeSelector } from './phone-input'
@@ -34,9 +35,46 @@ export function MobileRegister({
   onLogin,
   className
 }: MobileRegisterProps) {
+  const pathname = usePathname()
+  const [authConfig, setAuthConfig] = useState<any>(null)
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      const fromParam = sp.get('authCfg')
+      if (fromParam) {
+        const parsed = JSON.parse(fromParam)
+        setAuthConfig(parsed)
+        return
+      }
+      const raw = window.localStorage.getItem('APP_AUTH_CONFIG')
+      if (raw) setAuthConfig(JSON.parse(raw))
+    } catch {}
+  }, [])
+
+  const titleStyle = authConfig?.titleColor ? { color: authConfig.titleColor } : undefined
+  const bodyStyle = authConfig?.bodyColor ? { color: authConfig.bodyColor } : undefined
+
+  const currentLocale = useMemo(() => (pathname?.startsWith('/en') ? 'en' : 'zh'), [pathname])
+  const introTitle = useMemo(() => {
+    const t = authConfig?.introTitle
+    if (!t) return null
+    if (typeof t === 'string') return t
+    return t[currentLocale] || t.zh || t.en || null
+  }, [authConfig, currentLocale])
+  const introText = useMemo(() => {
+    const t = authConfig?.introText
+    if (!t) return null
+    if (typeof t === 'string') return t
+    return t[currentLocale] || t.zh || t.en || null
+  }, [authConfig, currentLocale])
   const [stage, setStage] = useState<RegisterStage>('phone')
   const [countryCode, setCountryCode] = useState('+86')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState<string>(() => {
+    try {
+      const sp = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+      return sp.get('phone') || ''
+    } catch { return '' }
+  })
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -195,8 +233,8 @@ export function MobileRegister({
   const renderStep1 = () => (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2">手机号注册</h1>
-        <p className="text-muted-foreground">请输入您的手机号码</p>
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>{introTitle || (currentLocale === 'en' ? 'Sign up' : '注册账号')}</h1>
+        <p className="text-muted-foreground" style={bodyStyle}>{introText || (currentLocale === 'en' ? 'Enter your phone number' : '请输入您的手机号码')}</p>
       </div>
 
       {/* 国家代码 + 手机号（同一行） */}
@@ -235,8 +273,8 @@ export function MobileRegister({
   const renderStep2 = () => (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2">设置密码</h1>
-        <p className="text-muted-foreground">请设置您的登录密码</p>
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>设置密码</h1>
+        <p className="text-muted-foreground" style={bodyStyle}>请设置您的登录密码</p>
       </div>
 
       {/* 密码输入 */}
@@ -401,8 +439,8 @@ export function MobileRegister({
   const renderVerify = () => (
     <>
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold mb-2">输入验证码</h1>
-        <p className="text-muted-foreground text-sm">已发送至 {countryCode}{phone}</p>
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>输入验证码</h1>
+        <p className="text-muted-foreground text-sm" style={bodyStyle}>已发送至 {countryCode}{phone}</p>
       </div>
       <div className="mb-6">
         <VerificationCodeInput value={code} onChange={handleCodeChange} error={errors.code} onComplete={(v) => setCode(v)} size="sm" />
@@ -416,7 +454,7 @@ export function MobileRegister({
 
   return (
     <div className="min-h-screen pb-24">
-      <AppHeader title="注册" showBackButton={stage !== 'phone'} />
+      {/* 注册页不显示全局 AppHeader */}
       <div className="pt-12">
         <div className="container mx-auto px-4">
           <div className="max-w-sm mx-auto">

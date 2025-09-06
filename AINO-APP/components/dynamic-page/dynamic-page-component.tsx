@@ -249,9 +249,16 @@ interface DynamicPageComponentProps {
   category: string
   locale: string
   layout?: "mobile" | "pc"
+  // per-page overrides for dynamic pages
+  showHeader?: boolean
+  showBottomNav?: boolean
+  headerTitle?: string
+  showBack?: boolean
+  aiOpsUrl?: string
+  aiOpsLabel?: string
 }
 
-export function DynamicPageComponent({ category, locale, layout: propLayout }: DynamicPageComponentProps) {
+export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
@@ -514,14 +521,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
     return PAGE_CATEGORIES[category] || PAGE_CATEGORIES.workspace
   }, [category, propLayout])
 
+  const showHeader = showHeaderProp ?? pageCategory.config.showHeader
+  const showBottomNav = showBottomNavProp ?? pageCategory.config.showBottomNav
+
   return (
     <LocalThemeEditorVisibilityProvider visible={isEditing}>
       <div className={cn("min-h-screen relative", "bg-transparent")}>
         {/* Header - 只在移动端显示 */}
-        {pageCategory.config.showHeader && propLayout !== "pc" && (
+        {showHeader && propLayout !== "pc" && (
           <AppHeader
-            title={pageCategory.type === "education" ? "教育应用Demo" : "自定义动态页面"}
-            showBack={false}
+            title={headerTitle || (pageCategory.type === "education" ? "教育应用Demo" : "自定义动态页面")}
+            showBackButton={showBack}
             actions={
               pageCategory.config.allowEdit ? (
                 <Button variant="ghost" size="sm" onClick={toggleEditMode}>
@@ -530,6 +540,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
               ) : undefined
             }
           />
+        )}
+
+        {/* 顶部右侧AI运营入口（可选） */}
+        {showHeader && propLayout !== "pc" && aiOpsUrl && (
+          <div className="fixed top-3 right-20 z-30">
+            <a href={aiOpsUrl} target="_blank" rel="noreferrer">
+              <Button size="sm" variant="secondary" className="rounded-full h-8 px-3">
+                {aiOpsLabel || "AI运营"}
+              </Button>
+            </a>
+          </div>
         )}
 
         {/* 工作台类型 */}
@@ -716,7 +737,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
         )}
 
         {/* 底部导航 */}
-        {pageCategory.config.showBottomNav && (
+        {showBottomNav && (
           <BottomNavigation
             dict={{
               browseComponents: "组件",

@@ -47,9 +47,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <MobileRegister
-      onRegister={handleRegister}
-      onLogin={handleLogin}
-    />
+    <div className="min-h-screen">
+      <MobileRegister
+        onRegister={handleRegister}
+        onLogin={handleLogin}
+      />
+    </div>
   )
 }

@@ -1,0 +1,63 @@
+{
+  "id": "65ce7ca9-cc60-4fa3-b779-76992e6996ce",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c226bcaf-2593-41dc-8164-713b7e7e28ff",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        },
+        {
+          "key": "k1757151868757",
+          "label": "新项",
+          "route": "/p-k1757151868757"
+        }
+      ]
+    },
+    "dataSources": {
+      "table_acfb61c6-b66f-4319-8e21-596c2a410459": {
+        "type": "table",
+        "tableId": "acfb61c6-b66f-4319-8e21-596c2a410459",
+        "tableName": "用户列表",
+        "moduleName": "用户管理",
+        "label": "用户管理/用户列表"
+      },
+      "table_a892370c-f965-44e8-923e-e319c659a62e": {
+        "type": "table",
+        "tableId": "a892370c-f965-44e8-923e-e319c659a62e",
+        "tableName": "岗位数据",
+        "moduleName": "智能招聘",
+        "label": "智能招聘/岗位数据"
+      },
+      "table_9603dbbf-16bd-4e17-95e7-16d42d526a29": {
+        "type": "table",
+        "tableId": "9603dbbf-16bd-4e17-95e7-16d42d526a29",
+        "tableName": "职业数据",
+        "moduleName": "智能招聘",
+        "label": "智能招聘/职业数据"
+      }
+    },
+    "pages": {
+      "p-k1757151868757": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757151868757",
+        "cards": []
+      }
+    }
+  },
+  "createdAt": "2025-09-06T12:15:04.366Z"
+}

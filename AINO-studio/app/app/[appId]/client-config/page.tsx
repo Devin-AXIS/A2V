@@ -12,13 +12,14 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
 import { api } from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
@@ -52,12 +53,35 @@ export default function ClientConfigPage() {
   const monacoRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
+  const [authUIOpen, setAuthUIOpen] = useState(false)
+  const [previewSource, setPreviewSource] = useState<"manifest" | "auth-login" | "home">("manifest")
+
+  // 登录配置草稿（仅 UI，不保存到后端）
+  type ProviderItem = { key: string; label: string; enabled: boolean }
+  const [authConfig, setAuthConfig] = useState<{ layoutVariant?: 'centered' | 'bottomDocked'; showBackground: boolean; backgroundImage?: string; showLogo: boolean; logoImage?: string; showIntro: boolean; introTitle?: { zh?: string; en?: string }; introText?: { zh?: string; en?: string }; titleColor?: string; bodyColor?: string; providers: ProviderItem[] }>({
+    layoutVariant: 'centered',
+    showBackground: true,
+    backgroundImage: undefined,
+    showLogo: true,
+    logoImage: undefined,
+    showIntro: true,
+    introTitle: undefined,
+    introText: undefined,
+    providers: [
+      { key: "phone", label: locale === "zh" ? "手机号登录" : "Phone", enabled: true },
+      { key: "wechat", label: locale === "zh" ? "微信登录" : "WeChat", enabled: true },
+      { key: "bytedance", label: locale === "zh" ? "字节登录" : "ByteDance", enabled: false },
+      { key: "google", label: locale === "zh" ? "谷歌登录" : "Google", enabled: true },
+      { key: "apple", label: locale === "zh" ? "苹果登录" : "Apple", enabled: true },
+    ],
+  })
 
   const [draft, setDraft] = useState<any>({
     schemaVersion: "1.0",
     app: {
       appKey: params.appId,
       locale: lang === "zh" ? "zh-CN" : "en-US",
+      defaultLanguage: lang === "zh" ? "zh" : "en",
       theme: "default",
       bottomNav: [
         { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/home" },
@@ -116,18 +140,54 @@ export default function ClientConfigPage() {
     }
   }
 
+  // 路由配置对话框
+  const [routeDialogOpen, setRouteDialogOpen] = useState(false)
+  const [routeEditingIndex, setRouteEditingIndex] = useState<number | null>(null)
+  const [routeTemp, setRouteTemp] = useState("")
+
+  function openRouteDialog(idx: number) {
+    const r = draft.app.bottomNav[idx]?.route || ""
+    setRouteTemp(r)
+    setRouteEditingIndex(idx)
+    setRouteDialogOpen(true)
+  }
+
+  function saveRouteDialog() {
+    const route = (routeTemp || "").trim()
+    const ok = /^\/[A-Za-z0-9_\-/]*$/.test(route)
+    if (!ok || route.length < 2) {
+      toast({ description: lang === "zh" ? "路由格式不正确，应以 / 开头，可包含字母数字-_/" : "Invalid route. Must start with / and contain letters, numbers, - or _.", variant: "destructive" as any })
+      return
+    }
+    setDraft((s: any) => {
+      const next = { ...s }
+      const list = [...next.app.bottomNav]
+      if (routeEditingIndex != null && list[routeEditingIndex]) {
+        list[routeEditingIndex] = { ...list[routeEditingIndex], route }
+        next.app.bottomNav = list
+        const pageKey = (route || '').replace(/^\//, '')
+        next.pages = next.pages || {}
+        if (!next.pages[pageKey]) {
+          next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+        }
+      }
+      return next
+    })
+    setRouteDialogOpen(false)
+  }
+
   async function ensureRecords(dirId: string) {
     if (recordsLoading[dirId] || recordsByDir[dirId]) return
-    setRecordsLoading((s) => ({ ...s, [dirId]: true }))
+    setRecordsLoading((s: any) => ({ ...s, [dirId]: true }))
     try {
       const res = await api.records.listRecords(dirId, { page: 1, pageSize: 100 })
       const rows: any[] = res.success && res.data ? (Array.isArray(res.data) ? res.data : res.data.records || []) : []
       const items: RecordItem[] = rows.map((r: any) => ({ id: r.id, label: r.name || r.title || r.id, raw: r }))
-      setRecordsByDir((s) => ({ ...s, [dirId]: items }))
+      setRecordsByDir((s: any) => ({ ...s, [dirId]: items }))
     } catch {
-      setRecordsByDir((s) => ({ ...s, [dirId]: [] }))
+      setRecordsByDir((s: any) => ({ ...s, [dirId]: [] }))
     } finally {
-      setRecordsLoading((s) => ({ ...s, [dirId]: false }))
+      setRecordsLoading((s: any) => ({ ...s, [dirId]: false }))
     }
   }
 
@@ -177,12 +237,12 @@ export default function ClientConfigPage() {
 
   // 语言切换同步显示文案
   useEffect(() => {
-    setDraft((s) => ({
+    setDraft((s: any) => ({
       ...s,
       app: {
         ...s.app,
         locale: lang === "zh" ? "zh-CN" : "en-US",
-        bottomNav: s.app.bottomNav.map((i) =>
+        bottomNav: s.app.bottomNav.map((i: any) =>
           i.key === "home"
             ? { ...i, label: lang === "zh" ? "首页" : "Home" }
             : i.key === "me"
@@ -192,6 +252,78 @@ export default function ClientConfigPage() {
       },
     }))
   }, [lang])
+
+  // 语言切换时同步登录配置显示文案
+  useEffect(() => {
+    setAuthConfig((s: any) => ({
+      ...s,
+      providers: s.providers.map((p: any) => {
+        if (p.key === "phone") return { ...p, label: lang === "zh" ? "手机号登录" : "Phone" }
+        if (p.key === "wechat") return { ...p, label: lang === "zh" ? "微信登录" : "WeChat" }
+        if (p.key === "bytedance") return { ...p, label: lang === "zh" ? "字节登录" : "ByteDance" }
+        if (p.key === "google") return { ...p, label: lang === "zh" ? "谷歌登录" : "Google" }
+        if (p.key === "apple") return { ...p, label: lang === "zh" ? "苹果登录" : "Apple" }
+        return p
+      }),
+    }))
+  }, [lang])
+
+  // 简单图片压缩到移动端尺寸
+  async function readAndResizeImage(file: File, targetW: number, targetH: number, quality = 0.8): Promise<string> {
+    const img = document.createElement('img')
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+    await new Promise((r) => { img.onload = r as any; img.src = dataUrl })
+    const canvas = document.createElement('canvas')
+    // 按目标框等比缩放
+    const scale = Math.min(targetW / img.width, targetH / img.height)
+    const w = Math.round(img.width * scale)
+    const h = Math.round(img.height * scale)
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(img, 0, 0, w, h)
+    return canvas.toDataURL('image/jpeg', quality)
+  }
+
+  // 弹窗状态与临时字段
+  const [bgDialogOpen, setBgDialogOpen] = useState(false)
+  const [logoDialogOpen, setLogoDialogOpen] = useState(false)
+  const [introDialogOpen, setIntroDialogOpen] = useState(false)
+  const [introTitleTmp, setIntroTitleTmp] = useState("")
+  const [introTextTmp, setIntroTextTmp] = useState("")
+  const [introTitleEnTmp, setIntroTitleEnTmp] = useState("")
+  const [introTextEnTmp, setIntroTextEnTmp] = useState("")
+
+  // 登录配置变化时，右侧预览实时刷新为携带配置的登录页
+  useEffect(() => {
+    if (!authUIOpen || previewSource !== "auth-login" || viewTab !== "preview") return
+    try {
+      const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
+      const cfg = {
+        layoutVariant: authConfig.layoutVariant || 'centered',
+        // 固定图标样式
+        showBackground: !!authConfig.showBackground,
+        backgroundImage: authConfig.backgroundImage || undefined,
+        showLogo: !!authConfig.showLogo,
+        logoImage: authConfig.logoImage || undefined,
+        showIntro: !!authConfig.showIntro,
+        introTitle: authConfig.introTitle || undefined,
+        introText: authConfig.introText || undefined,
+        titleColor: authConfig.titleColor || undefined,
+        bodyColor: authConfig.bodyColor || undefined,
+        providers: (authConfig.providers || []).map((p: any) => ({ key: p.key, enabled: !!p.enabled })),
+      }
+      const u = new URL(`http://localhost:3002/${baseLang}/auth/login`)
+      u.searchParams.set("authCfg", JSON.stringify(cfg))
+      u.searchParams.set("v", String(Date.now()))
+      setPreviewUrl(u.toString())
+    } catch { }
+  }, [authConfig, authUIOpen, previewSource, viewTab, draft.app?.defaultLanguage, lang])
 
   async function openPreview() {
     try {
@@ -283,7 +415,18 @@ export default function ClientConfigPage() {
 
   function onSwitchTab(next: "preview" | "code") {
     if (next === "preview") {
-      openPreview()
+      // 根据源决定预览 URL
+      if (previewSource === "auth-login") {
+        const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
+        setPreviewUrl(`http://localhost:3002/${baseLang}/auth/login`)
+        setViewTab("preview")
+      } else if (previewSource === "home") {
+        const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
+        setPreviewUrl(`http://localhost:3002/${baseLang}/home`)
+        setViewTab("preview")
+      } else {
+        openPreview()
+      }
     } else {
       setViewTab("code")
     }
@@ -321,125 +464,265 @@ export default function ClientConfigPage() {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
               <div className="h-full p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold">{lang === "zh" ? "结构" : "Structure"}</div>
-                  <Tabs value="config" className="-mr-2">
-                    <TabsList>
-                      <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
-                      <TabsTrigger value="ai" disabled>{lang === "zh" ? "AI 对话（稍后）" : "AI (later)"}</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-                <div className="text-xs text-muted-foreground">{lang === "zh" ? "应用信息" : "App Info"}</div>
-                <div className="space-y-2">
-                  <Label>App Key</Label>
-                  <Input value={draft.app.appKey} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, appKey: e.target.value } }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{lang === "zh" ? "主题" : "Theme"}</Label>
-                  <Input value={draft.app.theme} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, theme: e.target.value } }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
-                  <div className="space-y-2">
-                    {draft.app.bottomNav.map((item, idx) => (
-                      <div
-                        key={item.key}
-                        className="grid grid-cols-[20px_1fr_1fr_auto] items-center gap-2"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", String(idx))
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          const from = Number(e.dataTransfer.getData("text/plain"))
-                          const to = idx
-                          if (Number.isNaN(from) || from === to) return
-                          setDraft((s) => {
-                            const next = [...s.app.bottomNav]
-                            const [moved] = next.splice(from, 1)
-                            next.splice(to, 0, moved)
-                            return { ...s, app: { ...s.app, bottomNav: next } }
-                          })
+                {!authUIOpen ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold">{lang === "zh" ? "配置/构建" : "Config/Build"}</div>
+                      <Tabs value="config" className="-mr-2">
+                        <TabsList>
+                          <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
+                          <TabsTrigger value="ai" disabled>{lang === "zh" ? "AI 对话（稍后）" : "AI (later)"}</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                    {/* 默认语言（保存为 App 默认语言） */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">{lang === "zh" ? "默认语言（应用）" : "Default Language (App)"}</div>
+                      <div className="inline-flex items-center gap-2 bg-gray-50 rounded-md p-1 border">
+                        <Button size="sm" variant={draft.app.defaultLanguage === "zh" ? "default" : "ghost"} onClick={() => { setDraft((s: any) => ({ ...s, app: { ...s.app, defaultLanguage: "zh", locale: "zh-CN" } })); }}>中文</Button>
+                        <Button size="sm" variant={draft.app.defaultLanguage === "en" ? "default" : "ghost"} onClick={() => { setDraft((s: any) => ({ ...s, app: { ...s.app, defaultLanguage: "en", locale: "en-US" } })); }}>EN</Button>
+                      </div>
+                    </div>
+                    {/* App Key 隐藏：无需显示 */}
+                    {false && (
+                      <div className="space-y-2">
+                        <Label>{lang === "zh" ? "主题" : "Theme"}</Label>
+                        <Input value={draft.app.theme} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, theme: e.target.value } }))} />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
+                      <div className="space-y-2">
+                        {draft.app.bottomNav.map((item: any, idx: number) => (
+                          <div
+                            key={item.key}
+                            className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("text/plain", String(idx))
+                            }}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              const from = Number(e.dataTransfer.getData("text/plain"))
+                              const to = idx
+                              if (Number.isNaN(from) || from === to) return
+                              setDraft((s: any) => {
+                                const next = [...s.app.bottomNav]
+                                const [moved] = next.splice(from, 1)
+                                next.splice(to, 0, moved)
+                                return { ...s, app: { ...s.app, bottomNav: next } }
+                              })
+                            }}
+                          >
+                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                            <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
+                            <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
+                              <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                const pageKey = (item.route || '').replace(/^\//, '')
+                                if (pageKey) {
+                                  setActivePage(pageKey)
+                                  setCodeScope("page")
+                                  setViewTab("code")
+                                } else {
+                                  toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
+                                }
+                              }}
+                            >
+                              <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }))
+                                setTimeout(() => { savePreview() }, 0)
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        {draft.app.bottomNav.length < 5 && (
+                          <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                            const key = `k${Date.now()}`
+                            const route = `/p-${key}`
+                            const next = { ...s }
+                            next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
+                            const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
+                            next.pages = next.pages || {}
+                            if (!next.pages[pageKey]) {
+                              next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+                            }
+                            return next
+                          })}>
+                            {lang === "zh" ? "添加项" : "Add Item"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {/* 登录配置入口（排在数据定义之前） */}
+                    <div className="pt-2">
+                      <Button
+                        className="w-full justify-center"
+                        variant="secondary"
+                        onClick={() => {
+                          setAuthUIOpen(true)
+                          // 右侧立即显示登录页预览
+                          setPreviewSource("auth-login")
+                          setViewTab("preview")
+                          try {
+                            const baseLang = (draft.app?.defaultLanguage || "zh") as string
+                            const cfg = {
+                              layoutVariant: authConfig.layoutVariant || 'centered',
+                              showBackground: !!authConfig.showBackground,
+                              backgroundImage: authConfig.backgroundImage || undefined,
+                              showLogo: !!authConfig.showLogo,
+                              logoImage: authConfig.logoImage || undefined,
+                              showIntro: !!authConfig.showIntro,
+                              introTitle: authConfig.introTitle || undefined,
+                              introText: authConfig.introText || undefined,
+                              titleColor: authConfig.titleColor || undefined,
+                              bodyColor: authConfig.bodyColor || undefined,
+                              providers: (authConfig.providers || []).map((p: any) => ({ key: p.key, enabled: !!p.enabled })),
+                            }
+                            const u = new URL(`http://localhost:3002/${baseLang}/auth/login`)
+                            u.searchParams.set("authCfg", JSON.stringify(cfg))
+                            u.searchParams.set("v", String(Date.now()))
+                            setPreviewUrl(u.toString())
+                          } catch { }
                         }}
                       >
-                        <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
-                        <Input value={item.label} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it, i) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
-                        <Input value={item.route} onChange={(e) => setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it, i) => i === idx ? { ...it, route: e.target.value } : it) } }))} placeholder="/route" />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setDraft(s => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_, i) => i !== idx) } }))
-                            // 自动保存
-                            setTimeout(() => { savePreview() }, 0)
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                        {lang === "zh" ? "登录配置" : "Login Settings"}
+                      </Button>
+                    </div>
+                    {/* 数据定义 */}
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
+                        <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
+                          <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
                         </Button>
                       </div>
-                    ))}
-                    {draft.app.bottomNav.length < 5 && (
-                      <Button variant="secondary" onClick={() => setDraft(s => {
-                        const key = `k${Date.now()}`
-                        const route = `/p-${key}`
-                        const next = { ...s }
-                        next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
-                        // 导航新增时自动创建页面（若不存在）
-                        const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
-                        next.pages = next.pages || {}
-                        if (!next.pages[pageKey]) {
-                          next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
-                        }
-                        return next
-                      })}>
-                        {lang === "zh" ? "添加项" : "Add Item"}
+                      <div className="space-y-1 max-h-40 overflow-auto pr-1">
+                        {Object.entries(draft.dataSources || {}).length === 0 && (
+                          <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
+                        )}
+                        {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
+                          <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
+                            <div className="flex items-center gap-1 text-xs">
+                              <Database className="w-3.5 h-3.5" />
+                              <span className="font-medium">{item?.label || key}</span>
+                            </div>
+                            <div className="ml-auto flex items-center gap-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
+                              <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // 左侧：登录配置编辑视图
+                  <div className="h-full p-1 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setAuthUIOpen(false); setPreviewSource("home"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; setPreviewUrl(`http://localhost:3002/${baseLang}`); } catch { } }}>
+                        <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}
                       </Button>
-                    )}
-                  </div>
-                </div>
-                {/* 数据定义 */}
-                <div className="pt-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
-                    <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
-                      <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
-                    </Button>
-                  </div>
-                  <div className="space-y-1 max-h-40 overflow-auto pr-1">
-                    {Object.entries(draft.dataSources || {}).length === 0 && (
-                      <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
-                    )}
-                    {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
-                      <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
-                        <div className="flex items-center gap-1 text-xs">
-                          <Database className="w-3.5 h-3.5" />
-                          <span className="font-medium">{item?.label || key}</span>
-                        </div>
-                        <div className="ml-auto flex items-center gap-2">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
-                          <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                      <div className="text-sm font-semibold">{lang === "zh" ? "登录配置" : "Login Settings"}</div>
+                    </div>
+                    <div className="space-y-6">
+                      {/* 布局模式 */}
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "布局模式" : "Layout"}</div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant={authConfig.layoutVariant === 'centered' ? 'default' : 'outline'} onClick={() => setAuthConfig((s: any) => ({ ...s, layoutVariant: 'centered' }))}>{lang === "zh" ? "居中" : "Centered"}</Button>
+                          <Button size="sm" variant={authConfig.layoutVariant === 'bottomDocked' ? 'default' : 'outline'} onClick={() => setAuthConfig((s: any) => ({ ...s, layoutVariant: 'bottomDocked' }))}>{lang === "zh" ? "底部承载" : "Bottom"}</Button>
                         </div>
                       </div>
-                    ))}
+
+                      {/* 第三方样式固定为图标，不提供切换 */}
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "显示元素" : "Visibility"}</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                            <span className="mr-2">{lang === "zh" ? "背景" : "Background"}</span>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setBgDialogOpen(true)} disabled={!authConfig.showBackground}>{lang === "zh" ? "上传" : "Upload"}</Button>
+                              <Switch checked={authConfig.showBackground} onCheckedChange={(v) => setAuthConfig((s: any) => ({ ...s, showBackground: !!v }))} />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                            <span className="mr-2">logo</span>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setLogoDialogOpen(true)} disabled={!authConfig.showLogo}>{lang === "zh" ? "上传" : "Upload"}</Button>
+                              <Switch checked={authConfig.showLogo} onCheckedChange={(v) => setAuthConfig((s: any) => ({ ...s, showLogo: !!v }))} />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between border rounded-md px-3 py-2 col-span-2">
+                            <span className="mr-2">{lang === "zh" ? "介绍" : "Intro"}</span>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => { setIntroTitleTmp((authConfig.introTitle?.zh || authConfig.introTitle?.en || "")); setIntroTextTmp((authConfig.introText?.zh || authConfig.introText?.en || "")); setIntroTitleEnTmp((authConfig.introTitle?.en || "")); setIntroTextEnTmp((authConfig.introText?.en || "")); setIntroDialogOpen(true) }} disabled={!authConfig.showIntro}>{lang === "zh" ? "编辑" : "Edit"}</Button>
+                              <Switch checked={authConfig.showIntro} onCheckedChange={(v) => setAuthConfig((s: any) => ({ ...s, showIntro: !!v }))} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "文本设置" : "Text Settings"}</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label>{lang === "zh" ? "标题颜色" : "Title Color"}</Label>
+                            <Input type="color" value={authConfig.titleColor || "#111111"} onChange={(e) => setAuthConfig((s: any) => ({ ...s, titleColor: e.target.value }))} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label>{lang === "zh" ? "内容颜色" : "Body Color"}</Label>
+                            <Input type="color" value={authConfig.bodyColor || "#6b7280"} onChange={(e) => setAuthConfig((s: any) => ({ ...s, bodyColor: e.target.value }))} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "登录方式" : "Login Methods"}</div>
+                        <div className="space-y-2">
+                          {authConfig.providers.map((p: any, idx: number) => (
+                            <div key={p.key}
+                              className="grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2"
+                              draggable={p.key !== "phone"}
+                              onDragStart={(e) => { if (p.key === "phone") return; e.dataTransfer.setData("text/plain", String(idx)) }}
+                              onDragOver={(e) => { if (p.key === "phone") return; e.preventDefault() }}
+                              onDrop={(e) => {
+                                if (p.key === "phone") return
+                                e.preventDefault()
+                                const from = Number(e.dataTransfer.getData("text/plain"))
+                                const to = idx
+                                if (Number.isNaN(from) || from === to || from === 0 || to === 0) return
+                                setAuthConfig((s: any) => {
+                                  const list = [...s.providers]
+                                  const [m] = list.splice(from, 1)
+                                  list.splice(to, 0, m)
+                                  return { ...s, providers: list }
+                                })
+                              }}
+                            >
+                              <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center opacity-70"><GripVertical className="w-4 h-4" /></div>
+                              <div className="font-medium text-sm">{p.label}</div>
+                              <Switch checked={p.enabled} onCheckedChange={(v) => setAuthConfig((s: any) => ({ ...s, providers: s.providers.map((it: any, i: number) => i === idx ? { ...it, enabled: p.key === "phone" ? true : !!v } : it) }))} disabled={p.key === "phone"} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                {/* 页面列表 */}
-                <div className="pt-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">{lang === "zh" ? "页面" : "Pages"}</div>
-                  </div>
-                  <div className="space-y-1 max-h-48 overflow-auto pr-1">
-                    {Object.keys(draft.pages || {}).map((k: string) => (
-                      <Button key={k} variant={activePage === k ? "default" : "outline"} size="sm" className="w-full justify-start" onClick={() => setActivePage(k)}>
-                        {k}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             </ResizablePanel>
             {/* 添加数据弹窗 */}
@@ -626,6 +909,98 @@ export default function ClientConfigPage() {
         </Card>
       </div>
       <AIOpsDrawer open={aiOpsOpen} onOpenChange={setAiOpsOpen} appId={String(params.appId)} lang={lang as any} />
+      {/* 背景上传弹窗 */}
+      <Dialog open={bgDialogOpen} onOpenChange={setBgDialogOpen}>
+        <DialogContent className="max-w-[520px] w-[92vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang === "zh" ? "上传背景图" : "Upload Background"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground">{lang === "zh" ? "建议尺寸：1080×1920（9:16）" : "Suggested: 1080×1920 (9:16)"}</div>
+            <input type="file" accept="image/*" onChange={async (e) => {
+              const f = e.target.files?.[0]
+              if (!f) return
+              const dataUrl = await readAndResizeImage(f, 1080, 1920, 0.82)
+              setAuthConfig((s: any) => ({ ...s, backgroundImage: dataUrl, showBackground: true }))
+              setBgDialogOpen(false)
+            }} />
+            {authConfig.backgroundImage && (
+              <img src={authConfig.backgroundImage} alt="bg" className="mt-2 rounded-md border max-h-64 object-cover" />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBgDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* logo 上传弹窗 */}
+      <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
+        <DialogContent className="max-w-[520px] w-[92vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>Logo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground">{lang === "zh" ? "建议：正方形 PNG，至少 256×256" : "Square PNG, ≥256×256"}</div>
+            <input type="file" accept="image/*" onChange={async (e) => {
+              const f = e.target.files?.[0]
+              if (!f) return
+              const dataUrl = await readAndResizeImage(f, 512, 512, 0.9)
+              setAuthConfig((s: any) => ({ ...s, logoImage: dataUrl, showLogo: true }))
+              setLogoDialogOpen(false)
+            }} />
+            {authConfig.logoImage && (
+              <img src={authConfig.logoImage} alt="logo" className="mt-2 rounded-md border size-24 object-cover" />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 介绍编辑弹窗 */}
+      <Dialog open={introDialogOpen} onOpenChange={setIntroDialogOpen}>
+        <DialogContent className="max-w-[560px] w-[95vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang === "zh" ? "编辑介绍" : "Edit Intro"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>{lang === "zh" ? "标题（中文）" : "Title (ZH)"}</Label>
+              <Input value={introTitleTmp} onChange={(e) => setIntroTitleTmp(e.target.value)} maxLength={30} placeholder={lang === "zh" ? "中文标题" : "ZH Title"} />
+              <Label className="mt-2 block">{lang === "zh" ? "标题（英文）" : "Title (EN)"}</Label>
+              <Input value={introTitleEnTmp} onChange={(e) => setIntroTitleEnTmp(e.target.value)} maxLength={60} placeholder={lang === "zh" ? "英文标题" : "EN Title"} />
+            </div>
+            <div className="space-y-2">
+              <Label>{lang === "zh" ? "介绍（中文，最多3行）" : "Intro ZH (max 3 lines)"}</Label>
+              <Textarea value={introTextTmp} onChange={(e) => setIntroTextTmp(e.target.value)} rows={3} maxLength={180} placeholder={lang === "zh" ? "中文介绍" : "ZH Intro"} />
+              <Label className="mt-2 block">{lang === "zh" ? "介绍（英文，最多3行）" : "Intro EN (max 3 lines)"}</Label>
+              <Textarea value={introTextEnTmp} onChange={(e) => setIntroTextEnTmp(e.target.value)} rows={3} maxLength={300} placeholder={lang === "zh" ? "英文介绍" : "EN Intro"} />
+              <div className="text-[10px] text-muted-foreground">{lang === "zh" ? "建议每行约60字以内" : "~60 chars per line suggested"}</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIntroDialogOpen(false)}>{lang === "zh" ? "取消" : "Cancel"}</Button>
+            <Button onClick={() => { setAuthConfig((s: any) => ({ ...s, introTitle: { zh: introTitleTmp.trim(), en: introTitleEnTmp.trim() }, introText: { zh: introTextTmp.trim(), en: introTextEnTmp.trim() }, showIntro: true })); setIntroDialogOpen(false) }}>{lang === "zh" ? "确定" : "OK"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 路由设置对话框 */}
+      <Dialog open={routeDialogOpen} onOpenChange={setRouteDialogOpen}>
+        <DialogContent className="max-w-[520px] w-[92vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang === "zh" ? "设置路由" : "Set Route"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>{lang === "zh" ? "路由" : "Route"}</Label>
+            <Input value={routeTemp} onChange={(e) => setRouteTemp(e.target.value)} placeholder="/p-kxxxxxxxx or /home" />
+            <div className="text-xs text-muted-foreground">{lang === "zh" ? "建议页面使用 /p- 开头的短链接；必须以 / 开头。" : "Recommend using short links starting with /p-; must start with /."}</div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRouteDialogOpen(false)}>{lang === "zh" ? "取消" : "Cancel"}</Button>
+            <Button onClick={saveRouteDialog}>{lang === "zh" ? "保存" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
