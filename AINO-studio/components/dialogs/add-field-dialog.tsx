@@ -448,6 +448,9 @@ export function AddFieldDialog({
     maxValue: (initialDraft?.progressConfig as any)?.maxValue || 100,
     showPercentage: (initialDraft?.progressConfig as any)?.showPercentage ?? true,
     showProgressBar: (initialDraft?.progressConfig as any)?.showProgressBar ?? true,
+    defaultItems: (initialDraft?.progressConfig as any)?.defaultItems || [],
+    showHelp: (initialDraft?.progressConfig as any)?.showHelp || false,
+    helpText: (initialDraft?.progressConfig as any)?.helpText || '',
   })
 
   // Add custom experience configuration state
@@ -1633,11 +1636,11 @@ export function AddFieldDialog({
                   <div>
                     <label className="text-xs text-blue-700 mb-1 block">{locale === 'zh' ? '聚合规则（展示用）' : 'Aggregation (for display)'}</label>
                     <Select value={progressConfig.aggregation as any} onValueChange={(v:any)=>setProgressConfig(prev=>({ ...prev, aggregation: v }))}>
-                      <SelectTrigger className="h-8 text-xs bg-white/80"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs bg-white/80"><SelectValue placeholder={locale==='zh' ? '请选择' : 'Select'} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="weightedAverage">weightedAverage</SelectItem>
-                        <SelectItem value="max">max</SelectItem>
-                        <SelectItem value="min">min</SelectItem>
+                        <SelectItem value="weightedAverage">{locale==='zh' ? '加权平均' : 'Weighted Average'}</SelectItem>
+                        <SelectItem value="max">{locale==='zh' ? '取最大值' : 'Max'}</SelectItem>
+                        <SelectItem value="min">{locale==='zh' ? '取最小值' : 'Min'}</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="text-xs text-blue-600 mt-1">{locale==='zh' ? '字段实际存储为多条进度 items，列表展示聚合值' : 'Field stores multiple progress items; list shows aggregated value'}</div>
@@ -1646,22 +1649,12 @@ export function AddFieldDialog({
                     <div className="text-xs text-blue-700 mb-1">{locale==='zh' ? '默认子进度' : 'Default Sub-Progress Items'}</div>
                     <div className="space-y-2">
                       {(progressConfig.defaultItems || []).map((it:any, idx:number) => (
-                        <div key={idx} className="grid grid-cols-4 gap-2 items-center">
+                        <div key={idx} className="grid grid-cols-3 gap-2 items-center">
                           <Input className="h-8 text-xs bg-white/80" value={it.label || ''} onChange={(e)=>{
                             const arr = [...(progressConfig.defaultItems||[])]
                             arr[idx] = { ...arr[idx], label: e.target.value, key: (e.target.value||`p${idx+1}`).toString() }
                             setProgressConfig(prev=>({ ...prev, defaultItems: arr }))
                           }} placeholder={locale==='zh' ? '名称' : 'Label'} />
-                          <Input className="h-8 text-xs bg-white/80" value={it.status || ''} onChange={(e)=>{
-                            const arr = [...(progressConfig.defaultItems||[])]
-                            arr[idx] = { ...arr[idx], status: e.target.value }
-                            setProgressConfig(prev=>({ ...prev, defaultItems: arr }))
-                          }} placeholder={locale==='zh' ? '状态(可选)' : 'Status(optional)'} />
-                          <Input type="number" className="h-8 text-xs bg-white/80" value={it.weight ?? 1} onChange={(e)=>{
-                            const arr = [...(progressConfig.defaultItems||[])]
-                            arr[idx] = { ...arr[idx], weight: e.target.value ? Number(e.target.value) : 1 }
-                            setProgressConfig(prev=>({ ...prev, defaultItems: arr }))
-                          }} placeholder={locale==='zh' ? '权重' : 'Weight'} />
                           <button type="button" className="text-xs text-red-600" onClick={()=>{
                             const arr = [...(progressConfig.defaultItems||[])]
                             arr.splice(idx,1)
@@ -1672,10 +1665,28 @@ export function AddFieldDialog({
                     </div>
                     <div>
                       <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
-                        const arr = [...(progressConfig.defaultItems||[]), { key: `p${(progressConfig.defaultItems?.length||0)+1}`, label: `${locale==='zh'?'子进度':'Item'} ${(progressConfig.defaultItems?.length||0)+1}`, status: 'planned', weight: 1 }]
+                        const arr = [...(progressConfig.defaultItems||[]), { key: `p${(progressConfig.defaultItems?.length||0)+1}`, label: `${locale==='zh'?'子进度':'Item'} ${(progressConfig.defaultItems?.length||0)+1}` }]
                         setProgressConfig(prev=>({ ...prev, defaultItems: arr }))
                       }}>{locale==='zh' ? '新增子进度' : 'Add Sub-Progress'}</button>
                     </div>
+                  </div>
+                  {/* 说明配置 */}
+                  <div className="grid grid-cols-2 gap-3 items-start">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={(progressConfig as any).showHelp || false}
+                        onCheckedChange={(checked) => setProgressConfig(prev => ({ ...prev as any, showHelp: checked }))}
+                      />
+                      <label className="text-xs text-blue-700">{locale==='zh' ? '显示说明' : 'Show Help'}</label>
+                    </div>
+                    {((progressConfig as any).showHelp) && (
+                      <Input
+                        className="h-8 text-xs bg-white/80 col-span-1"
+                        placeholder={locale==='zh' ? '输入说明文字（前台显示）' : 'Help text to show on detail'}
+                        value={(progressConfig as any).helpText || ''}
+                        onChange={(e)=> setProgressConfig(prev => ({ ...prev as any, helpText: e.target.value }))}
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-blue-700 mb-1 block">{locale === "zh" ? "最大值" : "Maximum Value"}</label>
