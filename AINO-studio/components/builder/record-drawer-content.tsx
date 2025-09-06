@@ -6,7 +6,7 @@ import { useMemo, useState } from "react"
 import { SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { DirectoryModel, RecordRow, Props } from "@/lib/store"
+import type { AppModel, DirectoryModel, RecordRow } from "@/lib/store"
 import { findDirByIdAcrossModules, findNameField } from "@/lib/store"
 import { useToast } from "@/hooks/use-toast"
 import { FormField } from "@/components/form-field"
@@ -17,7 +17,9 @@ import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
 import { Progress } from "@/components/ui/progress"
 
-export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props) {
+type DrawerProps = { app: AppModel; dir: DirectoryModel; rec: RecordRow; onClose: () => void; onChange: (next: AppModel) => void }
+
+export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: DrawerProps) {
   const { toast } = useToast()
   const { t, locale } = useLocale()
   const [isEditing, setIsEditing] = useState(false)
@@ -28,7 +30,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
   const basicFields = useMemo(
     () =>
       dir.fields.filter(
-        (f) =>
+        (f: any) =>
           (f.enabled && f.type !== "relation_many" && f.type !== "relation_one") ||
           (f.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
       ),
@@ -38,7 +40,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
   const relationFields = useMemo(
     () =>
       dir.fields.filter(
-        (f) =>
+        (f: any) =>
           f.enabled &&
           (f.type === "relation_many" || f.type === "relation_one") &&
           (!f.preset || !["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
@@ -101,7 +103,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       const items = value as Array<{ label?: string; value?: number; weight?: number }>
       const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
       const mode = cfg.aggregation || 'weightedAverage'
-      const agg = ((){
+      const agg = (()=>{
         if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
         if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
         const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
@@ -137,7 +139,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       const items = val as Array<{ label?: string; value?: number; weight?: number }>
       const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
       const mode = cfg.aggregation || 'weightedAverage'
-      const agg = ((){
+      const agg = (()=>{
         if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
         if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
         const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
@@ -172,7 +174,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
       const items = value as Array<{ label?: string; value?: number; weight?: number }>
       const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
       const mode = cfg.aggregation || 'weightedAverage'
-      const agg = ((){
+      const agg = (()=>{
         if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
         if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
         const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
@@ -268,6 +270,26 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
         return <span>{value}</span>
       case "percent":
         return <span>{value}%</span>
+      case "meta_items": {
+        const cfg = field.metaItemsConfig || {}
+        const items = Array.isArray(value) ? value : []
+        return (
+          <div className="space-y-2">
+            {cfg.showHelp && <div className="text-xs text-gray-500">{cfg.helpText || ''}</div>}
+            <div className="space-y-1 text-sm">
+              {items.length === 0 && <span className="text-gray-400">{locale==='zh'?'暂无数据':'No data'}</span>}
+              {items.map((it:any, i:number)=> (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-gray-700">{it.label}</span>
+                  {it.type === 'number' && <span className="ml-auto">{typeof it.value==='number'? it.value : ''}{it.unit?it.unit:''}</span>}
+                  {it.type === 'text' && <span className="ml-auto truncate max-w-[60%] text-gray-700">{it.value||''}</span>}
+                  {it.type === 'image' && it.value ? <img src={it.value} alt="" className="h-6 w-10 object-cover rounded border"/> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
       case "progress": {
         const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
         const val = Array.isArray(value) ? value : [{ label: 'Progress', value: Number(value||0), weight: 1 }]
@@ -698,11 +720,9 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
               <form id="record-form" onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   {(() => {
-                    const singleRowFields = basicFields.filter(f => 
+                    const singleRowFields = basicFields.filter((f: any) => 
                       f.type === "textarea" || 
-                      f.type === "rich_text" || 
-                      f.type === "markdown" ||
-                      f.type === "json" ||
+                      f.type === "richtext" || 
                       f.type === "relation_many" ||
                       f.type === "relation_one" ||
                       f.type === "experience"
@@ -754,11 +774,9 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
             ) : (
               <div className="space-y-6">
                 {(() => {
-                  const singleRowFields = basicFields.filter(f => 
+                  const singleRowFields = basicFields.filter((f: any) => 
                     f.type === "textarea" || 
-                    f.type === "rich_text" || 
-                    f.type === "markdown" ||
-                    f.type === "json" ||
+                    f.type === "richtext" ||
                     f.type === "relation_many" ||
                     f.type === "relation_one" ||
                     f.type === "experience"

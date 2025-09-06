@@ -597,6 +597,11 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     }
   }
 
+  if (type === "meta_items") {
+    const arr = Array.isArray(v) ? v : []
+    return <span className="text-xs text-gray-600">{arr.length > 0 ? `${arr.length}` : '-'}</span>
+  }
+
   if ((type === "skills" || (type === "multiselect" && f?.preset === "skills")) && Array.isArray(v) && v.length > 0) {
     // 获取技能名称
     const skillNames = v.map((skillId: string) => {

@@ -197,6 +197,7 @@ const TYPE_ICON: Record<FieldType, JSX.Element> = {
   image: <ImageIcon className="size-4" />,
   profile: <User className="size-4" />,
   video: <Video className="size-4" />,
+  multivideo: <Video className="size-4" />,
   file: <Paperclip className="size-4" />,
   richtext: <FileTextIcon className="size-4" />,
   percent: <PercentIcon className="size-4" />,
@@ -206,6 +207,14 @@ const TYPE_ICON: Record<FieldType, JSX.Element> = {
   relation_one: <LinkIcon className="size-4" />,
   relation_many: <Link2 className="size-4" />,
   experience: <Briefcase className="size-4" />,
+  progress: <PercentIcon className="size-4" />,
+  datetime: <Clock className="size-4" />,
+  daterange: <Calendar className="size-4" />,
+  multidate: <Calendar className="size-4" />,
+  meta_items: <Boxes className="size-4" />,
+  multiimage: <ImageIcon className="size-4" />,
+  identity_verification: <User className="size-4" />,
+  other_verification: <User className="size-4" />,
 }
 
 const TYPE_TO_DTYPE: Record<FieldType, string> = {
@@ -230,6 +239,15 @@ const TYPE_TO_DTYPE: Record<FieldType, string> = {
   relation_one: "Relation(one)",
   relation_many: "Relation(many)",
   experience: "Experience[]",
+  progress: "Number|Items",
+  datetime: "Datetime",
+  daterange: "DateRange",
+  multidate: "Date[]",
+  meta_items: "Items[]",
+  multiimage: "Image[]",
+  multivideo: "Video[]",
+  identity_verification: "String",
+  other_verification: "String",
 }
 
 function toKey(label: string) {
@@ -319,8 +337,8 @@ const PRESETS: PresetDef[] = [
   { key: "education_experience", label: "教育经历", desc: "学校、专业、学历等", baseType: "experience" },
   { key: "certificate_experience", label: "证书资质", desc: "证书、颁发机构等", baseType: "experience" },
   { key: "custom_experience", label: "其他经历", desc: "自定义经历名称和事件", baseType: "experience" },
-  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "realname" },
-  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "certification" },
+  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "text" },
+  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "text" },
   { key: "barcode", label: "条码", desc: "二维码、条形码等", baseType: "text" },
   { key: "cascader", label: "级联选项", desc: "多级分类选择", baseType: "cascader" },
   { key: "relation", label: "关联", desc: "关联其他表的数据", baseType: "relation_one" },
@@ -451,6 +469,14 @@ export function AddFieldDialog({
     defaultItems: (initialDraft?.progressConfig as any)?.defaultItems || [],
     showHelp: (initialDraft?.progressConfig as any)?.showHelp || false,
     helpText: (initialDraft?.progressConfig as any)?.helpText || '',
+  })
+
+  // meta_items 配置
+  const [metaItemsConfig, setMetaItemsConfig] = useState({
+    showHelp: false,
+    helpText: "",
+    allowedTypes: ["text","number","image"] as Array<'text'|'number'|'image'>,
+    defaultItems: [] as Array<{ label: string; type: 'text'|'number'|'image' }>,
   })
 
   // Add custom experience configuration state
@@ -1760,6 +1786,56 @@ export function AddFieldDialog({
               </div>
             )}
 
+            {/* 业务字段：数据项集合（meta_items） */}
+            {type === "meta_items" && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+                <div className="text-sm font-medium text-blue-800 mb-3">{locale==='zh'?'数据项集合配置':'Meta Items Configuration'}</div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 items-start">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={metaItemsConfig.showHelp} onCheckedChange={(v)=>setMetaItemsConfig(prev=>({ ...prev, showHelp: v }))} />
+                      <label className="text-xs text-blue-700">{locale==='zh'?'显示说明':'Show Help'}</label>
+                    </div>
+                    {metaItemsConfig.showHelp && (
+                      <Input
+                        className="h-8 text-xs bg-white/80"
+                        placeholder={locale==='zh'?'输入说明文本':'Enter help text'}
+                        value={metaItemsConfig.helpText}
+                        onChange={(e)=>setMetaItemsConfig(prev=>({ ...prev, helpText: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-blue-700 mb-1">{locale==='zh'?'默认子项':'Default Items'}</div>
+                    <div className="space-y-2">
+                      {metaItemsConfig.defaultItems.map((it, idx)=> (
+                        <div key={idx} className="grid grid-cols-6 gap-2 items-center">
+                          <Input className="h-8 text-xs bg-white/80 col-span-3" value={it.label} onChange={(e)=>{
+                            const arr=[...metaItemsConfig.defaultItems]; arr[idx] = { ...arr[idx], label: e.target.value }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                          }} placeholder={locale==='zh'?'名称':'Label'} />
+                          <select className="h-8 rounded border px-2 bg-white col-span-2" value={it.type} onChange={(e)=>{
+                            const arr=[...metaItemsConfig.defaultItems]; arr[idx] = { ...arr[idx], type: e.target.value as any }; setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                          }}>
+                            <option value="text">{locale==='zh'?'文本':'Text'}</option>
+                            <option value="number">{locale==='zh'?'数字':'Number'}</option>
+                            <option value="image">{locale==='zh'?'图片':'Image'}</option>
+                          </select>
+                          <button type="button" className="text-xs text-red-600" onClick={()=>{
+                            const arr=[...metaItemsConfig.defaultItems]; arr.splice(idx,1); setMetaItemsConfig(prev=>({ ...prev, defaultItems: arr }))
+                          }}>{locale==='zh' ? '删除' : 'Remove'}</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2">
+                      <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={()=>{
+                        setMetaItemsConfig(prev=>({ ...prev, defaultItems: [...prev.defaultItems, { label: `${locale==='zh'?'项':'Item'} ${prev.defaultItems.length+1}`, type: 'text' }] }))
+                      }}>{locale==='zh'?'新增子项':'Add Item'}</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 经历字段说明 */}
             {type === "experience" && (
               <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
@@ -2540,8 +2616,6 @@ export function AddFieldDialog({
                     : undefined,
                 relationDisplayFieldKey: rel.displayFieldKey || null,
                 relationBidirectional: rel.bidirectional,
-                relationReverseFieldKey: rel.reverseFieldKey || null,
-                relationOnDelete: rel.onDelete || 'restrict',
                 relationAllowDuplicate: rel.allowDuplicate,
                 preset: preset || undefined,
                 ...(type === "date" ? { dateMode } : {}),
@@ -2549,6 +2623,7 @@ export function AddFieldDialog({
                 ...(preset === "user_select" ? { userAllowMultiple, userNotifyNew } : {}),
                 ...(preset === "skills" ? { skillsConfig } : {}),
                 ...(preset === "progress" ? { progressConfig } : {}),
+                ...(type === "meta_items" ? { metaItemsConfig } : {}),
                 ...(preset === "custom_experience" ? { customExperienceConfig } : {}),
                 ...(preset === "certificate_experience" ? { certificateConfig } : {}),
                 ...(preset === "identity_verification" ? { identityVerificationConfig } : {}),
@@ -2587,6 +2662,8 @@ export function AddFieldDialog({
             save: locale === "zh" ? "保存" : "Save",
             cancel: locale === "zh" ? "取消" : "Cancel",
             preview: locale === "zh" ? "预览：" : "Preview: ",
+            delete: locale === "zh" ? "删除" : "Delete",
+            confirmDelete: locale === "zh" ? "确认删除内容分类" : "Confirm delete",
           }}
         />
 

@@ -27,6 +27,7 @@ export type FieldType =
   | "barcode"
   | "checkbox"
   | "cascader"
+  | "meta_items"
   | "relation_one"
   | "relation_many"
   | "experience"
@@ -118,6 +119,15 @@ export type FieldModel = {
     showPercentage?: boolean // 是否显示百分比
     showProgressBar?: boolean // 是否显示进度条
     defaultItems?: Array<{ key: string; label: string; status?: string; weight?: number }>
+    showHelp?: boolean // 是否显示说明
+    helpText?: string // 说明文本
+  }
+  // 数据项集合字段配置（业务字段）
+  metaItemsConfig?: {
+    showHelp?: boolean
+    helpText?: string
+    allowedTypes?: Array<'text' | 'number' | 'image'>
+    defaultItems?: Array<{ label: string; type: 'text' | 'number' | 'image' }>
   }
   // 其他经历字段特殊配置
   customExperienceConfig?: {
@@ -488,6 +498,17 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
         } else {
           ;(rec as any)[f.key] = [{ id: uid(), key: "progress", label: "Progress", status: "planned", weight: 1, value: 0 }]
         }
+        break
+      }
+      case "meta_items": {
+        const defaults = f.metaItemsConfig?.defaultItems || []
+        ;(rec as any)[f.key] = defaults.map((d, idx) => ({
+          id: uid(),
+          label: d.label || `项 ${idx + 1}`,
+          type: d.type || 'text',
+          value: d.type === 'number' ? 0 : d.type === 'image' ? '' : '' ,
+          order: idx,
+        }))
         break
       }
       case "image":

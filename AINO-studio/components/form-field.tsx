@@ -29,6 +29,7 @@ import { RelationInput } from "@/components/form-inputs/relation-input"
 import { PhoneInput } from "@/components/form-inputs/phone-input"
 import { ProgressInput } from "@/components/form-inputs/progress-input"
 import { ProgressItemsInput } from "@/components/form-inputs/progress-items-input"
+import { MetaItemsInput } from "@/components/form-inputs/meta-items-input"
 
 function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) => void, app: AppModel) {
   const value = (record as any)[field.key]
@@ -305,6 +306,16 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
           onChange={onChange}
           multiple={field.videoConfig?.multiple || false}
           defaultVideo={field.videoConfig?.defaultVideo || ""}
+        />
+      )
+    case "meta_items":
+      return (
+        <MetaItemsInput
+          items={value || []}
+          onChange={onChange}
+          helpEnabled={field.metaItemsConfig?.showHelp}
+          helpText={field.metaItemsConfig?.helpText}
+          allowedTypes={field.metaItemsConfig?.allowedTypes as any}
         />
       )
     case "multivideo":
