@@ -265,6 +265,8 @@ export default function ClientConfigPage() {
   // 顶部标签新增弹窗
   const [addTabOpen, setAddTabOpen] = useState(false)
   const [addTabTitle, setAddTabTitle] = useState("")
+  // 顶部标签管理弹窗
+  const [tabManagerOpen, setTabManagerOpen] = useState(false)
 
   // 筛选配置弹窗（UI）
   const [filterOpen, setFilterOpen] = useState(false)
@@ -1006,7 +1008,10 @@ export default function ClientConfigPage() {
                               ))
                             })()}
                           </div>
-                          <Button size="sm" variant="outline" onClick={()=> { setAddTabTitle(""); setAddTabOpen(true) }}>{lang==='zh'?'增加标签':'Add Tab'}</Button>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" onClick={()=> { setAddTabTitle(""); setAddTabOpen(true) }}>{lang==='zh'?'增加标签':'Add Tab'}</Button>
+                            <Button size="sm" variant="ghost" onClick={()=> setTabManagerOpen(true)}>{lang==='zh'?'管理':'Manage'}</Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1681,6 +1686,34 @@ export default function ClientConfigPage() {
           <DialogFooter>
             <Button variant="outline" onClick={()=> setAddTabOpen(false)}>{lang==='zh'?'取消':'Cancel'}</Button>
             <Button onClick={()=> { try { const title=(addTabTitle||'').trim(); if(!title){ setAddTabOpen(false); return } setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title }); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n }); setAddTabOpen(false) } catch {} }}>{lang==='zh'?'确定':'OK'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 标签管理弹窗：重命名、删除、排序 */}
+      <Dialog open={tabManagerOpen} onOpenChange={setTabManagerOpen}>
+        <DialogContent className="max-w-[560px] w-[96vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang==='zh'?'标签管理':'Manage Tabs'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {(((draft.pages as any)?.[activePageKey]?.topBar?.tabs)||[]).length===0 && (
+              <div className="text-xs text-muted-foreground">{lang==='zh'?'暂无标签，请先新增':'No tabs yet. Add one first.'}</div>
+            )}
+            {(((draft.pages as any)?.[activePageKey]?.topBar?.tabs)||[]).map((t:any, idx:number)=> (
+              <div key={t.id||idx} className="grid grid-cols-[24px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
+                <div className="text-xs">{idx+1}</div>
+                <Input className="h-8" value={t.title||''} onChange={(e)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list[idx] = { ...(list[idx]||{}), title:e.target.value, id: list[idx]?.id || `tab-${Date.now()}-${idx}` }; p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })} />
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; if(idx>0){ const tmp=list[idx-1]; list[idx-1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↑</Button>
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; if(idx<list.length-1){ const tmp=list[idx+1]; list[idx+1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↓</Button>
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; list.splice(idx,1); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>✕</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={()=> setTabManagerOpen(false)}>{lang==='zh'?'完成':'Done'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
