@@ -234,8 +234,9 @@ export default function ClientConfigPage() {
     setRouteDialogOpen(true)
   }
 
-  // 内容导航配置弹窗与临时状态
+  // 内容导航配置弹窗与临时状态（新模型：category + style）
   const [contentNavOpen, setContentNavOpen] = useState(false)
+  const [cnCategory, setCnCategory] = useState<'navigation' | 'status'>("navigation")
   const [cnType, setCnType] = useState<'iconText' | 'text'>("iconText")
   const [cnLayout, setCnLayout] = useState<'grid-4' | 'grid-5' | 'scroll'>("grid-4")
   const [cnItems, setCnItems] = useState<any[]>([])
@@ -370,12 +371,24 @@ export default function ClientConfigPage() {
   function openContentNavDialog() {
     try {
       const k = activePageKey as string
-      const cfg = (draft.pages && (draft as any).pages[k]?.contentNav) || {}
-      setCnType((cfg as any).type || 'iconText')
+      const page = (draft.pages && (draft as any).pages[k]) || {}
+      const tbEnabled = !!page?.topBar?.enabled
+      // 读取：若开启顶部标签栏，则按标签读取；否则读取页面默认
+      let cfg: any
+      if (tbEnabled) {
+        const tabContent = (page as any).tabContent || {}
+        cfg = tabContent?.[pageTabIndex]?.contentNav || {}
+      } else {
+        cfg = page?.contentNav || {}
+      }
+      const style = (cfg as any).style || (((cfg as any).type === 'text') ? 'text' : ((cfg as any).type ? 'icon' : 'icon'))
+      setCnCategory(((cfg as any).category === 'status') ? 'status' : 'navigation')
+      setCnType(style === 'text' ? 'text' : 'iconText')
       setCnLayout((cfg as any).layout || 'grid-4')
       setCnItems(Array.isArray((cfg as any).items) ? (cfg as any).items : [])
       setContentNavOpen(true)
     } catch {
+      setCnCategory('navigation')
       setCnType('iconText')
       setCnLayout('grid-4')
       setCnItems([])
@@ -389,10 +402,20 @@ export default function ClientConfigPage() {
       const next = { ...s }
       next.pages = next.pages || {}
       const p = next.pages[k] || {}
-      p.contentNav = {
-        type: cnType,
+      const content = {
+        category: cnCategory,
+        style: (cnType === 'text' ? 'text' : 'icon'),
         layout: cnType === 'iconText' ? cnLayout : undefined,
         items: cnItems,
+      }
+      const tbEnabled = !!p?.topBar?.enabled
+      if (tbEnabled) {
+        const tbc = p.tabContent || {}
+        const prev = tbc[pageTabIndex] || {}
+        tbc[pageTabIndex] = { ...prev, contentNav: content }
+        p.tabContent = tbc
+      } else {
+        p.contentNav = content
       }
       next.pages[k] = p
       return next
@@ -952,6 +975,39 @@ export default function ClientConfigPage() {
                         <span>{lang === "zh" ? "开启 全局底部导航" : "Show Bottom Nav"}</span>
                         <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showBottomNav !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showBottomNav: !!v }; next.pages[k] = p; return next })} />
                       </label>
+                    </div>
+
+                    {/* 顶部标签栏 */}
+                    <div className="space-y-2 pt-2">
+                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '顶部标签栏' : 'Top Tabs'}</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                          <span>{lang === 'zh' ? '开启 顶部标签栏' : 'Enable Top Tabs'}</span>
+                          <Switch checked={!!(activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.enabled)} onCheckedChange={(v)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{}), enabled: !!v, style: p.topBar?.style || 'text', tabs: Array.isArray(p.topBar?.tabs) ? p.topBar?.tabs : [] }; n.pages[k]=p; return n })} />
+                        </label>
+                        <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                          <span>{lang === 'zh' ? '标签样式' : 'Tab Style'}</span>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant={activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.style === 'text' ? 'default':'outline'} onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{ enabled:true, tabs:[] }), style:'text' }; n.pages[k]=p; return n })}>Text</Button>
+                            <Button size="sm" variant={activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.style === 'icon' ? 'default':'outline'} onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{ enabled:true, tabs:[] }), style:'icon' }; n.pages[k]=p; return n })}>Icon</Button>
+                          </div>
+                        </label>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">{lang==='zh'?'标签列表':'Tabs'}</div>
+                        <div className="space-y-2">
+                          {Array.isArray((draft.pages as any)?.[activePageKey]?.topBar?.tabs) && (draft.pages as any)[activePageKey].topBar.tabs.map((t:any, idx:number)=> (
+                            <div key={t.id||idx} className="grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
+                              <div className="text-xs text-muted-foreground">#{idx+1}</div>
+                              <Input className="h-8" value={t.title||''} onChange={(e)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list[idx] = { ...(list[idx]||{}), title:e.target.value, id: list[idx]?.id || `tab-${Date.now()}-${idx}` }; p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })} placeholder={lang==='zh'?'标签标题':'Title'} />
+                              <div className="flex items-center gap-1">
+                                <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; list.splice(idx,1); p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })}>✕</Button>
+                              </div>
+                            </div>
+                          ))}
+                          <Button size="sm" variant="outline" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title: (lang==='zh'?`标签`:`Tab`) + ` ${list.length+1}` }); p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })}>{lang==='zh'? '新增标签':'Add Tab'}</Button>
+                        </div>
+                      </div>
                     </div>
                     {/* 内容导航配置入口 */}
                     <div className="space-y-2">
