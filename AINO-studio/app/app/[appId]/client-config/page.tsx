@@ -262,6 +262,9 @@ export default function ClientConfigPage() {
   const [displayLimit, setDisplayLimit] = useState<string>("1")
   const [displayUnlimited, setDisplayUnlimited] = useState(false)
   const [displayMode, setDisplayMode] = useState<'pick' | 'filter' | 'time' | 'hot'>("time")
+  // 顶部标签新增弹窗
+  const [addTabOpen, setAddTabOpen] = useState(false)
+  const [addTabTitle, setAddTabTitle] = useState("")
 
   // 筛选配置弹窗（UI）
   const [filterOpen, setFilterOpen] = useState(false)
@@ -989,7 +992,7 @@ export default function ClientConfigPage() {
                       {/* 标签行：按截图样式，内联标签 + 右侧一个"增加标签"按钮 */}
                       {Boolean((draft.pages as any)?.[activePageKey]?.topBar?.enabled) && (
                         <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-8 overflow-x-auto scrollbar-hide">
+                          <div className="flex items-center gap-8 overflow-x-auto">
                             {(() => {
                               const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
                               return tabs.map((t:any, idx:number) => (
@@ -1003,7 +1006,7 @@ export default function ClientConfigPage() {
                               ))
                             })()}
                           </div>
-                          <Button size="sm" variant="outline" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title: lang==='zh'?`标签栏${list.length+1}`:`Tab ${list.length+1}` }); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>{lang==='zh'?'增加标签':'Add Tab'}</Button>
+                          <Button size="sm" variant="outline" onClick={()=> { setAddTabTitle(""); setAddTabOpen(true) }}>{lang==='zh'?'增加标签':'Add Tab'}</Button>
                         </div>
                       )}
                     </div>
@@ -1662,6 +1665,22 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBgDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 新增标签弹窗 */}
+      <Dialog open={addTabOpen} onOpenChange={setAddTabOpen}>
+        <DialogContent className="max-w-[420px] w-[92vw] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang==='zh'?'新增顶部标签':'Add Top Tab'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>{lang==='zh'?'标签名称':'Tab Title'}</Label>
+            <Input value={addTabTitle} onChange={(e)=> setAddTabTitle(e.target.value)} placeholder={lang==='zh'?'请输入标签名称':'Enter title'} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=> setAddTabOpen(false)}>{lang==='zh'?'取消':'Cancel'}</Button>
+            <Button onClick={()=> { try { const title=(addTabTitle||'').trim(); if(!title){ setAddTabOpen(false); return } setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title }); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n }); setAddTabOpen(false) } catch {} }}>{lang==='zh'?'确定':'OK'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
