@@ -994,8 +994,11 @@ export default function ClientConfigPage() {
                           <div className="flex items-center gap-8 overflow-x-auto whitespace-nowrap">
                             {(() => {
                               const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
-                              return tabs.map((t:any, idx:number) => (
-                                <button key={(t.id||`${idx}`)}
+                              // 去重并保证顺序稳定
+                              const seen = new Set<string>()
+                              const safeTabs = tabs.filter((t:any)=>{ const key=(t?.id||'')+''; if(!key){ return true } if(seen.has(key)) return false; seen.add(key); return true })
+                              return safeTabs.map((t:any, idx:number) => (
+                                <button key={(t?.id||`idx-${idx}`)}
                                   className={`relative text-lg flex-shrink-0 ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
                                   onClick={()=> setPageTabIndex(idx)}
                                 >
