@@ -267,6 +267,19 @@ export default function ClientConfigPage() {
   // 顶部标签管理弹窗
   const [tabManagerOpen, setTabManagerOpen] = useState(false)
 
+  // 统一去重工具：基于 id/title，保持顺序
+  function uniqueTabs(list: any[]): any[] {
+    const seen = new Set<string>()
+    const out: any[] = []
+    for (const t of Array.isArray(list) ? list : []) {
+      const key = String(t?.id || '') + '::' + String(t?.title || '')
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push({ id: t?.id || `tab-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, title: t?.title || '' })
+    }
+    return out
+  }
+
   // 筛选配置弹窗（UI）
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterCardName, setFilterCardName] = useState("")
@@ -993,10 +1006,8 @@ export default function ClientConfigPage() {
                         <div className="flex items-center justify-between px-1">
                           <div className="flex items-center gap-8 overflow-x-auto flex-nowrap">
                             {(() => {
-                              const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
-                              // 去重并保证顺序稳定
-                              const seen = new Set<string>()
-                              const safeTabs = tabs.filter((t:any)=>{ const key=(t?.id||t?.title||'')+''; if(seen.has(key)) return false; seen.add(key); return true })
+                              const raw = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
+                              const safeTabs = uniqueTabs(raw)
                               return safeTabs.map((t:any, idx:number) => (
                                 <button key={`tabkey-${t?.id||idx}`}
                                   className={`relative text-lg flex-shrink-0 ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
@@ -1686,22 +1697,22 @@ export default function ClientConfigPage() {
                 <Label>{lang==='zh'?'新增标签名称':'New Tab Title'}</Label>
                 <Input value={addTabTitle} onChange={(e)=> setAddTabTitle(e.target.value)} placeholder={lang==='zh'?'例如：推荐':'e.g. Featured'} />
               </div>
-              <Button onClick={()=>{ try { const title=(addTabTitle||'').trim(); if(!title) return; setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list = Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: [];
-                // 生成唯一id
+              <Button onClick={()=>{ try { const title=(addTabTitle||'').trim(); if(!title) return; setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const existed = Array.isArray(p.topBar?.tabs)? p.topBar.tabs : [];
+                const list = uniqueTabs(existed)
                 const uid=`tab-${Date.now()}-${Math.random().toString(36).slice(2,7)}`
                 list.push({ id: uid, title }); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n }); setAddTabTitle("") } catch {} }}>{lang==='zh'?'新增':'Add'}</Button>
             </div>
             {(((draft.pages as any)?.[activePageKey]?.topBar?.tabs)||[]).length===0 && (
               <div className="text-xs text-muted-foreground">{lang==='zh'?'暂无标签，请先新增':'No tabs yet. Add one first.'}</div>
             )}
-            {(((draft.pages as any)?.[activePageKey]?.topBar?.tabs)||[]).map((t:any, idx:number)=> (
-              <div key={(t.id||`${idx}`)} className="grid grid-cols-[24px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
+            {uniqueTabs(((draft.pages as any)?.[activePageKey]?.topBar?.tabs)||[]).map((t:any, idx:number)=> (
+              <div key={`mgr-${t.id||idx}`} className="grid grid-cols-[24px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
                 <div className="text-xs">{idx+1}</div>
-                <Input className="h-8" value={t.title||''} onChange={(e)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list[idx] = { ...(list[idx]||{}), title:e.target.value, id: list[idx]?.id || `tab-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }; p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })} />
+                <Input className="h-8" value={t.title||''} onChange={(e)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const existed = Array.isArray(p.topBar?.tabs)? p.topBar.tabs : []; const list = uniqueTabs(existed); list[idx] = { ...(list[idx]||{}), title:e.target.value, id: list[idx]?.id || `tab-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }; p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })} />
                 <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; if(idx>0){ const tmp=list[idx-1]; list[idx-1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↑</Button>
-                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; if(idx<list.length-1){ const tmp=list[idx+1]; list[idx+1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↓</Button>
-                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; list.splice(idx,1); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>✕</Button>
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=uniqueTabs(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[]); if(idx>0){ const tmp=list[idx-1]; list[idx-1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↑</Button>
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=uniqueTabs(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[]); if(idx<list.length-1){ const tmp=list[idx+1]; list[idx+1]=list[idx]; list[idx]=tmp } p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>↓</Button>
+                  <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=uniqueTabs(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[]); list.splice(idx,1); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>✕</Button>
                 </div>
               </div>
             ))}
