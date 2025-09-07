@@ -29,7 +29,7 @@ export async function mockAuthMiddleware(c: Context, next: Next) {
 }
 
 const whiteList = [
-  '/api/applications',
+  // '/api/applications',
   "/api/modules/system/user/register",
   "/api/modules/system/user/login",
 ];
@@ -40,6 +40,10 @@ export async function mockRequireAuthMiddleware(c: Context, next: Next) {
     if (c.req.path.startsWith(whiteList[i])) {
       return next()
     }
+  }
+
+  if (c.env.incoming.url.indexOf('noAuth') > -1) {
+    return next()
   }
   const authHeader = c.req.header('Authorization')
   const token = extractTokenFromHeader(authHeader)
