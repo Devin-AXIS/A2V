@@ -975,10 +975,8 @@ export default function ClientConfigPage() {
                         <span>{lang === "zh" ? "开启 顶部栏" : "Show Header"}</span>
                         <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showHeader !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showHeader: !!v }; next.pages[k] = p; return next })} />
                       </label>
-                      <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                        <span>{lang === "zh" ? "开启 全局底部导航" : "Show Bottom Nav"}</span>
-                        <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showBottomNav !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showBottomNav: !!v }; next.pages[k] = p; return next })} />
-                      </label>
+                      {/* 顶部不再放全局底部导航开关，移到底部 */}
+                      <div />
                     </div>
 
                     {/* 顶部标签栏 */}
@@ -993,12 +991,12 @@ export default function ClientConfigPage() {
                       {/* 标签行：按截图样式，内联标签 + 右侧一个"增加标签"按钮 */}
                       {Boolean((draft.pages as any)?.[activePageKey]?.topBar?.enabled) && (
                         <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-8 overflow-x-auto">
+                          <div className="flex items-center gap-8 overflow-x-auto whitespace-nowrap">
                             {(() => {
                               const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
                               return tabs.map((t:any, idx:number) => (
-                                <button key={t.id||idx}
-                                  className={`relative text-lg ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
+                                <button key={(t.id||`${idx}`)}
+                                  className={`relative text-lg flex-shrink-0 ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
                                   onClick={()=> setPageTabIndex(idx)}
                                 >
                                   {t.title || `${lang==='zh'?'标签栏':''}${idx+1}`}
