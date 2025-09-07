@@ -300,6 +300,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           items: tabs.map((t: any) => ({ title: (t && (t.title || '').trim()) || '标签' })),
         } as ContentNavConfig
       }
+      // fallback：当未开启顶部标签栏时，若页面级 contentNav 是文本型，则用它作为顶部标签栏
+      const cnav = pageConfig && (pageConfig as any).contentNav
+      if (cnav) {
+        const style = (cnav as any).style
+        if (style === 'text') {
+          return { ...(cnav as any), type: 'text' } as ContentNavConfig
+        }
+        if ((cnav as any).type === 'text') {
+          return cnav as ContentNavConfig
+        }
+      }
       return null
     } catch { return null }
   }, [pageConfig])
