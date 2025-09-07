@@ -1014,8 +1014,8 @@ export default function ClientConfigPage() {
                           </div>
                         )}
                       </div>
-                      {/* 若为文字标签，渲染可切换的预览标签栏 */}
-                      {activePageKey && (draft.pages as any)?.[activePageKey]?.contentNav?.type === 'text' && (
+                      {/* 若为文字标签，渲染可切换的预览标签栏（按新模型推导） */}
+                      {(() => { try { const p=(draft.pages as any)?.[activePageKey]||{}; const eff=p?.topBar?.enabled ? (p?.tabContent?.[pageTabIndex]?.contentNav):p?.contentNav; return !!eff && eff.style==='text' } catch { return false } })() && (
                         <div className="mt-2 px-1">
                           <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
                             {(((draft.pages as any)[activePageKey]?.contentNav?.items) || []).map((it: any, idx: number) => (
@@ -1041,8 +1041,8 @@ export default function ClientConfigPage() {
                         </div>
                       )}
 
-                      {/* 若为图+文，渲染预览的图文导航并支持点击切换配置的分区（索引） */}
-                      {activePageKey && (draft.pages as any)?.[activePageKey]?.contentNav?.type === 'iconText' && (
+                      {/* 若为图标形式，渲染预览的图标导航并支持点击切换配置的分区（索引） */}
+                      {(() => { try { const p=(draft.pages as any)?.[activePageKey]||{}; const eff=p?.topBar?.enabled ? (p?.tabContent?.[pageTabIndex]?.contentNav):p?.contentNav; return !!eff && eff.style==='icon' } catch { return false } })() && (
                         <div className="mt-2 px-1">
                           <div className="text-[11px] text-muted-foreground mb-1">{lang === 'zh' ? '点击图标以切换配置的卡片区域' : 'Click icon to switch section being configured'}</div>
                           <div className="flex items-center gap-5 overflow-x-auto scrollbar-hide py-2">
@@ -1082,7 +1082,8 @@ export default function ClientConfigPage() {
                                 // 在右侧代码编辑器打开虚拟文件 pages/{pageKey}/cards/{sectionKey}/{cardType}.json
                                 try {
                                   const k = activePageKey as string
-                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  const tba = (draft.pages as any)?.[k]?.topBar
+                                  const sectionKey = tba?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                                   const path = `pages/${k}/cards/${sectionKey}/${it.type}.json`
                                   // 请求预览返回当前覆盖，若存在则填充
                                   window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
@@ -1102,7 +1103,8 @@ export default function ClientConfigPage() {
                               <Button size="sm" variant="outline" onClick={() => {
                                 try {
                                   const k = activePageKey as string
-                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  const tbb = (draft.pages as any)?.[k]?.topBar
+                                  const sectionKey = tbb?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                                   setFilterCardName(it.displayName || it.type)
                                   setFilterCardType(it.type)
                                   // 默认选择第一个表数据源
@@ -1119,7 +1121,8 @@ export default function ClientConfigPage() {
                               <Button size="sm" variant="outline" onClick={() => {
                                 try {
                                   const k = activePageKey as string
-                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  const tbc = (draft.pages as any)?.[k]?.topBar
+                                  const sectionKey = tbc?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                                   // 读取已存在的映射
                                   const existing: string | undefined = (draft.pages?.[k]?.innerPages && (draft.pages as any)[k].innerPages[sectionKey] && (draft.pages as any)[k].innerPages[sectionKey][it.type])
                                   let pageKey = existing
@@ -1708,7 +1711,8 @@ export default function ClientConfigPage() {
             <Button onClick={() => {
               try {
                 const k = activePageKey as string
-                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const tba = (draft.pages as any)?.[k]?.topBar
+                const sectionKey = tba?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                 const enabled = true
                 const selectedFields = filterFields.filter((f: any) => filterSelected[f.key]?.__checked)
                 const fieldsCfg = selectedFields.map((f: any) => ({
@@ -1797,7 +1801,8 @@ export default function ClientConfigPage() {
             <Button onClick={()=> {
               try {
                 const k = activePageKey as string
-                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const tba = (draft.pages as any)?.[k]?.topBar
+                const sectionKey = tba?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                 const limitNum = displayUnlimited ? undefined : Math.max(1, parseInt(displayLimit || '1', 10))
                 const displayCfg: any = { mode: displayMode, limit: limitNum, unlimited: !!displayUnlimited }
                 const cardType = displayCardType || ''
@@ -1838,7 +1843,8 @@ export default function ClientConfigPage() {
             <Button onClick={() => {
               try {
                 const k = activePageKey as string
-                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const tba = (draft.pages as any)?.[k]?.topBar
+                const sectionKey = tba?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                 const props = JSON.parse(cardConfigText || '{}')
                 window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: cardConfigType, props }, '*')
                 setCardConfigOpen(false)
