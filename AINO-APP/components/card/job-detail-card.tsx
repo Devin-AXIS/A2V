@@ -6,20 +6,22 @@ import { SalaryTrendMiniChart } from "@/components/data-display/salary-trend-min
 import { MapPin, Clock, Heart, Share2 } from "lucide-react"
 import { useState } from "react"
 
+interface JobDetailData {
+  title: string
+  company: string
+  location: string
+  salary: string
+  salaryRange: string
+  experience: string
+  education: string
+  jobType: string
+  publishTime: string
+  description: string
+  skills: string[]
+}
+
 interface JobDetailCardProps {
-  jobData: {
-    title: string
-    company: string
-    location: string
-    salary: string
-    salaryRange: string
-    experience: string
-    education: string
-    jobType: string
-    publishTime: string
-    description: string
-    skills: string[]
-  }
+  jobData: JobDetailData
   disableLocalTheme?: boolean
 }
 
@@ -48,9 +50,8 @@ export function JobDetailCard({ jobData, disableLocalTheme }: JobDetailCardProps
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsFavorited(!isFavorited)}
-              className={`p-2 rounded-full transition-colors ${
-                isFavorited ? "text-red-500 bg-red-50" : "text-gray-400 hover:text-red-500"
-              }`}
+              className={`p-2 rounded-full transition-colors ${isFavorited ? "text-red-500 bg-red-50" : "text-gray-400 hover:text-red-500"
+                }`}
             >
               <Heart className={`w-4 h-4 ${isFavorited ? "fill-current" : ""}`} />
             </button>

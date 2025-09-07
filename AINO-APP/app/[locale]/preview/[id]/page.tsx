@@ -5,6 +5,8 @@ import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
+import { setDatas } from "@/components/card/set-datas"
+import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
 
 export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -13,6 +15,7 @@ export default function PreviewPage() {
   const qs = new URLSearchParams(window.location.search)
   const applicationId = qs.get('appId')
   window.localStorage.setItem('APP_ID', applicationId || '')
+  const parentOrigin = qs.get('origin') || qs.get('parentOrigin') || '*'
   const dataParam = qs.get('data')
   if (dataParam) {
     try {
@@ -26,11 +29,23 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [manifest, setManifest] = useState<any>(null)
+  const bridge = useMemo(() => getIframeBridge({ targetOrigin: parentOrigin, channel: applicationId || undefined }), [parentOrigin, applicationId])
 
   // 仅做 App(移动) 版本预览；PC 版本后续再做
   const device = "mobile"
   const locale = params.locale || "zh"
   const id = params.id
+
+  useEffect(() => {
+    setDatas();
+  }, [])
+
+  // Notify parent ready and start auto height reporting
+  useEffect(() => {
+    const stop = startAutoHeightReporting(bridge)
+    bridge.post('aino:ready', { appId: applicationId, id, locale })
+    return () => { if (typeof stop === 'function') stop() }
+  }, [bridge, applicationId, id, locale])
 
   useEffect(() => {
     let canceled = false
@@ -49,6 +64,8 @@ export default function PreviewPage() {
             }
           } catch { }
           setManifest(mf)
+          // send manifest to parent when available
+          try { bridge.post('aino:manifest', { manifest: mf }) } catch { }
         }
       } catch (e: any) {
         if (!canceled) setError(e?.message || "error")
@@ -59,6 +76,12 @@ export default function PreviewPage() {
     run()
     return () => { canceled = true }
   }, [id])
+
+  // Report error to parent
+  useEffect(() => {
+    if (!error) return
+    try { bridge.post('aino:error', { message: error }) } catch { }
+  }, [error, bridge])
 
   // Seed default cards to localStorage once (for demo preview only)
   const [renderKey, setRenderKey] = useState(0)

@@ -5,30 +5,46 @@ import { SalaryTrendMiniChart } from "@/components/data-display/salary-trend-min
 import { LeftOneRightTwoContainer } from "@/components/card/left-one-right-two-container"
 import { LeftOneRightThreeContainer } from "@/components/card/left-one-right-three-container"
 
-export function JobOverviewCard() {
+interface JobOverviewCardProps {
+  leftTitle?: string
+  leftTrendList?: string[]
+  rightTopTitle?: string
+  rightMiddleTitle?: string
+  rightBottomTitle?: string
+  avgSalary?: string
+  salaryGrowth?: string
+  disableLocalTheme?: boolean
+}
+
+export function JobOverviewCard({
+  leftTitle = "新职业趋势",
+  leftTrendList = ["1. 人工智能训练师", "2. 提示词工程师", "3. 人工智能应用师"],
+  rightTopTitle = "岗位类型占比",
+  rightMiddleTitle = "岗位类型占比",
+  rightBottomTitle = "平均工资",
+  avgSalary = "¥15,200",
+  salaryGrowth = "+6%",
+  disableLocalTheme,
+}: JobOverviewCardProps) {
   return (
-    <AppCard className="p-4">
+    <AppCard className="p-4" disableLocalTheme={disableLocalTheme}>
       <div className="grid grid-cols-1 gap-6">
         <LeftOneRightTwoContainer
           breakpoint="base"
           left={(
             <div>
-              <h2 className="text-mg font-bold mb-3" data-slot="card-title">
-                新职业趋势
-              </h2>
+              <h2 className="text-mg font-bold mb-3" data-slot="card-title">{leftTitle}</h2>
               <JobTrendAreaChart />
               <div className="mt-4 space-y-2">
-                <div className="text-sm font-medium">1. 人工智能训练师</div>
-                <div className="text-sm font-medium">2. 提示词工程师</div>
-                <div className="text-sm font-medium">3. 人工智能应用师</div>
+                {leftTrendList.map((text, idx) => (
+                  <div key={idx} className="text-sm font-medium">{text}</div>
+                ))}
               </div>
             </div>
           )}
           rightTop={(
             <div>
-              <h2 className="text-mg font-bold mb-3" data-slot="card-title">
-                岗位类型占比
-              </h2>
+              <h2 className="text-mg font-bold mb-3" data-slot="card-title">{rightTopTitle}</h2>
               <div className="flex items-center justify-center mb-4 h-48" style={{ marginTop: 30 }}>
                 <JobCategoryDonutChart />
               </div>
@@ -37,9 +53,7 @@ export function JobOverviewCard() {
           )}
           rightMiddle={(
             <div>
-              <h2 className="text-mg font-bold mb-3" data-slot="card-title">
-                岗位类型占比
-              </h2>
+              <h2 className="text-mg font-bold mb-3" data-slot="card-title">{rightMiddleTitle}</h2>
               <div className="flex items-center justify-center mb-4 h-48">
                 <JobCategoryDonutChart />
               </div>
@@ -48,14 +62,12 @@ export function JobOverviewCard() {
           )}
           rightBottom={(
             <div style={{ marginTop: 20 }}>
-              <h2 className="text-mg font-bold mb-3" data-slot="card-title">
-                平均工资
-              </h2>
+              <h2 className="text-mg font-bold mb-3" data-slot="card-title">{rightBottomTitle}</h2>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-blue-600 mb-2">¥15,200</div>
+                  <div className="text-2xl font-bold text-blue-600 mb-2">{avgSalary}</div>
                 </div>
-                <span style={{ position: "relative", left: -10, top: -2 }} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">+6%</span>
+                <span style={{ position: "relative", left: -10, top: -2 }} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">{salaryGrowth}</span>
                 {/* <div className="w-20 h-12">
                   <SalaryTrendMiniChart />
                 </div> */}

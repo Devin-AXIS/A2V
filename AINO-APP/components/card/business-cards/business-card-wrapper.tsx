@@ -5,9 +5,10 @@ import type React from "react"
 import { useState } from "react"
 import { AppCard } from "@/components/layout/app-card"
 import { CardRegistry } from "../registry"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { BusinessCardProps } from "@/types"
+import { getMockProps } from "../mock-config"
 
 interface BusinessCardWrapperProps extends BusinessCardProps {
   cardName: string
@@ -26,6 +27,8 @@ export function BusinessCardWrapper({
   const [modalContent, setModalContent] = useState<React.ReactNode>(null)
   const [modalTitle, setModalTitle] = useState<string>("")
   const router = useRouter()
+  const params = useParams()
+  const locale = (params as any)?.locale as string | undefined
 
   const CardComponent = CardRegistry.get(cardName)?.component
   const cardConfig = CardRegistry.getConfig(cardName)
@@ -63,10 +66,15 @@ export function BusinessCardWrapper({
     }
   }
 
+  // 组装最终入参：先取集中 mock，再叠加外部 props（外部优先覆盖）
+  const mockProps = getMockProps(cardName, { locale })
+  const { onAction: _ignoredOnAction, className: _ignoredClass, disableLocalTheme: _ignoredDisable, ...restProps } = props
+  const finalProps = { ...mockProps, ...restProps }
+
   return (
     <>
       <CardComponent
-        {...props}
+        {...finalProps}
         onAction={handleCardAction}
         className={className ? `${className} h-full w-full` : "h-full w-full"}
         disableLocalTheme={disableLocalTheme}

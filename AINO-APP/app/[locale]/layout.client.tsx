@@ -43,6 +43,30 @@ export function LayoutClient({
   dict: any
   locale: Locale
 }>) {
+  useEffect(() => {
+    let aborted = false
+    async function initAppConfig() {
+      try {
+        if (typeof window === 'undefined') return
+        const qs = new URLSearchParams(window.location.search)
+        const appId = qs.get('appId') || localStorage.getItem('APP_ID') || ''
+        if (!appId) return
+        try { localStorage.setItem('APP_ID', appId) } catch { }
+
+        const res = await fetch(`http://localhost:3001/api/applications/${encodeURIComponent(String(appId))}`)
+        let json: any = null
+        try { json = await res.json() } catch { json = null }
+        if (!res.ok || !json) return
+        const config = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json
+        if (aborted) return
+        try { localStorage.setItem('APPLICATION_CONFIG', JSON.stringify(config)) } catch { }
+        try { localStorage.setItem(`APPLICATION_CONFIG:${appId}`, JSON.stringify(config)) } catch { }
+      } catch { }
+    }
+    initAppConfig()
+    return () => { aborted = true }
+  }, [])
+
   return (
     <div className={cn("min-h-screen font-sans antialiased", inter.className)}>
       <UnifiedProvider locale={locale} dict={dict}>

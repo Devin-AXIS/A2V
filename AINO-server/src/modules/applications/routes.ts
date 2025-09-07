@@ -2,10 +2,10 @@ import { Hono } from "hono"
 import { zValidator } from "@hono/zod-validator"
 import { ApplicationService } from "./service"
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
-import { 
-  CreateApplicationRequest, 
-  UpdateApplicationRequest, 
-  GetApplicationsQuery 
+import {
+  CreateApplicationRequest,
+  UpdateApplicationRequest,
+  GetApplicationsQuery
 } from "./dto"
 
 const app = new Hono()
@@ -13,16 +13,16 @@ const service = new ApplicationService()
 
 // 获取应用列表
 // 支持分页、搜索、状态过滤等功能
-app.get("/", 
+app.get("/",
   mockRequireAuthMiddleware,
   zValidator("query", GetApplicationsQuery),
   async (c) => {
     try {
       const query = c.req.valid("query")
       const user = c.get("user")
-      
+
       const result = await service.getApplications(query, user.id)
-      
+
       return c.json({
         success: true,
         data: result,
@@ -39,16 +39,16 @@ app.get("/",
 
 // 创建新应用
 // 支持多种模板类型，自动创建系统模块
-app.post("/", 
+app.post("/",
   mockRequireAuthMiddleware,
   zValidator("json", CreateApplicationRequest),
   async (c) => {
     try {
       const data = c.req.valid("json")
       const user = c.get("user")
-      
+
       const application = await service.createApplicationFromTemplate(data, user.id)
-      
+
       return c.json({
         success: true,
         data: application,
@@ -65,15 +65,16 @@ app.post("/",
 
 // 获取应用详情
 // 根据应用ID获取完整的应用信息
-app.get("/:id", 
+app.get("/:id",
   mockRequireAuthMiddleware,
   async (c) => {
     try {
       const id = c.req.param("id")
       const user = c.get("user")
-      
-      const application = await service.getApplicationById(id, user.id)
-      
+
+      // , user.id
+      const application = await service.getApplicationById(id)
+
       return c.json({
         success: true,
         data: application,
@@ -89,7 +90,7 @@ app.get("/:id",
 )
 
 // 更新应用
-app.put("/:id", 
+app.put("/:id",
   mockRequireAuthMiddleware,
   zValidator("json", UpdateApplicationRequest),
   async (c) => {
@@ -97,9 +98,9 @@ app.put("/:id",
       const id = c.req.param("id")
       const data = c.req.valid("json")
       const user = c.get("user")
-      
+
       const application = await service.updateApplication(id, data, user.id)
-      
+
       return c.json({
         success: true,
         data: application,
@@ -115,15 +116,15 @@ app.put("/:id",
 )
 
 // 删除应用
-app.delete("/:id", 
+app.delete("/:id",
   mockRequireAuthMiddleware,
   async (c) => {
     try {
       const id = c.req.param("id")
       const user = c.get("user")
-      
+
       await service.deleteApplication(id, user.id)
-      
+
       return c.json({
         success: true,
         message: "应用删除成功",
@@ -139,15 +140,15 @@ app.delete("/:id",
 )
 
 // 获取应用的模块列表
-app.get("/:id/modules", 
+app.get("/:id/modules",
   mockRequireAuthMiddleware,
   async (c) => {
     try {
       const id = c.req.param("id")
       const user = c.get("user")
-      
+
       const result = await service.getApplicationModules(id, user.id)
-      
+
       return c.json({
         success: true,
         data: result,

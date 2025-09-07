@@ -52,6 +52,8 @@ export default function ClientConfigPage() {
   const monacoRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [loadingConfig, setLoadingConfig] = useState(true)
 
   const [draft, setDraft] = useState<any>({
     schemaVersion: "1.0",
@@ -267,6 +269,148 @@ export default function ClientConfigPage() {
     }
   }
 
+  useEffect(() => {
+    const allowedChildOrigin = "http://localhost:3002"; // 调整为实际被嵌入系统的域名
+    const frame = document.getElementById("my-app-iframe");
+
+    function onMessage(event) {
+      // 可选：严格校验 message 来自指定子页面域
+      // if (event.origin !== allowedChildOrigin) return;
+
+      const data = event.data || {};
+      // 仅处理 AINO 规范的消息
+      if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
+
+      switch (data.type) {
+        case "aino:ready":
+          // e.g. { appId, id, locale }
+          console.log("AINO ready:", data.payload);
+          break;
+
+        case "aino:height":
+          // e.g. { height }
+          if (data.payload && typeof data.payload.height === "number") {
+            frame.style.height = data.payload.height + "px";
+          }
+          break;
+
+        case "aino:data":
+          console.log("AINO data:", data.payload);
+          break;
+
+        case "aino:manifest":
+          // e.g. { manifest }
+          console.log("AINO manifest:", data.payload?.manifest);
+          break;
+
+        case "aino:error":
+          console.warn("AINO error:", data.payload?.message);
+          break;
+
+        case "aino:custom":
+          // 预留自定义事件
+          console.log("AINO custom:", data.payload);
+          break;
+
+        default:
+          // ignore
+          break;
+      }
+    }
+
+    window.addEventListener("message", onMessage, false);
+  }, [])
+
+  function applyJsonToDraft(base: any, scope: typeof codeScope, active: string, json: string) {
+    let parsed: any = {}
+    try {
+      parsed = JSON.parse(json || "{}")
+    } catch (e: any) {
+      throw new Error(e?.message || (lang === "zh" ? "JSON 无法解析" : "JSON parse error"))
+    }
+    const next = { ...(base || {}) }
+    if (scope === "manifest") Object.assign(next, parsed)
+    else if (scope === "app") next.app = parsed
+    else if (scope === "dataSources") next.dataSources = parsed
+    else if (scope === "page") {
+      next.pages = next.pages || {}
+      next.pages[active] = parsed
+    }
+    return next
+  }
+
+  async function saveAll() {
+    if (saving) return
+    setSaving(true)
+    try {
+      // 1) 生成将要保存的完整 manifest（基于当前编辑范围合并）
+      const nextDraft = applyJsonToDraft(draft, codeScope, activePage, jsonText)
+
+      // 2) 读取现有应用配置，避免覆盖其它 config 字段
+      const appId = String(params.appId)
+      let existingConfig: Record<string, any> = {}
+      try {
+        const getRes = await api.applications.getApplication(appId)
+        existingConfig = (getRes.success && getRes.data ? (getRes.data as any).config : {}) || {}
+      } catch {
+        existingConfig = {}
+      }
+
+      // 3) 写入数据库：将 manifest 挂载到 applications.config.clientManifest
+      const nextConfig = { ...existingConfig, clientManifest: nextDraft }
+      const updRes = await api.applications.updateApplication(appId, { config: nextConfig })
+      if (!updRes.success) throw new Error(updRes.error || (lang === "zh" ? "保存到数据库失败" : "Save to database failed"))
+
+      setDraft(nextDraft)
+
+      // 4) 同步更新/生成预览（保持原行为）
+      const body = nextDraft
+      if (!previewId) {
+        // 没有预览则创建
+        const res = await fetch("http://localhost:3001/api/preview-manifests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ manifest: body }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
+        const id = data.data.id
+        setPreviewId(id)
+        const dataParam = encodeURIComponent(JSON.stringify(nextDraft?.dataSources || {}))
+        const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}&data=${dataParam}`
+        setPreviewUrl(url)
+      } else {
+        // 已有预览则更新
+        const res = await fetch(`http://localhost:3001/api/preview-manifests/${previewId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ manifest: body }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
+        try {
+          const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}`)
+          u.searchParams.set("device", device)
+          u.searchParams.set("appId", String(params.appId))
+          const dataParam = JSON.stringify(nextDraft?.dataSources || {})
+          u.searchParams.set("data", encodeURIComponent(dataParam))
+          setPreviewUrl(u.toString())
+        } catch {
+          const dataParam = encodeURIComponent(JSON.stringify(nextDraft?.dataSources || {}))
+          const fallback = `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}&data=${dataParam}`
+          setPreviewUrl(fallback)
+        }
+      }
+
+      toast({ description: lang === "zh" ? "已保存到数据库并刷新预览" : "Saved to database and refreshed preview" })
+      setViewTab("preview")
+    } catch (e: any) {
+      toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function handleMonacoMount(editor: editor.IStandaloneCodeEditor, monaco: any) {
     monacoRef.current = editor
     try {
@@ -313,6 +457,50 @@ export default function ClientConfigPage() {
       } catch { }
     }
   }, [device, lang])
+
+  // 初始化：加载已保存的客户端配置
+  useEffect(() => {
+    let mounted = true
+    async function loadSavedManifest() {
+      setLoadingConfig(true)
+      try {
+        const appId = String(params.appId)
+        const res = await api.applications.getApplication(appId)
+        const cfg = res.success && res.data ? (res.data as any).config : null
+        const saved = cfg?.clientManifest
+        if (mounted && saved && typeof saved === "object") {
+          // 同步语言
+          try {
+            const savedLocale = saved?.app?.locale
+            if (typeof savedLocale === "string") {
+              if (/^zh/i.test(savedLocale)) setLang("zh")
+              else if (/^en/i.test(savedLocale)) setLang("en")
+            }
+          } catch { }
+
+          // 激活页面：优先首个 pages key
+          try {
+            const pageKeys = Object.keys(saved?.pages || {})
+            if (pageKeys.length > 0) setActivePage(pageKeys[0])
+          } catch { }
+
+          setDraft(saved)
+
+          // 若当前即在预览页，加载后自动刷新预览
+          if (viewTab === "preview") {
+            setTimeout(() => { openPreview() }, 0)
+          }
+        }
+      } catch {
+        // 保持默认 draft
+      } finally {
+        if (mounted) setLoadingConfig(false)
+      }
+    }
+    loadSavedManifest()
+    return () => { mounted = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.appId])
 
   return (
     <main className="h-[100dvh] overflow-hidden bg-gradient-to-br from-white via-blue-50 to-green-50">
@@ -535,8 +723,8 @@ export default function ClientConfigPage() {
                     </TabsList>
                   </Tabs>
                   <div className="flex items-center gap-2">
-                    <Button variant="default" onClick={savePreview}>
-                      {lang === "zh" ? "保存" : "Save"}
+                    <Button variant="default" onClick={saveAll} disabled={saving}>
+                      {saving ? (lang === "zh" ? "保存中..." : "Saving...") : (lang === "zh" ? "保存" : "Save")}
                     </Button>
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
@@ -612,7 +800,7 @@ export default function ClientConfigPage() {
                 ) : (
                   <div className="flex-1 border rounded-xl bg-white overflow-hidden">
                     {previewUrl ? (
-                      <iframe src={previewUrl} className="w-full h-full" />
+                      <iframe id="my-app-iframe" src={previewUrl} className="w-full h-full" />
                     ) : (
                       <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
                         {lang === "zh" ? "点击上方预览按钮生成预览" : "Switch to Preview to generate"}

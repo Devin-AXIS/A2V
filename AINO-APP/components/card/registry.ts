@@ -1,4 +1,5 @@
 import type { CardConfig, CardAction } from "@/types"
+import axios from 'axios';
 import LearningPlanSummaryCard from "./business-cards/learning-plan-summary-card"
 import CourseModuleCard from "./business-cards/course-module-card"
 import LearningOutcomeCard from "./business-cards/learning-outcome-card"
@@ -15,6 +16,8 @@ import SimplePieCard from "./business-cards/simple-pie-card"
 import { MobileNavigationCard } from "./business-cards/mobile-navigation-card"
 import { PCToolbarCard } from "./business-cards/pc-toolbar-card"
 import { UniversalInfoCard } from "./business-cards/universal-info-card"
+
+const datas = {};
 
 class CardRegistry {
   private static cards = new Map<string, CardConfig>()
@@ -76,6 +79,21 @@ class CardRegistry {
   static unregister(name: string) {
     this.cards.delete(name)
     this.actionHandlers.delete(name)
+  }
+
+  static setData(name, data) {
+    datas[name] = data;
+    this.listens.forEach(cb => cb(name, data));
+  }
+
+  static getData(name) {
+    return datas[name];
+  }
+
+  static listens = [];
+
+  static listen(cb) {
+    this.listens.push(cb)
   }
 }
 
@@ -369,6 +387,7 @@ CardRegistry.register({
 
 CardRegistry.register({
   name: "job-posting",
+  data: { a: 'aaa' },
   displayName: "职位发布",
   category: "招聘",
   type: "form", // 添加卡片类型

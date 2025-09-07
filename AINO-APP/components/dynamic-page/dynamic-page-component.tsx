@@ -42,6 +42,7 @@ import {
 import { LocalThemeEditorVisibilityProvider } from "@/components/providers/local-theme-editor-visibility"
 import { LocalThemeKeyProvider } from "@/components/providers/local-theme-key"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 // 页面类别配置
 export interface PageCategory {
@@ -256,6 +257,11 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
   const [showCardSelector, setShowCardSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
+  const [showConfigDialog, setShowConfigDialog] = useState(false)
+  const [activeConfigCardId, setActiveConfigCardId] = useState<string | null>(null)
+  const [dataSourceOptions, setDataSourceOptions] = useState<Array<{ key: string; label: string }>>([])
+  const [configError, setConfigError] = useState<string | null>(null)
+  const [selectedDataSourceLabels, setSelectedDataSourceLabels] = useState<Record<string, string>>({})
 
   const STORAGE_KEY = `dynamic_page_layout_${category}_${locale}`
 
@@ -335,6 +341,68 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
       console.error("恢复布局失败", err)
     }
   }, [STORAGE_KEY])
+
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return
+      const restored: Record<string, string> = {}
+      cards.forEach((c) => {
+        try {
+          const raw = localStorage.getItem(`CARD_DS_${c.id}`)
+          if (raw) {
+            const parsed = JSON.parse(raw as any)
+            const label = typeof parsed === "string" ? parsed : (parsed && parsed.label)
+            if (label) restored[c.id] = label
+          }
+        } catch {
+          const raw = localStorage.getItem(`CARD_DS_${c.id}`)
+          if (raw) restored[c.id] = raw
+        }
+      })
+      if (Object.keys(restored).length > 0) {
+        setSelectedDataSourceLabels((prev) => ({ ...prev, ...restored }))
+      }
+    } catch { }
+  }, [cards])
+
+  const openConfigForCard = (cardId: string) => {
+    setActiveConfigCardId(cardId)
+    setConfigError(null)
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('APPLICATION_CONFIG') : null
+      if (!raw) {
+        setDataSourceOptions([])
+        setConfigError('未找到 APPLICATION_CONFIG')
+        setShowConfigDialog(true)
+        return
+      }
+      const parsed = JSON.parse(raw)
+      const ds = parsed && parsed.config && parsed.config.clientManifest && parsed.config.clientManifest.dataSources
+      let options: Array<{ key: string; label: string }> = []
+      if (ds && typeof ds === 'object') {
+        options = Object.keys(ds).map((k) => ({ key: k, label: (ds[k] && ds[k].label) || k }))
+      }
+      if (!options.length) {
+        setConfigError('dataSources 为空或结构不正确')
+      }
+      setDataSourceOptions(options)
+      setShowConfigDialog(true)
+    } catch (e) {
+      setConfigError('解析 APPLICATION_CONFIG 失败')
+      setDataSourceOptions([])
+      setShowConfigDialog(true)
+    }
+  }
+
+  const handleSelectDataSource = (opt: { key: string; label: string }) => {
+    if (!activeConfigCardId) return
+    console.log(activeConfigCardId, opt)
+    setSelectedDataSourceLabels((prev) => ({ ...prev, [activeConfigCardId]: opt.label }))
+    try {
+      localStorage.setItem(`CARD_DS_${activeConfigCardId}`, JSON.stringify({ key: opt.key, label: opt.label }))
+    } catch { }
+    setShowConfigDialog(false)
+  }
 
   const withInstanceId = (element: ReactNode, id: string) => {
     return isValidElement(element) ? cloneElement(element as React.ReactElement, { id, "data-theme-key": id }) : element
@@ -563,6 +631,24 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
                               <X className="w-3 h-3" />
                             </Button>
                           )}
+                          {isEditing && pageCategory.config.allowEdit && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-0 z-10"
+                              onClick={() => openConfigForCard(card.id)}
+                              title="配置数据"
+                            >
+                              <Settings className="w-3 h-3" />
+                            </Button>
+                          )}
+                          {isEditing && pageCategory.config.allowEdit && selectedDataSourceLabels[card.id] && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-200">
+                                {selectedDataSourceLabels[card.id]}
+                              </Badge>
+                            </div>
+                          )}
                           {withInstanceId(card.component, card.id)}
                         </div>
                       </LocalThemeKeyProvider>
@@ -728,6 +814,28 @@ export function DynamicPageComponent({ category, locale, layout: propLayout }: D
           />
         )}
       </div>
+      <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>选择数据源</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-2">
+            {configError && (
+              <div className="text-sm text-red-600">{configError}</div>
+            )}
+            {!configError && dataSourceOptions.length === 0 && (
+              <div className="text-sm text-muted-foreground">暂无可用数据源</div>
+            )}
+            <div className="grid grid-cols-1 gap-2">
+              {dataSourceOptions.map((opt) => (
+                <Button key={opt.key} variant="outline" className="justify-start" onClick={() => handleSelectDataSource(opt)}>
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </LocalThemeEditorVisibilityProvider>
   )
 }

@@ -18,10 +18,13 @@ interface CourseData {
   progress?: number
   difficulty: "初级" | "中级" | "高级"
   tags: string[]
-  certificate: {
+  // 兼容两种证书数据结构：新结构 certificate_name/certificate_issuer 与旧结构 certificate
+  certificate?: {
     name: string
     issuer: string
   }
+  certificate_name?: string
+  certificate_issuer?: string
   relatedJobs: string[]
   instructor: string
   price: string
@@ -112,8 +115,8 @@ export function FutureSkillsCourseCard({ data, onAction, ...props }: FutureSkill
             <Award className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-700 dark:text-blue-300">可获得证书</span>
           </div>
-          <p className="text-sm text-blue-600 dark:text-blue-400">{data.certificate.name}</p>
-          <p className="text-xs text-blue-500 dark:text-blue-500">由 {data.certificate.issuer} 颁发</p>
+          <p className="text-sm text-blue-600 dark:text-blue-400">{data.certificate?.name || data.certificate_name}</p>
+          <p className="text-xs text-blue-500 dark:text-blue-500">由 {data.certificate?.issuer || data.certificate_issuer} 颁发</p>
         </div>
 
         <div className="mb-4">

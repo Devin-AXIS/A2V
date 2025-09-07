@@ -1,23 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
+import { CardRegistry } from "../registry"
 
 interface JobPostingCardProps {
   disableLocalTheme?: boolean
 }
 
+const defaultData = {
+  title: "高级前端工程师",
+  company: "科技创新公司",
+  location: "北京·朝阳区",
+  salary: "20K-35K",
+  experience: "3-5年",
+  education: "本科",
+  tags: ["React", "TypeScript", "Node.js"],
+};
+
 export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProps) {
-  const [jobData, setJobData] = useState({
-    title: "高级前端工程师",
-    company: "科技创新公司",
-    location: "北京·朝阳区",
-    salary: "20K-35K",
-    experience: "3-5年",
-    education: "本科",
-    tags: ["React", "TypeScript", "Node.js"],
-  })
+  const [jobData, setJobData] = useState(defaultData)
+
+  useEffect(() => {
+    CardRegistry.listen((name, data) => {
+      if (name === 'job-posting') {
+        setJobData(data || defaultData)
+      }
+      // const data = CardRegistry.getData("job-posting");
+      // setJobData(data || defaultData)
+    })
+  }, [])
 
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">
