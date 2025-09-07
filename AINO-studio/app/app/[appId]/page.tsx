@@ -737,6 +737,7 @@ export default function BuilderPage() {
         lang={locale === "zh" ? "zh" : "en"}
         dirId={c.currentDir?.id}
         dirName={c.currentDir?.name}
+        dirFields={c.currentDir?.fields as any}
       />
 
       {/* Simple Module Dialogs */}

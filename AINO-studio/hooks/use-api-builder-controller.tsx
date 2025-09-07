@@ -198,6 +198,7 @@ export function useApiBuilderController({
                     enabled: true,
                     locked: false,
                     // 提取字段配置信息
+                    metaItemsConfig: field.schema?.metaItemsConfig || undefined,
                     cascaderOptions: field.schema?.cascaderOptions || undefined,
                     customExperienceConfig: field.schema?.customExperienceConfig || undefined,
                     certificateConfig: field.schema?.certificateConfig || undefined,

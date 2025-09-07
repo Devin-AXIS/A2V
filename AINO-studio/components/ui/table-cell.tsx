@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import type { FieldModel } from "@/lib/store"
 import { getSkillById } from "@/lib/data/skills-data"
+import { Progress } from "@/components/ui/progress"
 
 interface TableCellProps {
   type: string
@@ -71,7 +72,34 @@ export function TableCell({ type, value, field, className }: TableCellProps) {
       )
     }
 
-    if (type === "progress" && field?.progressConfig) {
+    if (type === "meta_items") {
+      const count = Array.isArray(value) ? value.length : 0
+      return <span className="text-xs text-gray-600">{count > 0 ? `${count}` : '-'}</span>
+    }
+
+    if ((type === "progress" || field?.preset === "progress") && field?.progressConfig) {
+      if (Array.isArray(value)) {
+        const items = value as Array<{ value?: number; weight?: number; label?: string }>
+        const mode = field.progressConfig.aggregation || 'weightedAverage'
+        const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+        const agg = (()=>{
+          if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+          if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+          const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+          const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+          return Math.round(sum / sw)
+        })()
+        return (
+          <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
+            {field.progressConfig.showProgressBar && (
+              <div className="flex-1 min-w-[60px]"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {field.progressConfig.showPercentage ? (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            ) : null}
+          </div>
+        )
+      }
       const progressValue = Number(value ?? 0)
       const maxValue = field.progressConfig.maxValue || 100
       const percentage = Math.round((progressValue / maxValue) * 100)
@@ -79,14 +107,7 @@ export function TableCell({ type, value, field, className }: TableCellProps) {
       return (
         <div className="flex items-center gap-2">
           {field.progressConfig.showProgressBar && (
-            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-              <div 
-                className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-                style={{
-                  width: `${Math.min(percentage, 100)}%`
-                }}
-              />
-            </div>
+            <div className="flex-1 min-w-[60px]"><Progress value={Math.min(percentage, 100)} /></div>
           )}
           {field.progressConfig.showPercentage ? (
             <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>

@@ -62,9 +62,11 @@ export type FieldDraft = {
   }
   // progress preset extras
   progressConfig?: {
+    aggregation?: 'weightedAverage' | 'max' | 'min'
     maxValue?: number
     showPercentage?: boolean
     showProgressBar?: boolean
+    defaultItems?: Array<{ key: string; label: string; status?: string; weight?: number }>
   }
   // custom experience preset extras
   customExperienceConfig?: {

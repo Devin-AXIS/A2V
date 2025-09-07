@@ -27,6 +27,7 @@ export type FieldType =
   | "barcode"
   | "checkbox"
   | "cascader"
+  | "meta_items"
   | "relation_one"
   | "relation_many"
   | "experience"
@@ -113,9 +114,33 @@ export type FieldModel = {
   }
   // 进度字段特殊配置
   progressConfig?: {
+    aggregation?: 'weightedAverage' | 'max' | 'min' // 聚合规则（统一为多进度，聚合展示）
     maxValue?: number // 最大值，默认100
     showPercentage?: boolean // 是否显示百分比
     showProgressBar?: boolean // 是否显示进度条
+    defaultItems?: Array<{ key: string; label: string; status?: string; weight?: number }>
+    showHelp?: boolean // 是否显示说明
+    helpText?: string // 说明文本
+  }
+  // 数据项集合字段配置（业务字段）
+  metaItemsConfig?: {
+    showHelp?: boolean
+    helpText?: string
+    // 统一字段结构：配置层定义字段类型与名称，输入层仅填写值
+    fields?: Array<{
+      id: string
+      type: 'text' | 'number' | 'image' | 'select' | 'multiselect'
+      label: string
+      unit?: string // 仅 number 使用
+      options?: string[] // 选择类使用
+    }>
+    // 初始化用的子项名称列表（可为空）
+    defaultItemLabels?: string[]
+    // 是否允许在输入层增/删子项
+    allowAddInForm?: boolean
+    // 列表聚合显示（可选）
+    primaryNumberFieldId?: string
+    aggregationMode?: 'sum' | 'avg' | 'min' | 'max'
   }
   // 其他经历字段特殊配置
   customExperienceConfig?: {
@@ -470,9 +495,38 @@ export function createDefaultRecord(dir: DirectoryModel): RecordRow {
         break
       case "number":
       case "percent":
-      case "progress":
         ;(rec as any)[f.key] = 0
         break
+      case "progress": {
+        const defaults = f.progressConfig?.defaultItems || []
+        if (defaults.length > 0) {
+          ;(rec as any)[f.key] = defaults.map((d, idx) => ({
+            id: uid(),
+            key: d.key || `p${idx + 1}`,
+            label: d.label || `Item ${idx + 1}`,
+            status: d.status,
+            weight: d.weight ?? 1,
+            value: 0,
+          }))
+        } else {
+          ;(rec as any)[f.key] = [{ id: uid(), key: "progress", label: "Progress", status: "planned", weight: 1, value: 0 }]
+        }
+        break
+      }
+      case "meta_items": {
+        const fieldDefs = f.metaItemsConfig?.fields || []
+        const labels = f.metaItemsConfig?.defaultItemLabels || []
+        ;(rec as any)[f.key] = (labels.length ? labels : []).map((label, idx) => {
+          const item: any = { id: uid(), label, order: idx }
+          item.texts = fieldDefs.filter(fd=>fd.type==='text').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: "" }))
+          item.numbers = fieldDefs.filter(fd=>fd.type==='number').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: 0, unit: fd.unit }))
+          item.images = fieldDefs.filter(fd=>fd.type==='image').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, url: "" }))
+          item.selects = fieldDefs.filter(fd=>fd.type==='select').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: "" }))
+          item.multiselects = fieldDefs.filter(fd=>fd.type==='multiselect').map(fd => ({ id: uid(), fieldId: fd.id, label: fd.label, value: [] as string[] }))
+          return item
+        })
+        break
+      }
       case "image":
       case "file":
       case "text":

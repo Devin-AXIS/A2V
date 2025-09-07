@@ -32,6 +32,7 @@ export function getFieldTypeNames(t: (key: string) => string): Record<FieldType,
     experience: t("ft_experience"),
     identity_verification: t("ft_identity_verification"),
     other_verification: t("ft_other_verification"),
+    meta_items: t("ft_meta_items"),
   }
 }
 
@@ -40,7 +41,7 @@ export const FIELD_TYPE_GROUPS = {
   basic: ['text', 'textarea', 'number', 'boolean', 'date', 'datetime', 'daterange', 'multidate', 'time'] as FieldType[],
   selection: ['select', 'multiselect', 'checkbox', 'cascader'] as FieldType[],
   media: ['image', 'multiimage', 'video', 'multivideo', 'file'] as FieldType[],
-  business: ['profile'] as FieldType[],
+  business: ['profile','meta_items'] as FieldType[],
   advanced: ['richtext', 'tags', 'percent', 'progress', 'barcode'] as FieldType[],
   relation: ['relation_one', 'relation_many', 'experience'] as FieldType[],
   verification: ['identity_verification', 'other_verification'] as FieldType[],
