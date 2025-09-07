@@ -991,14 +991,14 @@ export default function ClientConfigPage() {
                       {/* 标签行：按截图样式，内联标签 + 右侧一个"增加标签"按钮 */}
                       {Boolean((draft.pages as any)?.[activePageKey]?.topBar?.enabled) && (
                         <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-8 overflow-x-auto whitespace-nowrap">
+                          <div className="flex items-center gap-8 overflow-x-auto flex-nowrap">
                             {(() => {
                               const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
                               // 去重并保证顺序稳定
                               const seen = new Set<string>()
-                              const safeTabs = tabs.filter((t:any)=>{ const key=(t?.id||'')+''; if(!key){ return true } if(seen.has(key)) return false; seen.add(key); return true })
+                              const safeTabs = tabs.filter((t:any)=>{ const key=(t?.id||t?.title||'')+''; if(seen.has(key)) return false; seen.add(key); return true })
                               return safeTabs.map((t:any, idx:number) => (
-                                <button key={(t?.id||`idx-${idx}`)}
+                                <button key={`tabkey-${t?.id||idx}`}
                                   className={`relative text-lg flex-shrink-0 ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
                                   onClick={()=> setPageTabIndex(idx)}
                                 >
