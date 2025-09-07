@@ -1079,7 +1079,43 @@ export default function ClientConfigPage() {
                                   setFilterOpen(true)
                                 } catch {}
                               }}>{lang === 'zh' ? '筛选' : 'Filter'}</Button>
-                              <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                try {
+                                  const k = activePageKey as string
+                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  // 读取已存在的映射
+                                  const existing: string | undefined = (draft.pages?.[k]?.innerPages && (draft.pages as any)[k].innerPages[sectionKey] && (draft.pages as any)[k].innerPages[sectionKey][it.type])
+                                  let pageKey = existing
+                                  setDraft((s: any) => {
+                                    const next = { ...s }
+                                    next.pages = next.pages || {}
+                                    // 若不存在则创建一页并写入映射
+                                    if (!pageKey) {
+                                      const gen = `p-${Date.now().toString(36)}`
+                                      pageKey = gen
+                                      next.pages[gen] = { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${gen}`, cards: [] }
+                                      const host = next.pages[k] || {}
+                                      host.innerPages = host.innerPages || {}
+                                      host.innerPages[sectionKey] = host.innerPages[sectionKey] || {}
+                                      host.innerPages[sectionKey][it.type] = gen
+                                      next.pages[k] = host
+                                    }
+                                    return next
+                                  })
+                                  // 跳转预览该内页，并将页面配置通过 pageCfg 注入运行端，保证标题等元信息立即生效
+                                  setTimeout(() => {
+                                    try {
+                                      const cfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
+                                      const u = new URL(`http://localhost:3002/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
+                                      u.searchParams.set('pageCfg', JSON.stringify(cfg))
+                                      setPreviewUrl(u.toString())
+                                      setActivePageKey(String(pageKey))
+                                      setPageUIOpen(true)
+                                      setViewTab('preview')
+                                    } catch {}
+                                  }, 0)
+                                } catch {}
+                              }}>{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
                           </div>
                         ))}
