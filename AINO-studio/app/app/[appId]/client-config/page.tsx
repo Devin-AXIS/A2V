@@ -985,24 +985,29 @@ export default function ClientConfigPage() {
                           <span>{lang === 'zh' ? '开启 顶部标签栏' : 'Enable Top Tabs'}</span>
                           <Switch checked={!!(activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.enabled)} onCheckedChange={(v)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{}), enabled: !!v, tabs: Array.isArray(p.topBar?.tabs) ? p.topBar?.tabs : [] }; n.pages[k]=p; return n })} />
                         </label>
-                        {/* 移除样式选择：标签栏不再区分文字/Icon 样式 */}
                       </div>
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">{lang==='zh'?'标签列表':'Tabs'}</div>
-                        <div className="space-y-2">
-                          {Array.isArray((draft.pages as any)?.[activePageKey]?.topBar?.tabs) && (draft.pages as any)[activePageKey].topBar.tabs.map((t:any, idx:number)=> (
-                            <div key={t.id||idx} className="grid grid-cols-[20px_1fr_auto] items-center gap-2 border rounded-md px-2 py-2">
-                              <div className="text-xs text-muted-foreground">#{idx+1}</div>
-                              <Input className="h-8" value={t.title||''} onChange={(e)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list[idx] = { ...(list[idx]||{}), title:e.target.value, id: list[idx]?.id || `tab-${Date.now()}-${idx}` }; p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })} placeholder={lang==='zh'?'标签标题':'Title'} />
-                              <div className="flex items-center gap-1">
-                                <Button size="icon" variant="ghost" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=[...(Array.isArray(p.topBar?.tabs)?p.topBar.tabs:[])]; list.splice(idx,1); p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })}>✕</Button>
-                              </div>
-                            </div>
-                          ))}
-                          <Button size="sm" variant="outline" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title: (lang==='zh'?`标签`:`Tab`) + ` ${list.length+1}` }); p.topBar={ ...(p.topBar||{ enabled:true, style:'text' }), tabs:list }; n.pages[k]=p; return n })}>{lang==='zh'? '新增标签':'Add Tab'}</Button>
+                      {/* 标签行：按截图样式，内联标签 + 右侧一个"增加标签"按钮 */}
+                      {Boolean((draft.pages as any)?.[activePageKey]?.topBar?.enabled) && (
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-8 overflow-x-auto scrollbar-hide">
+                            {(() => {
+                              const tabs = (draft.pages as any)?.[activePageKey]?.topBar?.tabs || []
+                              return tabs.map((t:any, idx:number) => (
+                                <button key={t.id||idx}
+                                  className={`relative text-lg ${pageTabIndex===idx?'text-primary':'text-foreground'}`}
+                                  onClick={()=> setPageTabIndex(idx)}
+                                >
+                                  {t.title || `${lang==='zh'?'标签栏':''}${idx+1}`}
+                                  {pageTabIndex===idx && (<span className="absolute left-0 right-0 -bottom-1 mx-auto block h-1 w-20 bg-primary rounded-full" />)}
+                                </button>
+                              ))
+                            })()}
+                          </div>
+                          <Button size="sm" variant="outline" onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; const list=Array.isArray(p.topBar?.tabs)? [...p.topBar.tabs]: []; list.push({ id:`tab-${Date.now()}`, title: lang==='zh'?`标签栏${list.length+1}`:`Tab ${list.length+1}` }); p.topBar={ ...(p.topBar||{ enabled:true }), tabs:list }; n.pages[k]=p; return n })}>{lang==='zh'?'增加标签':'Add Tab'}</Button>
                         </div>
-                      </div>
+                      )}
                     </div>
+
                     {/* 内容导航配置入口 */}
                     <div className="space-y-2">
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "内容导航配置" : "Content Navigation"}</div>
@@ -1177,7 +1182,12 @@ export default function ClientConfigPage() {
                       </div>
                     </div>
                     {/* 保留浏览（应用配置到预览）放在页面设置面板底部 */}
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
+                      {/* 全局底部导航开关移至底部 */}
+                      <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                        <span>{lang === "zh" ? "开启 全局底部导航" : "Show Bottom Nav"}</span>
+                        <Switch checked={!!(activePageKey && draft.pages?.[activePageKey]?.options?.showBottomNav !== false)} onCheckedChange={(v) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.options = { ...(p.options || {}), showBottomNav: !!v }; next.pages[k] = p; return next })} />
+                      </label>
                       <Button size="sm" className="w-full" onClick={() => {
                         try {
                           const k = activePageKey as string
