@@ -941,19 +941,6 @@ export default function ClientConfigPage() {
                         <Input placeholder={lang === "zh" ? "英文标题" : "Title EN"} value={activePageKey && draft.pages?.[activePageKey]?.title?.en || ""} onChange={(e) => setDraft((s: any) => { const k = activePageKey as string; const next = { ...s }; next.pages = next.pages || {}; const p = next.pages[k] || {}; p.title = { ...(p.title || {}), en: e.target.value }; next.pages[k] = p; return next })} />
                       </div>
                       <div className="text-[10px] text-muted-foreground">{lang === "zh" ? "保存后右侧预览页标题会跟随显示" : "Title applies to header after save"}</div>
-                      {/* 将当前页面配置同步给运行端预览 */}
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => {
-                          try {
-                            const k = activePageKey as string
-                            const cfg = draft.pages?.[k] || {}
-                            const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
-                            u.searchParams.set('pageCfg', JSON.stringify(cfg))
-                            setPreviewUrl(u.toString())
-                            setViewTab('preview')
-                          } catch {}
-                        }}>{lang === 'zh' ? '应用到预览' : 'Apply to Preview'}</Button>
-                      </div>
                     </div>
                     {/* 开关项 */}
                     <div className="grid grid-cols-2 gap-3">
@@ -1135,6 +1122,19 @@ export default function ClientConfigPage() {
                   </div>
                         </div>
                       </div>
+                    </div>
+                    {/* 保留浏览（应用配置到预览）放在页面设置面板底部 */}
+                    <div className="pt-2">
+                      <Button size="sm" className="w-full" onClick={() => {
+                        try {
+                          const k = activePageKey as string
+                          const cfg = draft.pages?.[k] || {}
+                          const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
+                          u.searchParams.set('pageCfg', JSON.stringify(cfg))
+                          setPreviewUrl(u.toString())
+                          setViewTab('preview')
+                        } catch {}
+                      }}>{lang === 'zh' ? '保留浏览' : 'Keep Preview'}</Button>
                     </div>
                   </div>
                 ) : (
