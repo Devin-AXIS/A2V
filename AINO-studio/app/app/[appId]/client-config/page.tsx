@@ -1093,7 +1093,7 @@ export default function ClientConfigPage() {
                                     if (!pageKey) {
                                       const gen = `p-${Date.now().toString(36)}`
                                       pageKey = gen
-                                      next.pages[gen] = { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${gen}`, cards: [] }
+                                      next.pages[gen] = { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${gen}`, options: { showBack: true }, cards: [] }
                                       const host = next.pages[k] || {}
                                       host.innerPages = host.innerPages || {}
                                       host.innerPages[sectionKey] = host.innerPages[sectionKey] || {}
@@ -1105,7 +1105,8 @@ export default function ClientConfigPage() {
                                   // 跳转预览该内页，并将页面配置通过 pageCfg 注入运行端，保证标题等元信息立即生效
                                   setTimeout(() => {
                                     try {
-                                      const cfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
+                                      const rawCfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
+                                      const cfg = { ...rawCfg, options: { ...(rawCfg?.options || {}), showBack: true } }
                                       const u = new URL(`http://localhost:3002/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
                                       u.searchParams.set('pageCfg', JSON.stringify(cfg))
                                       setPreviewUrl(u.toString())
