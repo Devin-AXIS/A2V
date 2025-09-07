@@ -979,19 +979,13 @@ export default function ClientConfigPage() {
 
                     {/* 顶部标签栏 */}
                     <div className="space-y-2 pt-2">
-                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '顶部标签栏' : 'Top Tabs'}</div>
+                      <div className="text-xs text-muted-foreground">{lang === 'zh' ? '顶部标签栏（开启顶部栏后可用）' : 'Top Tabs (requires header)'} </div>
                       <div className="grid grid-cols-2 gap-3">
                         <label className="flex items-center justify-between border rounded-md px-3 py-2">
                           <span>{lang === 'zh' ? '开启 顶部标签栏' : 'Enable Top Tabs'}</span>
-                          <Switch checked={!!(activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.enabled)} onCheckedChange={(v)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{}), enabled: !!v, style: p.topBar?.style || 'text', tabs: Array.isArray(p.topBar?.tabs) ? p.topBar?.tabs : [] }; n.pages[k]=p; return n })} />
+                          <Switch checked={!!(activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.enabled)} onCheckedChange={(v)=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{}), enabled: !!v, tabs: Array.isArray(p.topBar?.tabs) ? p.topBar?.tabs : [] }; n.pages[k]=p; return n })} />
                         </label>
-                        <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                          <span>{lang === 'zh' ? '标签样式' : 'Tab Style'}</span>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant={activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.style === 'text' ? 'default':'outline'} onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{ enabled:true, tabs:[] }), style:'text' }; n.pages[k]=p; return n })}>Text</Button>
-                            <Button size="sm" variant={activePageKey && (draft.pages as any)?.[activePageKey]?.topBar?.style === 'icon' ? 'default':'outline'} onClick={()=> setDraft((s:any)=>{ const k=activePageKey as string; const n={...s}; n.pages=n.pages||{}; const p=n.pages[k]||{}; p.topBar={ ...(p.topBar||{ enabled:true, tabs:[] }), style:'icon' }; n.pages[k]=p; return n })}>Icon</Button>
-                          </div>
-                        </label>
+                        {/* 移除样式选择：标签栏不再区分文字/Icon 样式 */}
                       </div>
                       <div className="space-y-2">
                         <div className="text-xs text-muted-foreground">{lang==='zh'?'标签列表':'Tabs'}</div>
