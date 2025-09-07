@@ -25,6 +25,83 @@ import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
+// 轻量卡片配置 JSONSchema（用于编辑器提示与校验）
+const cardSchema: any = {
+  type: "object",
+  additionalProperties: true,
+  properties: {
+    title: { type: ["string", "object"], properties: { zh: { type: "string" }, en: { type: "string" } } },
+    subtitle: { type: ["string", "object"], properties: { zh: { type: "string" }, en: { type: "string" } } },
+    actions: {
+      type: "array",
+      items: { type: "object", properties: { key: { type: "string" }, label: { type: "string" }, icon: { type: "string" } } }
+    },
+    style: {
+      type: "object",
+      properties: {
+        variant: { type: "string", enum: ["plain", "soft", "elevated"] },
+        radius: { type: "string", enum: ["none", "sm", "md", "lg", "xl", "full"] },
+        elevation: { type: "number", minimum: 0, maximum: 24 },
+        padding: { type: "string", enum: ["none", "xs", "sm", "md", "lg"] },
+        gap: { type: "string", enum: ["none", "xs", "sm", "md", "lg"] },
+        colors: {
+          type: "object",
+          properties: { background: { type: "string" }, text: { type: "string" }, highlight: { type: "string" } }
+        },
+        typography: {
+          type: "object",
+          properties: { titleSize: { type: "string" }, bodySize: { type: "string" } }
+        }
+      }
+    },
+    layout: {
+      type: "object",
+      properties: { type: { type: "string" }, columns: { type: "number", minimum: 1, maximum: 4 } }
+    },
+    display: {
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["pick", "filter", "time", "hot"] },
+        limit: { type: ["number", "null"] },
+        unlimited: { type: "boolean" },
+        sort: { type: "object", properties: { by: { type: "string" }, order: { type: "string", enum: ["asc", "desc"] } } }
+      }
+    },
+    data: {
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["dynamic", "static"] },
+        source: { type: "string" },
+        static: { type: ["array", "object", "null"] }
+      }
+    },
+    render: {
+      type: "object",
+      properties: {
+        item: { type: ["object", "string"] }
+      }
+    }
+  }
+}
+
+const defaultCardTemplate = () => `{
+  "title": "",
+  "subtitle": "",
+  "style": {
+    "variant": "plain",
+    "radius": "md",
+    "elevation": 0,
+    "padding": "md",
+    "gap": "md",
+    "colors": { "background": "", "text": "" },
+    "typography": { "titleSize": "base", "bodySize": "sm" }
+  },
+  "layout": { "type": "list", "columns": 1 },
+  "display": { "limit": 1, "mode": "time" },
+  "data": { "mode": "dynamic" },
+  "render": { "item": {} }
+}`
+
 type BottomNavItem = { key: string; label: string; icon?: string; route: string }
 
 type DraftManifest = {
@@ -173,6 +250,15 @@ export default function ClientConfigPage() {
   const [activeCardPath, setActiveCardPath] = useState<string>("")
   const [activeCardMeta, setActiveCardMeta] = useState<{ pageKey: string; sectionKey: string; cardType: string } | null>(null)
   const [monacoLanguage, setMonacoLanguage] = useState<'json' | 'typescript'>('json')
+  const remoteApplyingRef = useRef(false)
+  const debounceTimerRef = useRef<any>(null)
+  // 显示弹窗（纯 UI，先不落逻辑）
+  const [displayOpen, setDisplayOpen] = useState(false)
+  const [displayCardName, setDisplayCardName] = useState("")
+  const [displayCardType, setDisplayCardType] = useState("")
+  const [displayLimit, setDisplayLimit] = useState<string>("1")
+  const [displayUnlimited, setDisplayUnlimited] = useState(false)
+  const [displayMode, setDisplayMode] = useState<'pick' | 'filter' | 'time' | 'hot'>("time")
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -182,13 +268,21 @@ export default function ClientConfigPage() {
         setWorkspaceCardsByCategory((s) => ({ ...s, [d.category]: d.cards }))
         setActiveWorkspaceCategory(d.category || "")
       } else if (d && d.type === 'OVERRIDE') {
-        const { pageId: pid, sectionKey, cardType, props } = d
+        const { pageId: pid, sectionKey, cardType, props, jsx } = d
         try {
-          const path = `pages/p-${pid}/cards/${sectionKey}/${cardType}.json`
-          const content = JSON.stringify(props || {}, null, 2)
-          setVirtualFiles((s) => ({ ...s, [path]: content }))
-          setJsonText(content)
-          setViewTab('code')
+          // 根据返回类型写入对应扩展名
+          // JSX 模式暂时隐藏，不自动切换或写入编辑器
+          if (props) {
+            const path = `pages/p-${pid}/cards/${sectionKey}/${cardType}.json`
+            const content = JSON.stringify(props || {}, null, 2)
+            setVirtualFiles((s) => ({ ...s, [path]: content }))
+            if (activeCardPath === path) {
+              remoteApplyingRef.current = true
+              setJsonText(content)
+              setMonacoLanguage('json')
+              setViewTab('code')
+            }
+          }
         } catch {}
       }
     }
@@ -471,8 +565,8 @@ export default function ClientConfigPage() {
                 }
               } catch {}
             } else {
-              next.pages = next.pages || {}
-              next.pages[activePage] = parsed
+            next.pages = next.pages || {}
+            next.pages[activePage] = parsed
             }
           }
           return next
@@ -519,7 +613,8 @@ export default function ClientConfigPage() {
         validate: true,
         allowComments: true,
         schemas: [
-          { uri: 'aino://manifest.schema.json', fileMatch: ['*'], schema: manifestSchema }
+          { uri: 'aino://manifest.schema.json', fileMatch: ['*'], schema: manifestSchema },
+          { uri: 'aino://card.schema.json', fileMatch: ['**/pages/*/cards/**/*.json'], schema: cardSchema }
         ]
       })
     } catch { }
@@ -878,7 +973,7 @@ export default function ClientConfigPage() {
                                   // 请求预览返回当前覆盖，若存在则填充
                                   window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
                                   setTimeout(() => {
-                                    const content = virtualFiles[path] || "{\n  \"title\": \"\",\n  \"subtitle\": \"\"\n}"
+                                    const content = virtualFiles[path] || defaultCardTemplate()
                                     setJsonText(content)
                                     setCodeScope('page')
                                     setViewTab('code')
@@ -888,26 +983,8 @@ export default function ClientConfigPage() {
                                   }, 100)
                                 } catch {}
                               }}>{lang === 'zh' ? '配置' : 'Config'}</Button>
-                              <Button size="sm" variant="outline" onClick={() => {
-                                try {
-                                  const k = activePageKey as string
-                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
-                                  const path = `pages/${k}/cards/${sectionKey}/${it.type}.tsx`
-                                  // 请求预览返回当前覆盖（jsx）
-                                  window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
-                                  setTimeout(() => {
-                                    const defaultTsx = "export default function Card({ props, data, theme, ui }){\n  return (<div>Card</div>)\n}"
-                                    const content = virtualFiles[path] || defaultTsx
-                                    setJsonText(content)
-                                    setCodeScope('page')
-                                    setViewTab('code')
-                                    setActiveCardPath(path)
-                                    setActiveCardMeta({ pageKey: k, sectionKey, cardType: it.type })
-                                    setMonacoLanguage('typescript')
-                                  }, 100)
-                                } catch {}
-                              }}>JSX</Button>
-                              <Button size="sm" variant="outline">{lang === 'zh' ? '显示' : 'Display'}</Button>
+                              {/* JSX 编辑暂时隐藏 */}
+                              <Button size="sm" variant="outline" onClick={() => { setDisplayCardName(it.displayName || it.type); setDisplayCardType(it.type); setDisplayOpen(true); setDisplayLimit("1"); setDisplayUnlimited(false); setDisplayMode('time') }}>{lang === 'zh' ? '显示' : 'Display'}</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
                           </div>
@@ -1254,12 +1331,53 @@ export default function ClientConfigPage() {
                           <div className="pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">{lang === "zh" ? "页面" : "Pages"}</div>
                           <div className="space-y-1">
                             {Object.keys(draft.pages || {}).map((k: string) => (
+                              <div key={k} className="space-y-1">
                               <Button
-                                key={k}
-                                variant={codeScope === "page" && activePage === k ? "default" : "ghost"}
+                                  variant={codeScope === "page" && activePage === k && !activeCardPath ? "default" : "ghost"}
                                 className="w-full justify-start text-xs"
-                                onClick={() => { setActivePage(k); setCodeScope("page") }}
+                                  onClick={() => { setActivePage(k); setActiveCardPath(""); setActiveCardMeta(null); setMonacoLanguage('json'); setCodeScope("page") }}
                               >pages/{k}.json</Button>
+                                {/* 渲染该页面下的卡片文件 */}
+                                {(() => {
+                                  const prefix = `pages/${k}/cards/`
+                                  const keys = Object.keys(virtualFiles).filter((p) => p.startsWith(prefix))
+                                  if (keys.length === 0) return null
+                                  return (
+                                    <div className="ml-2 pl-2 border-l space-y-1">
+                                      {keys.sort().map((path) => {
+                                        const rest = path.slice(prefix.length) // section/card.ext
+                                        const parts = rest.split('/')
+                                        if (parts.length < 2) return null
+                                        const sectionKey = parts[0]
+                                        const fileName = parts.slice(1).join('/')
+                                        if (fileName.endsWith('.tsx')) return null
+                                        const isActive = activeCardPath === path
+                                        return (
+                                          <Button
+                                            key={path}
+                                            variant={isActive ? 'default' : 'ghost'}
+                                            className="w-full justify-start text-xs"
+                                            onClick={() => {
+                                              try {
+                                                const ext = path.endsWith('.tsx') ? 'typescript' : 'json'
+                                                setActivePage(k)
+                                                setActiveCardPath(path)
+                                                const name = fileName.replace(/\.tsx$|\.json$/,'')
+                                                const cardType = name.includes('.') ? name.split('.')[0] : name
+                                                setActiveCardMeta({ pageKey: k, sectionKey, cardType })
+                                                setMonacoLanguage(ext as any)
+                                                setJsonText(virtualFiles[path] || '')
+                                                setViewTab('code')
+                                                setCodeScope('page')
+                                              } catch {}
+                                            }}
+                                          >cards/{sectionKey}/{fileName}</Button>
+                                        )
+                                      })}
+                                    </div>
+                                  )
+                                })()}
+                              </div>
                             ))}
                           </div>
                           <div className="pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">data</div>
@@ -1278,7 +1396,28 @@ export default function ClientConfigPage() {
                           language={monacoLanguage}
                           theme="vs"
                           value={jsonText}
-                          onChange={(v) => setJsonText(v || "")}
+                          onChange={(v) => {
+                            const next = v || ""
+                            setJsonText(next)
+                            if (activeCardPath) {
+                              if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+                              debounceTimerRef.current = setTimeout(() => {
+                                try {
+                                  setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: next }))
+                                  if (activeCardMeta) {
+                                    const pageIdPure = activeCardMeta.pageKey.replace(/^p-/, '')
+                                    if (activeCardPath.endsWith('.json')) {
+                                      if (remoteApplyingRef.current) { remoteApplyingRef.current = false; return }
+                                      const parsed = JSON.parse(next || '{}')
+                                      window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
+                                    } else if (activeCardPath.endsWith('.tsx')) {
+                                      window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, jsx: next }, '*')
+                                    }
+                                  }
+                                } catch {}
+                              }, 300)
+                            }
+                          }}
                           options={{
                             wordWrap: 'on',
                             minimap: { enabled: false },
@@ -1329,6 +1468,87 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBgDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 显示设置弹窗（UI 先行） */}
+      <Dialog open={displayOpen} onOpenChange={setDisplayOpen}>
+        <DialogContent className="max-w-[720px] w-[96vw] bg-white/70 backdrop-blur-md rounded-2xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">{lang === 'zh' ? `显示设置：${displayCardName}` : `Display: ${displayCardName}`}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            {/* 数量 */}
+            <div className="rounded-xl border p-4 bg-white/60">
+              <div className="text-sm font-medium mb-3">{lang === 'zh' ? '显示数量' : 'Limit'}</div>
+              <div className="flex items-center gap-3">
+                <Input type="number" min={1} value={displayLimit} onChange={(e)=> setDisplayLimit(e.target.value)} className="w-28" />
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch checked={displayUnlimited} onCheckedChange={(v)=> setDisplayUnlimited(!!v)} />
+                  <span>{lang === 'zh' ? '无限显示' : 'Unlimited'}</span>
+                </label>
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-2">{lang === 'zh' ? '数量越大渲染越多，可能影响性能' : 'Larger limits may affect performance'}</div>
+            </div>
+            {/* 模式 */}
+            <div className="rounded-xl border p-4 bg-white/60">
+              <div className="text-sm font-medium mb-3">{lang === 'zh' ? '展示来源' : 'Source'}</div>
+              <div className="flex items-center gap-2 mb-3">
+                <Button size="sm" variant={displayMode==='pick'?'default':'outline'} onClick={()=> setDisplayMode('pick')}>{lang === 'zh' ? '指定内容' : 'Pick'}</Button>
+                <Button size="sm" variant={displayMode==='filter'?'default':'outline'} onClick={()=> setDisplayMode('filter')}>{lang === 'zh' ? '按过滤' : 'Filter'}</Button>
+                <Button size="sm" variant={displayMode==='time'?'default':'outline'} onClick={()=> setDisplayMode('time')}>{lang === 'zh' ? '按时间' : 'Time'}</Button>
+                <Button size="sm" variant={displayMode==='hot'?'default':'outline'} onClick={()=> setDisplayMode('hot')}>{lang === 'zh' ? '按热度' : 'Hot'}</Button>
+              </div>
+              {displayMode === 'pick' && (
+                <div className="text-sm text-muted-foreground">{lang === 'zh' ? '选择具体内容（占位，后续接数据选择器）' : 'Pick specific items (placeholder)'}</div>
+              )}
+              {displayMode === 'filter' && (
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <Input placeholder={lang==='zh'?'关键字':'Keyword'} />
+                  <Input placeholder={lang==='zh'?'类别（占位）':'Category (placeholder)'} />
+                  <Input placeholder={lang==='zh'?'标签（占位）':'Tags (placeholder)'} />
+                </div>
+              )}
+              {displayMode === 'time' && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="text-muted-foreground">{lang==='zh'?'按时间降序':'Newest first'}</div>
+                </div>
+              )}
+              {displayMode === 'hot' && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="text-muted-foreground">{lang==='zh'?'按热度降序':'Hotness desc'}</div>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=> setDisplayOpen(false)}>{lang==='zh'?'取消':'Cancel'}</Button>
+            <Button onClick={()=> {
+              try {
+                const k = activePageKey as string
+                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const limitNum = displayUnlimited ? undefined : Math.max(1, parseInt(displayLimit || '1', 10))
+                const displayCfg: any = { mode: displayMode, limit: limitNum, unlimited: !!displayUnlimited }
+                const cardType = displayCardType || ''
+                window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, display: displayCfg }, '*')
+                // 同步写回到对应 JSON 文件（若已打开/存在）
+                const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
+                const existing = virtualFiles[path]
+                if (existing) {
+                  try {
+                    const parsed = JSON.parse(existing || '{}')
+                    const merged = { ...parsed, display: displayCfg }
+                    const text = JSON.stringify(merged, null, 2)
+                    setVirtualFiles((vf) => ({ ...vf, [path]: text }))
+                    if (activeCardPath === path) {
+                      remoteApplyingRef.current = true
+                      setJsonText(text)
+                    }
+                  } catch {}
+                }
+              } catch {}
+              setDisplayOpen(false)
+            }}>{lang==='zh'?'保存':'Save'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
