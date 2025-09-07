@@ -279,15 +279,61 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
   }, [initialTabIndex])
 
+  // 读取页面配置以适配新的 topBar/tabContent 模型（优先使用本地存储 APP_PAGE_{id}）
+  const pageConfig = useMemo(() => {
+    try {
+      if (!pageId || typeof window === 'undefined') return null
+      const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  }, [pageId, activeTabIndex, overrideTick])
+
+  // 归一化顶部标签栏为文本型导航（只用作切换）
+  const computedTopTabs = useMemo(() => {
+    try {
+      const tb = (pageConfig && (pageConfig as any).topBar) || null
+      const enabled = !!(tb && (tb as any).enabled)
+      const tabs = enabled ? ((tb as any).tabs || []) : []
+      if (enabled && Array.isArray(tabs) && tabs.length > 0) {
+        return {
+          type: 'text',
+          items: tabs.map((t: any) => ({ title: (t && (t.title || '').trim()) || '标签' })),
+        } as ContentNavConfig
+      }
+      return null
+    } catch { return null }
+  }, [pageConfig])
+
+  // 当前分区的内容导航（若开启顶部标签栏，则取每个标签下的 contentNav，否则取页面级 contentNav）
+  const currentContentNav = useMemo(() => {
+    const normalize = (cfg: any | null | undefined): ContentNavConfig | null => {
+      if (!cfg) return null
+      const style = (cfg as any).style
+      if (style === 'text' || style === 'icon') {
+        return { ...(cfg as any), type: style === 'text' ? 'text' : 'iconText' }
+      }
+      if ((cfg as any).type === 'text' || (cfg as any).type === 'iconText') return cfg as ContentNavConfig
+      return null
+    }
+    try {
+      if (computedTopTabs) {
+        const tbc = (pageConfig && (pageConfig as any).tabContent) || {}
+        const perTab = (tbc as any)?.[activeTabIndex] || {}
+        return normalize(perTab?.contentNav) || null
+      }
+      return normalize(pageConfig && (pageConfig as any).contentNav) || null
+    } catch { return null }
+  }, [pageConfig, computedTopTabs, activeTabIndex])
+
   const workspaceCategory = useMemo(() => {
-    if (topTabsConfig && topTabsConfig.type === 'text') {
+    if (computedTopTabs && computedTopTabs.type === 'text') {
       return `${category}-tab-${activeTabIndex}`
     }
-    if (contentNavConfig && contentNavConfig.type === 'iconText') {
+    if (currentContentNav && currentContentNav.type === 'iconText') {
       return `${category}-icon-${activeTabIndex}`
     }
     return category
-  }, [category, topTabsConfig, contentNavConfig, activeTabIndex])
+  }, [category, computedTopTabs, currentContentNav, activeTabIndex])
 
   const STORAGE_KEY = `dynamic_page_layout_${workspaceCategory}_${locale}`
 
@@ -646,11 +692,11 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           />
         )}
 
-        {/* 顶部标签导航：仅当提供 topTabsConfig 且为文本型时显示 */}
-        {topTabsConfig && topTabsConfig.type === 'text' && (
+        {/* 顶部标签导航：读取页面 topBar 并归一化为文本型 */}
+        {computedTopTabs && computedTopTabs.type === 'text' && (
           <div className={cn("px-4", propLayout === 'pc' ? 'hidden' : 'block')}>
             <ContentNavigation
-              config={topTabsConfig}
+              config={computedTopTabs}
               onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }}
             />
           </div>
@@ -670,10 +716,10 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         {/* 工作台类型 */}
         {pageCategory.type === "workspace" && (
           <div className={cn("relative z-10", propLayout === "pc" ? "p-6" : "p-4 pt-20")}>
-            {/* 图文入口导航容器：仅当提供 contentNavConfig 且为 iconText 时显示 */}
-            {contentNavConfig && contentNavConfig.type === 'iconText' && (
+            {/* 图文入口导航容器：支持新旧模型，统一归一化为 currentContentNav */}
+            {currentContentNav && currentContentNav.type === 'iconText' && (
               <div className="mb-4">
-                <ContentNavigation config={contentNavConfig} onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }} />
+                <ContentNavigation config={currentContentNav} onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }} />
               </div>
             )}
             <div className="mb-6">
@@ -710,8 +756,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               if (!reg || !reg.component) return card.component
                               const CardComponent = reg.component
                               const defaultData = {}
-                              // 默认使用 icon-{index} 分区键，即使无 contentNavConfig，也能写入覆盖，避免看不到效果
-                              const mode = topTabsConfig ? 'text' : 'icon'
+                              // 使用新模型：若开启顶部标签栏，用 tab-{index}；否则 icon-{index}
+                              const mode = computedTopTabs ? 'text' : 'icon'
                               const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : `icon-${activeTabIndex}`
                               let overrideProps: any = undefined
                               let overrideJsx: string | undefined
