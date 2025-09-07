@@ -44,6 +44,7 @@ import { LocalThemeKeyProvider } from "@/components/providers/local-theme-key"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
 import { InlineSandbox } from "./inline-sandbox"
 import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
+import { DropdownFilterTabs } from "@/components/navigation/dropdown-filter-tabs"
 
 // 页面类别配置
 export interface PageCategory {
@@ -272,6 +273,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
   const [activeTabIndex, setActiveTabIndex] = useState<number>(initialTabIndex ?? 0)
   const [overrideTick, setOverrideTick] = useState<number>(0)
+  const [activeFiltersByCardId, setActiveFiltersByCardId] = useState<Record<string, Record<string, string>>>({})
 
   useEffect(() => {
     if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
@@ -338,14 +340,19 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       const msg: any = e.data
       if (!msg || msg.type !== 'SET_OVERRIDE') return
       try {
-        const { pageId: targetId, sectionKey, cardType, props } = msg
+        const { pageId: targetId, sectionKey, cardType, props, jsx, display, filters } = msg
         if (!targetId || targetId !== pageId) return
         const key = `APP_PAGE_${targetId}`
         const raw = localStorage.getItem(key)
         const cfg = raw ? JSON.parse(raw) : {}
         const overrides = { ...(cfg.overrides || {}) }
         const sec = { ...(overrides[sectionKey] || {}) }
-        sec[cardType] = { ...(sec[cardType] || {}), props }
+        const nextCard = { ...(sec[cardType] || {}) }
+        if (props !== undefined) nextCard.props = props
+        if (jsx !== undefined) nextCard.jsx = jsx
+        if (display !== undefined) nextCard.display = display
+        if (filters !== undefined) nextCard.filters = filters
+        sec[cardType] = nextCard
         overrides[sectionKey] = sec
         const next = { ...cfg, overrides }
         localStorage.setItem(key, JSON.stringify(next))
@@ -371,7 +378,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         const cfg = raw ? JSON.parse(raw) : {}
         const props = cfg?.overrides?.[sectionKey]?.[cardType]?.props
         const jsx = cfg?.overrides?.[sectionKey]?.[cardType]?.jsx
-        window.parent?.postMessage({ type: 'OVERRIDE', pageId: targetId, sectionKey, cardType, props, jsx }, '*')
+        const filters = cfg?.overrides?.[sectionKey]?.[cardType]?.filters
+        window.parent?.postMessage({ type: 'OVERRIDE', pageId: targetId, sectionKey, cardType, props, jsx, filters }, '*')
       } catch (err) {
         console.error('GET_OVERRIDE failed:', err)
       }
@@ -409,7 +417,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   useEffect(() => {
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
-      if (!raw) return
+      if (!raw) {
+        // 切换到一个尚未配置过的分区时，应展示该分区自己的（空）布局
+        setCards([])
+        setIsEditing(true)
+        return
+      }
       const parsed = JSON.parse(raw)
       if (parsed && Array.isArray(parsed.cards)) {
         const savedList: Array<{ id?: string; type: string }> = parsed.cards.map((c: any) =>
@@ -697,27 +710,118 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               if (!reg || !reg.component) return card.component
                               const CardComponent = reg.component
                               const defaultData = {}
-                              const mode = topTabsConfig ? 'text' : (contentNavConfig ? 'icon' : undefined)
-                              const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : mode === 'icon' ? `icon-${activeTabIndex}` : undefined
+                              // 默认使用 icon-{index} 分区键，即使无 contentNavConfig，也能写入覆盖，避免看不到效果
+                              const mode = topTabsConfig ? 'text' : 'icon'
+                              const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : `icon-${activeTabIndex}`
                               let overrideProps: any = undefined
                               let overrideJsx: string | undefined
+                              let overrideDisplay: any = undefined
+                              let overrideFilters: any = undefined
                               if (pageId && sectionKey) {
                                 try {
                                   const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
                                   const cfg = raw ? JSON.parse(raw) : {}
                                   overrideProps = cfg?.overrides?.[sectionKey]?.[card.type]?.props
                                   overrideJsx = cfg?.overrides?.[sectionKey]?.[card.type]?.jsx
+                                  overrideDisplay = cfg?.overrides?.[sectionKey]?.[card.type]?.display
+                                  overrideFilters = cfg?.overrides?.[sectionKey]?.[card.type]?.filters
                                 } catch {}
                               }
                               if (overrideJsx) {
                                 const themeObj = {}
                                 return (<InlineSandbox code={overrideJsx} data={defaultData} props={overrideProps} theme={themeObj} className="w-full" />)
                               }
-                              return React.createElement(CardComponent as any, {
-                                data: defaultData,
-                                props: overrideProps,
-                                onAction: (action: string, data: any) => console.log('Card action:', action, data),
-                              })
+                              // 构造筛选条 items 与当前值
+                              const items = (() => {
+                                try {
+                                  if (!overrideFilters?.enabled || !Array.isArray(overrideFilters?.fields)) return []
+                                  return (overrideFilters.fields as any[]).map((f: any) => {
+                                    // 统一为扁平 options：{label,value}[]
+                                    const flatOptions: Array<{ label: string; value: string }> = []
+                                    if (Array.isArray(f.options) && f.type === 'select') {
+                                      (f.options as any[]).forEach((opt: any) => {
+                                        if (typeof opt === 'string') flatOptions.push({ label: String(opt), value: String(opt) })
+                                        else if (opt && typeof opt === 'object') flatOptions.push({ label: opt.label ?? String(opt.value ?? ''), value: String(opt.value ?? opt.label ?? '') })
+                                      })
+                                    } else if (Array.isArray(f.optionsTree) && f.type === 'cascader') {
+                                      const walk = (nodes: any[], pathLabels: string[], pathValues: string[]) => {
+                                        nodes.forEach((n) => {
+                                          const nextLabels = [...pathLabels, String(n.name ?? n.label ?? n.id ?? '')]
+                                          const nextValues = [...pathValues, String(n.id ?? n.value ?? n.name ?? '')]
+                                          if (Array.isArray(n.children) && n.children.length > 0) {
+                                            walk(n.children, nextLabels, nextValues)
+                                          } else {
+                                            flatOptions.push({ label: nextLabels.join(' / '), value: nextValues.join('/') })
+                                          }
+                                        })
+                                      }
+                                      walk(f.optionsTree as any[], [], [])
+                                    }
+                                    // 演示用：本地兜底选项，避免为空看不到效果
+                                    if (flatOptions.length === 0) {
+                                      if (f.type === 'select') {
+                                        flatOptions.push(
+                                          { label: '全部', value: 'all' },
+                                          { label: '选项A', value: 'a' },
+                                          { label: '选项B', value: 'b' }
+                                        )
+                                      } else if (f.type === 'cascader') {
+                                        flatOptions.push(
+                                          { label: '中国 / 北京', value: 'cn/bj' },
+                                          { label: '中国 / 上海', value: 'cn/sh' },
+                                          { label: '美国 / 纽约', value: 'us/ny' }
+                                        )
+                                      }
+                                    }
+                                    // 如果没有选项也返回占位
+                                    return { category: f.label || f.fieldId, options: flatOptions, defaultValue: f.default }
+                                  })
+                                } catch { return [] }
+                              })()
+
+                              const values = activeFiltersByCardId[card.id] || (() => {
+                                const v: Record<string, string> = {}
+                                items.forEach((it) => {
+                                  const dv = it.defaultValue || (it.options[0]?.value || '')
+                                  v[it.category] = dv
+                                })
+                                return v
+                              })()
+
+                              const handleValueChange = (category: string, value: string) => {
+                                setActiveFiltersByCardId((s) => ({
+                                  ...s,
+                                  [card.id]: { ...(s[card.id] || {}), [category]: value },
+                                }))
+                              }
+
+                              // 简化：当存在 display.limit 时，在 props 中注入 listLimit 供卡片自行使用；注入 activeFilters
+                              const activeFilters = (() => {
+                                const map: Record<string, string> = {}
+                                if (overrideFilters?.enabled && Array.isArray(overrideFilters.fields)) {
+                                  overrideFilters.fields.forEach((f: any) => {
+                                    const cat = f.label || f.fieldId
+                                    const val = values[cat]
+                                    if (val != null) map[f.fieldId || cat] = val
+                                  })
+                                }
+                                return map
+                              })()
+
+                              const mergedProps = { ...(overrideProps || {}), listLimit: (overrideDisplay && overrideDisplay.limit), activeFilters }
+
+                              return (
+                                <div className="space-y-2">
+                                  {overrideFilters?.enabled && items.length > 0 && (
+                                    <DropdownFilterTabs items={items as any} values={values} onValueChange={handleValueChange} />
+                                  )}
+                                  {React.createElement(CardComponent as any, {
+                                    data: defaultData,
+                                    props: mergedProps,
+                                    onAction: (action: string, data: any) => console.log('Card action:', action, data),
+                                  })}
+                                </div>
+                              )
                             } catch {
                               return card.component
                             }

@@ -20,6 +20,8 @@ import { api } from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-config-dialog"
 
@@ -259,6 +261,81 @@ export default function ClientConfigPage() {
   const [displayLimit, setDisplayLimit] = useState<string>("1")
   const [displayUnlimited, setDisplayUnlimited] = useState(false)
   const [displayMode, setDisplayMode] = useState<'pick' | 'filter' | 'time' | 'hot'>("time")
+
+  // 筛选配置弹窗（UI）
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterCardName, setFilterCardName] = useState("")
+  const [filterCardType, setFilterCardType] = useState("")
+  const [filterDsKey, setFilterDsKey] = useState<string>("")
+  const [filterLoading, setFilterLoading] = useState(false)
+  const [filterFields, setFilterFields] = useState<any[]>([])
+  const [filterSelected, setFilterSelected] = useState<Record<string, any>>({})
+
+  const tableDataSources = useMemo(() => {
+    const entries = Object.entries(draft.dataSources || {})
+    return entries
+      .filter(([, v]: any) => v && v.type === 'table')
+      .map(([key, v]: any) => ({ key, tableId: v.tableId, label: v.label || `${v.moduleName || ''}/${v.tableName || ''}` }))
+  }, [draft.dataSources])
+
+  // 本地演示字段（无数据时兜底）
+  function getMockFilterFields() {
+    return [
+      {
+        id: 'mock_category',
+        key: 'category',
+        label: lang === 'zh' ? '类别' : 'Category',
+        type: 'select',
+        options: [{ label: lang==='zh'?'全部':'All', value: 'all' }, { label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }],
+        optionsTree: [],
+      },
+      {
+        id: 'mock_region',
+        key: 'region',
+        label: lang === 'zh' ? '地区' : 'Region',
+        type: 'cascader',
+        options: [],
+        optionsTree: [
+          { id: 'cn', name: lang==='zh'?'中国':'China', children: [ { id: 'bj', name: lang==='zh'?'北京':'Beijing' }, { id: 'sh', name: lang==='zh'?'上海':'Shanghai' } ] },
+          { id: 'us', name: 'USA', children: [ { id: 'ny', name: 'New York' }, { id: 'sf', name: 'San Francisco' } ] },
+        ],
+      },
+    ]
+  }
+
+  async function loadFilterFields(dsKey: string) {
+    try {
+      setFilterLoading(true)
+      const ds = (draft.dataSources || {})[dsKey]
+      if (!ds?.tableId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s)=>{ const next={...s}; mock.forEach((f)=>{ if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
+      const appId = String(params.appId)
+      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(ds.tableId, appId)
+      const defId = defRes?.data?.id
+      if (!defId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s)=>{ const next={...s}; mock.forEach((f)=>{ if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
+      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 200 })
+      const list = Array.isArray(fieldsRes?.data) ? fieldsRes.data : []
+      const candidates = list
+        .map((f: any) => ({
+          id: f.id,
+          key: f.key,
+          label: f.schema?.label || f.key,
+          type: f.type,
+          options: f.schema?.options || [],
+          optionsTree: f.schema?.cascaderOptions || [],
+        }))
+        .filter((f: any) => f.type === 'select' || f.type === 'cascader')
+      const toUse = candidates.length > 0 ? candidates : getMockFilterFields()
+      setFilterFields(toUse)
+      // 初始化选中项保留
+      setFilterSelected((s) => {
+        const next: Record<string, any> = { ...s }
+        toUse.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } })
+        return next
+      })
+    } finally {
+      setFilterLoading(false)
+    }
+  }
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -985,6 +1062,23 @@ export default function ClientConfigPage() {
                               }}>{lang === 'zh' ? '配置' : 'Config'}</Button>
                               {/* JSX 编辑暂时隐藏 */}
                               <Button size="sm" variant="outline" onClick={() => { setDisplayCardName(it.displayName || it.type); setDisplayCardType(it.type); setDisplayOpen(true); setDisplayLimit("1"); setDisplayUnlimited(false); setDisplayMode('time') }}>{lang === 'zh' ? '显示' : 'Display'}</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                try {
+                                  const k = activePageKey as string
+                                  const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                                  setFilterCardName(it.displayName || it.type)
+                                  setFilterCardType(it.type)
+                                  // 默认选择第一个表数据源
+                                  const first = tableDataSources[0]?.key || ''
+                                  const nextKey = filterDsKey || first
+                                  setFilterDsKey(nextKey)
+                                  // 无数据源也加载本地演示字段
+                                  loadFilterFields(nextKey)
+                                  // 触发预览拉取现有覆盖，备用
+                                  window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
+                                  setFilterOpen(true)
+                                } catch {}
+                              }}>{lang === 'zh' ? '筛选' : 'Filter'}</Button>
                               <Button size="sm" variant="outline">{lang === 'zh' ? '内页' : 'Inner'}</Button>
                             </div>
                           </div>
@@ -1468,6 +1562,96 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBgDialogOpen(false)}>{lang === "zh" ? "关闭" : "Close"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 筛选设置弹窗（UI 先行） */}
+      <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
+        <DialogContent className="max-w-[880px] w-[96vw] max-h-[85vh] bg-white">
+          <DialogHeader>
+            <DialogTitle>{lang === 'zh' ? `筛选设置：${filterCardName}` : `Filters: ${filterCardName}`}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* 数据源选择 */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">{lang==='zh'? '数据源（表）' : 'Data Source (Table)'}</div>
+              <div className="w-80">
+                <Select value={filterDsKey} onValueChange={(v) => { setFilterDsKey(v); loadFilterFields(v) }}>
+                  <SelectTrigger><SelectValue placeholder={lang==='zh'? '选择数据源' : 'Choose data source'} /></SelectTrigger>
+                  <SelectContent>
+                    {tableDataSources.map((ds) => (
+                      <SelectItem key={ds.key} value={ds.key}>{ds.label || ds.key}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {tableDataSources.length === 0 && (
+                <div className="text-[11px] text-muted-foreground">{lang==='zh'? '请先在左侧添加数据源（整表）。' : 'Add a table data source first on the left.'}</div>
+              )}
+            </div>
+
+            {/* 字段选择 */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">{lang==='zh'? '可作为筛选的字段（单选/级联）' : 'Filterable fields (select/cascader)'}</div>
+              <ScrollArea className="max-h-[40vh] border rounded-md">
+                <div className="p-3 space-y-2">
+                  {filterLoading && (<div className="text-xs text-muted-foreground">{lang==='zh'? '加载中...' : 'Loading...'}</div>)}
+                  {!filterLoading && filterFields.length === 0 && (
+                    <div className="text-xs text-muted-foreground">{lang==='zh'? '无可用字段（请在字段管理中配置 select/cascader）。' : 'No fields available (configure select/cascader in Fields).'}</div>
+                  )}
+                  {filterFields.map((f: any) => {
+                    const checked = !!filterSelected[f.key]?.__checked
+                    return (
+                      <div key={f.key} className="grid grid-cols-[20px_1fr] items-center gap-2 border rounded-md px-2 py-2">
+                        <Checkbox checked={checked} onCheckedChange={(v) => setFilterSelected((s) => ({ ...s, [f.key]: { ...(s[f.key] || { fieldId: f.key, type: f.type, label: f.label }), __checked: !!v } }))} />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{f.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{f.type}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+              <div className="text-[11px] text-muted-foreground">{lang==='zh'? '多选字段，仅用于决定出现哪些筛选标签，不在此输入默认值。' : 'Multi-select fields to show as filter tags; no defaults here.'}</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFilterOpen(false)}>{lang==='zh'? '取消' : 'Cancel'}</Button>
+            <Button onClick={() => {
+              try {
+                const k = activePageKey as string
+                const sectionKey = (draft.pages?.[k]?.contentNav?.type === 'text') ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
+                const enabled = true
+                const selectedFields = filterFields.filter((f: any) => filterSelected[f.key]?.__checked)
+                const fieldsCfg = selectedFields.map((f: any) => ({
+                  fieldId: f.key,
+                  type: f.type,
+                  label: f.label,
+                  options: f.type === 'select' ? (Array.isArray(f.options) ? f.options : []) : undefined,
+                  optionsTree: f.type === 'cascader' ? (Array.isArray(f.optionsTree) ? f.optionsTree : []) : undefined,
+                }))
+                const filtersCfg: any = { enabled, dataSourceKey: filterDsKey || undefined, fields: fieldsCfg }
+                const cardType = filterCardType || ''
+                window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, filters: filtersCfg }, '*')
+                // 同步写回到对应 JSON 文件（若已打开/存在）
+                const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
+                const existing = virtualFiles[path]
+                if (existing) {
+                  try {
+                    const parsed = JSON.parse(existing || '{}')
+                    const merged = { ...parsed, filters: filtersCfg }
+                    const text = JSON.stringify(merged, null, 2)
+                    setVirtualFiles((vf) => ({ ...vf, [path]: text }))
+                    if (activeCardPath === path) {
+                      remoteApplyingRef.current = true
+                      setJsonText(text)
+                    }
+                  } catch {}
+                }
+                setFilterOpen(false)
+              } catch {}
+            }}>{lang==='zh'? '保存' : 'Save'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
