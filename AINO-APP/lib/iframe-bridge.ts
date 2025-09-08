@@ -10,6 +10,7 @@ export type BridgeEventType =
     | "aino:height"
     | "aino:navigate"
     | "aino:error"
+    | "aino:data"
     | "aino:manifest"
     | "aino:custom";
 

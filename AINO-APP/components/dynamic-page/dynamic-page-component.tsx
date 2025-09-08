@@ -46,6 +46,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { InlineSandbox } from "./inline-sandbox"
 import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
 import { DropdownFilterTabs } from "@/components/navigation/dropdown-filter-tabs"
+import { getIframeBridge } from "@/lib/iframe-bridge"
+import { dataInputs } from "@/components/card/set-datas"
+import { useSearchParams } from "next/navigation"
 
 // 页面类别配置
 export interface PageCategory {
@@ -270,7 +273,9 @@ interface DynamicPageComponentProps {
 export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig, initialTabIndex, pageId }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
-  const [isEditing, setIsEditing] = useState(true)
+  const sp = useSearchParams()
+  const isEditeParam = (sp.get('isEdite') === 'true' || sp.get('isEdit') === 'true')
+  const [isEditing, setIsEditing] = useState<boolean>(isEditeParam)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
   const [showConfigDialog, setShowConfigDialog] = useState(false)
   const [activeConfigCardId, setActiveConfigCardId] = useState<string | null>(null)
@@ -575,6 +580,32 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     try {
       localStorage.setItem(`CARD_DS_${activeConfigCardId}`, JSON.stringify({ key: opt.key, label: opt.label }))
     } catch { }
+    try {
+      // 发送到 Studio：aino:data
+      const bridge = getIframeBridge()
+      // 找到当前卡片配置与入参（假定使用 mock props 作为入参字段原型）
+      const currentCard = cards.find((c) => c.id === activeConfigCardId)
+      const cardConfig = currentCard ? CardRegistry.getConfig(currentCard.type) : undefined
+      // 从 mock provider 获取该卡片的默认入参结构，作为字段参考
+      let inputFields: any = dataInputs[currentCard?.type] || {}
+
+      bridge.post("aino:data", {
+        card: {
+          id: currentCard?.id,
+          name: currentCard?.name,
+          type: currentCard?.type,
+          config: cardConfig ? {
+            displayName: cardConfig.displayName,
+            category: cardConfig.category,
+            width: cardConfig.width,
+            businessFlow: cardConfig.businessFlow,
+          } : undefined,
+        },
+        inputs: inputFields,
+        dataSource: { key: opt.key, label: opt.label },
+        timestamp: Date.now(),
+      })
+    } catch { }
     setShowConfigDialog(false)
   }
 
@@ -759,6 +790,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
   const showHeader = showHeaderProp ?? pageCategory.config.showHeader
   const showBottomNav = showBottomNavProp ?? pageCategory.config.showBottomNav
+  const canEdit = isEditeParam
 
   return (
     <LocalThemeEditorVisibilityProvider visible={isEditing}>
@@ -829,7 +861,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               <X className="w-3 h-3" />
                             </Button>
                           )}
-                          {/* {
+                          {
                             isEditing && pageCategory.config.allowEdit && (
                               <Button
                                 variant="ghost"
@@ -851,7 +883,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               </div>
                             )
                           }
-                          { withInstanceId(card.component, card.id) } */}
+                          {/* { withInstanceId(card.component, card.id) } */}
                           {withInstanceId((() => {
                             try {
                               const reg = CardRegistry.getAll().find((r) => r.name === card.type)
@@ -1002,7 +1034,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
             </div >
 
             {
-              pageCategory.config.allowEdit && (
+              canEdit && pageCategory.config.allowEdit && (
                 <div className="flex gap-2">
                   <Button variant={isEditing ? "outline" : "outline"} className="flex-1 hover:bg-accent hover:text-accent-foreground" onClick={toggleEditMode}>
                     {isEditing ? (

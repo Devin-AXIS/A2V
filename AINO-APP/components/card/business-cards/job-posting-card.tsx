@@ -23,13 +23,16 @@ export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProp
   const [jobData, setJobData] = useState(defaultData)
 
   useEffect(() => {
-    CardRegistry.listen((name, data) => {
-      if (name === 'job-posting') {
-        setJobData(data || defaultData)
-      }
-      // const data = CardRegistry.getData("job-posting");
-      // setJobData(data || defaultData)
-    })
+    const newData = CardRegistry.getData("job-posting");
+    if (newData) {
+      setJobData(newData || defaultData)
+    } else {
+      CardRegistry.listen((name, data) => {
+        if (name === 'job-posting') {
+          setJobData(data || defaultData)
+        }
+      })
+    }
   }, [])
 
   return (

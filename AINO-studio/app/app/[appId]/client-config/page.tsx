@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
@@ -168,7 +168,7 @@ export default function ClientConfigPage() {
       defaultLanguage: lang === "zh" ? "zh" : "en",
       theme: "default",
       bottomNav: [
-        { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/home" },
+        { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/preview" },
         { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/profile" },
       ],
     },
@@ -189,6 +189,144 @@ export default function ClientConfigPage() {
   const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
   const [recordsByDir, setRecordsByDir] = useState<Record<string, RecordItem[]>>({})
   const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
+
+  // 接收自子页面的 aino:data 数据缓存与字段映射状态
+  const INCOMING_KEY = `AINO_CARD_DATA_${params.appId}`
+  const [incomingMappings, setIncomingMappings] = useState<Record<string, { cardType: string; cardName?: string; dataSourceKey?: string; dataSourceLabel?: string; tableId?: string; tableName?: string; inputs: Record<string, any>; timestamp: number }>>({})
+  const [tableFieldsByDsKey, setTableFieldsByDsKey] = useState<Record<string, Array<{ key: string; label: string }>>>({})
+  const [mappingSelections, setMappingSelections] = useState<Record<string, Record<string, string>>>({})
+  const [bindingByMappingKey, setBindingByMappingKey] = useState<Record<string, string>>({})
+
+
+
+  function saveIncomingData(payload: any) {
+    try {
+      const cardType = String(payload?.card?.type || '')
+      const cardName = String(payload?.card?.name || '')
+      const dsKey = payload?.dataSource?.key ? String(payload?.dataSource?.key) : undefined
+      const dsLabel = payload?.dataSource?.label ? String(payload?.dataSource?.label) : undefined
+      const tableId = payload?.dataSource?.tableId || payload?.dataSource?.id
+      const tableName = payload?.dataSource?.tableName || payload?.dataSource?.name
+      const inputs = (payload?.inputs && typeof payload.inputs === 'object') ? payload.inputs : {}
+      if (!cardType) return
+      const dsPart = dsKey || (tableId ? `table:${tableId}` : 'unknown')
+      const mappingKey = `${cardType}::${dsPart}`
+      setIncomingMappings((s) => {
+        const next = { ...s, [mappingKey]: { cardType, cardName, dataSourceKey: dsKey, dataSourceLabel: dsLabel, tableId: tableId ? String(tableId) : undefined, tableName: tableName ? String(tableName) : undefined, inputs, timestamp: Date.now() } }
+        return next
+      })
+    } catch { }
+  }
+
+  async function loadTableFields(dsKey: string) {
+    try {
+      if (!dsKey) return
+      if (tableFieldsByDsKey[dsKey]) return
+      const appId = String(params.appId)
+      let tableId: string | undefined
+      if (dsKey.startsWith('table:')) {
+        tableId = dsKey.replace(/^table:/, '')
+      } else {
+        const ds = (draft.dataSources || {})[dsKey]
+        tableId = ds?.tableId
+      }
+      if (!tableId) { setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: [] })); return }
+      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(tableId, appId)
+      const defId = defRes?.data?.id
+      if (!defId) { setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: [] })); return }
+      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 100 })
+      const list = Array.isArray(fieldsRes?.data) ? fieldsRes.data : []
+      const options = list.map((f: any) => ({ key: String(f.key || ''), label: String(f?.schema?.label || f.key || '') }))
+      setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: options }))
+    } catch {
+      setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: [] }))
+    }
+  }
+
+  // 监听新到的映射上下文，自动加载对应数据源字段
+  useEffect(() => {
+    try {
+      Object.values(incomingMappings || {}).forEach((ctx) => {
+        const dsKey = ctx?.dataSourceKey ? String(ctx.dataSourceKey) : undefined
+        if (dsKey && (draft.dataSources || {})[dsKey] && !tableFieldsByDsKey[dsKey]) loadTableFields(dsKey)
+        const tid = ctx?.tableId ? String(ctx.tableId) : undefined
+        if (tid) {
+          const pseudo = `table:${tid}`
+          if (!tableFieldsByDsKey[pseudo]) loadTableFields(pseudo)
+        }
+      })
+    } catch { }
+  }, [incomingMappings, tableFieldsByDsKey])
+
+  // 字段扁平化（仅一层键，若后续需要可拓展 path）
+  function extractInputKeys(inputs: Record<string, any>): string[] {
+    try {
+      if (!inputs || typeof inputs !== 'object') return []
+      return Object.keys(inputs)
+    } catch { return [] }
+  }
+
+  // 读取/保存映射改为随 manifest 一起持久化到数据库
+
+  function setMappingValue(mappingKey: string, inputKey: string, fieldKey: string) {
+    setMappingSelections((s) => {
+      const prev = s[mappingKey] || {}
+      const nextMap = { ...prev, [inputKey]: fieldKey }
+      const nextAll = { ...s, [mappingKey]: nextMap }
+      return nextAll
+    })
+  }
+
+  // 删除整个映射分组（incoming + selections + 绑定）
+  function deleteMappingGroup(mappingKey: string) {
+    try {
+      setIncomingMappings((s) => {
+        const next = { ...s }
+        delete next[mappingKey]
+        return next
+      })
+      setMappingSelections((s) => {
+        const next = { ...s }
+        delete next[mappingKey]
+        return next
+      })
+      setBindingByMappingKey((s) => {
+        const next = { ...s }
+        delete next[mappingKey]
+        return next
+      })
+    } catch { }
+  }
+
+  // 清除单个字段的映射
+  function clearFieldMapping(mappingKey: string, inputKey: string) {
+    setMappingSelections((s) => {
+      const group = { ...(s[mappingKey] || {}) }
+      if (group[inputKey] !== undefined) delete group[inputKey]
+      const nextAll = { ...s, [mappingKey]: group }
+      return nextAll
+    })
+  }
+
+  // 当收到新的映射上下文时，若其 dsKey 恰好存在于本地数据定义，则自动绑定
+  useEffect(() => {
+    try {
+      const entries = Object.entries(incomingMappings || {})
+      if (entries.length === 0) return
+      setBindingByMappingKey((s) => {
+        const next = { ...s }
+        entries.forEach(([mKey, ctx]) => {
+          const dsKey = String(ctx?.dataSourceKey || '')
+          if (!next[mKey]) {
+            if (dsKey && (draft.dataSources || {})[dsKey]) next[mKey] = dsKey
+            else if (ctx?.tableId) next[mKey] = `table:${String(ctx.tableId)}`
+            else next[mKey] = ''
+          }
+        })
+        return next
+      })
+    } catch { }
+  }, [incomingMappings, draft?.dataSources])
 
   const filteredTables = useMemo(() => {
     const kw = tableSearch.trim().toLowerCase()
@@ -650,7 +788,7 @@ export default function ClientConfigPage() {
       const id = data.data.id
       setPreviewId(id)
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-      const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}&data=${dataParam}`
+      const url = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
@@ -708,7 +846,7 @@ export default function ClientConfigPage() {
       if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
       // 更新预览URL上的 data 参数，保持与当前数据源一致
       try {
-        const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}`)
+        const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}`)
         u.searchParams.set("device", device)
         u.searchParams.set("appId", String(params.appId))
         const dataParam = JSON.stringify(draft?.dataSources || {})
@@ -716,7 +854,7 @@ export default function ClientConfigPage() {
         setPreviewUrl(u.toString())
       } catch {
         const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-        const fallback = `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}&data=${dataParam}`
+        const fallback = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
       toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
@@ -751,7 +889,10 @@ export default function ClientConfigPage() {
           break;
 
         case "aino:data":
-          console.log("AINO data:", data.payload);
+          try {
+            console.log('aino:data', data.payload)
+            saveIncomingData(data.payload)
+          } catch { }
           break;
 
         case "aino:manifest":
@@ -801,6 +942,8 @@ export default function ClientConfigPage() {
     try {
       // 1) 生成将要保存的完整 manifest（基于当前编辑范围合并）
       const nextDraft = applyJsonToDraft(draft, codeScope, activePage, jsonText)
+      // 合并数据映射与上下文到 manifest，一起入库
+      const mergedDraft = { ...nextDraft, dataMappings: mappingSelections, incomingMappings }
 
       // 2) 读取现有应用配置，避免覆盖其它 config 字段
       const appId = String(params.appId)
@@ -813,14 +956,14 @@ export default function ClientConfigPage() {
       }
 
       // 3) 写入数据库：将 manifest 挂载到 applications.config.clientManifest
-      const nextConfig = { ...existingConfig, clientManifest: nextDraft }
+      const nextConfig = { ...existingConfig, clientManifest: mergedDraft }
       const updRes = await api.applications.updateApplication(appId, { config: nextConfig })
       if (!updRes.success) throw new Error(updRes.error || (lang === "zh" ? "保存到数据库失败" : "Save to database failed"))
 
-      setDraft(nextDraft)
+      setDraft(mergedDraft)
 
       // 4) 同步更新/生成预览（保持原行为）
-      const body = nextDraft
+      const body = mergedDraft
       if (!previewId) {
         // 没有预览则创建
         const res = await fetch("http://localhost:3001/api/preview-manifests", {
@@ -832,8 +975,8 @@ export default function ClientConfigPage() {
         if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
         const id = data.data.id
         setPreviewId(id)
-        const dataParam = encodeURIComponent(JSON.stringify(nextDraft?.dataSources || {}))
-        const url = `http://localhost:3002/${lang}/preview/${id}?device=${device}&appId=${params.appId}&data=${dataParam}`
+        const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
+        const url = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(url)
       } else {
         // 已有预览则更新
@@ -845,15 +988,15 @@ export default function ClientConfigPage() {
         const data = await res.json().catch(() => ({}))
         if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
         try {
-          const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}`)
+          const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}`)
           u.searchParams.set("device", device)
           u.searchParams.set("appId", String(params.appId))
-          const dataParam = JSON.stringify(nextDraft?.dataSources || {})
+          const dataParam = JSON.stringify(mergedDraft?.dataSources || {})
           u.searchParams.set("data", encodeURIComponent(dataParam))
           setPreviewUrl(u.toString())
         } catch {
-          const dataParam = encodeURIComponent(JSON.stringify(nextDraft?.dataSources || {}))
-          const fallback = `http://localhost:3002/${lang}/preview/${previewId}?device=${device}&appId=${params.appId}&data=${dataParam}`
+          const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
+          const fallback = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
           setPreviewUrl(fallback)
         }
       }
@@ -953,6 +1096,9 @@ export default function ClientConfigPage() {
           } catch { }
 
           setDraft(saved)
+          // 恢复字段映射与上下文
+          try { setMappingSelections((saved as any).dataMappings || {}) } catch { }
+          try { setIncomingMappings((saved as any).incomingMappings || {}) } catch { }
 
           // 若当前即在预览页，加载后自动刷新预览
           if (viewTab === "preview") {
@@ -976,7 +1122,7 @@ export default function ClientConfigPage() {
         <Card className="p-0 overflow-hidden h-full">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
-              <div className="h-full p-3 space-y-3">
+              <div className="h-full overflow-y-auto p-3 space-y-3">
                 {!authUIOpen && !pageUIOpen ? (
                   <>
                     <div className="flex items-center justify-between">
@@ -1150,10 +1296,76 @@ export default function ClientConfigPage() {
                         ))}
                       </div>
                     </div>
+                    {/* 数据映射：卡片入参字段 → 表字段 */}
+                    <div className="pt-2 space-y-2">
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
+                        <span>{lang === 'zh' ? '数据映射' : 'Field Mapping'}</span>
+                        <span className="text-[10px] text-muted-foreground">{lang === 'zh' ? '将卡片入参字段映射到所选数据源表字段' : 'Map card input fields to table fields'}</span>
+                      </div>
+                      {/* 分组：按 cardType::dataSourceKey 聚合 */}
+                      <div className="space-y-3">
+                        {Object.entries(incomingMappings || {}).length === 0 && (
+                          <div className="text-xs text-muted-foreground px-1">{lang === 'zh' ? '等待子页面选择数据源后将自动出现映射项' : 'Mappings will appear after selecting data source in preview'}</div>
+                        )}
+                        {Object.entries(incomingMappings || {}).map(([mappingKey, ctx]) => {
+                          const inputKeys = extractInputKeys(ctx.inputs || {})
+                          const boundKey = bindingByMappingKey[mappingKey] || ctx.dataSourceKey || ''
+                          const fieldOptions = tableFieldsByDsKey[boundKey] || []
+                          const currentMap = mappingSelections[mappingKey] || {}
+                          return (
+                            <div key={mappingKey} className="border rounded-md p-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-medium">
+                                  {ctx.cardName || ctx.cardType} → <span className="text-muted-foreground">{(draft.dataSources || {})[boundKey]?.label || ctx.dataSourceLabel || boundKey || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-[10px] text-muted-foreground">{new Date(ctx.timestamp).toLocaleString()}</div>
+                                  <Button size="sm" variant="outline" onClick={() => deleteMappingGroup(mappingKey)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              {inputKeys.length === 0 ? (
+                                <div className="text-xs text-muted-foreground">{lang === 'zh' ? '暂无卡片入参字段' : 'No input fields'}</div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                  {inputKeys.map((ik) => (
+                                    <div key={`${mappingKey}::${ik}`} className="flex items-center gap-2">
+                                      <div className="text-xs w-40 truncate" title={ik}>{ik}</div>
+                                      <div className="flex-1">
+                                        <Select
+                                          disabled={fieldOptions.length === 0 || !boundKey}
+                                          value={fieldOptions.length > 0 ? ((currentMap[ik] ?? undefined) as any) : (undefined as any)}
+                                          onValueChange={(v) => setMappingValue(mappingKey, ik, v)}
+                                        >
+                                          <SelectTrigger><SelectValue placeholder={lang === 'zh' ? '选择字段' : 'Choose field'} /></SelectTrigger>
+                                          <SelectContent>
+                                            {fieldOptions.length === 0 ? (
+                                              <SelectItem disabled value="__no_fields__">{lang === 'zh' ? '（无可用字段）' : '(no fields)'}</SelectItem>
+                                            ) : (
+                                              fieldOptions.map((fo) => (
+                                                <SelectItem key={String(fo.key)} value={String(fo.key)}>{fo.label || String(fo.key)}</SelectItem>
+                                              ))
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <Button size="sm" variant="ghost" onClick={() => clearFieldMapping(mappingKey, ik)} title={lang === 'zh' ? '清除该字段映射' : 'Clear mapping'}>
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </>
                 ) : pageUIOpen ? (
                   // 左侧：页面配置编辑视图
-                  <div className="h-full p-1 space-y-3">
+                  <div className="h-full overflow-y-auto p-1 space-y-3">
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" onClick={() => { setPageUIOpen(false); setPreviewSource("home"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; setPreviewUrl(`http://localhost:3002/${baseLang}`); } catch { } }}>
                         <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}

@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Briefcase } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
+import { CardRegistry } from "../registry"
 
 interface Job {
   id: number
@@ -62,11 +64,26 @@ const defaultJobs: Job[] = [
 
 export function RelatedJobsListCard({
   disableLocalTheme,
-  jobs = defaultJobs,
   title = "相关岗位",
 }: RelatedJobsListCardProps) {
   const router = useRouter()
   const { locale } = useParams()
+
+  const [relatedJobs, setRelatedJobs] = useState(defaultJobs)
+
+
+  useEffect(() => {
+    const newData = CardRegistry.getData("related-jobs-list");
+    if (newData) {
+      setRelatedJobs(newData || defaultJobs)
+    } else {
+      CardRegistry.listen((name, data) => {
+        if (name === 'related-jobs-list') {
+          setRelatedJobs(data || defaultJobs)
+        }
+      })
+    }
+  }, [])
 
   const handleJobClick = (jobId: number) => {
     router.push(`/${locale}/demo/education/jobs/related-post/${jobId}`)
@@ -78,7 +95,7 @@ export function RelatedJobsListCard({
         {title}
       </h3>
       <div className="space-y-3 flex-1 min-h-0 overflow-auto">
-        {jobs.map((job) => (
+        {relatedJobs.map((job) => (
           <AppCard key={job.id}>
             <div
               className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
