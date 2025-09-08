@@ -22,7 +22,13 @@ export const dataInputs = {
     "job-experience-ratio": {
         title: "String",
         description: "String",
-        list: "Array",
+        list: [
+            {
+                name: "String",
+                value: "Number",
+                jobs: "Number",
+            }
+        ],
     }
 }
 

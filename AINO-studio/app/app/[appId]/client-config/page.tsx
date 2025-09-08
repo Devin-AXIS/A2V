@@ -236,7 +236,17 @@ export default function ClientConfigPage() {
       if (!defId) { setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: [] })); return }
       const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 100 })
       const list = Array.isArray(fieldsRes?.data) ? fieldsRes.data : []
-      const options = list.map((f: any) => ({ key: String(f.key || ''), label: String(f?.schema?.label || f.key || '') }))
+      const options = [];
+      list.map((f: any) => {
+        if (f.type === "meta_items") {
+          (f.schema?.metaItemsConfig?.fields || []).forEach(field => {
+            options.push({
+              key: String(field.id || ''), label: `${(f?.schema?.label || f.key || '')}-${field.label}`
+            });
+          })
+        }
+        options.push({ key: String(f.key || ''), label: String(f?.schema?.label || f.key || '') })
+      })
       setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: options }))
     } catch {
       setTableFieldsByDsKey((s) => ({ ...s, [dsKey]: [] }))
@@ -258,11 +268,133 @@ export default function ClientConfigPage() {
     } catch { }
   }, [incomingMappings, tableFieldsByDsKey])
 
-  // 字段扁平化（仅一层键，若后续需要可拓展 path）
+  // 字段扁平化：支持 Object、Array<Item> 递归展开，生成路径键
+  // 规则：
+  // - 基本类型直接返回其键
+  // - 对象使用点语法：user.name → "user.name"
+  // - 数组：若为基本类型数组，使用 key[] 表示；
+  //        若为对象数组，展开其子字段：items[].title、items[].id
   function extractInputKeys(inputs: Record<string, any>): string[] {
     try {
-      if (!inputs || typeof inputs !== 'object') return []
-      return Object.keys(inputs)
+      const result: string[] = []
+      const isPrimitive = (v: any) => {
+        return (
+          v === 'String' || v === 'Number' || v === 'Boolean' || v === 'Date' || v === 'Time' || v === 'Datetime' || v === 'RichText' || v === 'Image' || v === 'Video' || v === 'File'
+        )
+      }
+
+      const walk = (node: any, prefix: string) => {
+        if (!node || typeof node !== 'object') {
+          if (prefix) result.push(prefix)
+          return
+        }
+        // 如果是数组定义
+        if (Array.isArray(node)) {
+          // 数组元素类型未知时，仅记录占位键
+          if (node.length === 0) {
+            if (prefix) result.push(`${prefix}[]`)
+            return
+          }
+          const first = node[0]
+          if (isPrimitive(first)) {
+            if (prefix) result.push(`${prefix}[]`)
+            return
+          }
+          if (typeof first === 'object' && first) {
+            // 对象数组：展开一层字段
+            Object.keys(first).forEach((k) => {
+              const child = (first as any)[k]
+              if (isPrimitive(child)) {
+                result.push(`${prefix}[].${k}`)
+              } else if (Array.isArray(child)) {
+                // 二级数组：仅标记为占位
+                result.push(`${prefix}[].${k}[]`)
+              } else if (typeof child === 'object' && child) {
+                // 对象：展开一层
+                Object.keys(child).forEach((kk) => {
+                  result.push(`${prefix}[].${k}.${kk}`)
+                })
+              } else {
+                result.push(`${prefix}[].${k}`)
+              }
+            })
+            return
+          }
+          if (prefix) result.push(`${prefix}[]`)
+          return
+        }
+
+        // 普通对象：遍历属性
+        Object.keys(node).forEach((key) => {
+          const val = (node as any)[key]
+          const path = prefix ? `${prefix}.${key}` : key
+          if (isPrimitive(val)) {
+            result.push(path)
+          } else if (Array.isArray(val)) {
+            // 数组
+            if (val.length === 0) {
+              result.push(`${path}[]`)
+            } else {
+              const first = val[0]
+              if (isPrimitive(first)) {
+                result.push(`${path}[]`)
+              } else if (typeof first === 'object' && first) {
+                // 对象数组：展开其子字段
+                Object.keys(first).forEach((k) => {
+                  const child = (first as any)[k]
+                  if (isPrimitive(child)) {
+                    result.push(`${path}[].${k}`)
+                  } else if (Array.isArray(child)) {
+                    result.push(`${path}[].${k}[]`)
+                  } else if (typeof child === 'object' && child) {
+                    Object.keys(child).forEach((kk) => {
+                      result.push(`${path}[].${k}.${kk}`)
+                    })
+                  } else {
+                    result.push(`${path}[].${k}`)
+                  }
+                })
+              } else {
+                result.push(`${path}[]`)
+              }
+            }
+          } else if (typeof val === 'object' && val) {
+            // 嵌套对象：仅展开一层（可按需递归更深）
+            const keys = Object.keys(val)
+            if (keys.length === 0) {
+              result.push(path)
+            } else {
+              keys.forEach((k) => {
+                const child = (val as any)[k]
+                if (isPrimitive(child) || typeof child !== 'object') {
+                  result.push(`${path}.${k}`)
+                } else if (Array.isArray(child)) {
+                  if (child.length === 0) {
+                    result.push(`${path}.${k}[]`)
+                  } else if (isPrimitive(child[0])) {
+                    result.push(`${path}.${k}[]`)
+                  } else if (typeof child[0] === 'object' && child[0]) {
+                    Object.keys(child[0]).forEach((kk) => {
+                      result.push(`${path}.${k}[].${kk}`)
+                    })
+                  }
+                } else {
+                  Object.keys(child).forEach((kk) => {
+                    result.push(`${path}.${k}.${kk}`)
+                  })
+                }
+              })
+            }
+          } else {
+            // 其他情况视为基本类型
+            result.push(path)
+          }
+        })
+
+      }
+
+      walk(inputs, '')
+      return Array.from(new Set(result))
     } catch { return [] }
   }
 
