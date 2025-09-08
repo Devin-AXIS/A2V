@@ -12,6 +12,7 @@ import { FilterPillNavigation } from "@/components/navigation/filter-pill-naviga
 import { Home, Settings, User, Star, Zap, Heart } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { PillNavigation } from "@/components/navigation/pill-navigation"
+import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
 
 interface NavigationComponentsClientViewProps {
   dict: {
@@ -102,11 +103,68 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
     },
   ]
 
+  // Demo configs for ContentNavigation
+  const navTextConfig: ContentNavConfig = {
+    type: "text",
+    header: { title: "标题内容", search: true, notify: true },
+    items: [
+      { title: "默认" },
+      { title: "导航1" },
+      { title: "导航2" },
+      { title: "导航3" },
+      { title: "导航5" },
+    ],
+  }
+  const navIconGridConfig: ContentNavConfig = {
+    type: "iconText",
+    layout: "grid-5",
+    items: [
+      { title: "简单赚钱" },
+      { title: "链上赚钱" },
+      { title: "借贷" },
+      { title: "策略交易" },
+      { title: "BTC 理财" },
+    ],
+  }
+  const navIconScrollConfig: ContentNavConfig = {
+    type: "iconText",
+    layout: "scroll",
+    items: [
+      { title: "A" },
+      { title: "B" },
+      { title: "C" },
+      { title: "D" },
+      { title: "E" },
+      { title: "F" },
+      { title: "G" },
+    ],
+  }
+
   return (
     <main className="px-4">
       <div className="space-y-12 pt-16">
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">媒体导航</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">内容导航（文字标签）</h3>
+          <AppCard className="p-0 overflow-hidden">
+            <ContentNavigation config={navTextConfig} />
+          </AppCard>
+        </section>
+
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">内容导航（图+文 · 网格一行5）</h3>
+          <AppCard className="p-0 overflow-hidden">
+            <ContentNavigation config={navIconGridConfig} />
+          </AppCard>
+        </section>
+
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">内容导航（图+文 · 横向滑动）</h3>
+          <AppCard className="p-0 overflow-hidden">
+            <ContentNavigation config={navIconScrollConfig} />
+          </AppCard>
+        </section>
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">分类顶部导航（含搜索/通知）</h3>
           <AppCard className="p-0 overflow-hidden">
             <CategoryTabNavigation
               onSearchChange={(query) => console.log("Search:", query)}
@@ -118,7 +176,7 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
         </section>
 
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">食谱导航</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">筛选胶囊导航</h3>
           <AppCard className="p-0 overflow-hidden">
             <FilterPillNavigation
               onSearchChange={(query) => console.log("Filter search:", query)}

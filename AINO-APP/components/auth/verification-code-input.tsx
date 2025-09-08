@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Shield, Check, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SmartButton } from '@/components/ui/smart-button'
 import { useDesignTokens } from '@/components/providers/design-tokens-provider'
 import { getOptimalTextColor } from '@/lib/contrast-utils'
 
@@ -18,6 +17,8 @@ interface VerificationCodeInputProps {
   error?: string
   success?: boolean
   autoFocus?: boolean
+  /** 尺寸：默认为中等，移动端可用 lg 更易点按 */
+  size?: 'sm' | 'md' | 'lg'
 }
 
 export function VerificationCodeInput({
@@ -29,7 +30,8 @@ export function VerificationCodeInput({
   disabled = false,
   error,
   success = false,
-  autoFocus = true
+  autoFocus = true,
+  size = 'md'
 }: VerificationCodeInputProps) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -111,20 +113,33 @@ export function VerificationCodeInput({
     return <Shield className="w-5 h-5 text-gray-400" />
   }
 
+  const sizeClasses = (() => {
+    switch (size) {
+      case 'sm':
+        return { box: 'w-10 h-10 text-base', icon: 'w-4 h-4', gap: 'space-x-2' }
+      case 'lg':
+        return { box: 'w-14 h-14 text-2xl', icon: 'w-6 h-6', gap: 'space-x-4' }
+      default:
+        return { box: 'w-12 h-12 text-lg', icon: 'w-5 h-5', gap: 'space-x-3' }
+    }
+  })()
+
   return (
     <div className={cn("relative", className)}>
       <div className="flex items-center justify-center space-x-1 mb-4">
-        {getStatusIcon()}
+        <span className={cn(sizeClasses.icon)}>{getStatusIcon()}</span>
         <span className="ml-2 text-sm font-medium text-gray-700">
           验证码
         </span>
       </div>
 
-      <div className="flex justify-center space-x-3">
+      <div className={cn("flex justify-center", sizeClasses.gap)}>
         {Array.from({ length }, (_, index) => (
           <input
             key={index}
-            ref={(el) => (inputRefs.current[index] = el)}
+            ref={(el) => {
+              inputRefs.current[index] = el
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}
@@ -136,7 +151,8 @@ export function VerificationCodeInput({
             onBlur={() => setFocusedIndex(null)}
             disabled={disabled}
             className={cn(
-              "w-12 h-12 text-center text-lg font-bold",
+              "text-center font-bold",
+              sizeClasses.box,
               "bg-background border border-border",
               "rounded-lg",
               "transition-all duration-300 ease-in-out",
@@ -196,10 +212,7 @@ export function SendCodeButton({
 }: SendCodeButtonProps) {
   const [timeLeft, setTimeLeft] = useState(countdown)
 
-  // 使用统一设计配置
-  const { tokens } = useDesignTokens()
-  const secondaryColor = tokens?.colors?.secondary?.[500] || '#6b7280'
-  const sendCodeButtonTextColor = getOptimalTextColor(secondaryColor, 'secondary')
+  // 使用通用 Button，走统一主题变量
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -218,15 +231,13 @@ export function SendCodeButton({
   const isDisabled = disabled || loading || timeLeft > 0
 
   return (
-    <SmartButton
+    <Button
       type="button"
       onClick={handleClick}
       disabled={isDisabled}
-      variant="outline"
+      variant="secondary"
       size="default"
       className={cn("hover:scale-105 disabled:hover:scale-100", className)}
-      customBackgroundColor={secondaryColor}
-      customTextColor={sendCodeButtonTextColor}
     >
       {loading ? (
         <>
@@ -241,6 +252,6 @@ export function SendCodeButton({
       ) : (
         '发送验证码'
       )}
-    </SmartButton>
+    </Button>
   )
 }

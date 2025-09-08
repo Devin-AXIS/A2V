@@ -1,15 +1,14 @@
 "use client"
 
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, ArrowLeft, User, Lock, Smartphone, Check, AlertCircle } from 'lucide-react'
 import { PhoneInput, CountryCodeSelector } from './phone-input'
 import { VerificationCodeInput, SendCodeButton } from './verification-code-input'
-import { AppCard } from '@/components/layout/app-card'
 import { AppHeader } from '@/components/navigation/app-header'
 import { Button } from '@/components/ui/button'
-import { SmartButton } from '@/components/ui/smart-button'
 import { useDesignTokens } from '@/components/providers/design-tokens-provider'
 import { getOptimalTextColor } from '@/lib/contrast-utils'
 import { TextInput } from '@/components/input/text-input'
@@ -29,14 +28,53 @@ export interface RegisterData {
   agreeTerms: boolean
 }
 
+type RegisterStage = 'phone' | 'verify' | 'password' | 'success'
+
 export function MobileRegister({
   onRegister,
   onLogin,
   className
 }: MobileRegisterProps) {
-  const [step, setStep] = useState(1) // 1: 手机号验证, 2: 设置密码, 3: 完成
+  const pathname = usePathname()
+  const [authConfig, setAuthConfig] = useState<any>(null)
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      const fromParam = sp.get('authCfg')
+      if (fromParam) {
+        const parsed = JSON.parse(fromParam)
+        setAuthConfig(parsed)
+        return
+      }
+      const raw = window.localStorage.getItem('APP_AUTH_CONFIG')
+      if (raw) setAuthConfig(JSON.parse(raw))
+    } catch {}
+  }, [])
+
+  const titleStyle = authConfig?.titleColor ? { color: authConfig.titleColor } : undefined
+  const bodyStyle = authConfig?.bodyColor ? { color: authConfig.bodyColor } : undefined
+
+  const currentLocale = useMemo(() => (pathname?.startsWith('/en') ? 'en' : 'zh'), [pathname])
+  const introTitle = useMemo(() => {
+    const t = authConfig?.introTitle
+    if (!t) return null
+    if (typeof t === 'string') return t
+    return t[currentLocale] || t.zh || t.en || null
+  }, [authConfig, currentLocale])
+  const introText = useMemo(() => {
+    const t = authConfig?.introText
+    if (!t) return null
+    if (typeof t === 'string') return t
+    return t[currentLocale] || t.zh || t.en || null
+  }, [authConfig, currentLocale])
+  const [stage, setStage] = useState<RegisterStage>('phone')
   const [countryCode, setCountryCode] = useState('+86')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState<string>(() => {
+    try {
+      const sp = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+      return sp.get('phone') || ''
+    } catch { return '' }
+  })
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -52,10 +90,7 @@ export function MobileRegister({
     agreeTerms?: string
   }>({})
 
-  // 使用统一设计配置
-  const { tokens } = useDesignTokens()
-  const primaryColor = tokens?.colors?.primary?.[500] || '#3b82f6'
-  const registerButtonTextColor = getOptimalTextColor(primaryColor, 'primary')
+  // 统一按钮走公用 Button + 主题变量
 
   const handlePhoneChange = (value: string) => {
     setPhone(value)
@@ -134,9 +169,11 @@ export function MobileRegister({
   }
 
   const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2)
-    } else if (step === 2 && validateStep2()) {
+    if (stage === 'phone' && validateStep1()) {
+      setStage('verify')
+    } else if (stage === 'verify') {
+      setStage('password')
+    } else if (stage === 'password' && validateStep2()) {
       handleRegister()
     }
   }
@@ -148,11 +185,21 @@ export function MobileRegister({
       // 模拟注册请求
       await new Promise(resolve => setTimeout(resolve, 1000))
       const applicationId = window.localStorage.getItem('APP_ID')
+      const urlAppId = new URLSearchParams(window.location.search).get('appId')
+      const resolvedAppId = applicationId || process.env.NEXT_PUBLIC_DEFAULT_APP_ID || urlAppId || ''
 
-      const res = await axios.post(`http://localhost:3001/api/modules/system/user/register?applicationId=${applicationId}`, {
-        password,
-        phone_number: phone
-      })
+      if (!resolvedAppId) {
+        alert('缺少应用ID，请通过预览链接附带 appId 或先写入 localStorage.APP_ID')
+        return
+      }
+
+      const res = await axios.post(
+        `http://localhost:3001/api/application-users/register?applicationId=${resolvedAppId}`,
+        {
+          password,
+          phone_number: phone
+        }
+      )
       const result = res.data?.data;
 
       onRegister?.({
@@ -164,9 +211,20 @@ export function MobileRegister({
         agreeTerms
       })
 
-      setStep(3)
-    } catch (error) {
-      console.error('注册失败:', error)
+      setStage('success')
+    } catch (error: any) {
+      const serverMsg = error?.response?.data?.error || error?.response?.data?.message
+      const detail = typeof serverMsg === 'string' ? serverMsg : ''
+      console.error('注册失败:', detail || error)
+      if (detail.includes('用户已注册') || detail.includes('手机号已存在')) {
+        alert('该手机号已注册，请直接登录')
+      } else if (detail.includes('缺少应用ID')) {
+        alert('缺少应用ID，请通过预览链接附带 appId 或先写入 localStorage.APP_ID')
+      } else if (detail) {
+        alert(detail)
+      } else {
+        alert('注册失败，请稍后再试')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -175,8 +233,8 @@ export function MobileRegister({
   const renderStep1 = () => (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">手机号注册</h1>
-        <p className="text-gray-600">请输入您的手机号码</p>
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>{introTitle || (currentLocale === 'en' ? 'Sign up' : '注册账号')}</h1>
+        <p className="text-muted-foreground" style={bodyStyle}>{introText || (currentLocale === 'en' ? 'Enter your phone number' : '请输入您的手机号码')}</p>
       </div>
 
       {/* 国家代码 + 手机号（同一行） */}
@@ -195,41 +253,28 @@ export function MobileRegister({
         />
       </div>
 
-      {/* 验证码输入 */}
+      {/* 发送验证码按钮 */}
       <div className="mb-6">
-        <VerificationCodeInput
-          value={code}
-          onChange={handleCodeChange}
-          error={errors.code}
-          onComplete={(code) => console.log('验证码完成:', code)}
-        />
-
-        <div className="mt-4 flex justify-center">
-          <SendCodeButton
-            onSend={handleSendCode}
-            disabled={!phone}
-          />
-        </div>
+        <Button type="button" variant="secondary" className="w-full rounded-full h-11" disabled={!phone} onClick={() => setStage('verify')}>发送验证码</Button>
       </div>
 
-      <SmartButton
+      <Button
         type="button"
         onClick={handleNext}
         size="lg"
-        className="w-full"
-        customBackgroundColor={primaryColor}
-        customTextColor={registerButtonTextColor}
+        className="w-full rounded-full h-12 text-base"
+        variant="default"
       >
         下一步
-      </SmartButton>
+      </Button>
     </>
   )
 
   const renderStep2 = () => (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">设置密码</h1>
-        <p className="text-gray-600">请设置您的登录密码</p>
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>设置密码</h1>
+        <p className="text-muted-foreground" style={bodyStyle}>请设置您的登录密码</p>
       </div>
 
       {/* 密码输入 */}
@@ -350,14 +395,13 @@ export function MobileRegister({
         )}
       </div>
 
-      <SmartButton
+      <Button
         type="button"
         onClick={handleNext}
         disabled={isLoading}
         size="lg"
-        className="w-full"
-        customBackgroundColor={primaryColor}
-        customTextColor={registerButtonTextColor}
+        className="w-full rounded-full h-12 text-base"
+        variant="default"
       >
         {isLoading ? (
           <>
@@ -367,7 +411,7 @@ export function MobileRegister({
         ) : (
           '完成注册'
         )}
-      </SmartButton>
+      </Button>
     </>
   )
 
@@ -392,46 +436,33 @@ export function MobileRegister({
     </>
   )
 
-  return (
-    <div className="min-h-screen pb-32">
-      <AppHeader title="注册" showBackButton={true} />
-      <div className="pt-16">
-        <div className="container mx-auto px-4 py-8">
-          {/* 进度指示器 */}
-          {step < 3 && (
-            <div className="mb-8">
-              <div className="flex items-center justify-center space-x-4">
-                {[1, 2].map((stepNumber) => (
-                  <div key={stepNumber} className="flex items-center">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                      "transition-all duration-300",
-                      step >= stepNumber
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-400"
-                    )}>
-                      {stepNumber}
-                    </div>
-                    {stepNumber < 2 && (
-                      <div className={cn(
-                        "w-12 h-1 mx-2 rounded-full transition-all duration-300",
-                        step > stepNumber ? "bg-blue-500" : "bg-gray-200"
-                      )} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+  const renderVerify = () => (
+    <>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>输入验证码</h1>
+        <p className="text-muted-foreground text-sm" style={bodyStyle}>已发送至 {countryCode}{phone}</p>
+      </div>
+      <div className="mb-6">
+        <VerificationCodeInput value={code} onChange={handleCodeChange} error={errors.code} onComplete={(v) => setCode(v)} size="sm" />
+      </div>
+      <div className="text-center mb-6">
+        <Button type="button" variant="link" className="text-sm" onClick={() => setStage('phone')}>修改手机号</Button>
+      </div>
+      <Button type="button" onClick={handleNext} size="lg" className="w-full rounded-full h-12 text-base" variant="default">继续</Button>
+    </>
+  )
 
-          {/* 注册表单 */}
-          <AppCard className="max-w-sm mx-auto">
-            <div className="p-8">
-              {step === 1 && renderStep1()}
-              {step === 2 && renderStep2()}
-              {step === 3 && renderStep3()}
-            </div>
-          </AppCard>
+  return (
+    <div className="min-h-screen pb-24">
+      {/* 注册页不显示全局 AppHeader */}
+      <div className="pt-12">
+        <div className="container mx-auto px-4">
+          <div className="max-w-sm mx-auto">
+            {stage === 'phone' && renderStep1()}
+            {stage === 'verify' && renderVerify()}
+            {stage === 'password' && renderStep2()}
+            {stage === 'success' && renderStep3()}
+          </div>
         </div>
       </div>
     </div>

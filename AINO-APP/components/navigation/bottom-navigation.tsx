@@ -67,7 +67,26 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     { href: "/profile", label: D.profile, icon: User },
   ]
 
-  const navItems: NavItemInput[] = items && items.length > 0 ? items : defaultItems
+  // 优先级：props.items > 全局配置(APP_GLOBAL_CONFIG.nav) > 默认
+  let navItems: NavItemInput[] = defaultItems
+  if (items && items.length > 0) {
+    navItems = items
+  } else {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('APP_GLOBAL_CONFIG')
+        if (raw) {
+          const cfg = JSON.parse(raw)
+          const nav = Array.isArray(cfg?.nav) ? cfg.nav : []
+          if (nav.length > 0) {
+            navItems = nav
+              .filter((i: any) => i?.visible !== false)
+              .map((i: any) => ({ href: i.route || '/', label: (i.label?.[locale] || i.label?.zh || i.label?.en || i.id || ''), iconName: i.icon || 'grid' }))
+          }
+        }
+      }
+    } catch {}
+  }
 
   const iconMap: Record<string, React.ComponentType<any>> = {
     home: Home,

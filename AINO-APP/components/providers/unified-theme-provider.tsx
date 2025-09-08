@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { UnifiedThemeContextType, UnifiedThemePreset, FontConfig, ComponentColorConfig, ChartColorConfig } from "@/types"
+import { convertTokenValueToCSSValue, updateCSSVariable } from "@/lib/color-variable-mapper"
 import { unifiedThemePresets, getThemePreset } from "@/config/unified-theme-presets"
 
 const UnifiedThemeContext = createContext<UnifiedThemeContextType | undefined>(undefined)
@@ -119,6 +120,23 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     const secondaryTextColor = getOptimalTextColor(colors.secondary)
     const dangerTextColor = getOptimalTextColor(colors.danger)
     
+    // 将统一主题色同步到 Tailwind 使用的CSS变量，确保通用 Button 等能读取到
+    try {
+      // 主色：同步到 --primary-500 与前景 --primary-foreground
+      updateCSSVariable('--primary-500', convertTokenValueToCSSValue(colors.primary))
+      updateCSSVariable('--primary-foreground', convertTokenValueToCSSValue(primaryTextColor))
+
+      // 次色：同步到 --secondary-500 与前景 --secondary-foreground
+      updateCSSVariable('--secondary-500', convertTokenValueToCSSValue(colors.secondary))
+      updateCSSVariable('--secondary-foreground', convertTokenValueToCSSValue(secondaryTextColor))
+
+      // 危险态：同步到 --destructive 与前景 --destructive-foreground
+      updateCSSVariable('--destructive', convertTokenValueToCSSValue(colors.danger))
+      updateCSSVariable('--destructive-foreground', convertTokenValueToCSSValue(dangerTextColor))
+    } catch (err) {
+      console.warn('Failed to sync unified colors to CSS variables:', err)
+    }
+
     // 更新组件样式 - 包含智能文字颜色
     const styleElement = document.getElementById('unified-component-style') || createComponentStyleElement()
     styleElement.textContent = `

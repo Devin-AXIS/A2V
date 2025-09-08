@@ -1,0 +1,41 @@
+{
+  "id": "71a5d0b1-dfe1-4b7e-a8f7-dd27fac560fc",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c226bcaf-2593-41dc-8164-713b7e7e28ff",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        },
+        {
+          "key": "k1757153484132",
+          "label": "测试",
+          "route": "/p-k1757153484132"
+        }
+      ]
+    },
+    "dataSources": {},
+    "pages": {
+      "p-k1757153484132": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757153484132",
+        "cards": []
+      }
+    }
+  },
+  "createdAt": "2025-09-06T10:11:45.920Z"
+}

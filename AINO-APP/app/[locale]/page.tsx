@@ -10,7 +10,7 @@ import {
   Bot,
   Sparkles,
 } from "lucide-react"
-import { BrowserHeader } from "@/components/layout/browser-header"
+import { MaybeHeader } from "@/components/layout/maybe-header"
 import { CategoryCard } from "@/components/browser/category-card"
 import Link from "next/link"
 import { getDictionary } from "@/lib/dictionaries"
@@ -34,7 +34,7 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
 
   return (
     <div className="min-h-screen pb-32">
-      <BrowserHeader title={dict.browserHeader.title} />
+      <MaybeHeader title={dict.browserHeader.title} />
 
       {/* PC版本入口 */}
       <div className="px-4 pt-4">

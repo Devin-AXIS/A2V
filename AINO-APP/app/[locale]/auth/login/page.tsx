@@ -16,6 +16,17 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router])
 
+  // 读取 Studio 传入的 authCfg（或本地存储），用于实时预览登录配置
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      const cfgStr = sp.get('authCfg')
+      if (cfgStr) {
+        window.localStorage.setItem('APP_AUTH_CONFIG', cfgStr)
+      }
+    } catch {}
+  }, [])
+
   const handleLogin = async (data: any) => {
     console.log('登录数据:', data)
 
@@ -52,10 +63,12 @@ export default function LoginPage() {
   }
 
   return (
-    <MobileLogin
-      onLogin={handleLogin}
-      onRegister={handleRegister}
-      onForgotPassword={handleForgotPassword}
-    />
+    <div className="min-h-screen">
+      <MobileLogin
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onForgotPassword={handleForgotPassword}
+      />
+    </div>
   )
 }

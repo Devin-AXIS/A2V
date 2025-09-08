@@ -290,6 +290,24 @@ app.post("/register",
   }
 )
 
+// 查询手机号是否已注册（公开）
+app.get("/exists",
+  zValidator("query", z.object({ phone_number: z.string().min(1, "手机号不能为空") })),
+  async (c) => {
+    try {
+      const { phone_number } = c.req.valid("query") as { phone_number: string }
+      const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+      if (!applicationId) {
+        return c.json({ success: false, error: "缺少应用ID参数" }, 400)
+      }
+      const user = await service.findUserByPhone(applicationId, phone_number)
+      return c.json({ success: true, data: { exists: !!user } })
+    } catch (error) {
+      return c.json({ success: false, error: error instanceof Error ? error.message : "查询失败" }, 400)
+    }
+  }
+)
+
 // 用户登录（应用用户）
 app.post("/login",
   zValidator("json", LoginUserRequest),
