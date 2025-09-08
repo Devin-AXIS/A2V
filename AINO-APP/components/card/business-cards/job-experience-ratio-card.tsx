@@ -35,7 +35,6 @@ export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperie
     }
   }, [])
 
-  console.log(data)
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">
       <div className="space-y-2">

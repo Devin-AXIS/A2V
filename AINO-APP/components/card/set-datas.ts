@@ -59,7 +59,7 @@ export const setDatas = async () => {
                     resultData[key] = realData[dataMapping[key]]
                 })
             }
-            console.log(cardType, realData)
+            console.log(cardType, dataMapping, realData)
             CardRegistry.setData(cardType, resultData)
             resolve(true)
         }))
