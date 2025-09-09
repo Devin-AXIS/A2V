@@ -241,7 +241,7 @@ export default function ClientConfigPage() {
         if (f.type === "meta_items") {
           (f.schema?.metaItemsConfig?.fields || []).forEach(field => {
             options.push({
-              key: String(field.id || ''), label: `${(f?.schema?.label || f.key || '')}-${field.label}`
+              key: `${f.key}.${field.id}` || '', label: `${(f?.schema?.label || f.key || '')}-${field.label}`
             });
           })
         }

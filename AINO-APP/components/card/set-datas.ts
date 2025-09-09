@@ -62,10 +62,23 @@ export const setDatas = async () => {
                 realData = data.data
                 resultData = {};
                 Object.keys(dataMapping).forEach(key => {
-                    resultData[key] = realData[dataMapping[key]]
+                    if (key.indexOf('[].') > -1) {
+                        const path = key.split('[].');
+                        if (!resultData[path[0]]) resultData[path[0]] = [];
+                        const mappingPath = dataMapping[key].split('.');
+                        realData[mappingPath[0]].forEach((item, index) => {
+                            const aggregationData = {};
+                            item.images.concat(item.numbers).concat(item.texts).forEach(item2 => {
+                                aggregationData[item2.id] = item2;
+                            })
+                            if (!resultData[path[0]][index]) resultData[path[0]][index] = {};
+                            resultData[path[0]][index][path[1]] = aggregationData[mappingPath[1]].value;
+                        })
+                    } else {
+                        resultData[key] = realData[dataMapping[key]]
+                    }
                 })
             }
-            console.log(cardType, dataMapping, realData)
             CardRegistry.setData(cardType, resultData)
             resolve(true)
         }))
@@ -73,16 +86,7 @@ export const setDatas = async () => {
 
     await Promise.all(promises);
 
-    // CardRegistry.setData("job-posting", {
-    //     title: "高级前端工程师",
-    //     company: "科技创新公司",
-    //     location: "北京·朝阳区",
-    //     salary: "20K-35K",
-    //     experience: "3-5年",
-    //     education: "本科",
-    //     tags: ["React", "TypeScript", "Node.js"],
-    // });
-
+    // CardRegistry.setData("job-posting", {});
     // CardRegistry.setData("learning-plan-summary", {});
     // CardRegistry.setData("course-module", {});
     // CardRegistry.setData("learning-outcome", {});

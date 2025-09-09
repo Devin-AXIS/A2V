@@ -18,6 +18,8 @@ const defaultData = {
   ]
 }
 
+const colors = ["#10b981", "#06b6d4"]
+
 export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperienceRatioCardProps) {
 
   const [data, setData] = useState(defaultData)
@@ -35,6 +37,7 @@ export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperie
     }
   }, [])
 
+  const hasColorList = data.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || colors[index] }));
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">
       <div className="space-y-2">
@@ -48,7 +51,7 @@ export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperie
 
       {/* 图表内容 */}
       <div className="flex-1 min-h-0 h-full overflow-hidden">
-        <JobExperienceRatioChart data={data.list} showTitle={false} />
+        <JobExperienceRatioChart data={hasColorList} showTitle={false} />
       </div>
     </AppCard>
   )
