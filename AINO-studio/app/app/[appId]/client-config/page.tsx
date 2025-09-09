@@ -1591,10 +1591,21 @@ export default function ClientConfigPage() {
                                   try {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
-                                    const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
-                                    u.searchParams.set('pageCfg', JSON.stringify(cfg))
-                                    u.searchParams.set('tab', String(idx))
-                                    setPreviewUrl(u.toString())
+                                    const base = String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`)
+                                    fetch('http://localhost:3001/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                      .then(r => r.json().catch(() => null))
+                                      .then(j => {
+                                        const id = j && (j.id || j.data?.id)
+                                        const u = new URL(base)
+                                        if (id) u.searchParams.set('cfgId', String(id))
+                                        u.searchParams.set('tab', String(idx))
+                                        setPreviewUrl(u.toString())
+                                      })
+                                      .catch(() => {
+                                        const u = new URL(base)
+                                        u.searchParams.set('tab', String(idx))
+                                        setPreviewUrl(u.toString())
+                                      })
                                     setViewTab('preview')
                                   } catch { }
                                 }}>
@@ -1619,10 +1630,21 @@ export default function ClientConfigPage() {
                                   try {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
-                                    const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
-                                    u.searchParams.set('pageCfg', JSON.stringify(cfg))
-                                    u.searchParams.set('tab', String(idx))
-                                    setPreviewUrl(u.toString())
+                                    const base = String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`)
+                                    fetch('http://localhost:3001/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                      .then(r => r.json().catch(() => null))
+                                      .then(j => {
+                                        const id = j && (j.id || j.data?.id)
+                                        const u = new URL(base)
+                                        if (id) u.searchParams.set('cfgId', String(id))
+                                        u.searchParams.set('tab', String(idx))
+                                        setPreviewUrl(u.toString())
+                                      })
+                                      .catch(() => {
+                                        const u = new URL(base)
+                                        u.searchParams.set('tab', String(idx))
+                                        setPreviewUrl(u.toString())
+                                      })
                                     setViewTab('preview')
                                   } catch { }
                                 }}>
@@ -1712,9 +1734,19 @@ export default function ClientConfigPage() {
                                     try {
                                       const rawCfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
                                       const cfg = { ...rawCfg, options: { ...(rawCfg?.options || {}), showBack: true } }
-                                      const u = new URL(`http://localhost:3002/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
-                                      u.searchParams.set('pageCfg', JSON.stringify(cfg))
-                                      setPreviewUrl(u.toString())
+                                      // 将配置上传到后端，返回 cfgId，避免 URL 过长
+                                      fetch('http://localhost:3001/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                        .then(r => r.json().catch(() => null))
+                                        .then(j => {
+                                          const id = j && (j.id || j.data?.id)
+                                          const u = new URL(`http://localhost:3002/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
+                                          if (id) u.searchParams.set('cfgId', String(id))
+                                          setPreviewUrl(u.toString())
+                                        })
+                                        .catch(() => {
+                                          const u = new URL(`http://localhost:3002/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
+                                          setPreviewUrl(u.toString())
+                                        })
                                       setActivePageKey(String(pageKey))
                                       setPageUIOpen(true)
                                       setViewTab('preview')
@@ -1730,7 +1762,7 @@ export default function ClientConfigPage() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">{lang === "zh" ? "其他卡片" : "Other Cards"}</div>
-                      <div className="border rounded-xl p-3 opacity-90">
+                      {/* <div className="border rounded-xl p-3 opacity-90">
                         <div className="flex items-center justify-between">
                           <div className="text-sm font-medium">{lang === "zh" ? "卡片2" : "Card 2"}</div>
                           <div className="flex items-center gap-2">
@@ -1739,7 +1771,7 @@ export default function ClientConfigPage() {
                             <Button size="sm" variant="outline">{lang === "zh" ? "内页" : "Detail"}</Button>
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                     {/* 保留浏览（应用配置到预览）放在页面设置面板底部 */}
                     <div className="pt-2 space-y-2">
@@ -1752,9 +1784,19 @@ export default function ClientConfigPage() {
                         try {
                           const k = activePageKey as string
                           const cfg = draft.pages?.[k] || {}
-                          const u = new URL(String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`))
-                          u.searchParams.set('pageCfg', JSON.stringify(cfg))
-                          setPreviewUrl(u.toString())
+                          const base = String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`)
+                          fetch('http://localhost:3001/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                            .then(r => r.json().catch(() => null))
+                            .then(j => {
+                              const id = j && (j.id || j.data?.id)
+                              const u = new URL(base)
+                              if (id) u.searchParams.set('cfgId', String(id))
+                              setPreviewUrl(u.toString())
+                            })
+                            .catch(() => {
+                              const u = new URL(base)
+                              setPreviewUrl(u.toString())
+                            })
                           setViewTab('preview')
                         } catch { }
                       }}>{lang === 'zh' ? '保留浏览' : 'Keep Preview'}</Button>
@@ -2241,11 +2283,10 @@ export default function ClientConfigPage() {
               </div>
               <Button onClick={() => {
                 try {
-                  const title = (addTabTitle || '').trim(); if (!title) return; setDraft((s: any) => {
+                  const title = (addTabTitle || '').trim(); if (!title) return; const uid = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; setDraft((s: any) => {
                     const k = activePageKey as string; const n = { ...s }; n.pages = n.pages || {}; const p = n.pages[k] || {}; const existed = Array.isArray(p.topBar?.tabs) ? p.topBar.tabs : [];
-                    const list = uniqueTabs(existed)
-                    const uid = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-                    list.push({ id: uid, title }); p.topBar = { ...(p.topBar || { enabled: true }), tabs: list }; n.pages[k] = p; return n
+                    const merged = uniqueTabs([...(Array.isArray(existed) ? existed : []), { id: uid, title }])
+                    p.topBar = { ...(p.topBar || { enabled: true }), tabs: merged }; n.pages[k] = p; return n
                   }); setAddTabTitle("")
                 } catch { }
               }}>{lang === 'zh' ? '新增' : 'Add'}</Button>

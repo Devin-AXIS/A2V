@@ -299,9 +299,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     } catch { return null }
   }, [pageId, activeTabIndex, overrideTick])
 
-  // 归一化顶部标签栏为文本型导航（只用作切换）
+  // 归一化顶部标签栏为文本型导航（只用作切换）。优先使用外部传入的 topTabsConfig
   const computedTopTabs = useMemo(() => {
     try {
+      if (topTabsConfig && topTabsConfig.type === 'text' && Array.isArray(topTabsConfig.items) && topTabsConfig.items.length > 0) {
+        return topTabsConfig
+      }
       const tb = (pageConfig && (pageConfig as any).topBar) || null
       const enabled = !!(tb && (tb as any).enabled)
       const tabs = enabled ? ((tb as any).tabs || []) : []
@@ -803,9 +806,11 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           />
         )}
 
-        {/* 顶部标签导航：读取页面 topBar 并归一化为文本型 */}
+        {/* 顶部标签导航：读取页面 topBar 并归一化为文本型
+            由于 AppHeader 是 fixed 定位，这里需要为内容预留顶部空间，
+            否则标签栏会被头部遮挡而不可见。 */}
         {computedTopTabs && computedTopTabs.type === 'text' && (
-          <div className={cn("px-4", propLayout === 'pc' ? 'hidden' : 'block')}>
+          <div className={cn("px-4 mb-2", propLayout === 'pc' ? 'hidden' : 'block', showHeader ? 'pt-16' : 'pt-2')}>
             <ContentNavigation
               config={computedTopTabs}
               onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }}
@@ -826,7 +831,13 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
         {/* 工作台类型 */}
         {pageCategory.type === "workspace" && (
-          <div className={cn("relative z-10", propLayout === "pc" ? "p-6" : "p-4 pt-20")}>
+          <div className={cn(
+            "relative z-10",
+            propLayout === "pc"
+              ? "p-6"
+              : // 顶部存在标签栏时，减少顶部内边距，避免与标签栏重复留白
+              (computedTopTabs ? "p-4 pt-4" : "p-4 pt-20")
+          )}>
             {/* 图文入口导航容器：支持新旧模型，统一归一化为 currentContentNav */}
             {currentContentNav && currentContentNav.type === 'iconText' && (
               <div className="mb-4">

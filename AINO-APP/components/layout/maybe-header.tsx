@@ -16,15 +16,28 @@ export function MaybeHeader({ title }: Props) {
       const route = "/" + (pathname?.split("/").slice(2).join("/") || "")
       const sp = new URLSearchParams(window.location.search)
       const p = sp.get("pageCfg")
+      const cfgId = sp.get("cfgId")
       if (p) {
         const parsed = JSON.parse(p)
         window.localStorage.setItem(`APP_PAGE_ROUTE_${route}`, JSON.stringify(parsed))
         setConfig(parsed)
         return
       }
+      if (cfgId) {
+        fetch(`http://localhost:3001/api/page-configs/${encodeURIComponent(cfgId)}`)
+          .then((r) => r.json().catch(() => null))
+          .then((j) => {
+            const data = j && (j.data ?? j)
+            if (!data) return
+            window.localStorage.setItem(`APP_PAGE_ROUTE_${route}`, JSON.stringify(data))
+            setConfig(data)
+          })
+          .catch(() => { })
+        return
+      }
       const raw = window.localStorage.getItem(`APP_PAGE_ROUTE_${route}`)
       if (raw) setConfig(JSON.parse(raw))
-    } catch {}
+    } catch { }
   }, [pathname])
 
   const locale = useMemo(() => (pathname?.startsWith("/en") ? "en" : "zh"), [pathname])

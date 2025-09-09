@@ -21,6 +21,7 @@ import relationRecordsRoute from "./modules/relation-records/routes"
 import { docsRoute } from "./docs/routes"
 import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
+import pageConfigsRoute from "./modules/page-configs/routes"
 
 const app = new Hono()
 
@@ -87,6 +88,9 @@ app.route("/api/preview-manifests", previewManifestsRoute)
 
 // AI 网关路由（OpenAI 兼容）
 app.route("/api/ai", aiRoute)
+
+// 页面配置临时存储/读取
+app.route("/api/page-configs", pageConfigsRoute)
 
 // 静态文件：上传目录（基于运行时代码位置计算，dist/../uploads）
 const runtimeDir = path.dirname(fileURLToPath(import.meta.url))
