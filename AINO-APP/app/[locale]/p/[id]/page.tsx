@@ -1,6 +1,7 @@
 "use client"
 
 import { useParams, useSearchParams } from "next/navigation"
+import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { useEffect, useMemo, useState } from "react"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import type { ContentNavConfig } from "@/components/navigation/content-navigation"
@@ -12,8 +13,8 @@ export default function MobileDynamicPage() {
   const id = params?.id || "unknown"
 
   // 兼容：若配置层写入 APP_PAGE_{id}，我们尝试作为种子初始化 DynamicPageComponent 的本地布局
-  const storageKey = useMemo(() => `dynamic_page_layout_p-${id}_${locale}`,[id, locale])
-  const appPageKey = useMemo(() => `APP_PAGE_${id}`,[id])
+  const storageKey = useMemo(() => `dynamic_page_layout_p-${id}_${locale}`, [id, locale])
+  const appPageKey = useMemo(() => `APP_PAGE_${id}`, [id])
   const [pageMeta, setPageMeta] = useState<{ title?: any; layout?: string; route?: string; options?: any; contentNav?: ContentNavConfig } | null>(null)
 
   const [seeded, setSeeded] = useState(false)
@@ -34,7 +35,7 @@ export default function MobileDynamicPage() {
           const routeKey = `/p-${id}`
           localStorage.setItem(`APP_PAGE_ROUTE_${routeKey}`, JSON.stringify({ ...cfg, options: mergedOptions }))
           setPageMeta({ title: cfg?.title, layout: cfg?.layout, route: cfg?.route, options: mergedOptions, contentNav: cfg?.contentNav })
-        } catch {}
+        } catch { }
       }
       const raw = localStorage.getItem(appPageKey)
       if (raw) {
@@ -52,12 +53,12 @@ export default function MobileDynamicPage() {
         const payload = { cards: cards.map((t: any) => (typeof t === 'string' ? { type: t } : { type: t?.type || t })), themes: {}, updatedAt: Date.now() }
         localStorage.setItem(storageKey, JSON.stringify(payload))
       }
-    } catch {}
+    } catch { }
     setSeeded(true)
   }, [storageKey, appPageKey, sp, id])
 
   // category 采用 p-{id}，保证各页布局隔离
-  const category = useMemo(() => `p-${id}`,[id])
+  const category = useMemo(() => `p-${id}`, [id])
 
   const topTabsConfig = pageMeta?.contentNav?.type === 'text' ? pageMeta?.contentNav : null
   const contentNavConfig = pageMeta?.contentNav?.type === 'iconText' ? pageMeta?.contentNav : null
@@ -90,6 +91,7 @@ export default function MobileDynamicPage() {
         initialTabIndex={initialTabIndex}
         pageId={id}
       />
+      <BottomNavigation />
     </main>
   )
 }

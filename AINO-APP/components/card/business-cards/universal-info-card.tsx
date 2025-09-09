@@ -41,7 +41,6 @@ const defaultData: UniversalInfoCardProps['data'] = {
 }
 
 export function UniversalInfoCard({ onAction, deviceType = 'universal' }: UniversalInfoCardProps) {
-  console.log(12121212, defaultData)
   const [safeData, setSafeData] = useState(defaultData)
 
   useEffect(() => {

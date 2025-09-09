@@ -136,7 +136,7 @@ export default function ClientConfigPage() {
   const [saving, setSaving] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [authUIOpen, setAuthUIOpen] = useState(false)
-  const [previewSource, setPreviewSource] = useState<"manifest" | "auth-login" | "home">("manifest")
+  const [previewSource, setPreviewSource] = useState<"preview">("manifest")
   const [pageUIOpen, setPageUIOpen] = useState(false)
   const [activePageKey, setActivePageKey] = useState<string>("")
 
@@ -1470,7 +1470,7 @@ export default function ClientConfigPage() {
                                           value={fieldOptions.length > 0 ? ((currentMap[ik] ?? undefined) as any) : (undefined as any)}
                                           onValueChange={(v) => setMappingValue(mappingKey, ik, v)}
                                         >
-                                          <SelectTrigger><SelectValue placeholder={lang === 'zh' ? '选择字段' : 'Choose field'} /></SelectTrigger>
+                                          <SelectTrigger className="max-w-[80px] w-full truncate"><SelectValue placeholder={lang === 'zh' ? '选择字段' : 'Choose field'} /></SelectTrigger>
                                           <SelectContent>
                                             {fieldOptions.length === 0 ? (
                                               <SelectItem disabled value="__no_fields__">{lang === 'zh' ? '（无可用字段）' : '(no fields)'}</SelectItem>
@@ -1499,7 +1499,17 @@ export default function ClientConfigPage() {
                   // 左侧：页面配置编辑视图
                   <div className="h-full overflow-y-auto p-1 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setPageUIOpen(false); setPreviewSource("home"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; setPreviewUrl(`http://localhost:3002/${baseLang}`); } catch { } }}>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setPageUIOpen(false);
+                        setPreviewSource("preview");
+                        setViewTab("preview");
+                        try {
+                          const baseLang = (draft.app?.defaultLanguage || "zh") as string;
+                          const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+                          const url = `http://localhost:3002/${baseLang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+                          setPreviewUrl(url);
+                        } catch { }
+                      }}>
                         <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}
                       </Button>
                       <div className="text-sm font-semibold">{lang === "zh" ? "页面配置" : "Page Settings"}</div>

@@ -67,25 +67,50 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     { href: "/profile", label: D.profile, icon: User },
   ]
 
-  // 优先级：props.items > 全局配置(APP_GLOBAL_CONFIG.nav) > 默认
-  let navItems: NavItemInput[] = defaultItems
+  // 优先级：props.items > 全局配置(APP_GLOBAL_CONFIG.nav) > 兼容(CURRENT_APP_NAV_ITEMS) > 默认(仅非预览/非App运行时)
+  // 预览页和 App 运行时没有配置时不展示底部导航（保持原有行为）
+  const isPreviewOrApp = pathname.includes('/preview/') || pathname.includes('/app/')
+  let navItems: NavItemInput[] = []
   if (items && items.length > 0) {
     navItems = items
   } else {
     try {
       if (typeof window !== 'undefined') {
-        const raw = localStorage.getItem('APP_GLOBAL_CONFIG')
-        if (raw) {
-          const cfg = JSON.parse(raw)
-          const nav = Array.isArray(cfg?.nav) ? cfg.nav : []
+        const rawGlobal = localStorage.getItem('APPLICATION_CONFIG')
+        const cfg = JSON.parse(rawGlobal)
+        if (rawGlobal) {
+          const nav = Array.isArray(cfg?.config?.clientManifest?.app?.bottomNav) ? cfg.config.clientManifest.app.bottomNav : []
           if (nav.length > 0) {
             navItems = nav
               .filter((i: any) => i?.visible !== false)
               .map((i: any) => ({ href: i.route || '/', label: (i.label?.[locale] || i.label?.zh || i.label?.en || i.id || ''), iconName: i.icon || 'grid' }))
           }
         }
+        if (navItems.length === 0) {
+          const rawLegacy = localStorage.getItem('CURRENT_APP_NAV_ITEMS')
+          if (rawLegacy) {
+            const legacy = JSON.parse(rawLegacy)
+            if (Array.isArray(legacy) && legacy.length > 0) {
+              navItems = legacy
+                .filter((i: any) => i && (i.visible !== false))
+                .map((i: any) => {
+                  let href = i.route || i.href || '/'
+                  if (href === '/me') href = '/profile'
+                  return { href, label: i.label || i.key || '', iconName: i.icon || i.iconName }
+                })
+            }
+          }
+        }
       }
-    } catch {}
+    } catch { }
+  }
+
+  if (navItems.length === 0 && !isPreviewOrApp) {
+    navItems = defaultItems
+  }
+
+  if (navItems.length === 0) {
+    return null
   }
 
   const iconMap: Record<string, React.ComponentType<any>> = {
@@ -104,12 +129,14 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     heart: Heart,
   }
 
+  const hrefQs = localStorage.getItem('QUERY_STRING')
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
       <AppCard className="px-4 py-1">
         <div className="flex items-center space-x-2 md:space-x-3">
           {navItems.map(({ href, icon: Icon, iconName, label }) => {
-            const fullHref = `/${locale}${href === "/" ? "" : href}`
+            const fullHref = `/${locale}${href === "/" ? "" : href}${hrefQs}`
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
             const IconComp = Icon ?? (iconName ? iconMap[iconName] : undefined) ?? LayoutGrid
 
@@ -134,7 +161,7 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
               </Link>
             )
           })}
-          
+
           {/* 字体大小切换按钮 */}
           <div className="border-l border-gray-200/30 pl-2">
             <FontSizeToggleIcon />

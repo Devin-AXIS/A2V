@@ -112,7 +112,7 @@ export default function PreviewPage() {
               setRenderKey((k) => k + 1)
             }
           }
-        } catch {}
+        } catch { }
       }
       // 同步底部导航到全局以便 profile 页面也显示一致
       try {
@@ -132,16 +132,7 @@ export default function PreviewPage() {
     return typeof cat === "string" ? cat : "workspace"
   }, [manifest])
 
-  const bottomItems = useMemo(() => {
-    const list = manifest?.app?.bottomNav || []
-    return Array.isArray(list)
-      ? list.map((i: any) => {
-        let href = i.route || "/"
-        if (href === "/me") href = "/profile"
-        return { href, label: i.label || i.key }
-      })
-      : []
-  }, [manifest])
+  // 底部导航改由 BottomNavigation 组件内部根据 APP_GLOBAL_CONFIG 或 CURRENT_APP_NAV_ITEMS 自行决定
 
   if (loading) {
     return (
@@ -163,9 +154,7 @@ export default function PreviewPage() {
   return (
     <main className="min-h-[100dvh] bg-transparent">
       <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
-      {bottomItems.length > 0 && (
-        <BottomNavigation items={bottomItems} />
-      )}
+      <BottomNavigation />
     </main>
   )
 }

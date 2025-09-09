@@ -48,7 +48,7 @@ function DemoAwareBottomNavigation({ dict }: { dict: any }) {
     return null
   }
 
-  return <BottomNavigation dict={dict} items={items || undefined} />
+  return <BottomNavigation dict={dict} />
 }
 
 export function LayoutClient({
@@ -76,6 +76,8 @@ export function LayoutClient({
         if (!res.ok || !json) return
         const config = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json
         if (aborted) return
+        try { localStorage.setItem('QUERY_STRING', window.location.search) } catch { }
+        try { localStorage.setItem('PREVIEW_ID', qs.get('previewId')) } catch { }
         try { localStorage.setItem('APPLICATION_CONFIG', JSON.stringify(config)) } catch { }
         try { localStorage.setItem(`APPLICATION_CONFIG:${appId}`, JSON.stringify(config)) } catch { }
       } catch { }
@@ -90,7 +92,6 @@ export function LayoutClient({
         <div className="relative min-h-screen overflow-hidden">
           <DynamicBackground />
           <main className="relative z-10">{children}</main>
-          <DemoAwareBottomNavigation dict={dict.bottomNav} />
           <MobileUnifiedConfig />
         </div>
       </UnifiedProvider>

@@ -23,8 +23,8 @@ export default async function PCBasicComponentsPage({
           {dict.mainPage.basic}
         </h1>
         <p className="text-gray-600">
-          {locale === 'zh' 
-            ? "基础UI组件展示，包括按钮、输入框、标签、进度条等常用组件" 
+          {locale === 'zh'
+            ? "基础UI组件展示，包括按钮、输入框、标签、进度条等常用组件"
             : "Basic UI components showcase, including buttons, inputs, badges, progress bars and other common components"
           }
         </p>
@@ -128,22 +128,22 @@ export default async function PCBasicComponentsPage({
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  placeholder={locale === 'zh' ? "请输入用户名" : "Enter username"} 
+                <Input
+                  placeholder={locale === 'zh' ? "请输入用户名" : "Enter username"}
                   className="pl-10"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 {locale === 'zh' ? "邮箱地址" : "Email Address"}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  type="email" 
-                  placeholder={locale === 'zh' ? "请输入邮箱地址" : "Enter email address"} 
+                <Input
+                  type="email"
+                  placeholder={locale === 'zh' ? "请输入邮箱地址" : "Enter email address"}
                   className="pl-10"
                 />
               </div>
@@ -155,8 +155,8 @@ export default async function PCBasicComponentsPage({
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  placeholder={locale === 'zh' ? "请输入电话号码" : "Enter phone number"} 
+                <Input
+                  placeholder={locale === 'zh' ? "请输入电话号码" : "Enter phone number"}
                   className="pl-10"
                 />
               </div>
@@ -168,8 +168,8 @@ export default async function PCBasicComponentsPage({
               </label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  placeholder={locale === 'zh' ? "请输入地址" : "Enter address"} 
+                <Input
+                  placeholder={locale === 'zh' ? "请输入地址" : "Enter address"}
                   className="pl-10"
                 />
               </div>
@@ -330,7 +330,7 @@ export default async function PCBasicComponentsPage({
                   <p className="text-sm text-gray-600">john@example.com</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3 p-4 bg-white/40 rounded-lg border border-white/30">
                 <Avatar>
                   <AvatarImage src="/generic-user-avatar.png" />

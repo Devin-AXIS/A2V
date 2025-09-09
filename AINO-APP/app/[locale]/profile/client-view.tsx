@@ -71,14 +71,14 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
               <p className="text-sm text-gray-600 mb-4">请登录或注册以享受完整功能</p>
             </div>
             <div className="flex space-x-3">
-              <Button 
+              <Button
                 onClick={() => window.location.href = '/auth/login'}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               >
                 <LogIn className="w-4 h-4 mr-2" />
                 登录
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => window.location.href = '/auth/register'}
                 className="border-blue-500 text-blue-500 hover:bg-blue-50"

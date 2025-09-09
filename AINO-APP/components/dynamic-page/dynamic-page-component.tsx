@@ -1164,7 +1164,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         }
 
         {/* 底部导航 */}
-        {
+        {/* {
           showBottomNav && (
             <BottomNavigation
               dict={{
@@ -1176,8 +1176,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
               }}
             />
           )
-        }
-      </div >
+        } */}
+      </div>
       <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>

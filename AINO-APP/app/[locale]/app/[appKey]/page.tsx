@@ -77,16 +77,7 @@ export default function AppRuntimePage() {
         } catch { return "workspace" }
     }, [manifest, currentPageKey])
 
-    const bottomItems = useMemo(() => {
-        const list = manifest?.app?.bottomNav || []
-        return Array.isArray(list)
-            ? list.map((i: any) => {
-                let href = i.route || "/"
-                if (href === "/me") href = "/profile"
-                return { href, label: i.label || i.key, iconName: i.icon || i.iconName }
-            })
-            : []
-    }, [manifest])
+    // 底部导航改由 BottomNavigation 组件内部根据 APP_GLOBAL_CONFIG 或 CURRENT_APP_NAV_ITEMS 自行决定
 
     if (loading) {
         return <main className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">Loading...</main>
@@ -101,9 +92,7 @@ export default function AppRuntimePage() {
                 <PageDataProvider manifest={manifest} pageKey={currentPageKey} baseUrl="http://localhost:3001">
                     <DynamicPageComponent category={pageCategory} locale={locale} layout="mobile" pageKey={currentPageKey} />
                 </PageDataProvider>
-                {bottomItems.length > 0 && (
-                    <BottomNavigation items={bottomItems} />
-                )}
+                <BottomNavigation />
             </AppContextProvider>
         </main>
     )

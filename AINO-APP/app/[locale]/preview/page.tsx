@@ -12,6 +12,41 @@ export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
   const sp = useSearchParams()
   const router = useRouter()
+  const [mergedOnce, setMergedOnce] = useState(false)
+
+  // Merge QUERY_STRING from localStorage into current URL once on mount
+  useEffect(() => {
+    if (mergedOnce) return
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('QUERY_STRING') : null
+      if (!stored) {
+        setMergedOnce(true)
+        return
+      }
+      const sanitized = stored.startsWith('?') ? stored.slice(1) : stored
+      const storedParams = new URLSearchParams(sanitized)
+      if ([...storedParams.keys()].length === 0) {
+        setMergedOnce(true)
+        return
+      }
+      const currentParams = new URLSearchParams(sp.toString())
+      let changed = false
+      storedParams.forEach((value, key) => {
+        const currentValue = currentParams.get(key)
+        if (currentValue !== value) {
+          currentParams.set(key, value)
+          changed = true
+        }
+      })
+      if (changed) {
+        const locale = params.locale || 'zh'
+        const query = currentParams.toString()
+        const target = `/${locale}/preview${stored}`
+        router.replace(target)
+      }
+    } catch { }
+    setMergedOnce(true)
+  }, [sp, params, router, mergedOnce])
   const qs = new URLSearchParams(window.location.search)
   const applicationId = qs.get('appId')
   window.localStorage.setItem('APP_ID', applicationId || '')
@@ -132,16 +167,7 @@ export default function PreviewPage() {
     return typeof cat === "string" ? cat : "workspace"
   }, [manifest])
 
-  const bottomItems = useMemo(() => {
-    const list = manifest?.app?.bottomNav || []
-    return Array.isArray(list)
-      ? list.map((i: any) => {
-        let href = i.route || "/"
-        if (href === "/me") href = "/profile"
-        return { href, label: i.label || i.key }
-      })
-      : []
-  }, [manifest])
+  // 底部导航改由 BottomNavigation 组件内部根据 APP_GLOBAL_CONFIG 或 CURRENT_APP_NAV_ITEMS 自行决定
 
   if (loading) {
     return (
@@ -163,9 +189,7 @@ export default function PreviewPage() {
   return (
     <main className="min-h-[100dvh] bg-transparent">
       <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
-      {bottomItems.length > 0 && (
-        <BottomNavigation items={bottomItems} />
-      )}
+      <BottomNavigation />
     </main>
   )
 }
