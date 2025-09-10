@@ -20,7 +20,6 @@ export const dataInputs = {
         education: "String",
         experience: "String",
         jobType: "String",
-        url: "String",
     },
     // 工作年限占比分析
     "job-experience-ratio": {

@@ -288,6 +288,20 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [overrideTick, setOverrideTick] = useState<number>(0)
   const [activeFiltersByCardId, setActiveFiltersByCardId] = useState<Record<string, Record<string, string>>>({})
 
+  // 在不触发路由导航的情况下更新 URL 中的 tab 参数
+  const updateTabParamInUrl = (index: number) => {
+    try {
+      const params = new URLSearchParams(sp?.toString?.() || '')
+      if (index === 0) params.delete('tab')
+      else params.set('tab', String(index))
+      const qs = params.toString()
+      const url = qs ? `${pathname}?${qs}` : `${pathname}`
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(window.history.state, '', url)
+      }
+    } catch { }
+  }
+
   useEffect(() => {
     if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
   }, [initialTabIndex])
@@ -920,7 +934,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         {/* Header - 只在移动端显示 */}
         {showHeader && propLayout !== "pc" && (
           <AppHeader
-            title={headerTitle || (pageCategory.type === "education" ? "教育应用Demo" : "自定义动态页面")}
+            title={headerTitle || (pageCategory.type === "education" ? "教育应用Demo" : window.location.pathname === "/zh/preview" ? "首页" : "自定义动态页面")}
             showBackButton={showBack}
           />
         )}
@@ -935,14 +949,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
               activeIndex={activeTabIndex}
               onSwitchTab={({ index }) => {
                 if (typeof index === 'number') {
-                  try {
-                    const params = new URLSearchParams(sp?.toString?.() || '')
-                    if (index === 0) params.delete('tab')
-                    else params.set('tab', String(index))
-                    const qs = params.toString()
-                    const url = qs ? `${pathname}?${qs}` : `${pathname}`
-                    router.push(url as any)
-                  } catch { }
+                  updateTabParamInUrl(index)
                   setActiveTabIndex(index)
                 }
               }}
@@ -978,14 +985,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                   activeIndex={activeTabIndex}
                   onSwitchTab={({ index }) => {
                     if (typeof index === 'number') {
-                      try {
-                        const params = new URLSearchParams(sp?.toString?.() || '')
-                        if (index === 0) params.delete('tab')
-                        else params.set('tab', String(index))
-                        const qs = params.toString()
-                        const url = qs ? `${pathname}?${qs}` : `${pathname}`
-                        router.push(url as any)
-                      } catch { }
+                      updateTabParamInUrl(index)
                       setActiveTabIndex(index)
                     }
                   }}
