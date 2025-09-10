@@ -971,7 +971,7 @@ export default function ClientConfigPage() {
       const id = data.data.id
       setPreviewId(id)
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-      const url = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+      const url = `http://localhost:3002/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
@@ -1031,7 +1031,7 @@ export default function ClientConfigPage() {
       if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
       // 更新预览URL上的 data 参数，保持与当前数据源一致
       try {
-        const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}`)
+        const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
         u.searchParams.set("device", device)
         u.searchParams.set("appId", String(params.appId))
         const dataParam = JSON.stringify(draft?.dataSources || {})
@@ -1039,7 +1039,7 @@ export default function ClientConfigPage() {
         setPreviewUrl(u.toString())
       } catch {
         const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-        const fallback = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+        const fallback = `http://localhost:3002/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
       toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
@@ -1161,7 +1161,7 @@ export default function ClientConfigPage() {
         const id = data.data.id
         setPreviewId(id)
         const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
-        const url = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+        const url = `http://localhost:3002/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(url)
       } else {
         // 已有预览则更新
@@ -1173,7 +1173,7 @@ export default function ClientConfigPage() {
         const data = await res.json().catch(() => ({}))
         if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
         try {
-          const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}`)
+          const u = new URL(previewUrl || `http://localhost:3002/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
           u.searchParams.set("device", device)
           u.searchParams.set("appId", String(params.appId))
           const dataParam = JSON.stringify(mergedDraft?.dataSources || {})
@@ -1181,7 +1181,7 @@ export default function ClientConfigPage() {
           setPreviewUrl(u.toString())
         } catch {
           const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
-          const fallback = `http://localhost:3002/${lang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+          const fallback = `http://localhost:3002/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
           setPreviewUrl(fallback)
         }
       }
@@ -1593,7 +1593,7 @@ export default function ClientConfigPage() {
                         try {
                           const baseLang = (draft.app?.defaultLanguage || "zh") as string;
                           const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-                          const url = `http://localhost:3002/${baseLang}/preview?isEdite=true&previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+                          const url = `http://localhost:3002/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
                           setPreviewUrl(url);
                         } catch { }
                       }}>
@@ -1742,6 +1742,99 @@ export default function ClientConfigPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+                    {/* 数据定义（页面配置内复用） */}
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">{lang === "zh" ? "数据定义" : "Data Sources"}</div>
+                        <Button variant="secondary" size="sm" onClick={() => setDataDialogOpen(true)}>
+                          <Plus className="w-4 h-4 mr-1" />{lang === "zh" ? "添加数据" : "Add Data"}
+                        </Button>
+                      </div>
+                      <div className="space-y-1 max-h-40 overflow-auto pr-1">
+                        {Object.entries(draft.dataSources || {}).length === 0 && (
+                          <div className="text-xs text-muted-foreground px-1">{lang === "zh" ? "尚未添加数据源" : "No data sources yet"}</div>
+                        )}
+                        {Object.entries(draft.dataSources || {}).map(([key, item]: any) => (
+                          <div key={key} className="flex items-center gap-2 border rounded-md px-2 py-1">
+                            <div className="flex items-center gap-1 text-xs">
+                              <Database className="w-3.5 h-3.5" />
+                              <span className="font-medium">{item?.label || key}</span>
+                            </div>
+                            <div className="ml-auto flex items-center gap-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{item?.type}</span>
+                              <Button variant="outline" size="sm" onClick={() => removeDataSource(key)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 数据映射（页面配置内复用） */}
+                    <div className="pt-2 space-y-2">
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
+                        <span>{lang === 'zh' ? '数据映射' : 'Field Mapping'}</span>
+                        <span className="text-[10px] text-muted-foreground">{lang === 'zh' ? '将卡片入参字段映射到所选数据源表字段' : 'Map card input fields to table fields'}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {Object.entries(incomingMappings || {}).length === 0 && (
+                          <div className="text-xs text-muted-foreground px-1">{lang === 'zh' ? '等待子页面选择数据源后将自动出现映射项' : 'Mappings will appear after selecting data source in preview'}</div>
+                        )}
+                        {Object.entries(incomingMappings || {}).map(([mappingKey, ctx]) => {
+                          const inputKeys = extractInputKeys(ctx.inputs || {})
+                          const boundKey = bindingByMappingKey[mappingKey] || ctx.dataSourceKey || ''
+                          const fieldOptions = tableFieldsByDsKey[boundKey] || []
+                          const currentMap = mappingSelections[mappingKey] || {}
+                          return (
+                            <div key={mappingKey} className="border rounded-md p-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-medium">
+                                  {ctx.cardName || ctx.cardType} → <span className="text-muted-foreground">{(draft.dataSources || {})[boundKey]?.label || ctx.dataSourceLabel || boundKey || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-[10px] text-muted-foreground">{new Date(ctx.timestamp).toLocaleString()}</div>
+                                  <Button size="sm" variant="outline" onClick={() => deleteMappingGroup(mappingKey)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              {inputKeys.length === 0 ? (
+                                <div className="text-xs text-muted-foreground">{lang === 'zh' ? '暂无卡片入参字段' : 'No input fields'}</div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                  {inputKeys.map((ik) => (
+                                    <div key={`${mappingKey}::${ik}`} className="flex items-center gap-2">
+                                      <div className="text-xs w-40 truncate" title={ik}>{ik}</div>
+                                      <div className="flex-1">
+                                        <Select
+                                          disabled={fieldOptions.length === 0 || !boundKey}
+                                          value={fieldOptions.length > 0 ? ((currentMap[ik] ?? undefined) as any) : (undefined as any)}
+                                          onValueChange={(v) => setMappingValue(mappingKey, ik, v)}
+                                        >
+                                          <SelectTrigger className="max-w-[80px] w-full truncate"><SelectValue placeholder={lang === 'zh' ? '选择字段' : 'Choose field'} /></SelectTrigger>
+                                          <SelectContent>
+                                            {fieldOptions.length === 0 ? (
+                                              <SelectItem disabled value="__no_fields__">{lang === 'zh' ? '（无可用字段）' : '(no fields)'}</SelectItem>
+                                            ) : (
+                                              fieldOptions.map((fo) => (
+                                                <SelectItem key={String(fo.key)} value={String(fo.key)}>{fo.label || String(fo.key)}</SelectItem>
+                                              ))
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <Button size="sm" variant="ghost" onClick={() => clearFieldMapping(mappingKey, ik)} title={lang === 'zh' ? '清除该字段映射' : 'Clear mapping'}>
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                     {/* 主内容 / 其他卡片占位 */}
                     <div className="space-y-3">
@@ -1893,7 +1986,7 @@ export default function ClientConfigPage() {
                   // 左侧：登录配置编辑视图
                   <div className="h-full p-1 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setAuthUIOpen(false); setPreviewSource("home"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; setPreviewUrl(`http://localhost:3002/${baseLang}`); } catch { } }}>
+                      <Button variant="outline" size="sm" onClick={() => { setAuthUIOpen(false); setPreviewSource("preview"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {})); const url = `http://localhost:3002/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`; setPreviewUrl(url); } catch { } }}>
                         <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}
                       </Button>
                       <div className="text-sm font-semibold">{lang === "zh" ? "登录配置" : "Login Settings"}</div>

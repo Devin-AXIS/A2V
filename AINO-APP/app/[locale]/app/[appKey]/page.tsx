@@ -6,6 +6,7 @@ import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-com
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { PageDataProvider } from "@/components/providers/page-data-context"
 import { AppContextProvider } from "@/components/providers/app-context"
+import { setDatas } from "@/components/card/set-datas"
 
 export default function AppRuntimePage() {
     const params = useParams<{ locale: string; appKey: string }>()
@@ -17,6 +18,11 @@ export default function AppRuntimePage() {
 
     const locale = params.locale || "zh"
     const appKey = params.appKey
+
+    useEffect(() => {
+        // 同步 preview 的数据源选择应用逻辑
+        try { setDatas() } catch { }
+    }, [])
 
     useEffect(() => {
         let canceled = false

@@ -96,7 +96,7 @@ export function ContentNavigation({ config, className, onSwitchTab, activeIndex:
           </div>
         )}
         {/* Scrollable text tabs */}
-        <div className="px-2 py-2 overflow-x-auto scrollbar-hide">
+        <div className="px-2 py-2 overflow-x-auto scrollbar-hide" style={{ background: 'white' }}>
           <div className="flex items-center gap-6 px-2 min-w-max">
             {config.items.map((it, idx) => (
               <button

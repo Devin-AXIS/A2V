@@ -108,7 +108,9 @@ export function MobileLogin({
         return
       }
 
-      const applicationId = window.localStorage.getItem('APP_ID')
+      const appConfigStr = window.localStorage.getItem('APPLICATION_CONFIG')
+      const appConfig = JSON.parse(appConfigStr)
+      const applicationId = appConfig?.id
       const loginRes = await axios.post(`http://localhost:3001/api/modules/system/user/login?applicationId=${applicationId}`, {
         password,
         phone_number: phone
@@ -116,12 +118,13 @@ export function MobileLogin({
       const loginResult = loginRes.data?.data;
       onLogin?.(loginResult)
     } catch (error) {
-      console.error('登录失败，尝试进入注册流程:', error)
-      try {
-        const base = typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : 'zh'
-        // 跳往注册页，携带手机号做预填
-        window.location.href = `/${base}/auth/register?phone=${encodeURIComponent(phone)}`
-      } catch {}
+      console.error('登录失败:', error)
+      setErrors(prev => ({
+        ...prev,
+        ...(loginMethod === 'password'
+          ? { password: '登录失败，请检查手机号或密码' }
+          : { code: '登录失败，请检查验证码' })
+      }))
     } finally {
       setIsLoading(false)
     }
@@ -141,7 +144,7 @@ export function MobileLogin({
       }
       const raw = window.localStorage.getItem('APP_AUTH_CONFIG')
       if (raw) setAuthConfig(JSON.parse(raw))
-    } catch {}
+    } catch { }
   }, [])
 
   const providers: { key: string; enabled: boolean }[] = useMemo(() => {
@@ -154,7 +157,7 @@ export function MobileLogin({
     ]
     if (authConfig && Array.isArray(authConfig.providers)) {
       // 保证 phone 永远第一且启用
-      const list = authConfig.providers.filter((p: any) => p && p.key && ['phone','wechat','bytedance','google','apple'].includes(p.key))
+      const list = authConfig.providers.filter((p: any) => p && p.key && ['phone', 'wechat', 'bytedance', 'google', 'apple'].includes(p.key))
       const merged = [{ key: 'phone', enabled: true }, ...list.filter((p: any) => p.key !== 'phone')]
       return merged
     }
@@ -208,6 +211,18 @@ export function MobileLogin({
         <div className="mb-6">
           <Button type="button" variant="secondary" className="w-full rounded-full h-11" disabled={!phone} onClick={handleSendCode}>获取验证码</Button>
         </div>
+        <div className="text-center text-sm text-muted-foreground">
+          <button
+            type="button"
+            className="underline underline-offset-4 hover:text-foreground"
+            onClick={() => {
+              setLoginMethod('password')
+              setStage('password')
+            }}
+          >
+            使用密码登录
+          </button>
+        </div>
         {renderSocialIcons()}
       </div>
     </motion.div>
@@ -226,6 +241,96 @@ export function MobileLogin({
         <Button type="button" onClick={handleLogin} disabled={isLoading || code.length < 4} size="lg" className="w-full rounded-full h-12 text-base" variant="default">
           {isLoading ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />继续中...</>) : (currentLocale === 'en' ? 'Continue' : '继续')}
         </Button>
+        <div className="text-center text-sm text-muted-foreground mt-4">
+          <button
+            type="button"
+            className="underline underline-offset-4 hover:text-foreground"
+            onClick={() => {
+              setLoginMethod('password')
+              setStage('password')
+            }}
+          >
+            使用密码登录
+          </button>
+        </div>
+        {renderSocialIcons()}
+      </div>
+    </motion.div>
+  )
+
+  const renderPassword = () => (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      <div className="max-w-sm mx-auto pt-8 pb-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-semibold mb-2" style={titleStyle}>{introTitle || (currentLocale === 'en' ? 'Sign in with password' : '手机号 + 密码登录')}</h2>
+          <p className="text-sm text-muted-foreground" style={bodyStyle}>{introText || (currentLocale === 'en' ? 'Enter your phone and password' : '请输入你的手机号与密码')}</p>
+        </div>
+        <div className="mb-4">
+          <PhoneInput value={phone} onChange={handlePhoneChange} error={errors.phone} placeholder="请输入手机号" />
+        </div>
+        <div className="mb-1">
+          <div className="w-full max-w-sm">
+            <label htmlFor="password" className="block text-xs font-medium text-gray-600 mb-1.5">密码</label>
+            <div className={cn(
+              "group bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 transition-all duration-300",
+              "focus-within:ring-2 focus-within:shadow-lg",
+              "flex items-center"
+            )}>
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className="flex-1 px-3.5 py-2.5 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+                placeholder="请输入密码"
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                className="pr-3 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password ? (
+              <p className="mt-1 text-xs text-red-500">{errors.password}</p>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-sm text-muted-foreground">
+            <button
+              type="button"
+              className="underline underline-offset-4 hover:text-foreground"
+              onClick={() => {
+                setLoginMethod('phone')
+                setStage('phone')
+              }}
+            >
+              使用验证码登录
+            </button>
+          </div>
+          <div className="text-sm">
+            <button
+              type="button"
+              className="text-blue-600 hover:underline"
+              onClick={onForgotPassword}
+            >
+              忘记密码？
+            </button>
+          </div>
+        </div>
+        <Button
+          type="button"
+          onClick={handleLogin}
+          disabled={isLoading || !phone || !password}
+          size="lg"
+          className="w-full rounded-full h-12 text-base"
+          variant="default"
+        >
+          {isLoading ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />登录中...</>) : '登录'}
+        </Button>
         {renderSocialIcons()}
       </div>
     </motion.div>
@@ -238,6 +343,7 @@ export function MobileLogin({
         <div className="container mx-auto px-4">
           {stage === 'phone' ? renderPhone() : null}
           {stage === 'verify' ? renderVerify() : null}
+          {stage === 'password' ? renderPassword() : null}
         </div>
       </div>
     </div>

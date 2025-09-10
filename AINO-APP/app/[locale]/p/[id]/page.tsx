@@ -5,6 +5,7 @@ import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { useEffect, useMemo, useState } from "react"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import type { ContentNavConfig } from "@/components/navigation/content-navigation"
+import { setDatas } from "@/components/card/set-datas"
 
 export default function MobileDynamicPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -18,6 +19,11 @@ export default function MobileDynamicPage() {
   const [pageMeta, setPageMeta] = useState<{ title?: any; layout?: string; route?: string; options?: any; contentNav?: ContentNavConfig; topBar?: any; tabContent?: any } | null>(null)
 
   const [seeded, setSeeded] = useState(false)
+
+  useEffect(() => {
+    // 同步 preview 的数据源选择应用逻辑
+    try { setDatas() } catch { }
+  }, [])
 
   useEffect(() => {
     try {
