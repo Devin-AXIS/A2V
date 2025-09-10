@@ -2,6 +2,7 @@ import axios from 'axios'
 import { CardRegistry } from "./registry"
 
 export const dataInputs = {
+    // 职位发布
     "job-posting": {
         title: "String",
         company: "String",
@@ -11,6 +12,7 @@ export const dataInputs = {
         education: "String",
         tags: "String[]",
     },
+    // 相关岗位列表
     "related-jobs-list": {
         title: "String",
         avgSalary: "String",
@@ -18,7 +20,9 @@ export const dataInputs = {
         education: "String",
         experience: "String",
         jobType: "String",
+        url: "String",
     },
+    // 工作年限占比分析
     "job-experience-ratio": {
         title: "String",
         description: "String",

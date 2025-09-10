@@ -1392,9 +1392,9 @@ export default function ClientConfigPage() {
                           >
                             <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
                             <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
-                            <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
+                            {/* <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
                               <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
-                            </Button>
+                            </Button> */}
                             <Button
                               variant="secondary"
                               size="sm"
@@ -2279,9 +2279,9 @@ export default function ClientConfigPage() {
                     <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
                     <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
-                    <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
+                    {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
                       {lang === "zh" ? "AI运营" : "AI Ops"}
-                    </Button>
+                    </Button> */}
                     <a href={`http://localhost:3001/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
                       <Button variant="secondary">API</Button>
                     </a>
