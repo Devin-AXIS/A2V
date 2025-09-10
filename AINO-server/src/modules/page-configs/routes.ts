@@ -12,6 +12,18 @@ const getStoreDir = () => {
     return uploadsDir
 }
 
+// 基于 key 的存储目录（用于按业务键名读写）
+const getKeyStoreDir = () => {
+    const base = getStoreDir()
+    return path.join(base, "keys")
+}
+
+// 仅允许安全字符，避免路径穿越
+const sanitizeKey = (key: string) => {
+    const safe = key.replace(/[^a-zA-Z0-9_.\-]/g, "_")
+    return safe.slice(0, 200)
+}
+
 // POST /api/page-configs  Body: 任意 JSON（页面配置）  → { success, id }
 route.post("/", async (c) => {
     try {
@@ -51,5 +63,46 @@ route.get("/:id", async (c) => {
 })
 
 export default route
+
+// 下面为按 key 的持久化接口：
+// PUT /api/page-configs/key/:key    Body: { payload: any } 或 直接 JSON
+// GET /api/page-configs/key/:key    → { success, data }
+route.put("/key/:key", async (c) => {
+    try {
+        const rawKey = c.req.param("key")
+        if (!rawKey) return c.json({ success: false, message: "invalid key" }, 400)
+        const key = sanitizeKey(rawKey)
+        const body = await c.req.json().catch(() => null)
+        const data = body && typeof body === 'object' && 'payload' in body ? (body as any).payload : body
+        if (data == null || typeof data !== 'object') {
+            return c.json({ success: false, message: "invalid json" }, 400)
+        }
+        const dir = getKeyStoreDir()
+        await fs.mkdir(dir, { recursive: true })
+        const file = path.join(dir, `${key}.json`)
+        await fs.writeFile(file, JSON.stringify(data, null, 2), "utf-8")
+        return c.json({ success: true })
+    } catch (e) {
+        console.error("save page-config by key failed", e)
+        return c.json({ success: false, message: "save failed" }, 500)
+    }
+})
+
+route.get("/key/:key", async (c) => {
+    try {
+        const rawKey = c.req.param("key")
+        if (!rawKey) return c.json({ success: false, message: "invalid key" }, 400)
+        const key = sanitizeKey(rawKey)
+        const dir = getKeyStoreDir()
+        const file = path.join(dir, `${key}.json`)
+        const raw = await fs.readFile(file, "utf-8").catch(() => null)
+        if (!raw) return c.json({ success: false, message: "not found" }, 404)
+        const data = JSON.parse(raw)
+        return c.json({ success: true, data })
+    } catch (e) {
+        console.error("read page-config by key failed", e)
+        return c.json({ success: false, message: "read failed" }, 500)
+    }
+})
 
 

@@ -132,6 +132,30 @@ export default function ClientConfigPage() {
   const [monacoMounted, setMonacoMounted] = useState(false)
   const monacoRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
+  // 本地持久化水合标记
+  const studioDraftHydratedRef = useRef(false)
+
+  // 合并默认草稿与已保存草稿（保留默认必要字段）
+  function mergeDraftDefaults(defaults: any, savedRaw: any) {
+    try {
+      if (!savedRaw || typeof savedRaw !== "object") return defaults
+      const saved = { ...savedRaw }
+      if ("__ui" in saved) { try { delete (saved as any).__ui } catch { } }
+      const out: any = { ...defaults, ...saved }
+      out.app = { ...defaults.app, ...(saved.app || {}) }
+      // 固定 appKey 与默认语言/locale 合法性
+      out.app.appKey = defaults.app.appKey
+      out.app.defaultLanguage = out.app.defaultLanguage || defaults.app.defaultLanguage
+      out.app.locale = out.app.locale || defaults.app.locale
+      if (!Array.isArray(out.app.bottomNav)) out.app.bottomNav = defaults.app.bottomNav
+      if (saved.pages) out.pages = saved.pages
+      if (saved.dataSources) out.dataSources = saved.dataSources
+      return out
+    } catch {
+      return defaults
+    }
+  }
+
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
@@ -518,6 +542,33 @@ export default function ClientConfigPage() {
   const [workspaceCardsByCategory, setWorkspaceCardsByCategory] = useState<Record<string, string[]>>({})
   const [activeWorkspaceCategory, setActiveWorkspaceCategory] = useState<string>("")
   const [cardConfigOpen, setCardConfigOpen] = useState(false)
+
+  // 初次水合：从 localStorage 恢复草稿与 UI 状态（activePageKey/pageTabIndex）
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return
+      const key = `STUDIO_CLIENT_CFG_${params.appId}`
+      const raw = window.localStorage.getItem(key)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setDraft((s: any) => mergeDraftDefaults(s, parsed))
+        try { const ap = parsed?.__ui?.activePageKey; if (ap) setActivePageKey(String(ap)) } catch { }
+        try { const ti = parsed?.__ui?.pageTabIndex; if (typeof ti === "number") setPageTabIndex(ti) } catch { }
+      }
+    } catch { }
+    finally { studioDraftHydratedRef.current = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.appId])
+
+  // 持久化：草稿/关键 UI 状态 变更时写入 localStorage（避免初次水合覆盖）
+  useEffect(() => {
+    try {
+      if (!studioDraftHydratedRef.current || typeof window === "undefined") return
+      const key = `STUDIO_CLIENT_CFG_${params.appId}`
+      const payload = { ...draft, __ui: { activePageKey, pageTabIndex } }
+      window.localStorage.setItem(key, JSON.stringify(payload))
+    } catch { }
+  }, [draft, activePageKey, pageTabIndex, params.appId])
   const [cardConfigType, setCardConfigType] = useState<string>("")
   const [cardConfigName, setCardConfigName] = useState<string>("")
   const [cardConfigText, setCardConfigText] = useState<string>("{\n  \"title\": \"\",\n  \"subtitle\": \"\"\n}")
@@ -930,45 +981,47 @@ export default function ClientConfigPage() {
     }
   }
 
-  async function savePreview() {
+  async function savePreview(bodyOverride?: any, skipMergeFromEditor?: boolean) {
     try {
-      // 合并当前范围
-      try {
-        const parsed = JSON.parse(jsonText || "{}")
-        setDraft((s: any) => {
-          const next = { ...s }
-          if (codeScope === "manifest") Object.assign(next, parsed)
-          else if (codeScope === "app") next.app = parsed
-          else if (codeScope === "dataSources") next.dataSources = parsed
-          else if (codeScope === "page") {
-            // 若是卡片文件，则把内容同步到预览覆盖（虚拟文件）
-            if (activeCardMeta && activeCardPath) {
-              try {
-                const pageIdPure = activeCardMeta.pageKey.replace(/^p-/, '')
-                if (activeCardPath.endsWith('.json')) {
-                  window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
-                  setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: JSON.stringify(parsed, null, 2) }))
-                } else if (activeCardPath.endsWith('.tsx')) {
-                  window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, jsx: jsonText }, '*')
-                  setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: jsonText }))
-                }
-              } catch { }
-            } else {
-              next.pages = next.pages || {}
-              next.pages[activePage] = parsed
+      // UI 保存时可跳过编辑器合并，避免被旧 JSON 回滚
+      if (!skipMergeFromEditor) {
+        try {
+          const parsed = JSON.parse(jsonText || "{}")
+          setDraft((s: any) => {
+            const next = { ...s }
+            if (codeScope === "manifest") Object.assign(next, parsed)
+            else if (codeScope === "app") next.app = parsed
+            else if (codeScope === "dataSources") next.dataSources = parsed
+            else if (codeScope === "page") {
+              // 若是卡片文件，则把内容同步到预览覆盖（虚拟文件）
+              if (activeCardMeta && activeCardPath) {
+                try {
+                  const pageIdPure = activeCardMeta.pageKey.replace(/^p-/, '')
+                  if (activeCardPath.endsWith('.json')) {
+                    window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, props: parsed }, '*')
+                    setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: JSON.stringify(parsed, null, 2) }))
+                  } else if (activeCardPath.endsWith('.tsx')) {
+                    window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: pageIdPure, sectionKey: activeCardMeta.sectionKey, cardType: activeCardMeta.cardType, jsx: jsonText }, '*')
+                    setVirtualFiles((vf) => ({ ...vf, [activeCardPath]: jsonText }))
+                  }
+                } catch { }
+              } else {
+                next.pages = next.pages || {}
+                next.pages[activePage] = parsed
+              }
             }
-          }
-          return next
-        })
-      } catch (e: any) {
-        toast({ description: e?.message || (lang === "zh" ? "JSON 无法解析" : "JSON parse error"), variant: "destructive" as any })
-        return
+            return next
+          })
+        } catch (e: any) {
+          toast({ description: e?.message || (lang === "zh" ? "JSON 无法解析" : "JSON parse error"), variant: "destructive" as any })
+          return
+        }
       }
 
       if (!previewId) {
         return openPreview()
       }
-      const body = draft
+      const body = bodyOverride ?? draft
       const res = await fetch(`http://localhost:3001/api/preview-manifests/${previewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -1184,6 +1237,37 @@ export default function ClientConfigPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewTab])
 
+  // 进入页面配置视图时，自动将当前页面配置应用到右侧预览
+  // 目的：初始就显示已配置好的顶部标签栏，而不是必须点击“保留浏览”
+  useEffect(() => {
+    if (!pageUIOpen) return
+    try {
+      const k = String(activePageKey || '')
+      if (!k) return
+      const cfg = (draft.pages && (draft as any).pages[k]) || {}
+      const base = String(previewUrl || `http://localhost:3002/${lang}/p/${k.replace(/^p-/, '')}`)
+      fetch('http://localhost:3001/api/page-configs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg),
+      })
+        .then(r => r.json().catch(() => null))
+        .then(j => {
+          const id = j && (j.id || j.data?.id)
+          const u = new URL(base)
+          if (id) u.searchParams.set('cfgId', String(id))
+          setPreviewUrl(u.toString())
+          setViewTab('preview')
+        })
+        .catch(() => {
+          const u = new URL(base)
+          setPreviewUrl(u.toString())
+          setViewTab('preview')
+        })
+    } catch { }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageUIOpen])
+
   useEffect(() => {
     // 设备/语言变化时，如果已经有预览URL，刷新URL
     if (previewUrl) {
@@ -1339,8 +1423,11 @@ export default function ClientConfigPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }))
-                                setTimeout(() => { savePreview() }, 0)
+                                setDraft((s: any) => {
+                                  const next = { ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }
+                                  setTimeout(() => { savePreview(next, true) }, 0)
+                                  return next
+                                })
                               }}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -2229,7 +2316,7 @@ export default function ClientConfigPage() {
                 ) : (
                   <div className="flex-1 border rounded-xl bg-white overflow-hidden">
                     {previewUrl ? (
-                      <iframe id="my-app-iframe" src={previewUrl} className="w-full h-full" />
+                      <iframe id="my-app-iframe" src={`${previewUrl}&isEdite=true`} className="w-full h-full" />
                     ) : (
                       <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
                         {lang === "zh" ? "点击上方预览按钮生成预览" : "Switch to Preview to generate"}

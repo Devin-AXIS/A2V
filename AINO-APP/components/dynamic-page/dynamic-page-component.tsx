@@ -3,7 +3,7 @@
 import React from "react"
 
 import type { ReactNode } from "react"
-import { useState, useEffect, cloneElement, isValidElement, useMemo } from "react"
+import { useState, useEffect, cloneElement, isValidElement, useMemo, useRef } from "react"
 import { AppHeader } from "@/components/navigation/app-header"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { Button } from "@/components/ui/button"
@@ -48,7 +48,7 @@ import ContentNavigation, { type ContentNavConfig } from "@/components/navigatio
 import { DropdownFilterTabs } from "@/components/navigation/dropdown-filter-tabs"
 import { getIframeBridge } from "@/lib/iframe-bridge"
 import { dataInputs } from "@/components/card/set-datas"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 
 // 页面类别配置
 export interface PageCategory {
@@ -274,6 +274,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [cards, setCards] = useState<WorkspaceCard[]>([])
   const [showCardSelector, setShowCardSelector] = useState(false)
   const sp = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const isEditeParam = (sp.get('isEdite') === 'true' || sp.get('isEdit') === 'true')
   const [isEditing, setIsEditing] = useState<boolean>(isEditeParam)
   const [selectedCategory, setSelectedCategory] = useState<string>("全部")
@@ -387,6 +389,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const saveLayoutToLocalStorage = () => {
     try {
       const themeMap: Record<string, any> = {}
+      const dataSourcesMap: Record<string, any> = {}
       if (typeof window !== "undefined") {
         cards.forEach((c) => {
           try {
@@ -396,14 +399,63 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
             const raw = rawNew || rawLegacy
             if (raw) themeMap[c.id] = JSON.parse(raw)
           } catch { }
+          try {
+            const dsRaw = localStorage.getItem(`CARD_DS_${c.id}`)
+            if (dsRaw) dataSourcesMap[c.id] = JSON.parse(dsRaw)
+          } catch {
+            const dsRaw = localStorage.getItem(`CARD_DS_${c.id}`)
+            if (dsRaw) dataSourcesMap[c.id] = dsRaw
+          }
         })
       }
-      const payload = { cards: serializeCards(cards), themes: themeMap, updatedAt: Date.now() }
+      const payload = { cards: serializeCards(cards), themes: themeMap, dataSources: dataSourcesMap, updatedAt: Date.now() }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+      // 同步到后端（按 key 持久化）
+      try {
+        fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`,
+          { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .catch(() => { })
+      } catch { }
     } catch (err) {
       console.error("保存布局到本地存储失败", err)
     }
   }
+
+  // 自动保存：在编辑模式下，卡片/数据源标签等变更后防抖写入本地存储
+  const autosaveTimerRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!isEditing) return
+    try {
+      if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
+      autosaveTimerRef.current = window.setTimeout(() => {
+        try { saveLayoutToLocalStorage() } catch { }
+      }, 400)
+    } catch { }
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current)
+        autosaveTimerRef.current = null
+      }
+    }
+  }, [cards, selectedDataSourceLabels, STORAGE_KEY, isEditing])
+
+  // 监听跨标签页的配置变化（如 CARD_DS_* 或 APP_PAGE_{id}），在编辑模式下触发保存
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      try {
+        if (!isEditing) return
+        const key = e.key || ""
+        if ((pageId && key === `APP_PAGE_${pageId}`) || key.startsWith('CARD_DS_')) {
+          if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
+          autosaveTimerRef.current = window.setTimeout(() => {
+            try { saveLayoutToLocalStorage() } catch { }
+          }, 300)
+        }
+      } catch { }
+    }
+    if (typeof window !== 'undefined') window.addEventListener('storage', handler)
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('storage', handler) }
+  }, [isEditing, pageId])
 
   // 监听来自 Studio 的覆盖配置写入（SET_OVERRIDE）
   useEffect(() => {
@@ -428,6 +480,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         const next = { ...cfg, overrides }
         localStorage.setItem(key, JSON.stringify(next))
         setOverrideTick((v) => v + 1)
+        // 同步到后端（按 key 持久化 APP_PAGE_{id}）
+        try {
+          fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(key)}`,
+            { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) })
+            .catch(() => { })
+        } catch { }
       } catch (err) {
         console.error('SET_OVERRIDE failed:', err)
       }
@@ -489,9 +547,56 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
       if (!raw) {
-        // 切换到一个尚未配置过的分区时，应展示该分区自己的（空）布局
-        setCards([])
-        setIsEditing(true)
+        // 若本地无数据，尝试从后端拉取
+        (async () => {
+          try {
+            const res = await fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
+            if (res.ok) {
+              const j = await res.json().catch(() => null)
+              const data = j && (j.data ?? j)
+              if (data && Array.isArray(data.cards)) {
+                const parsed = data
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)) } catch { }
+                const savedList: Array<{ id?: string; type: string }> = parsed.cards.map((c: any) =>
+                  typeof c === "string" ? { type: c } : { id: c.id, type: c.type },
+                )
+                if (parsed.themes && typeof parsed.themes === "object") {
+                  try {
+                    Object.entries(parsed.themes as Record<string, any>).forEach(([cardId, theme]) => {
+                      const value = JSON.stringify(theme)
+                      try { localStorage.setItem(cardId, value) } catch { }
+                      if (cardId.startsWith("card_theme_")) {
+                        const newKey = cardId.replace(/^card_theme_/, "")
+                        try { localStorage.setItem(newKey, value) } catch { }
+                      }
+                    })
+                  } catch { }
+                }
+                if (parsed.dataSources && typeof parsed.dataSources === 'object') {
+                  const restoredLabels: Record<string, string> = {}
+                  try {
+                    Object.entries(parsed.dataSources as Record<string, any>).forEach(([cardId, info]) => {
+                      try { localStorage.setItem(`CARD_DS_${cardId}`, JSON.stringify(info)) } catch { }
+                      const label = (info && (info as any).label) || ""
+                      if (label) restoredLabels[cardId] = String(label)
+                    })
+                  } catch { }
+                  if (Object.keys(restoredLabels).length > 0) {
+                    setSelectedDataSourceLabels((prev) => ({ ...prev, ...restoredLabels }))
+                  }
+                }
+                const restored = recreateWorkspaceCardsFromSaved(savedList)
+                if (restored.length > 0) {
+                  setCards(restored)
+                  setIsEditing(false)
+                  return
+                }
+              }
+            }
+          } catch { }
+          setCards([])
+          setIsEditing(true)
+        })()
         return
       }
       const parsed = JSON.parse(raw)
@@ -512,6 +617,20 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
               }
             })
           } catch { }
+        }
+        // 恢复数据源选择
+        if (parsed.dataSources && typeof parsed.dataSources === 'object') {
+          const restoredLabels: Record<string, string> = {}
+          try {
+            Object.entries(parsed.dataSources as Record<string, any>).forEach(([cardId, info]) => {
+              try { localStorage.setItem(`CARD_DS_${cardId}`, JSON.stringify(info)) } catch { }
+              const label = (info && (info as any).label) || ""
+              if (label) restoredLabels[cardId] = String(label)
+            })
+          } catch { }
+          if (Object.keys(restoredLabels).length > 0) {
+            setSelectedDataSourceLabels((prev) => ({ ...prev, ...restoredLabels }))
+          }
         }
         const restored = recreateWorkspaceCardsFromSaved(savedList)
         if (restored.length > 0) {
@@ -813,7 +932,20 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           <div className={cn("px-4 mb-2", propLayout === 'pc' ? 'hidden' : 'block', showHeader ? 'pt-16' : 'pt-2')}>
             <ContentNavigation
               config={computedTopTabs}
-              onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }}
+              activeIndex={activeTabIndex}
+              onSwitchTab={({ index }) => {
+                if (typeof index === 'number') {
+                  try {
+                    const params = new URLSearchParams(sp?.toString?.() || '')
+                    if (index === 0) params.delete('tab')
+                    else params.set('tab', String(index))
+                    const qs = params.toString()
+                    const url = qs ? `${pathname}?${qs}` : `${pathname}`
+                    router.push(url as any)
+                  } catch { }
+                  setActiveTabIndex(index)
+                }
+              }}
             />
           </div>
         )}
@@ -841,7 +973,23 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
             {/* 图文入口导航容器：支持新旧模型，统一归一化为 currentContentNav */}
             {currentContentNav && currentContentNav.type === 'iconText' && (
               <div className="mb-4">
-                <ContentNavigation config={currentContentNav} onSwitchTab={({ index }) => { if (typeof index === 'number') setActiveTabIndex(index) }} />
+                <ContentNavigation
+                  config={currentContentNav}
+                  activeIndex={activeTabIndex}
+                  onSwitchTab={({ index }) => {
+                    if (typeof index === 'number') {
+                      try {
+                        const params = new URLSearchParams(sp?.toString?.() || '')
+                        if (index === 0) params.delete('tab')
+                        else params.set('tab', String(index))
+                        const qs = params.toString()
+                        const url = qs ? `${pathname}?${qs}` : `${pathname}`
+                        router.push(url as any)
+                      } catch { }
+                      setActiveTabIndex(index)
+                    }
+                  }}
+                />
               </div>
             )}
             <div className="mb-6">

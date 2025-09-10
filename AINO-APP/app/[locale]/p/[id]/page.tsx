@@ -96,6 +96,8 @@ export default function MobileDynamicPage() {
   return (
     <main className="min-h-[100dvh] bg-transparent">
       <DynamicPageComponent
+        // 关键：以 tab 作为 key，确保切换标签时强制重挂载，形成页面级隔离
+        key={`p-${id}-tab-${initialTabIndex}`}
         category={category}
         locale={locale}
         layout="mobile"

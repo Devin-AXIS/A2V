@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useRouter, useParams } from "next/navigation"
 import { Search, Bell } from "lucide-react"
@@ -32,20 +32,28 @@ type Props = {
   config: ContentNavConfig
   className?: string
   onSwitchTab?: (payload: { tabKey?: string; tabIndex?: number; index: number }) => void
+  activeIndex?: number // 受控激活索引（可选）
 }
 
-export function ContentNavigation({ config, className, onSwitchTab }: Props) {
+export function ContentNavigation({ config, className, onSwitchTab, activeIndex: controlledIndex }: Props) {
   const router = useRouter()
   const params = useParams<{ locale?: string }>()
   const locale = params?.locale || "zh"
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(controlledIndex ?? 0)
+
+  // 同步外部受控索引
+  useEffect(() => {
+    if (typeof controlledIndex === 'number' && controlledIndex !== currentIndex) {
+      setCurrentIndex(controlledIndex)
+    }
+  }, [controlledIndex])
 
   const cols = useMemo(() => (config.layout === "grid-5" ? 5 : 4), [config.layout])
 
   const handleClick = (idx: number, item: ContentNavItem) => {
     const ev = item?.event
     if (!ev || !ev.action || ev.action === "switchTab") {
-      setActiveIndex(idx)
+      setCurrentIndex(idx)
       onSwitchTab?.({ tabKey: ev?.tabKey, tabIndex: ev?.tabIndex, index: idx })
       return
     }
@@ -95,12 +103,12 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
                 key={idx}
                 className={cn(
                   "relative text-sm font-medium transition-colors pb-2",
-                  idx === activeIndex ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  idx === currentIndex ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => { setActiveIndex(idx); onSwitchTab?.({ index: idx }) }}
+                onClick={() => { setCurrentIndex(idx); onSwitchTab?.({ index: idx }) }}
               >
                 {it.title || `Tab ${idx + 1}`}
-                {idx === activeIndex && (
+                {idx === currentIndex && (
                   <span className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-0.5 w-6 bg-primary rounded-full" />
                 )}
               </button>
@@ -118,7 +126,7 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
         <div className="flex items-stretch gap-4 overflow-x-auto scrollbar-hide">
           {config.items.map((it, idx) => (
             <button key={idx} className="flex-shrink-0 w-20 flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>
-              <div className={cn("w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden shadow-sm")}>                
+              <div className={cn("w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden shadow-sm")}>
                 {it.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={it.image} alt={it.title || "icon"} className="w-full h-full object-cover" />
@@ -126,8 +134,8 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
                   <span className="text-xs text-muted-foreground">img</span>
                 )}
               </div>
-              <div className={cn("text-xs", idx === activeIndex ? "text-primary" : "text-foreground")}>{it.title || `Item ${idx + 1}`}</div>
-              {idx === activeIndex && <div className="h-0.5 w-6 rounded bg-primary" />}
+              <div className={cn("text-xs", idx === currentIndex ? "text-primary" : "text-foreground")}>{it.title || `Item ${idx + 1}`}</div>
+              {idx === currentIndex && <div className="h-0.5 w-6 rounded bg-primary" />}
             </button>
           ))}
         </div>
@@ -138,7 +146,7 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
   // grid 4/5 with auto wrap
   return (
     <div className={cn("w-full rounded-xl bg-card text-card-foreground shadow-sm px-4 py-4", className)}>
-      <div className={cn("grid gap-4", cols === 5 ? "grid-cols-5" : "grid-cols-4")}>        
+      <div className={cn("grid gap-4", cols === 5 ? "grid-cols-5" : "grid-cols-4")}>
         {config.items.map((it, idx) => (
           <button key={idx} className="flex flex-col items-center gap-2" onClick={() => handleClick(idx, it)}>
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden shadow-sm">
@@ -149,8 +157,8 @@ export function ContentNavigation({ config, className, onSwitchTab }: Props) {
                 <span className="text-xs text-muted-foreground">img</span>
               )}
             </div>
-            <div className={cn("text-xs", idx === activeIndex ? "text-primary" : "text-foreground")}>{it.title || `Item ${idx + 1}`}</div>
-            {idx === activeIndex && <div className="h-0.5 w-6 rounded bg-primary" />}
+            <div className={cn("text-xs", idx === currentIndex ? "text-primary" : "text-foreground")}>{it.title || `Item ${idx + 1}`}</div>
+            {idx === currentIndex && <div className="h-0.5 w-6 rounded bg-primary" />}
           </button>
         ))}
       </div>
