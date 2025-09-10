@@ -7,7 +7,7 @@ interface LocalThemeEditorVisibilityContextValue {
     visible: boolean
 }
 
-const LocalThemeEditorVisibilityContext = createContext<LocalThemeEditorVisibilityContextValue>({ visible: true })
+const LocalThemeEditorVisibilityContext = createContext<LocalThemeEditorVisibilityContextValue>({ visible: false })
 
 export function LocalThemeEditorVisibilityProvider({ visible, children }: { visible: boolean; children: React.ReactNode }) {
     return (

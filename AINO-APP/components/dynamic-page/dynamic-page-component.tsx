@@ -272,6 +272,7 @@ interface DynamicPageComponentProps {
 
 export function DynamicPageComponent({ category, locale, layout: propLayout, showHeader: showHeaderProp, showBottomNav: showBottomNavProp, headerTitle, showBack, aiOpsUrl, aiOpsLabel, topTabsConfig, contentNavConfig, initialTabIndex, pageId }: DynamicPageComponentProps) {
   const [cards, setCards] = useState<WorkspaceCard[]>([])
+  const cardsCacheRef = useRef<Record<string, WorkspaceCard[]>>({})
   const [showCardSelector, setShowCardSelector] = useState(false)
   const sp = useSearchParams()
   const router = useRouter()
@@ -284,9 +285,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [dataSourceOptions, setDataSourceOptions] = useState<Array<{ key: string; label: string }>>([])
   const [configError, setConfigError] = useState<string | null>(null)
   const [selectedDataSourceLabels, setSelectedDataSourceLabels] = useState<Record<string, string>>({})
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(initialTabIndex ?? 0)
+  // 顶部标签栏索引（父级）
+  const [activeTopIndex, setActiveTopIndex] = useState<number>(initialTabIndex ?? 0)
+  // 内容导航索引（子级）
+  const [activeContentIndex, setActiveContentIndex] = useState<number>(0)
   const [overrideTick, setOverrideTick] = useState<number>(0)
   const [activeFiltersByCardId, setActiveFiltersByCardId] = useState<Record<string, Record<string, string>>>({})
+
+  const setCardsForKey = (key: string, list: WorkspaceCard[]) => {
+    try { cardsCacheRef.current[key] = list } catch { }
+    if (key === STORAGE_KEY) setCards(list)
+  }
 
   // 在不触发路由导航的情况下更新 URL 中的 tab 参数
   const updateTabParamInUrl = (index: number) => {
@@ -302,8 +311,21 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     } catch { }
   }
 
+  const updateContentParamInUrl = (index: number) => {
+    try {
+      const params = new URLSearchParams(sp?.toString?.() || '')
+      if (index === 0) params.delete('nav')
+      else params.set('nav', String(index))
+      const qs = params.toString()
+      const url = qs ? `${pathname}?${qs}` : `${pathname}`
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(window.history.state, '', url)
+      }
+    } catch { }
+  }
+
   useEffect(() => {
-    if (typeof initialTabIndex === 'number') setActiveTabIndex(initialTabIndex)
+    if (typeof initialTabIndex === 'number') setActiveTopIndex(initialTabIndex)
   }, [initialTabIndex])
 
   // 读取页面配置以适配新的 topBar/tabContent 模型（优先使用本地存储 APP_PAGE_{id}）
@@ -313,7 +335,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
       return raw ? JSON.parse(raw) : null
     } catch { return null }
-  }, [pageId, activeTabIndex, overrideTick])
+  }, [pageId, activeTopIndex, overrideTick])
 
   // 归一化顶部标签栏为文本型导航（只用作切换）。优先使用外部传入的 topTabsConfig
   const computedTopTabs = useMemo(() => {
@@ -359,22 +381,21 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     try {
       if (computedTopTabs) {
         const tbc = (pageConfig && (pageConfig as any).tabContent) || {}
-        const perTab = (tbc as any)?.[activeTabIndex] || {}
+        const perTab = (tbc as any)?.[activeTopIndex] || {}
         return normalize(perTab?.contentNav) || null
       }
       return normalize(pageConfig && (pageConfig as any).contentNav) || null
     } catch { return null }
-  }, [pageConfig, computedTopTabs, activeTabIndex])
+  }, [pageConfig, computedTopTabs, activeTopIndex])
 
   const workspaceCategory = useMemo(() => {
-    if (computedTopTabs && computedTopTabs.type === 'text') {
-      return `${category}-tab-${activeTabIndex}`
-    }
-    if (currentContentNav && currentContentNav.type === 'iconText') {
-      return `${category}-icon-${activeTabIndex}`
-    }
+    const hasTop = !!(computedTopTabs && computedTopTabs.type === 'text')
+    const hasIcon = !!(currentContentNav && currentContentNav.type === 'iconText')
+    if (hasTop && hasIcon) return `${category}-tab-${activeTopIndex}-icon-${activeContentIndex}`
+    if (hasTop) return `${category}-tab-${activeTopIndex}`
+    if (hasIcon) return `${category}-icon-${activeContentIndex}`
     return category
-  }, [category, computedTopTabs, currentContentNav, activeTabIndex])
+  }, [category, computedTopTabs, currentContentNav, activeTopIndex, activeContentIndex])
 
   const STORAGE_KEY = `dynamic_page_layout_${workspaceCategory}_${locale}`
 
@@ -544,18 +565,24 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   // 根据页面可见性规则（由 Studio 写入 APP_PAGE_{id}.visibility）过滤显示卡片
   const visibleCards = useMemo(() => {
     try {
-      const mode = topTabsConfig ? 'text' : (contentNavConfig ? 'icon' : undefined)
-      if (!mode || !pageId) return cards
+      if (!pageId) return cards
       const raw = typeof window !== 'undefined' ? localStorage.getItem(`APP_PAGE_${pageId}`) : null
       if (!raw) return cards
       const cfg = JSON.parse(raw || '{}')
-      const list: string[] | undefined = cfg?.visibility?.[mode]?.[activeTabIndex]
-      if (!list || list.length === 0) return cards
-      return cards.filter((c) => list.includes(c.type))
+      // 优先支持组合可见性：combined[topIndex][contentIndex]
+      const combined: string[] | undefined = (cfg?.visibility?.combined?.[activeTopIndex]?.[activeContentIndex])
+      if (combined && combined.length > 0) return cards.filter((c) => combined.includes(c.type))
+      // 其次按内容导航
+      const byIcon: string[] | undefined = (cfg?.visibility?.icon?.[activeContentIndex])
+      if (byIcon && byIcon.length > 0) return cards.filter((c) => byIcon.includes(c.type))
+      // 再次按顶部标签
+      const byText: string[] | undefined = (cfg?.visibility?.text?.[activeTopIndex])
+      if (byText && byText.length > 0) return cards.filter((c) => byText.includes(c.type))
+      return cards
     } catch {
       return cards
     }
-  }, [cards, pageId, topTabsConfig, contentNavConfig, activeTabIndex])
+  }, [cards, pageId, computedTopTabs, currentContentNav, activeTopIndex, activeContentIndex])
 
   useEffect(() => {
     try {
@@ -601,7 +628,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                 }
                 const restored = recreateWorkspaceCardsFromSaved(savedList)
                 if (restored.length > 0) {
-                  setCards(restored)
+                  setCardsForKey(STORAGE_KEY, restored)
                   setIsEditing(false)
                   return
                 }
@@ -648,7 +675,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         }
         const restored = recreateWorkspaceCardsFromSaved(savedList)
         if (restored.length > 0) {
-          setCards(restored)
+          setCardsForKey(STORAGE_KEY, restored)
           setIsEditing(false)
         }
       }
@@ -897,7 +924,9 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       component: cardConfig.component,
       width: cardConfig.width,
     }
-    setCards([...cards, newCard])
+    const next = [...cards, newCard]
+    setCards(next)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cards: serializeCards(next) })) } catch { }
     setShowCardSelector(false)
   }
 
@@ -946,11 +975,14 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           <div className={cn("px-4 mb-2", propLayout === 'pc' ? 'hidden' : 'block', showHeader ? 'pt-16' : 'pt-2')}>
             <ContentNavigation
               config={computedTopTabs}
-              activeIndex={activeTabIndex}
+              activeIndex={activeTopIndex}
+              disableNavigate
               onSwitchTab={({ index }) => {
                 if (typeof index === 'number') {
+                  // 切换父级：更新 topIndex，并且重置内容导航索引为 0
                   updateTabParamInUrl(index)
-                  setActiveTabIndex(index)
+                  setActiveTopIndex(index)
+                  setActiveContentIndex(0)
                 }
               }}
             />
@@ -970,7 +1002,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
         {/* 工作台类型 */}
         {pageCategory.type === "workspace" && (
-          <div className={cn(
+          <div key={workspaceCategory} className={cn(
             "relative z-10",
             propLayout === "pc"
               ? "p-6"
@@ -982,11 +1014,13 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
               <div className="mb-4">
                 <ContentNavigation
                   config={currentContentNav}
-                  activeIndex={activeTabIndex}
+                  activeIndex={activeContentIndex}
+                  disableNavigate
                   onSwitchTab={({ index }) => {
                     if (typeof index === 'number') {
-                      updateTabParamInUrl(index)
-                      setActiveTabIndex(index)
+                      // 切换子级：只更新内容导航索引，不影响顶部标签
+                      updateContentParamInUrl(index)
+                      setActiveContentIndex(index)
                     }
                   }}
                 />
@@ -1005,6 +1039,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                 </div>
               ) : (
                 <EnhancedDraggableCardContainer
+                  key={STORAGE_KEY}
                   items={visibleCards.map((card) => ({
                     id: card.id,
                     content: (
@@ -1049,9 +1084,11 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               if (!reg || !reg.component) return card.component
                               const CardComponent = reg.component
                               const defaultData = {}
-                              // 使用新模型：若开启顶部标签栏，用 tab-{index}；否则 icon-{index}
-                              const mode = computedTopTabs ? 'text' : 'icon'
-                              const sectionKey = mode === 'text' ? `tab-${activeTabIndex}` : `icon-${activeTabIndex}`
+                              // 组合查找：优先 tab+nav，再退化到单键
+                              const hasTop = !!(computedTopTabs && computedTopTabs.type === 'text')
+                              const hasIcon = !!(currentContentNav && currentContentNav.type === 'iconText')
+                              const combinedKey = hasTop && hasIcon ? `tab-${activeTopIndex}::icon-${activeContentIndex}` : undefined
+                              const sectionKey = combinedKey || (hasTop ? `tab-${activeTopIndex}` : (hasIcon ? `icon-${activeContentIndex}` : ''))
                               let overrideProps: any = undefined
                               let overrideJsx: string | undefined
                               let overrideDisplay: any = undefined
@@ -1060,10 +1097,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                                 try {
                                   const raw = localStorage.getItem(`APP_PAGE_${pageId}`)
                                   const cfg = raw ? JSON.parse(raw) : {}
-                                  overrideProps = cfg?.overrides?.[sectionKey]?.[card.type]?.props
-                                  overrideJsx = cfg?.overrides?.[sectionKey]?.[card.type]?.jsx
-                                  overrideDisplay = cfg?.overrides?.[sectionKey]?.[card.type]?.display
-                                  overrideFilters = cfg?.overrides?.[sectionKey]?.[card.type]?.filters
+                                  const pick = (key?: string) => key ? cfg?.overrides?.[key]?.[card.type] : undefined
+                                  const preferred = pick(combinedKey) || pick(sectionKey)
+                                  overrideProps = preferred?.props
+                                  overrideJsx = preferred?.jsx
+                                  overrideDisplay = preferred?.display
+                                  overrideFilters = preferred?.filters
                                 } catch { }
                               }
                               if (overrideJsx) {

@@ -33,9 +33,10 @@ type Props = {
   className?: string
   onSwitchTab?: (payload: { tabKey?: string; tabIndex?: number; index: number }) => void
   activeIndex?: number // 受控激活索引（可选）
+  disableNavigate?: boolean // 强制禁用内部导航，统一当作切换
 }
 
-export function ContentNavigation({ config, className, onSwitchTab, activeIndex: controlledIndex }: Props) {
+export function ContentNavigation({ config, className, onSwitchTab, activeIndex: controlledIndex, disableNavigate }: Props) {
   const router = useRouter()
   const params = useParams<{ locale?: string }>()
   const locale = params?.locale || "zh"
@@ -52,7 +53,7 @@ export function ContentNavigation({ config, className, onSwitchTab, activeIndex:
 
   const handleClick = (idx: number, item: ContentNavItem) => {
     const ev = item?.event
-    if (!ev || !ev.action || ev.action === "switchTab") {
+    if (disableNavigate || !ev || !ev.action || ev.action === "switchTab") {
       setCurrentIndex(idx)
       onSwitchTab?.({ tabKey: ev?.tabKey, tabIndex: ev?.tabIndex, index: idx })
       return
