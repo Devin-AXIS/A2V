@@ -15,6 +15,24 @@ import SimplePieCard from "./business-cards/simple-pie-card"
 // 新增设备类型卡片
 import { PCToolbarCard } from "./business-cards/pc-toolbar-card"
 import { UniversalInfoCard } from "./business-cards/universal-info-card"
+import { JobPositionCard } from "@/components/card/job-position-card"
+// 招聘详情页封装卡片（新）
+import JobDetailIntroCard from "./jobs/job-detail-intro-card"
+import JobSalaryOverviewCard from "./jobs/job-salary-overview-card"
+import EducationSalaryRequirementsCard from "./jobs/education-salary-requirements-card"
+import JobCityRankingCard from "./jobs/job-city-ranking-card"
+import CompanyRankingCard from "./jobs/company-ranking-card"
+import AbilityRequirementsRadarCard from "./jobs/ability-requirements-radar-card"
+import CoreSkillsMasteryCard from "./jobs/core-skills-mastery-card"
+import BasicAbilityRequirementsCard from "./jobs/basic-ability-requirements-card"
+import EducationBackgroundCard from "./jobs/education-background-card"
+
+// 招聘信息内页卡片
+import { JobHeaderCard } from "@/components/card/jobs/job-header-card"
+import { JobRequirementsCard } from "@/components/card/jobs/job-requirements-card"
+import { JobBenefitsCard } from "@/components/card/jobs/job-benefits-card"
+import { CompanyInfoCard } from "@/components/card/jobs/company-info-card"
+import { ApplyResumeCard } from "@/components/card/jobs/apply-resume-card"
 
 const datas = {};
 
@@ -400,6 +418,20 @@ CardRegistry.register({
 })
 
 CardRegistry.register({
+  name: "job-position",
+  displayName: "职位概览",
+  category: "招聘",
+  type: "display",
+  component: JobPositionCard,
+  businessFlow: "职位概览信息展示，支持从注册中心数据驱动",
+  developer: {
+    name: "HR System",
+    version: "1.0.0",
+    description: "职位概览卡片，可配置并与详情联动",
+  },
+})
+
+CardRegistry.register({
   name: "related-jobs-list",
   displayName: "相关岗位列表",
   category: "招聘",
@@ -410,6 +442,133 @@ CardRegistry.register({
     name: "HR System",
     version: "1.0.0",
     description: "相关岗位推荐卡片，支持自定义岗位数据和自动跳转到详情页",
+  },
+})
+
+// ===== 招聘详情页——新增封装卡片注册 =====
+CardRegistry.register({
+  name: "job-detail-intro",
+  displayName: "职位简介",
+  category: "招聘",
+  type: "display",
+  component: JobDetailIntroCard,
+  businessFlow: "职位详情顶部简介信息展示，包含平均薪资和数据来源",
+  developer: {
+    name: "HR System",
+    version: "1.0.0",
+    description: "职位详情页顶部简介卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "job-salary-overview",
+  displayName: "收入分布概览",
+  category: "招聘",
+  type: "chart",
+  component: JobSalaryOverviewCard,
+  businessFlow: "职位收入分布概览，可视化展示薪资区间与占比",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "职位收入分布概览卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "education-salary-requirements",
+  displayName: "学历收入要求",
+  category: "招聘",
+  type: "list",
+  component: EducationSalaryRequirementsCard,
+  businessFlow: "不同学历维度下的平均薪资与占比展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "学历与收入要求卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "job-city-ranking",
+  displayName: "城市职位排名",
+  category: "招聘",
+  type: "list",
+  component: JobCityRankingCard,
+  businessFlow: "不同城市的职位数量与占比展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "工作城市排名卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "company-ranking",
+  displayName: "企业排行",
+  category: "招聘",
+  type: "list",
+  component: CompanyRankingCard,
+  businessFlow: "新兴业务领域相关企业排行展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "企业排行卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "ability-requirements-radar",
+  displayName: "能力要求雷达图",
+  category: "招聘",
+  type: "chart",
+  component: AbilityRequirementsRadarCard,
+  businessFlow: "岗位关键能力要求雷达图展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "能力要求雷达图包装卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "core-skills-mastery",
+  displayName: "核心技能掌握度",
+  category: "招聘",
+  type: "chart",
+  component: CoreSkillsMasteryCard,
+  businessFlow: "核心技能掌握程度可视化展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "核心技能掌握度包装卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "basic-ability-requirements",
+  displayName: "基础能力要求",
+  category: "招聘",
+  type: "list",
+  component: BasicAbilityRequirementsCard,
+  businessFlow: "基础能力要求清单展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "基础能力要求包装卡片",
+  },
+})
+
+CardRegistry.register({
+  name: "education-background",
+  displayName: "教育背景分布",
+  category: "招聘",
+  type: "chart",
+  component: EducationBackgroundCard,
+  businessFlow: "岗位教育背景分布展示",
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "教育背景分布包装卡片",
   },
 })
 
@@ -549,6 +708,67 @@ CardRegistry.register({
     name: "Universal System",
     version: "1.0.0",
     description: "通用信息展示卡片，在所有设备上都能正常显示",
+  },
+})
+
+CardRegistry.register({
+  name: 'job-header',
+  displayName: '职位信息卡片',
+  type: "display",
+  category: "招聘",
+  component: JobHeaderCard,
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "招聘职位信息卡片",
+  },
+})
+CardRegistry.register({
+  name: 'job-requirements',
+  displayName: '职位要求卡片',
+  type: "display",
+  category: "招聘",
+  component: JobRequirementsCard,
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "招聘职位要求卡片",
+  },
+})
+CardRegistry.register({
+  name: 'job-benefits',
+  displayName: '职位福利卡片',
+  type: "display",
+  category: "招聘",
+  component: JobBenefitsCard,
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "招聘职位福利卡片",
+  },
+})
+CardRegistry.register({
+  name: 'company-info',
+  displayName: '公司信息卡片',
+  type: "display",
+  category: "招聘",
+  component: CompanyInfoCard,
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "招聘公司信息卡片",
+  },
+})
+CardRegistry.register({
+  name: 'apply-resume',
+  displayName: '投递简历卡片',
+  type: "display",
+  category: "招聘",
+  component: ApplyResumeCard,
+  developer: {
+    name: "HR Analytics System",
+    version: "1.0.0",
+    description: "招聘投递简历卡片",
   },
 })
 

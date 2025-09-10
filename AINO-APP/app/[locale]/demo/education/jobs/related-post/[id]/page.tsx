@@ -1,13 +1,13 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppHeader } from "@/components/navigation/app-header"
-import { AppCard } from "@/components/layout/app-card"
-import { PillButton } from "@/components/basic/pill-button"
-import { Tag } from "@/components/basic/tag" // 添加公用Tag组件导入
-import { MapPin, GraduationCap, Briefcase, Clock, DollarSign, CheckCircle } from "lucide-react"
-import Image from "next/image"
+import { JobHeaderCard } from "@/components/card/jobs/job-header-card"
+import { JobRequirementsCard } from "@/components/card/jobs/job-requirements-card"
+import { JobBenefitsCard } from "@/components/card/jobs/job-benefits-card"
+import { CompanyInfoCard } from "@/components/card/jobs/company-info-card"
+import { ApplyResumeCard } from "@/components/card/jobs/apply-resume-card"
 
 interface JobDetail {
   id: string
@@ -85,7 +85,6 @@ const jobData: Record<string, JobDetail> = {
 
 export default function RelatedJobDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const jobId = params.id as string
   const locale = params.locale as string
 
@@ -98,90 +97,27 @@ export default function RelatedJobDetailPage() {
 
       <div className="min-h-screen pt-16 pb-24">
         <div className="p-4 sm:p-6 space-y-6">
-          <AppCard>
-            <div className="p-5 space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">{job.title}</h2>
-              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-600">
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-4 h-4 text-primary" />
-                  <span className="font-semibold text-primary">{job.salary}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-secondary" />
-                  <span>{`${job.location.province}·${job.location.city}·${job.location.district}`}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                  <span>{job.education}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4 text-muted-foreground" />
-                  <span>{job.experience}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>{job.employmentType}</span>
-                </div>
-              </div>
-            </div>
-          </AppCard>
+          <JobHeaderCard
+            data={{
+              title: job.title,
+              salary: job.salary,
+              location: job.location,
+              education: job.education,
+              experience: job.experience,
+              employmentType: job.employmentType,
+            }}
+          />
 
-          <AppCard>
-            <div className="p-5 space-y-4">
-              <h3 className="text-base font-semibold">岗位需求</h3>
-              <ul className="space-y-2 text-sm text-gray-700 list-disc list-inside">
-                {job.requirements.map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
-            </div>
-          </AppCard>
+          <JobRequirementsCard data={{ requirements: job.requirements }} />
 
-          <AppCard>
-            <div className="p-5 space-y-4">
-              <h3 className="text-base font-semibold">特色待遇</h3>
-              <div className="flex flex-wrap gap-2">
-                {job.benefits.map((benefit) => (
-                  <Tag key={benefit} variant="white" size="sm" icon={<CheckCircle className="w-3.5 h-3.5" />}>
-                    {benefit}
-                  </Tag>
-                ))}
-              </div>
-            </div>
-          </AppCard>
+          <JobBenefitsCard data={{ benefits: job.benefits }} />
 
           <div className="pt-4">
-            <AppCard>
-              <div className="p-4 flex items-center gap-4">
-                <Image
-                  src={job.company.logo || "/placeholder.svg"}
-                  alt={`${job.company.name} logo`}
-                  width={48}
-                  height={48}
-                  className="rounded-lg bg-white p-1"
-                />
-                <div>
-                  <p className="font-bold text-gray-800">{job.company.name}</p>
-                  <p className="text-xs text-gray-500">{job.company.description}</p>
-                </div>
-              </div>
-            </AppCard>
+            <CompanyInfoCard data={{ name: job.company.name, logo: job.company.logo, description: job.company.description }} />
           </div>
 
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-sm z-50">
-            <AppCard>
-              <div className="p-3">
-                <PillButton
-                  variant="primary"
-                  className="w-full py-3 px-6 text-lg font-semibold"
-                  onClick={() => {
-                    alert("简历投递功能开发中...")
-                  }}
-                >
-                  投递简历
-                </PillButton>
-              </div>
-            </AppCard>
+            <ApplyResumeCard data={{}} onApply={() => alert("简历投递功能开发中...")} />
           </div>
         </div>
       </div>

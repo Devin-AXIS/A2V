@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { AppCard } from "@/components/layout/app-card"
 import { JobExperienceRatioChart } from "@/components/data-display/job-experience-ratio-chart"
 import { CardRegistry } from "../registry"
+import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 
 interface JobExperienceRatioCardProps {
   disableLocalTheme?: boolean
@@ -22,20 +23,7 @@ const colors = ["#10b981", "#06b6d4"]
 
 export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperienceRatioCardProps) {
 
-  const [data, setData] = useState(defaultData)
-
-  useEffect(() => {
-    const newData = CardRegistry.getData("job-experience-ratio");
-    if (newData) {
-      setData(newData || defaultData)
-    } else {
-      CardRegistry.listen((name, data) => {
-        if (name === 'job-experience-ratio') {
-          setData(data || defaultData)
-        }
-      })
-    }
-  }, [])
+  const data = useCardRegistryData('job-experience-ratio', defaultData)
 
   const hasColorList = data.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || colors[index] }));
   return (

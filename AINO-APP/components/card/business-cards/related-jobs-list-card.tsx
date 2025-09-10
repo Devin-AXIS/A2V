@@ -6,6 +6,7 @@ import { Briefcase } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
 import { CardRegistry } from "../registry"
+import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 
 interface Job {
   id: number
@@ -69,21 +70,7 @@ export function RelatedJobsListCard({
   const router = useRouter()
   const { locale } = useParams()
 
-  const [relatedJobs, setRelatedJobs] = useState(defaultJobs)
-
-
-  useEffect(() => {
-    const newData = CardRegistry.getData("related-jobs-list");
-    if (newData) {
-      setRelatedJobs(newData || defaultJobs)
-    } else {
-      CardRegistry.listen((name, data) => {
-        if (name === 'related-jobs-list') {
-          setRelatedJobs(data || defaultJobs)
-        }
-      })
-    }
-  }, [])
+  const relatedJobs = useCardRegistryData("related-jobs-list", defaultJobs)
 
   const handleJobClick = (jobId: number) => {
     router.push(`/${locale}/demo/education/jobs/related-post/${jobId}`)

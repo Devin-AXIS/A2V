@@ -2,6 +2,16 @@ import axios from 'axios'
 import { CardRegistry } from "./registry"
 
 export const dataInputs = {
+    // 职位概览
+    "job-position": {
+        id: "String",
+        title: "String",
+        salary: "String",
+        location: "String",
+        demandGrowth: "String",
+        salaryGrowth: "String",
+        locale: "String",
+    },
     // 职位发布
     "job-posting": {
         title: "String",
@@ -32,7 +42,69 @@ export const dataInputs = {
                 jobs: "Number",
             }
         ],
-    }
+    },
+    'job-header': {
+        title: "String",
+        salary: "String",
+        location_province: "String",
+        location_city: "String",
+        location_district: "String",
+        education: "String",
+        experience: "String",
+        employmentType: "String",
+    },
+    'job-benefits': {
+        title: "String",
+        benefits: "String[]",
+    },
+    'job-requirements': {
+        title: "String",
+        requirements: "String[]",
+    },
+    'apply-resume': {
+        buttonText: "String",
+    },
+    'job-detail-intro': {
+        title: "String",
+        description: "String",
+        avgMonthlySalary: "String",
+        dataSource: "String",
+    },
+    'education-salary-requirements': {
+        title: "String",
+        description: "String",
+        data: [
+            {
+                label: "String",
+                value: "String",
+                percentage: "Number",
+                color: "String",
+            }
+        ],
+    },
+    'job-prospect-trend': {
+        title: "String",
+        monthlyNewJobs: "String",
+        monthlyLabel: "String",
+        rankText: "String",
+    },
+    'job-city-ranking': {
+        title: "String",
+        description: "String",
+        data: [
+            {
+                label: "String",
+                value: "String|Number",
+                percentage: "Number",
+                color: "String",
+            }
+        ],
+    },
+    'company-info': {
+        name: "String",
+        logo: "String",
+        description: "String",
+    },
 }
 
 export const setDatas = async () => {
