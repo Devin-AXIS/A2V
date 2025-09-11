@@ -185,7 +185,6 @@ export const setDatas = async () => {
 
     await Promise.all(promises);
 
-    // CardRegistry.setData("job-posting", {});
     // CardRegistry.setData("learning-plan-summary", {});
     // CardRegistry.setData("course-module", {});
     // CardRegistry.setData("learning-outcome", {});
@@ -203,10 +202,6 @@ export const setDatas = async () => {
     // CardRegistry.setData("chat-widget", {});
     // CardRegistry.setData("product-showcase", {});
     // CardRegistry.setData("shopping-cart", {});
-    // CardRegistry.setData("job-experience-ratio", {});
-    // CardRegistry.setData("job-prospect-trend", {});
-    // CardRegistry.setData("monthly-job-growth", {});
-    // CardRegistry.setData("related-jobs-list", {});
     // CardRegistry.setData("inventory-management", {});
     // CardRegistry.setData("pos-terminal", {});
     // CardRegistry.setData("trip-planner", {});
