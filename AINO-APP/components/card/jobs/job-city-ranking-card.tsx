@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { PercentageRankingCard } from "@/components/data-display/percentage-ranking-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { getRandomHexColor } from "@/lib/utils"
 
 interface CityRecord {
     label: string
@@ -35,6 +36,7 @@ const defaultData: JobCityRankingData = {
 
 export function JobCityRankingCard({ disableLocalTheme, className }: JobCityRankingCardProps) {
     const data = useCardRegistryData("job-city-ranking", defaultData)
+    data.data = data.data.map(item => ({ ...item, percentage: Number(item.percentage), color: getRandomHexColor() }))
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">

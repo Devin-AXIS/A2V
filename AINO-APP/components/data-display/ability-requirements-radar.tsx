@@ -3,22 +3,24 @@
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts"
 import { useDataChartTheme } from "@/components/providers/unified-chart-theme-provider"
 
-const data = [
-  { subject: "数据分析", value: 90, fullMark: 100 },
-  { subject: "沟通能力", value: 85, fullMark: 100 },
-  { subject: "行业知识", value: 80, fullMark: 100 },
-  { subject: "AI工具", value: 95, fullMark: 100 },
-  { subject: "项目管理", value: 75, fullMark: 100 },
-  { subject: "创新思维", value: 88, fullMark: 100 },
-]
+export interface AbilityRadarPoint {
+  subject: string
+  value: number
+  fullMark?: number
+}
 
-export function AbilityRequirementsRadar() {
+interface AbilityRequirementsRadarProps {
+  data: AbilityRadarPoint[]
+  className?: string
+}
+
+export function AbilityRequirementsRadar({ data, className }: AbilityRequirementsRadarProps) {
   const { palette } = useDataChartTheme()
 
   return (
     <>
       <h3 className="text-base font-semibold mb-4">能力要求分布</h3>
-      <div className="h-64">
+      <div className={className ? className : "h-64"}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
             <PolarGrid stroke={palette[0]} />

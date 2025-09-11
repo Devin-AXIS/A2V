@@ -87,6 +87,12 @@ export const dataInputs = {
         monthlyNewJobs: "String",
         monthlyLabel: "String",
         rankText: "String",
+        chartData: [
+            {
+                month: "String",
+                value: "Number",
+            },
+        ],
     },
     'job-city-ranking': {
         title: "String",
@@ -96,8 +102,26 @@ export const dataInputs = {
                 label: "String",
                 value: "String|Number",
                 percentage: "Number",
-                color: "String",
             }
+        ],
+    },
+    'monthly-job-growth': {
+        title: "String",
+        chartData: [
+            {
+                month: "String",
+                jobs: "Number",
+            },
+        ],
+    },
+    'ability-requirements-radar': {
+        title: "String",
+        chartData: [
+            {
+                subject: "String",
+                value: "Number",
+                fullMark: "Number",
+            },
         ],
     },
     'company-info': {

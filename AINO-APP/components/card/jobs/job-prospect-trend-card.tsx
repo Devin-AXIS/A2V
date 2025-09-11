@@ -9,6 +9,7 @@ interface ProspectTrendData {
     monthlyNewJobs: string
     monthlyLabel: string
     rankText: string
+    chartData: { month: string; value: number }[]
 }
 
 interface JobProspectTrendCardProps {
@@ -21,10 +22,17 @@ const defaultData: ProspectTrendData = {
     monthlyNewJobs: "4",
     monthlyLabel: "06月新增职位",
     rankText: "排名第18",
+    chartData: [
+        { month: "3月", value: 2 },
+        { month: "4月", value: 3 },
+        { month: "5月", value: 1 },
+        { month: "6月", value: 4 },
+    ],
 }
 
 export function JobProspectTrendCard({ disableLocalTheme, className }: JobProspectTrendCardProps) {
     const data = useCardRegistryData("job-prospect-trend", defaultData)
+    data.chartData = data.chartData.map(item => ({ ...item, value: Number(item.value) }))
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">
@@ -37,7 +45,7 @@ export function JobProspectTrendCard({ disableLocalTheme, className }: JobProspe
                 </div>
                 <div className="text-xs text-muted-foreground">{data.rankText}</div>
             </div>
-            <JobProspectLineChart />
+            <JobProspectLineChart data={data.chartData} />
         </AppCard>
     )
 }
