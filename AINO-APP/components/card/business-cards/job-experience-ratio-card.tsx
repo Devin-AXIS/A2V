@@ -6,6 +6,7 @@ import { JobExperienceRatioChart } from "@/components/data-display/job-experienc
 import { CardRegistry } from "../registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { getRandomHexColor } from "@/lib/utils"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface JobExperienceRatioCardProps {
   disableLocalTheme?: boolean
@@ -22,9 +23,10 @@ const defaultData = {
 
 const colors = ["#10b981", "#06b6d4"]
 
-export default function JobExperienceRatioCard({ disableLocalTheme }: JobExperienceRatioCardProps) {
+export default function JobExperienceRatioCard({ disableLocalTheme }: any) {
+  const { key: providedKey } = useLocalThemeKey()
 
-  const data = useCardRegistryData('job-experience-ratio', defaultData)
+  const data = useCardRegistryData(providedKey, defaultData)
 
   const hasColorList = data.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || getRandomHexColor() }));
   return (

@@ -107,6 +107,10 @@ class CardRegistry {
     return datas[name];
   }
 
+  static getAllData() {
+    return datas;
+  }
+
   static listens = [];
 
   static listen(cb) {

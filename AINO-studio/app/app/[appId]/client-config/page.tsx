@@ -225,7 +225,7 @@ export default function ClientConfigPage() {
 
   function saveIncomingData(payload: any) {
     try {
-      const cardType = String(payload?.card?.type || '')
+      const cardType = String(payload?.card?.id || '')
       const cardName = String(payload?.card?.name || '')
       const dsKey = payload?.dataSource?.key ? String(payload?.dataSource?.key) : undefined
       const dsLabel = payload?.dataSource?.label ? String(payload?.dataSource?.label) : undefined

@@ -178,6 +178,7 @@ export const setDatas = async () => {
                     }
                 })
             }
+            // console.log(cardType, resultData, 23232323)
             CardRegistry.setData(cardType, resultData)
             resolve(true)
         }))
