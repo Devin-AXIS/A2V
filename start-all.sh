@@ -25,7 +25,7 @@ cd ..
 # 启动前端服务 (AINO-studio)
 echo "🎨 启动前端服务 (AINO-studio)..."
 cd AINO-studio
-PORT=3000 pnpm dev > ../logs/frontend.log 2>&1 &
+PORT=3006 pnpm dev > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo $FRONTEND_PID > ../logs/frontend.pid
 cd ..
@@ -54,22 +54,22 @@ echo ""
 echo "📊 服务状态检查："
 
 # 检查后端
-if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-    echo "✅ 后端服务: http://localhost:3001"
+if curl -s http://localhost:3007/health > /dev/null 2>&1; then
+    echo "✅ 后端服务: http://localhost:3007"
 else
     echo "❌ 后端服务启动失败"
 fi
 
 # 检查前端 (AINO-studio)
-if curl -s http://localhost:3000 > /dev/null 2>&1; then
-    echo "✅ 前端服务 (AINO-studio): http://localhost:3000"
+if curl -s http://localhost:3006 > /dev/null 2>&1; then
+    echo "✅ 前端服务 (AINO-studio): http://localhost:3006"
 else
     echo "❌ 前端服务 (AINO-studio) 启动失败"
 fi
 
 # 检查 aino-app
-if curl -s http://localhost:3002 > /dev/null 2>&1; then
-    echo "✅ aino-app 服务: http://localhost:3002"
+if curl -s http://localhost:3008 > /dev/null 2>&1; then
+    echo "✅ aino-app 服务: http://localhost:3008"
 else
     echo "❌ aino-app 服务启动失败"
 fi
@@ -85,9 +85,9 @@ echo ""
 echo "🎉 所有服务启动完成！"
 echo ""
 echo "📝 服务地址："
-echo "   • 前端应用 (AINO-studio): http://localhost:3000"
-echo "   • aino-app 应用: http://localhost:3002"
-echo "   • 后端 API: http://localhost:3001"
+echo "   • 前端应用 (AINO-studio): http://localhost:3006"
+echo "   • aino-app 应用: http://localhost:3008"
+echo "   • 后端 API: http://localhost:3007"
 echo "   • 数据库管理: https://local.drizzle.studio"
 echo ""
 echo "📋 日志文件："

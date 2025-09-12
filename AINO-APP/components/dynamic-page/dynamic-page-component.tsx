@@ -447,7 +447,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
       // 同步到后端（按 key 持久化）
       try {
-        fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`,
+        fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`,
           { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .catch(() => { })
       } catch { }
@@ -517,7 +517,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         setOverrideTick((v) => v + 1)
         // 同步到后端（按 key 持久化 APP_PAGE_{id}）
         try {
-          fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(key)}`,
+          fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(key)}`,
             { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) })
             .catch(() => { })
         } catch { }
@@ -591,7 +591,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         // 若本地无数据，尝试从后端拉取
         (async () => {
           try {
-            const res = await fetch(`http://localhost:3001/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
+            const res = await fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
             if (res.ok) {
               const j = await res.json().catch(() => null)
               const data = j && (j.data ?? j)

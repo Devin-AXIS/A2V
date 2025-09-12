@@ -46,7 +46,7 @@ export default function MobileDynamicPage() {
       } else if (cfgId) {
         (async () => {
           try {
-            const res = await fetch(`http://localhost:3001/api/page-configs/${encodeURIComponent(cfgId)}`)
+            const res = await fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
             const j = await res.json().catch(() => null)
             const data = j && (j.data ?? j)
             if (res.ok && data) {

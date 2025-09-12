@@ -48,7 +48,7 @@ export function MobileRegister({
       }
       const raw = window.localStorage.getItem('APP_AUTH_CONFIG')
       if (raw) setAuthConfig(JSON.parse(raw))
-    } catch {}
+    } catch { }
   }, [])
 
   const titleStyle = authConfig?.titleColor ? { color: authConfig.titleColor } : undefined
@@ -194,7 +194,7 @@ export function MobileRegister({
       }
 
       const res = await axios.post(
-        `http://localhost:3001/api/application-users/register?applicationId=${resolvedAppId}`,
+        `http://localhost:3007/api/application-users/register?applicationId=${resolvedAppId}`,
         {
           password,
           phone_number: phone
