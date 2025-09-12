@@ -191,6 +191,21 @@ export async function autoInitDatabase(): Promise<boolean> {
         }
         console.log('✅ 数据库连接正常')
 
+        // 诊断当前连接信息与权限
+        const diag = await pool.query(`
+          SELECT 
+            current_database() AS db,
+            current_user AS usr,
+            current_schema() AS sch,
+            has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_in_public,
+            has_database_privilege(current_user, current_database(), 'CREATE') AS can_create_db
+        `)
+        const d = diag.rows[0]
+        console.log(`🔌 连接诊断: db=${d.db} user=${d.usr} schema=${d.sch} create_in_public=${d.can_create_in_public} create_db=${d.can_create_db}`)
+        if (!d.can_create_in_public) {
+            console.warn('⚠️  当前数据库用户对 schema "public" 没有 CREATE 权限，建表将会失败。请为该用户授予权限，或使用具备权限的用户运行初始化。')
+        }
+
         // 检查是否已初始化
         const isInitialized = await isDatabaseInitialized()
         if (isInitialized) {
@@ -235,6 +250,12 @@ export async function autoInitDatabase(): Promise<boolean> {
         }
 
         console.log('✅ 数据库结构创建完成')
+
+        // 再次诊断：统计 public 下表数量
+        const tblCount = await pool.query(`
+          SELECT count(*)::int AS cnt FROM information_schema.tables WHERE table_schema = 'public'
+        `)
+        console.log(`🔎 当前 public schema 表数量: ${tblCount.rows[0].cnt}`)
 
         // 验证表是否创建成功
         console.log('🔍 验证表创建状态...')
