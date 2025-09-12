@@ -54,8 +54,8 @@ echo ""
 echo "📊 服务状态检查："
 
 # 检查后端
-if curl -s http://localhost:3007/health > /dev/null 2>&1; then
-    echo "✅ 后端服务: http://localhost:3007"
+if curl -s http://47.94.52.142:3007/health > /dev/null 2>&1; then
+    echo "✅ 后端服务: http://47.94.52.142:3007"
 else
     echo "❌ 后端服务启动失败"
 fi
@@ -68,8 +68,8 @@ else
 fi
 
 # 检查 aino-app
-if curl -s http://localhost:3008 > /dev/null 2>&1; then
-    echo "✅ aino-app 服务: http://localhost:3008"
+if curl -s http://47.94.52.142:3008 > /dev/null 2>&1; then
+    echo "✅ aino-app 服务: http://47.94.52.142:3008"
 else
     echo "❌ aino-app 服务启动失败"
 fi
@@ -86,8 +86,8 @@ echo "🎉 所有服务启动完成！"
 echo ""
 echo "📝 服务地址："
 echo "   • 前端应用 (AINO-studio): http://localhost:3006"
-echo "   • aino-app 应用: http://localhost:3008"
-echo "   • 后端 API: http://localhost:3007"
+echo "   • aino-app 应用: http://47.94.52.142:3008"
+echo "   • 后端 API: http://47.94.52.142:3007"
 echo "   • 数据库管理: https://local.drizzle.studio"
 echo ""
 echo "📋 日志文件："

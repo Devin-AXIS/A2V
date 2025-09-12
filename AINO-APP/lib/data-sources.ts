@@ -21,7 +21,7 @@ export interface ManifestLike {
 export interface QueryOptions {
     params?: Record<string, any>
     selectPath?: string // e.g. "$.data.records" -> dot path "data.records"
-    baseUrl?: string // default: http://localhost:3007
+    baseUrl?: string // default: http://47.94.52.142:3007
 }
 
 function getApplicationId(manifest?: ManifestLike): string | null {
@@ -77,7 +77,7 @@ export async function queryDataSource<T = any>(
 
     const appId = getApplicationId(manifest)
     const method = (ds.method || 'GET').toUpperCase()
-    const baseUrl = options?.baseUrl || 'http://localhost:3007'
+    const baseUrl = options?.baseUrl || 'http://47.94.52.142:3007'
     const urlPath = buildUrl(ds.url, options?.params)
     // Prefer absolute server base to avoid proxy
     const requestUrl = urlPath.startsWith('http') ? urlPath : `${baseUrl}${urlPath}`

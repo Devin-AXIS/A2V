@@ -70,7 +70,7 @@ export function LayoutClient({
         if (!appId) return
         try { localStorage.setItem('APP_ID', appId) } catch { }
 
-        const res = await fetch(`http://localhost:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
+        const res = await fetch(`http://47.94.52.142:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
         let json: any = null
         try { json = await res.json() } catch { json = null }
         if (!res.ok || !json) return

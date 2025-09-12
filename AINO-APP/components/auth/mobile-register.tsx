@@ -194,7 +194,7 @@ export function MobileRegister({
       }
 
       const res = await axios.post(
-        `http://localhost:3007/api/application-users/register?applicationId=${resolvedAppId}`,
+        `http://47.94.52.142:3007/api/application-users/register?applicationId=${resolvedAppId}`,
         {
           password,
           phone_number: phone
