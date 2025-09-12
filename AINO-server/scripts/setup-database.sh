@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # AINO 数据库初始化脚本
-# 用于在新服务器上快速初始化数据库
+# 用于在新服务器上快速初始化数据库（支持Docker环境）
 
 echo "🚀 AINO 数据库初始化脚本"
 echo "================================"
@@ -9,12 +9,6 @@ echo "================================"
 # 检查Node.js是否安装
 if ! command -v node &> /dev/null; then
     echo "❌ 错误: 未找到 Node.js，请先安装 Node.js"
-    exit 1
-fi
-
-# 检查PostgreSQL是否运行
-if ! command -v psql &> /dev/null; then
-    echo "❌ 错误: 未找到 PostgreSQL 客户端，请先安装 PostgreSQL"
     exit 1
 fi
 
@@ -32,20 +26,36 @@ echo "   用户: $DB_USER"
 echo "   数据库: $DB_NAME"
 echo ""
 
-# 检查数据库连接
+# 检查数据库连接（使用Node.js而不是psql，支持Docker环境）
 echo "🔍 检查数据库连接..."
-PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" &> /dev/null
+node -e "
+const { Pool } = require('pg');
+const pool = new Pool({
+  host: '$DB_HOST',
+  port: $DB_PORT,
+  user: '$DB_USER',
+  password: '$DB_PASSWORD',
+  database: '$DB_NAME',
+  ssl: false
+});
+pool.query('SELECT 1').then(() => {
+  console.log('✅ 数据库连接正常');
+  process.exit(0);
+}).catch((err) => {
+  console.error('❌ 错误: 无法连接到数据库');
+  console.error('请检查:');
+  console.error('   1. PostgreSQL 服务是否运行');
+  console.error('   2. 数据库配置是否正确');
+  console.error('   3. 用户权限是否足够');
+  console.error('   4. Docker 容器是否正常运行');
+  console.error('   5. 端口映射是否正确');
+  process.exit(1);
+});
+"
 
 if [ $? -ne 0 ]; then
-    echo "❌ 错误: 无法连接到数据库"
-    echo "请检查:"
-    echo "   1. PostgreSQL 服务是否运行"
-    echo "   2. 数据库配置是否正确"
-    echo "   3. 用户权限是否足够"
     exit 1
 fi
-
-echo "✅ 数据库连接正常"
 
 # 执行初始化脚本
 echo ""
@@ -57,7 +67,7 @@ if [ $? -eq 0 ]; then
     echo "🎉 数据库初始化成功完成！"
     echo ""
     echo "📝 下一步操作:"
-    echo "   1. 启动 AINO 服务器: npm run dev"
+    echo "   1. 启动 AINO 服务器: npm start"
     echo "   2. 访问管理界面: http://localhost:3007"
     echo "   3. 使用默认账号登录: admin@aino.com / admin123"
     echo ""

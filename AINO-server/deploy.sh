@@ -50,10 +50,17 @@ pool.query('SELECT 1').then(() => {
   process.exit(0);
 }).catch((err) => {
   console.error('❌ 数据库连接失败:', err.message);
+  console.error('请检查:');
+  console.error('   1. PostgreSQL 服务是否运行');
+  console.error('   2. Docker 容器是否正常运行');
+  console.error('   3. 端口映射是否正确');
+  console.error('   4. 数据库配置是否正确');
   process.exit(1);
 });
 "; then
     echo "❌ 数据库连接失败，请检查数据库配置"
+    echo "💡 提示: 如果使用 Docker，请确保容器正在运行"
+    echo "   docker ps | grep postgres"
     exit 1
 fi
 
