@@ -144,7 +144,7 @@ show_next_steps() {
 
 # 主函数
 main() {
-    check_dependencies
+    # check_dependencies
     get_db_config
     test_connection
     init_database
