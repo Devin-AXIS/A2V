@@ -69,6 +69,21 @@ async function initDatabase() {
 
         console.log('\n📋 步骤 3: 创建基础数据...');
 
+        // 验证 users 表是否存在
+        const usersTableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'users'
+            )
+        `);
+
+        if (!usersTableCheck.rows[0].exists) {
+            console.log('⚠️  users 表不存在，跳过默认数据创建');
+            console.log('🎉 数据库初始化完成！');
+            return;
+        }
+
         // 创建默认管理员用户
         const adminPassword = await bcrypt.hash('admin123', 10);
         await pool.query(`
