@@ -200,9 +200,11 @@ export async function autoInitDatabase(): Promise<boolean> {
 
         console.log('🚀 开始自动初始化数据库...')
 
-        // 启用UUID扩展
+        // 启用必要扩展: pgcrypto (gen_random_uuid) 与 uuid-ossp（兼容场景）
+        await executeSQL('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+        console.log('✅ 扩展已启用: pgcrypto')
         await executeSQL('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-        console.log('✅ UUID扩展已启用')
+        console.log('✅ 扩展已启用: uuid-ossp')
 
         // 读取并执行SQL文件
         const sqlFile = join(__dirname, '../../scripts/init-database.sql')

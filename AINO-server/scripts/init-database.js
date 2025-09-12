@@ -44,6 +44,14 @@ async function initDatabase() {
 
         console.log('\n📋 步骤 2: 执行数据库结构创建...');
 
+        // 确保启用 pgcrypto 扩展以支持 gen_random_uuid()
+        try {
+            await pool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+            console.log('✅ 已启用扩展: pgcrypto');
+        } catch (extErr) {
+            console.warn('⚠️  启用扩展 pgcrypto 失败:', extErr.message);
+        }
+
         // 读取并执行SQL文件
         const sqlFile = join(__dirname, 'init-database.sql');
         const sqlContent = readFileSync(sqlFile, 'utf8');
