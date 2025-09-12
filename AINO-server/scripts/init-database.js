@@ -143,6 +143,54 @@ async function initDatabase() {
 
         console.log('✅ 默认管理员用户创建完成 (admin@aino.com / admin123)');
 
+        // 验证 applications 表是否存在
+        const applicationsTableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'applications'
+            )
+        `);
+
+        if (!applicationsTableCheck.rows[0].exists) {
+            console.log('⚠️  applications 表不存在，开始创建 applications 表...');
+
+            // 创建 applications 表
+            await pool.query(`
+                CREATE TABLE applications (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL,
+                    description TEXT NULL,
+                    slug TEXT NOT NULL,
+                    owner_id UUID NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'active'::text,
+                    template TEXT NULL DEFAULT 'blank'::text,
+                    config JSONB NULL DEFAULT '{}'::jsonb,
+                    database_config JSONB NULL DEFAULT '{}'::jsonb,
+                    is_public BOOLEAN NULL DEFAULT false,
+                    version TEXT NULL DEFAULT '1.0.0'::text,
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT now()
+                )
+            `);
+            console.log('✅ applications 表创建成功');
+
+            // 添加主键约束
+            await pool.query('ALTER TABLE applications ADD CONSTRAINT applications_pkey PRIMARY KEY (id)');
+            console.log('✅ applications 表主键约束添加成功');
+
+            // 添加唯一约束
+            await pool.query('ALTER TABLE applications ADD CONSTRAINT applications_slug_unique UNIQUE (slug)');
+            console.log('✅ applications 表slug唯一约束添加成功');
+
+            // 添加索引
+            await pool.query('CREATE INDEX applications_owner_status_idx ON applications (owner_id, status)');
+            await pool.query('CREATE INDEX applications_slug_unique_idx ON applications (slug)');
+            console.log('✅ applications 表索引创建成功');
+
+            console.log('✅ applications 表及相关约束创建完成，继续创建默认数据...');
+        }
+
         // 创建默认应用
         const adminUser = await pool.query('SELECT id FROM users WHERE email = $1', ['admin@aino.com']);
         if (adminUser.rows.length > 0) {
