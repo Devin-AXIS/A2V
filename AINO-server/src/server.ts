@@ -9,10 +9,14 @@ async function startServer() {
     console.log('🚀 启动 AINO 服务器...')
 
     // 初始化数据库
-    console.log('📊 初始化数据库...')
+    console.log('📊 检查数据库状态...')
     const dbInitSuccess = await initDatabase()
     if (!dbInitSuccess) {
-      console.error('❌ 数据库初始化失败，服务器启动中止')
+      console.log('\n⚠️  数据库未初始化，请先运行初始化脚本:')
+      console.log('   node scripts/init-database.js')
+      console.log('   或者')
+      console.log('   ./scripts/setup-database.sh')
+      console.log('\n然后重新启动服务器。')
       process.exit(1)
     }
 

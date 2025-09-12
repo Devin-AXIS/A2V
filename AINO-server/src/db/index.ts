@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { env } from '../env'
 import * as schema from './schema'
-import { autoInitDatabase, validateDatabase } from './auto-init'
+import { autoInitDatabase, validateDatabase } from './auto-init-check'
 import { smartDB } from './smart-db'
 
 // 数据库连接配置

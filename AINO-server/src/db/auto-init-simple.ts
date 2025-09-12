@@ -1,0 +1,220 @@
+import { Pool } from 'pg'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+import bcrypt from 'bcryptjs'
+import { env } from '../env'
+import * as schema from './schema'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+// 数据库连接配置
+const PG_URL = `postgres://${env.DB_USER}:${env.DB_PASSWORD}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`
+
+// 创建连接池
+const pool = new Pool({
+    connectionString: PG_URL,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+    ssl: false,
+})
+
+// 创建 Drizzle 实例
+export const db = drizzle(pool, { schema })
+
+/**
+ * 检查表是否存在
+ */
+async function checkTableExists(tableName: string): Promise<boolean> {
+    try {
+        const result = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = $1
+      )
+    `, [tableName])
+        return result.rows[0].exists
+    } catch (error) {
+        console.error(`检查表 ${tableName} 时出错:`, error)
+        return false
+    }
+}
+
+/**
+ * 检查数据库是否已初始化
+ */
+async function isDatabaseInitialized(): Promise<boolean> {
+    try {
+        // 检查核心表是否存在
+        const coreTables = ['users', 'applications', 'modules', 'directories']
+        const tableChecks = await Promise.all(
+            coreTables.map(table => checkTableExists(table))
+        )
+
+        // 如果所有核心表都存在，认为数据库已初始化
+        return tableChecks.every(exists => exists)
+    } catch (error) {
+        console.error('检查数据库初始化状态时出错:', error)
+        return false
+    }
+}
+
+/**
+ * 执行SQL语句
+ */
+async function executeSQL(sql: string): Promise<void> {
+    try {
+        await pool.query(sql)
+    } catch (error) {
+        // 忽略已存在的错误
+        if (!error.message.includes('already exists') &&
+            !error.message.includes('relation') &&
+            !error.message.includes('duplicate') &&
+            !error.message.includes('constraint')) {
+            console.warn('SQL执行警告:', error.message)
+        }
+    }
+}
+
+/**
+ * 自动初始化数据库
+ */
+export async function autoInitDatabase(): Promise<boolean> {
+    try {
+        console.log('🔍 检查数据库初始化状态...')
+
+        // 检查数据库连接
+        const pingResult = await pool.query('SELECT 1 as ok')
+        if (pingResult.rows[0].ok !== 1) {
+            throw new Error('数据库连接失败')
+        }
+        console.log('✅ 数据库连接正常')
+
+        // 检查是否已初始化
+        const isInitialized = await isDatabaseInitialized()
+        if (isInitialized) {
+            console.log('✅ 数据库已初始化，跳过自动创建')
+            return true
+        }
+
+        console.log('🚀 开始自动初始化数据库...')
+
+        // 启用UUID扩展
+        await executeSQL('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        console.log('✅ UUID扩展已启用')
+
+        // 使用现有的初始化脚本
+        console.log('📋 执行数据库初始化脚本...')
+        const { spawn } = await import('child_process')
+        const { promisify } = await import('util')
+
+        return new Promise((resolve) => {
+            const child = spawn('node', ['scripts/init-database.js'], {
+                cwd: join(__dirname, '../..'),
+                stdio: 'inherit',
+                env: {
+                    ...process.env,
+                    DB_HOST: env.DB_HOST,
+                    DB_PORT: env.DB_PORT.toString(),
+                    DB_USER: env.DB_USER,
+                    DB_PASSWORD: env.DB_PASSWORD,
+                    DB_NAME: env.DB_NAME
+                }
+            })
+
+            child.on('close', (code) => {
+                if (code === 0) {
+                    console.log('✅ 数据库初始化脚本执行成功')
+                    resolve(true)
+                } else {
+                    console.error('❌ 数据库初始化脚本执行失败')
+                    resolve(false)
+                }
+            })
+
+            child.on('error', (error) => {
+                console.error('❌ 执行初始化脚本时出错:', error)
+                resolve(false)
+            })
+        })
+
+    } catch (error) {
+        console.error('❌ 数据库自动初始化失败:', error.message)
+        console.error('错误详情:', error)
+        return false
+    }
+}
+
+/**
+ * 验证数据库结构
+ */
+export async function validateDatabase(): Promise<boolean> {
+    try {
+        console.log('🔍 验证数据库结构...')
+
+        // 验证表是否创建成功
+        const tables = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `)
+
+        console.log(`✅ 发现 ${tables.rows.length} 个表:`)
+        tables.rows.forEach(table => {
+            console.log(`   - ${table.table_name}`)
+        })
+
+        // 验证索引
+        const indexes = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+    `)
+
+        console.log(`✅ 发现 ${indexes.rows[0].count} 个索引`)
+
+        // 验证外键约束
+        const foreignKeys = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM information_schema.table_constraints
+      WHERE constraint_type = 'FOREIGN KEY' AND table_schema = 'public'
+    `)
+
+        console.log(`✅ 发现 ${foreignKeys.rows[0].count} 个外键约束`)
+
+        return true
+
+    } catch (error) {
+        console.error('❌ 数据库验证失败:', error.message)
+        return false
+    }
+}
+
+/**
+ * 数据库健康检查
+ */
+export async function pingDB(): Promise<boolean> {
+    try {
+        const result = await pool.query('SELECT 1 as ok')
+        return result.rows[0].ok === 1
+    } catch (error) {
+        console.error('Database ping failed:', error)
+        return false
+    }
+}
+
+/**
+ * 关闭数据库连接
+ */
+export async function closeDB(): Promise<void> {
+    await pool.end()
+}
+
+// 导出数据库实例
+export { pool }

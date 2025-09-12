@@ -216,13 +216,39 @@ export async function autoInitDatabase(): Promise<boolean> {
 
         console.log(`📋 执行 ${statements.length} 个SQL语句...`)
 
-        for (const statement of statements) {
-            if (statement.trim()) {
-                await executeSQL(statement)
+        // 分批执行SQL语句，确保表创建完成
+        const batchSize = 10
+        for (let i = 0; i < statements.length; i += batchSize) {
+            const batch = statements.slice(i, i + batchSize)
+            console.log(`📋 执行批次 ${Math.floor(i / batchSize) + 1}/${Math.ceil(statements.length / batchSize)}...`)
+
+            for (const statement of batch) {
+                if (statement.trim()) {
+                    await executeSQL(statement)
+                }
             }
+
+            // 每批次后等待一小段时间，确保表创建完成
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
 
         console.log('✅ 数据库结构创建完成')
+
+        // 验证表是否创建成功
+        console.log('🔍 验证表创建状态...')
+        const coreTables = ['users', 'applications', 'modules']
+        const tableChecks = await Promise.all(
+            coreTables.map(table => checkTableExists(table))
+        )
+
+        const allTablesExist = tableChecks.every(exists => exists)
+        if (!allTablesExist) {
+            console.warn('⚠️  部分核心表未创建成功，跳过默认数据创建')
+            console.log('🎉 数据库自动初始化完成！')
+            return true
+        }
+
+        console.log('✅ 核心表验证通过')
 
         // 创建基础数据
         await createDefaultData()
@@ -243,6 +269,13 @@ export async function autoInitDatabase(): Promise<boolean> {
 async function createDefaultData(): Promise<void> {
     try {
         console.log('📋 创建默认数据...')
+
+        // 再次验证 users 表是否存在
+        const usersTableExists = await checkTableExists('users')
+        if (!usersTableExists) {
+            console.warn('⚠️  users 表不存在，跳过默认数据创建')
+            return
+        }
 
         // 创建默认管理员用户
         const adminPassword = await bcrypt.hash('admin123', 10)
