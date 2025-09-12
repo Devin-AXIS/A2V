@@ -1,15 +1,29 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import type { UnifiedThemeContextType, UnifiedThemePreset, FontConfig, ComponentColorConfig, ChartColorConfig } from "@/types"
+import type { UnifiedThemeContextType, UnifiedThemePreset, FontColorConfig, ComponentColorConfig, ChartColorConfig } from "@/types"
 import { convertTokenValueToCSSValue, updateCSSVariable } from "@/lib/color-variable-mapper"
 import { unifiedThemePresets, getThemePreset } from "@/config/unified-theme-presets"
 
 const UnifiedThemeContext = createContext<UnifiedThemeContextType | undefined>(undefined)
 
 export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
-  const [currentTheme, setCurrentTheme] = useState<UnifiedThemePreset>(unifiedThemePresets[0])
+  const [currentTheme, setCurrentTheme] = useState<UnifiedThemePreset>(getThemePreset("极简") || unifiedThemePresets[0])
   const [isHydrated, setIsHydrated] = useState(false)
+  const API_BASE = (typeof process !== "undefined" && (process as any).env?.NEXT_PUBLIC_API_BASE) || "http://localhost:3001"
+
+  const getAppId = useCallback((): string | null => {
+    try {
+      if (typeof window === "undefined") return null
+      return (
+        localStorage.getItem("CURRENT_APP_ID") ||
+        localStorage.getItem("APP_ID") ||
+        null
+      )
+    } catch {
+      return null
+    }
+  }, [])
 
   // 检查 localStorage 是否可用
   const isLocalStorageAvailable = useCallback(() => {
@@ -24,31 +38,60 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // 从 localStorage 读取保存的主题配置
+  // 优先尝试从服务端读取主题；失败则回退到 localStorage
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && isLocalStorageAvailable()) {
-        const savedThemeName = localStorage.getItem("aino_unified_theme")
-        if (savedThemeName) {
-          const savedTheme = getThemePreset(savedThemeName)
-          if (savedTheme) {
-            setCurrentTheme(savedTheme)
+    let cancelled = false
+    const init = async () => {
+      try {
+        const appId = getAppId()
+        if (appId) {
+          const key = `unified-theme-${appId}`
+          const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(key)}`
+          const res = await fetch(url, { method: "GET" })
+          if (res.ok) {
+            const body = await res.json().catch(() => null as any)
+            const data = body?.data ?? body
+            const themeName: string | undefined = data?.themeName || data?.name || (typeof data === "string" ? data : undefined)
+            if (themeName) {
+              const serverTheme = getThemePreset(themeName)
+              if (!cancelled && serverTheme) {
+                setCurrentTheme(serverTheme)
+                setIsHydrated(true)
+                return
+              }
+            }
           }
         }
+      } catch (e) {
+        // ignore and fallback to localStorage
       }
-    } catch (error) {
-      console.warn("Failed to load unified theme from localStorage:", error)
-      // 使用默认主题作为回退
-      setCurrentTheme(unifiedThemePresets[0])
-    } finally {
-      setIsHydrated(true)
+
+      // fallback: localStorage
+      try {
+        if (typeof window !== "undefined" && isLocalStorageAvailable()) {
+          const savedThemeName = localStorage.getItem("aino_unified_theme")
+          if (savedThemeName) {
+            const savedTheme = getThemePreset(savedThemeName)
+            if (savedTheme) {
+              setCurrentTheme(savedTheme)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to load unified theme from localStorage:", error)
+        setCurrentTheme(getThemePreset("极简") || unifiedThemePresets[0])
+      } finally {
+        if (!cancelled) setIsHydrated(true)
+      }
     }
-  }, [isLocalStorageAvailable])
+    init()
+    return () => { cancelled = true }
+  }, [API_BASE, getAppId, isLocalStorageAvailable])
 
   // 主题变更时保存到 localStorage
   useEffect(() => {
     if (!isHydrated) return // 避免在初始水合前保存
-    
+
     try {
       if (typeof window !== "undefined" && isLocalStorageAvailable()) {
         localStorage.setItem("aino_unified_theme", currentTheme.name)
@@ -58,18 +101,41 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [currentTheme, isHydrated, isLocalStorageAvailable])
 
+  // 主题变更时保存到服务端（与 localStorage 并行，供多用户共享）
+  useEffect(() => {
+    if (!isHydrated) return
+    let aborted = false
+    const save = async () => {
+      try {
+        const appId = getAppId()
+        if (!appId) return
+        const key = `unified-theme-${appId}`
+        const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(key)}`
+        await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ themeName: currentTheme.name, updatedAt: Date.now() })
+        }).catch(() => { })
+      } catch (e) {
+        // ignore server save error; localStorage 已作为回退
+      }
+    }
+    save()
+    return () => { aborted = true }
+  }, [API_BASE, getAppId, currentTheme.name, isHydrated])
+
   // 应用主题
   const applyTheme = useCallback((themeName: string) => {
     const theme = getThemePreset(themeName)
     if (theme) {
       setCurrentTheme(theme)
-      
+
       // 应用字体颜色配置
       applyFontColors(theme.config.fontColors)
-      
+
       // 应用组件颜色配置
       applyComponentColors(theme.config.componentColors)
-      
+
       // 应用数据图配色配置
       applyChartColors(theme.config.chartColors)
     }
@@ -88,7 +154,7 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     // 更新CSS变量
     document.documentElement.style.setProperty('--font-color-heading', fontColors.heading)
     document.documentElement.style.setProperty('--font-color-body', fontColors.body)
-    
+
     // 更新全局字体颜色样式 - 智能处理按钮文字颜色
     const styleElement = document.getElementById('unified-font-color-style') || createFontColorStyleElement()
     styleElement.textContent = `
@@ -104,7 +170,7 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty('--component-primary', colors.primary)
     document.documentElement.style.setProperty('--component-secondary', colors.secondary)
     document.documentElement.style.setProperty('--component-danger', colors.danger)
-    
+
     // 智能计算按钮文字颜色
     const getOptimalTextColor = (bgColor: string) => {
       // 简单的亮度计算
@@ -115,11 +181,11 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
       const brightness = (r * 299 + g * 587 + b * 114) / 1000
       return brightness > 128 ? '#000000' : '#FFFFFF'
     }
-    
+
     const primaryTextColor = getOptimalTextColor(colors.primary)
     const secondaryTextColor = getOptimalTextColor(colors.secondary)
     const dangerTextColor = getOptimalTextColor(colors.danger)
-    
+
     // 将统一主题色同步到 Tailwind 使用的CSS变量，确保通用 Button 等能读取到
     try {
       // 主色：同步到 --primary-500 与前景 --primary-foreground
@@ -166,7 +232,7 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
         color: ${dangerTextColor} !important; 
       }
     `
-    
+
     // 通知其他Provider更新组件颜色
     const componentColorUpdateEvent = new CustomEvent('unified-theme-component-colors-updated', {
       detail: {
@@ -187,7 +253,7 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     colors.colors.forEach((color, index) => {
       document.documentElement.style.setProperty(`--chart-${index + 1}`, color)
     })
-    
+
     // 同时更新图表调色板，确保基础组件（如PillButton、FloatingButton）也能使用新颜色
     const chartColorUpdateEvent = new CustomEvent('unified-theme-chart-colors-updated', {
       detail: colors.colors
@@ -261,6 +327,18 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
     document.head.appendChild(styleElement)
     return styleElement
   }
+
+  // 在初始水合后，立即根据当前主题应用颜色变量，确保默认主题真正生效
+  useEffect(() => {
+    if (!isHydrated) return
+    try {
+      applyFontColors(currentTheme.config.fontColors)
+      applyComponentColors(currentTheme.config.componentColors)
+      applyChartColors(currentTheme.config.chartColors)
+    } catch (error) {
+      console.warn('Failed to apply unified theme on hydrate:', error)
+    }
+  }, [isHydrated, currentTheme, applyFontColors, applyComponentColors, applyChartColors])
 
   const value: UnifiedThemeContextType = {
     currentTheme,

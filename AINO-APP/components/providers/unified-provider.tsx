@@ -11,6 +11,7 @@ import { CardThemeProvider } from "./card-theme-provider"
 import { FrostedEffectProvider } from "./frosted-effect-provider"
 import { EnhancedErrorBoundary } from "./enhanced-error-boundary"
 import { UnifiedThemeProvider } from "./unified-theme-provider"
+import { GlobalRadiusProvider } from "./global-radius-provider"
 import { EnvironmentWarning } from "@/components/feedback/environment-warning"
 
 interface UnifiedProviderProps {
@@ -25,11 +26,11 @@ interface UnifiedProviderProps {
  * 将多个 Provider 合并为一个，减少嵌套层级，提升性能
  * 遵循约束文档：不影响任何功能和使用交互
  */
-export function UnifiedProvider({ 
-  children, 
-  locale, 
-  dict, 
-  showDebugInfo = process.env.NODE_ENV === 'development' 
+export function UnifiedProvider({
+  children,
+  locale,
+  dict,
+  showDebugInfo = process.env.NODE_ENV === 'development'
 }: UnifiedProviderProps) {
   return (
     <LocaleProvider initialLocale={locale}>
@@ -40,12 +41,14 @@ export function UnifiedProvider({
               <UnifiedChartThemeProvider>
                 <DesignConfigProvider>
                   <CardThemeProvider>
-                    <FrostedEffectProvider>
-                      <EnhancedErrorBoundary showDebugInfo={showDebugInfo}>
-                        <EnvironmentWarning />
-                        {children}
-                      </EnhancedErrorBoundary>
-                    </FrostedEffectProvider>
+                    <GlobalRadiusProvider>
+                      <FrostedEffectProvider>
+                        <EnhancedErrorBoundary showDebugInfo={showDebugInfo}>
+                          <EnvironmentWarning />
+                          {children}
+                        </EnhancedErrorBoundary>
+                      </FrostedEffectProvider>
+                    </GlobalRadiusProvider>
                   </CardThemeProvider>
                 </DesignConfigProvider>
               </UnifiedChartThemeProvider>
