@@ -91,9 +91,39 @@ async function initDatabase() {
         `);
 
         if (!usersTableCheck.rows[0].exists) {
-            console.log('⚠️  users 表不存在，跳过默认数据创建');
-            console.log('🎉 数据库初始化完成！');
-            return;
+            console.log('⚠️  users 表不存在，开始创建 users 表...');
+
+            // 创建 users 表
+            await pool.query(`
+                CREATE TABLE users (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    roles TEXT[] NOT NULL DEFAULT '{user}'::text[],
+                    avatar TEXT NULL,
+                    status TEXT NOT NULL DEFAULT 'active'::text,
+                    last_login_at TIMESTAMP NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT now()
+                )
+            `);
+            console.log('✅ users 表创建成功');
+
+            // 添加主键约束
+            await pool.query('ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id)');
+            console.log('✅ users 表主键约束添加成功');
+
+            // 添加唯一约束
+            await pool.query('ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)');
+            console.log('✅ users 表邮箱唯一约束添加成功');
+
+            // 添加索引
+            await pool.query('CREATE INDEX users_email_unique_idx ON users (email)');
+            await pool.query('CREATE INDEX users_status_idx ON users (status)');
+            console.log('✅ users 表索引创建成功');
+
+            console.log('✅ users 表及相关约束创建完成，继续创建默认数据...');
         }
 
         // 创建默认管理员用户
