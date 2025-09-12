@@ -36,11 +36,6 @@ print_info() {
 check_dependencies() {
     print_info "检查系统依赖..."
     
-    if ! command -v node &> /dev/null; then
-        print_error "未找到 Node.js，请先安装 Node.js"
-        exit 1
-    fi
-    
     if ! command -v psql &> /dev/null; then
         print_error "未找到 PostgreSQL 客户端，请先安装 PostgreSQL"
         exit 1
