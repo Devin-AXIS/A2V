@@ -519,6 +519,29 @@ async function initDatabase() {
 
             console.log('✅ 默认应用创建完成');
 
+            // 确保 directories 表存在
+            await ensureTableExists('directories', `
+                CREATE TABLE directories (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    application_id UUID NOT NULL,
+                    name TEXT NOT NULL,
+                    slug TEXT NOT NULL,
+                    description TEXT NULL,
+                    config JSONB NULL DEFAULT '{}'::jsonb,
+                    is_active BOOLEAN NULL DEFAULT true,
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT now()
+                )
+            `, [
+                'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
+                'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+                'ALTER TABLE directories ADD CONSTRAINT directories_slug_unique UNIQUE (slug)'
+            ], [
+                'CREATE INDEX directories_application_id_idx ON directories (application_id)',
+                'CREATE INDEX directories_slug_idx ON directories (slug)',
+                'CREATE INDEX directories_is_active_idx ON directories (is_active)'
+            ]);
+
             // 确保 modules 表存在
             await ensureTableExists('modules', `
                 CREATE TABLE modules (
