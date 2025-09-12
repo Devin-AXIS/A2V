@@ -9,17 +9,49 @@ echo "🚀 AINO 新服务器一键部署脚本"
 echo "=================================="
 
 # 检查 Node.js 和 npm
-if ! command -v node &> /dev/null; then
+echo "🔍 检查 Node.js 安装状态..."
+
+# 检查 Node.js
+if command -v node &> /dev/null; then
+    NODE_VERSION=$(node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION"
+elif [ -f "/usr/bin/node" ]; then
+    NODE_VERSION=$(/usr/bin/node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION (在 /usr/bin/node)"
+    # 创建软链接或添加到 PATH
+    if ! command -v node &> /dev/null; then
+        echo "📋 添加 Node.js 到 PATH..."
+        export PATH="/usr/bin:$PATH"
+    fi
+elif [ -f "/usr/local/bin/node" ]; then
+    NODE_VERSION=$(/usr/local/bin/node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION (在 /usr/local/bin/node)"
+    export PATH="/usr/local/bin:$PATH"
+else
     echo "❌ Node.js 未安装，请先安装 Node.js"
+    echo "💡 Ubuntu 安装命令:"
+    echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+    echo "   sudo apt-get install -y nodejs"
     exit 1
 fi
 
-if ! command -v npm &> /dev/null; then
+# 检查 npm
+if command -v npm &> /dev/null; then
+    NPM_VERSION=$(npm --version 2>/dev/null || echo "unknown")
+    echo "✅ npm 已安装: $NPM_VERSION"
+elif [ -f "/usr/bin/npm" ]; then
+    NPM_VERSION=$(/usr/bin/npm --version 2>/dev/null || echo "unknown")
+    echo "✅ npm 已安装: $NPM_VERSION (在 /usr/bin/npm)"
+    export PATH="/usr/bin:$PATH"
+elif [ -f "/usr/local/bin/npm" ]; then
+    NPM_VERSION=$(/usr/local/bin/npm --version 2>/dev/null || echo "unknown")
+    echo "✅ npm 已安装: $NPM_VERSION (在 /usr/local/bin/npm)"
+    export PATH="/usr/local/bin:$PATH"
+else
     echo "❌ npm 未安装，请先安装 npm"
+    echo "💡 npm 通常随 Node.js 一起安装"
     exit 1
 fi
-
-echo "✅ Node.js 和 npm 已安装"
 
 # 检查项目目录
 if [ ! -f "package.json" ]; then
@@ -31,7 +63,33 @@ echo "✅ 项目目录检查通过"
 
 # 安装依赖
 echo "📦 安装项目依赖..."
-npm install
+
+# 检查包管理器
+if [ -f "pnpm-lock.yaml" ]; then
+    echo "📋 检测到 pnpm 项目，使用 pnpm 安装依赖..."
+    if command -v pnpm &> /dev/null; then
+        pnpm install
+    elif [ -f "/usr/bin/pnpm" ]; then
+        /usr/bin/pnpm install
+    elif [ -f "/usr/local/bin/pnpm" ]; then
+        /usr/local/bin/pnpm install
+    else
+        echo "⚠️  pnpm 未安装，尝试使用 npm 安装..."
+        echo "💡 建议安装 pnpm: npm install -g pnpm"
+        npm install --legacy-peer-deps
+    fi
+elif [ -f "yarn.lock" ]; then
+    echo "📋 检测到 yarn 项目，使用 yarn 安装依赖..."
+    if command -v yarn &> /dev/null; then
+        yarn install
+    else
+        echo "⚠️  yarn 未安装，使用 npm 安装..."
+        npm install --legacy-peer-deps
+    fi
+else
+    echo "📋 使用 npm 安装依赖..."
+    npm install --legacy-peer-deps
+fi
 
 # 检查数据库连接
 echo "🔍 检查数据库连接..."
@@ -126,5 +184,26 @@ echo "健康检查: http://localhost:3007/health"
 echo "按 Ctrl+C 停止服务器"
 echo "=================================="
 
+# 检查是否需要编译
+if [ ! -d "dist" ] || [ ! -f "dist/server.js" ]; then
+    echo "📋 检测到需要编译 TypeScript 代码..."
+    if [ -f "pnpm-lock.yaml" ]; then
+        echo "📋 使用 pnpm 编译..."
+        pnpm run build
+    elif [ -f "yarn.lock" ]; then
+        echo "📋 使用 yarn 编译..."
+        yarn build
+    else
+        echo "📋 使用 npm 编译..."
+        npm run build
+    fi
+fi
+
 # 启动服务器
-npm start
+if [ -f "pnpm-lock.yaml" ]; then
+    pnpm start
+elif [ -f "yarn.lock" ]; then
+    yarn start
+else
+    npm start
+fi

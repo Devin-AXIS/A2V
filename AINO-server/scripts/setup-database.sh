@@ -7,9 +7,58 @@ echo "🚀 AINO 数据库初始化脚本"
 echo "================================"
 
 # 检查Node.js是否安装
-if ! command -v node &> /dev/null; then
+echo "🔍 检查 Node.js 安装状态..."
+
+# 检查 Node.js
+if command -v node &> /dev/null; then
+    NODE_VERSION=$(node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION"
+elif [ -f "/usr/bin/node" ]; then
+    NODE_VERSION=$(/usr/bin/node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION (在 /usr/bin/node)"
+    # 添加 Node.js 到 PATH
+    export PATH="/usr/bin:$PATH"
+elif [ -f "/usr/local/bin/node" ]; then
+    NODE_VERSION=$(/usr/local/bin/node --version 2>/dev/null || echo "unknown")
+    echo "✅ Node.js 已安装: $NODE_VERSION (在 /usr/local/bin/node)"
+    export PATH="/usr/local/bin:$PATH"
+else
     echo "❌ 错误: 未找到 Node.js，请先安装 Node.js"
+    echo "💡 Ubuntu 安装命令:"
+    echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+    echo "   sudo apt-get install -y nodejs"
     exit 1
+fi
+
+# 检查包管理器并安装依赖（如果需要）
+if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
+    echo "📦 检测到需要安装依赖..."
+    
+    if [ -f "pnpm-lock.yaml" ]; then
+        echo "📋 检测到 pnpm 项目，使用 pnpm 安装依赖..."
+        if command -v pnpm &> /dev/null; then
+            pnpm install
+        elif [ -f "/usr/bin/pnpm" ]; then
+            /usr/bin/pnpm install
+        elif [ -f "/usr/local/bin/pnpm" ]; then
+            /usr/local/bin/pnpm install
+        else
+            echo "⚠️  pnpm 未安装，尝试使用 npm 安装..."
+            echo "💡 建议安装 pnpm: npm install -g pnpm"
+            npm install --legacy-peer-deps
+        fi
+    elif [ -f "yarn.lock" ]; then
+        echo "📋 检测到 yarn 项目，使用 yarn 安装依赖..."
+        if command -v yarn &> /dev/null; then
+            yarn install
+        else
+            echo "⚠️  yarn 未安装，使用 npm 安装..."
+            npm install --legacy-peer-deps
+        fi
+    else
+        echo "📋 使用 npm 安装依赖..."
+        npm install --legacy-peer-deps
+    fi
 fi
 
 # 设置默认数据库配置
