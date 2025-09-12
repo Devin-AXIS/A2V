@@ -93,8 +93,8 @@ fi
 
 # 检查数据库连接
 echo "🔍 检查数据库连接..."
-if ! node -e "
-const { Pool } = require('pg');
+if ! node --input-type=module -e "
+import { Pool } from 'pg';
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5433'),
@@ -124,8 +124,8 @@ fi
 
 # 检查数据库是否已初始化
 echo "🔍 检查数据库初始化状态..."
-if node -e "
-const { Pool } = require('pg');
+if node --input-type=module -e "
+import { Pool } from 'pg';
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5433'),

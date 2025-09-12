@@ -77,8 +77,8 @@ echo ""
 
 # 检查数据库连接（使用Node.js而不是psql，支持Docker环境）
 echo "🔍 检查数据库连接..."
-node -e "
-const { Pool } = require('pg');
+node --input-type=module -e "
+import { Pool } from 'pg';
 const pool = new Pool({
   host: '$DB_HOST',
   port: $DB_PORT,
