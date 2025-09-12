@@ -99,14 +99,46 @@ export function useBuilderController({
     function onError(e: ErrorEvent) {
       const msg = String((e?.error as any)?.message || e.message || "")
       if (msg.includes("Loading chunk") || msg.includes("ChunkLoadError")) {
-        window.location.reload()
+        try {
+          const key = "__chunk_reload_once__"
+          const alreadyReloaded = typeof window !== "undefined" && window.sessionStorage?.getItem(key) === "1"
+          if (!alreadyReloaded) {
+            window.sessionStorage?.setItem(key, "1")
+            window.location.reload()
+          } else {
+            // 避免无限刷新：第二次仍报错则不再刷新
+            console.error("Loading chunk failed again; skip reload to avoid loop.")
+          }
+        } catch {
+          // 存储不可用时，退化为带参数的一次性跳转
+          const url = new URL(window.location.href)
+          if (!url.searchParams.has("noChunkReload")) {
+            url.searchParams.set("noChunkReload", "1")
+            window.location.replace(url.toString())
+          }
+        }
       }
     }
     function onRejected(e: PromiseRejectionEvent) {
       const reason = e?.reason
       const msg = typeof reason === "string" ? reason : String(reason?.message || "")
       if (msg.includes("Loading chunk") || msg.includes("ChunkLoadError")) {
-        window.location.reload()
+        try {
+          const key = "__chunk_reload_once__"
+          const alreadyReloaded = typeof window !== "undefined" && window.sessionStorage?.getItem(key) === "1"
+          if (!alreadyReloaded) {
+            window.sessionStorage?.setItem(key, "1")
+            window.location.reload()
+          } else {
+            console.error("Loading chunk failed again (promise); skip reload to avoid loop.")
+          }
+        } catch {
+          const url = new URL(window.location.href)
+          if (!url.searchParams.has("noChunkReload")) {
+            url.searchParams.set("noChunkReload", "1")
+            window.location.replace(url.toString())
+          }
+        }
       }
     }
     window.addEventListener("error", onError)
@@ -139,10 +171,10 @@ export function useBuilderController({
       toast({ description: locale === "zh" ? "当前角色无权新增记录" : "No permission to add record", variant: "destructive" as any })
       return
     }
-    
+
     // 检查是否有内容分类
     const hasCategories = currentDir.categories && currentDir.categories.length > 0
-    
+
     if (hasCategories) {
       // 有分类时，先弹出分类选择对话框
       setOpenCategorySelection(true)
@@ -157,16 +189,16 @@ export function useBuilderController({
     const next = structuredClone(app)
     const realDir = findDirMutable(next, currentDir.id)
     const rec = createDefaultRecord(realDir)
-    
+
     // 如果有分类路径，设置到记录中
     if (categoryPath) {
       // 查找分类字段
       const categoryField = realDir.fields.find(f => f.key === "category")
       if (categoryField) {
-        ;(rec as any)[categoryField.key] = categoryPath
+        ; (rec as any)[categoryField.key] = categoryPath
       }
     }
-    
+
     realDir.records.push(rec)
     persist(next)
     openDrawer(realDir.id, rec.id)
@@ -284,21 +316,21 @@ export function useBuilderController({
       toast({ description: locale === "zh" ? "当前角色无权删除目录" : "Current role has no permission to delete directory", variant: "destructive" as any })
       return
     }
-    
+
     // 检查目录是否有记录
     if (d.records && d.records.length > 0) {
       console.log('Directory has records:', d.records.length)
-      toast({ 
-        description: locale === "zh" 
+      toast({
+        description: locale === "zh"
           ? `无法删除目录「${d.name}」，请先删除目录中的 ${d.records.length} 条记录`
-          : `Cannot delete directory "${d.name}", please delete ${d.records.length} records first`, 
-        variant: "destructive" as any 
+          : `Cannot delete directory "${d.name}", please delete ${d.records.length} records first`,
+        variant: "destructive" as any
       })
       return
     }
 
     // 确认删除
-    if (!confirm(locale === "zh" 
+    if (!confirm(locale === "zh"
       ? `确定要删除目录「${d.name}」吗？此操作不可撤销。`
       : `Are you sure you want to delete directory "${d.name}"? This action cannot be undone.`
     )) {
@@ -310,16 +342,16 @@ export function useBuilderController({
     const next = structuredClone(app)
     const mm = next.modules.find((x) => x.id === currentModule.id)!
     mm.directories = mm.directories.filter((dir) => dir.id !== d.id)
-    
+
     // 如果删除的是当前选中的目录，切换到第一个目录
     if (d.id === dirId) {
       const firstDir = mm.directories[0]?.id || null
       setDirId(firstDir)
     }
-    
+
     persist(next)
-    toast({ 
-      description: locale === "zh" 
+    toast({
+      description: locale === "zh"
         ? `目录「${d.name}」已删除`
         : `Directory "${d.name}" has been deleted`
     })

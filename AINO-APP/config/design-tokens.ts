@@ -157,7 +157,7 @@ export const defaultDesignTokens: DesignTokens = {
         description: "页面刷新后的真实初始状态",
         values: {
           card: "full",
-          button: "full", 
+          button: "full",
           input: "full",
           modal: "full"
         }
@@ -176,20 +176,20 @@ export const defaultDesignTokens: DesignTokens = {
         name: "圆角",
         description: "明显圆角，友好亲和",
         values: {
-          card: "lg",
-          button: "lg",
-          input: "lg",
-          modal: "lg"
+          card: "xl",
+          button: "xl",
+          input: "xl",
+          modal: "xl"
         }
       },
       soft: {
         name: "柔和",
         description: "大圆角，柔和舒适",
         values: {
-          card: "xl",
-          button: "xl",
-          input: "xl",
-          modal: "xl"
+          card: "lg",
+          button: "lg",
+          input: "lg",
+          modal: "lg"
         }
       }
     }

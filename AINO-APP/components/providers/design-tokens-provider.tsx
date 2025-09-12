@@ -31,8 +31,16 @@ export function DesignTokensProvider({ children }: { children: ReactNode }) {
       'colors.background.primary', 'colors.background.secondary', 'colors.background.tertiary',
       'colors.text.primary', 'colors.text.secondary', 'colors.text.tertiary', 'colors.text.inverse'
     ]
-    
-    updateCSSVariablesFromTokens(tokens, colorTokenPaths)
+
+    // 避免覆盖统一主题设定的主色/辅色/危险色（与统一主题共享的 CSS 变量）
+    const filtered = colorTokenPaths.filter((p) => {
+      if (p.startsWith('colors.primary.')) return false
+      if (p.startsWith('colors.secondary.')) return false
+      if (p.startsWith('colors.semantic.error.')) return false
+      return true
+    })
+
+    updateCSSVariablesFromTokens(tokens, filtered)
   }, [tokens])
 
   // 更新设计令牌 - 使用深度合并
@@ -40,7 +48,7 @@ export function DesignTokensProvider({ children }: { children: ReactNode }) {
     // 深度合并函数
     const deepMerge = (target: any, source: any): any => {
       const result = { ...target }
-      
+
       for (const key in source) {
         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
           result[key] = deepMerge(target[key] || {}, source[key])
@@ -48,17 +56,25 @@ export function DesignTokensProvider({ children }: { children: ReactNode }) {
           result[key] = source[key]
         }
       }
-      
+
       return result
     }
-    
+
     const newTokens = deepMerge(tokens, updates)
     setTokens(newTokens)
-    
+
     // 自动同步颜色相关的更新到CSS变量
     const updatedColorPaths = Object.keys(updates).filter(key => key.startsWith('colors.'))
     if (updatedColorPaths.length > 0) {
-      updateCSSVariablesFromTokens(newTokens, updatedColorPaths)
+      const filtered = updatedColorPaths.filter((p) => {
+        if (p.startsWith('colors.primary.')) return false
+        if (p.startsWith('colors.secondary.')) return false
+        if (p.startsWith('colors.semantic.error.')) return false
+        return true
+      })
+      if (filtered.length > 0) {
+        updateCSSVariablesFromTokens(newTokens, filtered)
+      }
     }
   }
 
@@ -79,21 +95,24 @@ export function DesignTokensProvider({ children }: { children: ReactNode }) {
       }
       return current[key]
     }, tokens as any)
-    
+
     target[lastKey] = value
-    
-    // 如果是颜色相关的令牌，自动同步到CSS变量
+
+    // 如果是颜色相关的令牌，自动同步到CSS变量（避开与统一主题共享的主/辅/危险色）
     if (path.startsWith('colors.')) {
-      updateCSSVariablesFromTokens(tokens, [path])
+      const shouldSkip = path.startsWith('colors.primary.') || path.startsWith('colors.secondary.') || path.startsWith('colors.semantic.error.')
+      if (!shouldSkip) {
+        updateCSSVariablesFromTokens(tokens, [path])
+      }
     }
-    
+
     setTokens({ ...tokens })
   }
 
   // 生成CSS变量
   const generateCSSVariables = (): string => {
     let css = ':root {\n'
-    
+
     // 生成颜色变量
     Object.entries(tokens.colors).forEach(([category, colors]) => {
       if (typeof colors === 'object' && colors !== null) {
@@ -104,7 +123,7 @@ export function DesignTokensProvider({ children }: { children: ReactNode }) {
         })
       }
     })
-    
+
     css += '}'
     return css
   }

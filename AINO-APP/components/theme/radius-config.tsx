@@ -13,7 +13,7 @@ export function RadiusConfig() {
   const config = useUnifiedConfig()
   const { locale } = useLocale()
   const isEnglish = locale === "en"
-  
+
   const [selectedPreset, setSelectedPreset] = useState(config.radius.activePreset)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -51,7 +51,7 @@ export function RadiusConfig() {
     // 添加事件监听器
     window.addEventListener('radiusUpdated', handleRadiusUpdate)
     window.addEventListener('forceRadiusUpdate', handleForceRadiusUpdate)
-    
+
     // 页面加载完成后应用边角
     if (document.readyState === 'complete') {
       applyInitialRadius()
@@ -76,35 +76,35 @@ export function RadiusConfig() {
   const handlePresetChange = (presetKey: string) => {
     setSelectedPreset(presetKey)
     config.radius.setActivePreset(presetKey)
-    
+
     // 添加视觉反馈
     document.body.style.setProperty('--force-radius-update', '1')
     setTimeout(() => {
       document.body.style.removeProperty('--force-radius-update')
     }, 100)
-    
+
     console.log('🔄 边角预设已切换:', presetKey)
   }
 
   // 手动更新"默认"预设为当前状态
   const handleUpdateDefault = () => {
     config.radius.updateDefaultPreset()
-    
+
     // 显示成功提示
     setShowSuccessMessage(true)
     setTimeout(() => setShowSuccessMessage(false), 3000)
-    
+
     console.log('✅ 已手动更新"默认"预设')
   }
 
   // 手动捕获初始状态
   const handleCaptureInitial = () => {
     config.radius.captureInitialRadius()
-    
+
     // 显示成功提示
     setShowSuccessMessage(true)
     setTimeout(() => setShowSuccessMessage(false), 3000)
-    
+
     console.log('🎯 已手动捕获初始状态')
   }
 
@@ -144,8 +144,8 @@ export function RadiusConfig() {
           {isEnglish ? "Global Radius Configuration" : "全局边角配置"}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {isEnglish 
-            ? "Configure corner radius for all components globally" 
+          {isEnglish
+            ? "Configure corner radius for all components globally"
             : "全局配置所有组件的边角样式"
           }
         </p>
