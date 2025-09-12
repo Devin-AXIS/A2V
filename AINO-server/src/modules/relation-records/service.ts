@@ -1,7 +1,7 @@
 import { RelationRecordsRepository } from "./repo"
 import { db } from "../../db"
-import type { 
-  CreateRelationRequest, 
+import type {
+  CreateRelationRequest,
   BatchCreateRelationRequest,
   DeleteRelationRequest,
   GetRelationsRequest,
@@ -16,7 +16,7 @@ export class RelationRecordsService {
   async createRelation(data: CreateRelationRequest) {
     // 使用幂等写入，避免重复创建
     const result = await this.repo.createIdempotent(data)
-    
+
     if (!result.created) {
       // 关联关系已存在，直接返回
       return result.relation
@@ -46,7 +46,7 @@ export class RelationRecordsService {
   async batchCreateRelations(data: BatchCreateRelationRequest) {
     return await db.transaction(async (tx) => {
       const results = []
-      
+
       for (const relation of data.relations) {
         try {
           // 在事务中使用幂等写入
@@ -54,9 +54,9 @@ export class RelationRecordsService {
             ...relation,
             applicationId: data.applicationId,
           })
-          
+
           results.push(result.relation)
-          
+
           // 如果是双向关联，创建反向关联
           if (relation.bidirectional && relation.toFieldKey) {
             const reverseRelation: CreateRelationRequest = {
@@ -94,7 +94,7 @@ export class RelationRecordsService {
         limit: 1000, // 获取所有相关关联
       })
 
-      const targetRelation = relations.relations.find(rel => 
+      const targetRelation = relations.relations.find(rel =>
         rel.fromDirectoryId === data.fromDirectoryId &&
         rel.fromRecordId === data.fromRecordId &&
         rel.fromFieldKey === data.fromFieldKey &&
@@ -172,7 +172,7 @@ export class RelationRecordsService {
       // 如果新值不为空，创建新的关联关系
       if (newValue && fieldConfig?.relation) {
         const relationConfig = fieldConfig.relation
-        
+
         if (relationConfig.mode === "one") {
           // 一对一关联
           if (newValue) {
@@ -203,7 +203,7 @@ export class RelationRecordsService {
               bidirectional: relationConfig.bidirectional || false,
             }))
 
-            await this.batchCreateRelations({ applicationId, relations })
+            await this.batchCreateRelations({ applicationId, relations: relations as any })
           }
         }
       }
@@ -319,12 +319,12 @@ export class RelationRecordsService {
     return await db.transaction(async (tx) => {
       // 1. 先标记主记录为删除（这里需要根据实际的记录表结构来实现）
       // 例如：await tx.update(records).set({ isDeleted: true, deletedAt: new Date() }).where(eq(records.id, recordId));
-      
+
       // 2. 清理关联关系（物理删除关联关系，因为关联关系表不需要软删除）
       const result = await this.repo.deleteByRecord(applicationId, directoryId, recordId);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         deletedRelationsCount: result.length,
         message: "记录已软删除，关联关系已清理"
       };
@@ -343,12 +343,12 @@ export class RelationRecordsService {
     return await db.transaction(async (tx) => {
       // 1. 先删除所有关联关系
       const deletedRelations = await this.repo.deleteByRecord(applicationId, directoryId, recordId);
-      
+
       // 2. 再删除主记录（这里需要根据实际的记录表结构来实现）
       // 例如：await tx.delete(records).where(eq(records.id, recordId));
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         deletedRelationsCount: deletedRelations.length,
         message: "记录和关联关系已物理删除"
       };
@@ -368,9 +368,9 @@ export class RelationRecordsService {
     return await db.transaction(async (tx) => {
       // 清理字段的关联关系
       const result = await this.repo.deleteByField(applicationId, directoryId, recordId, fieldKey);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         deletedRelationsCount: result.length,
         message: "字段关联关系已清理"
       };
@@ -387,7 +387,7 @@ export class RelationRecordsService {
   ) {
     return await db.transaction(async (tx) => {
       const results = [];
-      
+
       for (const record of records) {
         const result = await this.softDeleteRecordRelations(
           applicationId,
@@ -399,7 +399,7 @@ export class RelationRecordsService {
           ...result
         });
       }
-      
+
       return {
         success: true,
         processedCount: results.length,

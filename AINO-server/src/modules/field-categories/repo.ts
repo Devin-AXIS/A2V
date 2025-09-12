@@ -87,7 +87,7 @@ export class FieldCategoriesRepository {
 
   async update(id: string, data: UpdateFieldCategoryRequest): Promise<FieldCategoryResponse | null> {
     const updateData: any = {}
-    
+
     if (data.name !== undefined) updateData.name = data.name
     if (data.description !== undefined) updateData.description = data.description
     if (data.order !== undefined) updateData.order = data.order
@@ -133,7 +133,7 @@ export class FieldCategoriesRepository {
     return !!result
   }
 
-    async getFieldsCountInCategory(categoryId: string): Promise<number> {
+  async getFieldsCountInCategory(categoryId: string): Promise<number> {
     // 字段表已删除，返回0
     return 0
   }
@@ -152,7 +152,7 @@ export class FieldCategoriesRepository {
   private async convertToResponse(dbRecord: any): Promise<FieldCategoryResponse> {
     // 获取该分类下的字段
     const fields = await this.getFieldsInCategory(dbRecord.id)
-    
+
     return {
       id: String(dbRecord.id),
       applicationId: String(dbRecord.applicationId),
@@ -181,12 +181,12 @@ export class FieldCategoriesRepository {
         id: field.id,
         key: field.key,
         type: field.type,
-        label: field.schema?.label || field.key,
+        label: (field.schema as any)?.label || field.key,
         required: field.required,
-        showInForm: field.schema?.showInForm ?? true,
-        showInList: field.schema?.showInList ?? true,
-        options: field.schema?.options || [],
-        description: field.schema?.description || "",
+        showInForm: (field.schema as any)?.showInForm ?? true,
+        showInList: (field.schema as any)?.showInList ?? true,
+        options: (field.schema as any)?.options || [],
+        description: (field.schema as any)?.description || "",
       }))
     } catch (error) {
       console.error("获取分类字段失败:", error)

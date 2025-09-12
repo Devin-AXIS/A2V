@@ -28,7 +28,33 @@ export const GetRecordCategoriesQuery = z.object({
 })
 
 // 记录分类响应
-export const RecordCategoryResponse = z.object({
+export const RecordCategoryResponse: z.ZodType<{
+  id: string
+  applicationId: string
+  directoryId: string
+  name: string
+  path: string
+  level: number
+  parentId: string | null
+  order: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+  children?: Array<{
+    id: string
+    applicationId: string
+    directoryId: string
+    name: string
+    path: string
+    level: number
+    parentId: string | null
+    order: number
+    enabled: boolean
+    createdAt: string
+    updatedAt: string
+    children?: any[]
+  }>
+}> = z.object({
   id: z.string().uuid(),
   applicationId: z.string().uuid(),
   directoryId: z.string().uuid(),

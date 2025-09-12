@@ -176,34 +176,22 @@ else
     fi
 fi
 
-# 启动服务器
-echo "🚀 启动 AINO 服务器..."
+# 启动服务器（开发模式）
+echo "🚀 启动 AINO 服务器（开发模式）..."
 echo "=================================="
-echo "服务器将在 http://localhost:3007 启动"
-echo "健康检查: http://localhost:3007/health"
+export NODE_ENV=development
+export PORT=${PORT:-3007}
+echo "NODE_ENV=$NODE_ENV"
+echo "服务器将在 http://localhost:$PORT 启动"
+echo "健康检查: http://localhost:$PORT/health"
 echo "按 Ctrl+C 停止服务器"
 echo "=================================="
 
-# 检查是否需要编译
-if [ ! -d "dist" ] || [ ! -f "dist/server.js" ]; then
-    echo "📋 检测到需要编译 TypeScript 代码..."
-    if [ -f "pnpm-lock.yaml" ]; then
-        echo "📋 使用 pnpm 编译..."
-        pnpm run build
-    elif [ -f "yarn.lock" ]; then
-        echo "📋 使用 yarn 编译..."
-        yarn build
-    else
-        echo "📋 使用 npm 编译..."
-        npm run build
-    fi
-fi
-
-# 启动服务器
+# 以开发模式启动（不编译，直接运行 tsx）
 if [ -f "pnpm-lock.yaml" ]; then
-    pnpm start
+    pnpm dev
 elif [ -f "yarn.lock" ]; then
-    yarn start
+    yarn dev
 else
-    npm start
+    npm run dev
 fi

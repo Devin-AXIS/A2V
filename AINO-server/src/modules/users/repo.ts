@@ -25,7 +25,7 @@ export async function findUserByEmail(email: string): Promise<TUser | null> {
     email: user.email,
     avatar: user.avatar || undefined,
     roles: user.roles || ['user'],
-    createdAt: user.createdAt.toISOString(),
+    createdAt: user.createdAt,
   }
 }
 
@@ -40,7 +40,7 @@ export async function findUserById(id: string): Promise<TUser | null> {
     email: user.email,
     avatar: user.avatar || undefined,
     roles: user.roles || ['user'],
-    createdAt: user.createdAt.toISOString(),
+    createdAt: user.createdAt,
   }
 }
 
@@ -62,7 +62,7 @@ export async function createUser(data: TRegisterRequest): Promise<TUser> {
     email: newUser.email,
     avatar: newUser.avatar || undefined,
     roles: newUser.roles || ['user'],
-    createdAt: newUser.createdAt.toISOString(),
+    createdAt: newUser.createdAt,
   }
 }
 
@@ -79,16 +79,19 @@ export async function getAllUsers(): Promise<TUser[]> {
     id: user.id,
     name: user.name,
     email: user.email,
+    password: '', // 不返回密码
+    role: user.roles?.[0] as "admin" | "operator" | "viewer" || "viewer",
+    permissions: [],
     avatar: user.avatar || undefined,
     roles: user.roles || ['user'],
     createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
   }))
 }
 
-export async function updateUserById(id: string, data: Partial<Pick<TUser, 'name' | 'avatar'>>): Promise<TUser | null> {
+export async function updateUserById(id: string, data: Partial<Pick<TUser, 'name'>>): Promise<TUser | null> {
   const updateFields: Record<string, any> = {}
   if (typeof data.name === 'string' && data.name.length > 0) updateFields.name = data.name
-  if (typeof data.avatar === 'string' && data.avatar.length > 0) updateFields.avatar = data.avatar
 
   if (Object.keys(updateFields).length === 0) {
     // nothing to update, return current user
@@ -109,6 +112,6 @@ export async function updateUserById(id: string, data: Partial<Pick<TUser, 'name
     email: updated.email,
     avatar: updated.avatar || undefined,
     roles: updated.roles || ['user'],
-    createdAt: updated.createdAt.toISOString(),
+    createdAt: updated.createdAt,
   }
 }

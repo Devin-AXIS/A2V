@@ -499,7 +499,7 @@ records.post('/:dir', async (c) => {
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
     const directoryDef = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dir)).limit(1)
-    let fieldDefinitions = []
+    let fieldDefinitions: any[] = []
 
     if (directoryDef[0]) {
       const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, directoryDef[0].id))
@@ -663,7 +663,7 @@ records.patch('/:dir/:id', async (c) => {
     // 获取字段定义进行验证
     // 首先通过directories表找到对应的directoryDefs
     const directoryDef = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, dir)).limit(1)
-    let fieldDefinitions = []
+    let fieldDefinitions: any[] = []
 
     if (directoryDef[0]) {
       const fieldDefsResult = await db.select().from(fieldDefs).where(eq(fieldDefs.directoryId, directoryDef[0].id))

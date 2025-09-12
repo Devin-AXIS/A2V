@@ -153,9 +153,9 @@ export class ModuleService {
     const installedMap = new Map(installedModules.map(m => [m.moduleKey, m.moduleVersion]))
 
     // 临时跳过依赖检查，允许安装所有模块
-    const dependencies = []
+    const dependencies: any[] = []
     const canInstall = true
-    const errors = []
+    const errors: any[] = []
 
     return {
       moduleKey: baseKey,
