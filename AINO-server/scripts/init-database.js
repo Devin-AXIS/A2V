@@ -35,9 +35,48 @@ console.log('📊 数据库配置:', {
 const pool = new Pool(DB_CONFIG);
 
 /**
+ * 检查字段是否存在
+ */
+async function checkColumnExists(tableName, columnName) {
+    try {
+        const result = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = $1 
+                AND column_name = $2
+            )
+        `, [tableName, columnName]);
+        return result.rows[0].exists;
+    } catch (error) {
+        console.error(`检查字段 ${tableName}.${columnName} 时出错:`, error);
+        return false;
+    }
+}
+
+/**
+ * 添加字段到表
+ */
+async function addColumnIfNotExists(tableName, columnName, columnSQL) {
+    try {
+        const exists = await checkColumnExists(tableName, columnName);
+        if (!exists) {
+            console.log(`📋 添加字段: ${tableName}.${columnName}`);
+            await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSQL}`);
+            console.log(`✅ 字段 ${tableName}.${columnName} 添加成功`);
+        } else {
+            console.log(`✅ 字段 ${tableName}.${columnName} 已存在`);
+        }
+    } catch (error) {
+        console.error(`添加字段 ${tableName}.${columnName} 失败:`, error.message);
+        throw error;
+    }
+}
+
+/**
  * 通用函数：检查表是否存在，如果不存在则创建
  */
-async function ensureTableExists(tableName, createTableSQL, constraints = [], indexes = []) {
+async function ensureTableExists(tableName, createTableSQL, constraints = [], indexes = [], columns = []) {
     try {
         const tableCheck = await pool.query(`
             SELECT EXISTS (
@@ -81,6 +120,11 @@ async function ensureTableExists(tableName, createTableSQL, constraints = [], in
             console.log(`✅ ${tableName} 表及相关约束创建完成`);
         } else {
             console.log(`✅ ${tableName} 表已存在`);
+
+            // 检查并添加缺失的字段
+            for (const column of columns) {
+                await addColumnIfNotExists(tableName, column.name, column.sql);
+            }
         }
     } catch (error) {
         console.error(`❌ 处理 ${tableName} 表时出错:`, error.message);
@@ -169,16 +213,21 @@ async function initDatabase() {
                 metadata JSONB NULL DEFAULT '{}'::jsonb,
                 last_login_at TIMESTAMP NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now(),
-                phone_number TEXT NULL
+                updated_at TIMESTAMP NOT NULL DEFAULT now()
             )
         `, [
             'ALTER TABLE application_users ADD CONSTRAINT application_users_pkey PRIMARY KEY (id)',
             'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)'
         ], [
             'CREATE INDEX application_users_application_id_idx ON application_users (application_id)',
-            'CREATE INDEX application_users_phone_idx ON application_users (phone)',
-            'CREATE INDEX application_users_status_idx ON application_users (status)'
+            'CREATE INDEX application_users_app_status_idx ON application_users (application_id, status)',
+            'CREATE INDEX application_users_app_phone_idx ON application_users (application_id, phone)',
+            'CREATE INDEX application_users_created_at_idx ON application_users (created_at)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'phone_number', sql: 'phone_number TEXT' },
+            { name: 'last_login_at', sql: 'last_login_at TIMESTAMP' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
         ]);
 
         await ensureTableExists('audit_logs', `
@@ -187,9 +236,9 @@ async function initDatabase() {
                 application_id UUID NULL,
                 user_id UUID NULL,
                 action TEXT NOT NULL,
-                resource_type TEXT NULL,
-                resource_id UUID NULL,
-                details JSONB NULL DEFAULT '{}'::jsonb,
+                resource TEXT NOT NULL,
+                resource_id TEXT NULL,
+                details JSONB DEFAULT '{}'::jsonb,
                 ip_address TEXT NULL,
                 user_agent TEXT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT now()
@@ -202,6 +251,10 @@ async function initDatabase() {
             'CREATE INDEX audit_logs_app_user_idx ON audit_logs (application_id, user_id)',
             'CREATE INDEX audit_logs_created_at_idx ON audit_logs (created_at)',
             'CREATE INDEX audit_logs_action_idx ON audit_logs (action)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'resource', sql: 'resource TEXT NOT NULL' },
+            { name: 'resource_id', sql: 'resource_id TEXT' }
         ]);
 
         await ensureTableExists('directories', `
@@ -229,15 +282,14 @@ async function initDatabase() {
         await ensureTableExists('directory_defs', `
             CREATE TABLE directory_defs (
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
-                application_id UUID NOT NULL,
-                directory_id UUID NOT NULL,
-                name TEXT NOT NULL,
-                slug TEXT NOT NULL,
-                description TEXT NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
-                is_active BOOLEAN NULL DEFAULT true,
-                created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now()
+                slug TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                status TEXT NOT NULL DEFAULT 'active'::text,
+                application_id UUID NULL,
+                directory_id UUID NULL,
+                created_at TIMESTAMPTZ DEFAULT now(),
+                updated_at TIMESTAMPTZ DEFAULT now()
             )
         `, [
             'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_pkey PRIMARY KEY (id)',
@@ -248,6 +300,12 @@ async function initDatabase() {
             'CREATE INDEX directory_defs_application_id_idx ON directory_defs (application_id)',
             'CREATE INDEX directory_defs_directory_id_idx ON directory_defs (directory_id)',
             'CREATE INDEX directory_defs_slug_idx ON directory_defs (slug)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'title', sql: 'title TEXT NOT NULL' },
+            { name: 'version', sql: 'version INTEGER NOT NULL DEFAULT 1' },
+            { name: 'status', sql: 'status TEXT NOT NULL DEFAULT \'active\'::text' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMPTZ DEFAULT now()' }
         ]);
 
         await ensureTableExists('field_categories', `
@@ -256,10 +314,11 @@ async function initDatabase() {
                 application_id UUID NOT NULL,
                 directory_id UUID NOT NULL,
                 name TEXT NOT NULL,
-                path TEXT NOT NULL,
-                level INTEGER NOT NULL,
-                parent_id UUID NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
+                description TEXT NULL,
+                "order" INTEGER DEFAULT 0,
+                enabled BOOLEAN DEFAULT true,
+                system BOOLEAN DEFAULT false,
+                predefined_fields JSONB DEFAULT '[]'::jsonb,
                 created_at TIMESTAMP NOT NULL DEFAULT now(),
                 updated_at TIMESTAMP NOT NULL DEFAULT now()
             )
@@ -272,33 +331,53 @@ async function initDatabase() {
             'CREATE INDEX field_categories_app_dir_idx ON field_categories (application_id, directory_id)',
             'CREATE INDEX field_categories_parent_idx ON field_categories (parent_id)',
             'CREATE INDEX field_categories_created_at_idx ON field_categories (created_at)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'description', sql: 'description TEXT' },
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'enabled', sql: 'enabled BOOLEAN DEFAULT true' },
+            { name: 'system', sql: 'system BOOLEAN DEFAULT false' },
+            { name: 'predefined_fields', sql: 'predefined_fields JSONB DEFAULT \'[]\'::jsonb' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
         ]);
 
         await ensureTableExists('field_defs', `
             CREATE TABLE field_defs (
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
-                application_id UUID NOT NULL,
                 directory_id UUID NOT NULL,
-                category_id UUID NULL,
-                name TEXT NOT NULL,
                 key TEXT NOT NULL,
+                kind TEXT NOT NULL,
                 type TEXT NOT NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
-                is_required BOOLEAN NULL DEFAULT false,
-                is_indexed BOOLEAN NULL DEFAULT false,
-                "order" INTEGER NULL DEFAULT 0,
-                created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now()
+                schema JSONB NULL,
+                relation JSONB NULL,
+                lookup JSONB NULL,
+                computed JSONB NULL,
+                validators JSONB NULL,
+                read_roles JSONB DEFAULT '["admin", "member"]'::jsonb,
+                write_roles JSONB DEFAULT '["admin"]'::jsonb,
+                required BOOLEAN DEFAULT false,
+                category_id UUID NULL
             )
         `, [
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_pkey PRIMARY KEY (id)',
-            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id)',
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_category_id_fkey FOREIGN KEY (category_id) REFERENCES field_categories(id)'
         ], [
-            'CREATE INDEX field_defs_app_dir_idx ON field_defs (application_id, directory_id)',
+            'CREATE INDEX field_defs_directory_id_idx ON field_defs (directory_id)',
             'CREATE INDEX field_defs_category_idx ON field_defs (category_id)',
             'CREATE INDEX field_defs_key_idx ON field_defs (key)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'kind', sql: 'kind TEXT NOT NULL' },
+            { name: 'schema', sql: 'schema JSONB' },
+            { name: 'relation', sql: 'relation JSONB' },
+            { name: 'lookup', sql: 'lookup JSONB' },
+            { name: 'computed', sql: 'computed JSONB' },
+            { name: 'validators', sql: 'validators JSONB' },
+            { name: 'read_roles', sql: 'read_roles JSONB DEFAULT \'["admin", "member"]\'::jsonb' },
+            { name: 'write_roles', sql: 'write_roles JSONB DEFAULT \'["admin"]\'::jsonb' },
+            { name: 'required', sql: 'required BOOLEAN DEFAULT false' },
+            { name: 'category_id', sql: 'category_id UUID' }
         ]);
 
         await ensureTableExists('field_indexes', `
@@ -322,11 +401,16 @@ async function initDatabase() {
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
                 application_id UUID NOT NULL,
                 module_key TEXT NOT NULL,
-                version TEXT NOT NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
-                is_active BOOLEAN NULL DEFAULT true,
-                installed_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now()
+                module_name TEXT NOT NULL,
+                module_version TEXT NOT NULL,
+                module_type TEXT NOT NULL,
+                install_type TEXT NOT NULL,
+                install_config JSONB DEFAULT '{}'::jsonb,
+                install_status TEXT DEFAULT 'active'::text,
+                install_error TEXT NULL,
+                installed_at TIMESTAMP DEFAULT now(),
+                updated_at TIMESTAMP NOT NULL DEFAULT now(),
+                created_by UUID NULL
             )
         `, [
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_pkey PRIMARY KEY (id)',
@@ -336,6 +420,17 @@ async function initDatabase() {
             'CREATE INDEX module_installs_application_id_idx ON module_installs (application_id)',
             'CREATE INDEX module_installs_module_key_idx ON module_installs (module_key)',
             'CREATE INDEX module_installs_is_active_idx ON module_installs (is_active)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'module_name', sql: 'module_name TEXT NOT NULL' },
+            { name: 'module_version', sql: 'module_version TEXT NOT NULL' },
+            { name: 'module_type', sql: 'module_type TEXT NOT NULL' },
+            { name: 'install_type', sql: 'install_type TEXT NOT NULL' },
+            { name: 'install_config', sql: 'install_config JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'install_status', sql: 'install_status TEXT DEFAULT \'active\'::text' },
+            { name: 'install_error', sql: 'install_error TEXT' },
+            { name: 'installed_at', sql: 'installed_at TIMESTAMP DEFAULT now()' },
+            { name: 'created_by', sql: 'created_by UUID' }
         ]);
 
         await ensureTableExists('record_categories', `
@@ -347,9 +442,10 @@ async function initDatabase() {
                 path TEXT NOT NULL,
                 level INTEGER NOT NULL,
                 parent_id UUID NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
-                created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now()
+                "order" INTEGER DEFAULT 0,
+                enabled BOOLEAN DEFAULT true,
+                created_at TIMESTAMPTZ DEFAULT now(),
+                updated_at TIMESTAMPTZ DEFAULT now()
             )
         `, [
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_pkey PRIMARY KEY (id)',
@@ -360,6 +456,11 @@ async function initDatabase() {
             'CREATE INDEX record_categories_app_dir_idx ON record_categories (application_id, directory_id)',
             'CREATE INDEX record_categories_parent_idx ON record_categories (parent_id)',
             'CREATE INDEX record_categories_created_at_idx ON record_categories (created_at)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'enabled', sql: 'enabled BOOLEAN DEFAULT true' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMPTZ DEFAULT now()' }
         ]);
 
         await ensureTableExists('relation_records', `
@@ -371,9 +472,12 @@ async function initDatabase() {
                 from_field_key TEXT NOT NULL,
                 to_directory_id UUID NOT NULL,
                 to_record_id UUID NOT NULL,
-                config JSONB NULL DEFAULT '{}'::jsonb,
-                created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now()
+                to_field_key TEXT NULL,
+                relation_type TEXT NOT NULL,
+                bidirectional BOOLEAN DEFAULT false,
+                created_at TIMESTAMPTZ DEFAULT now(),
+                updated_at TIMESTAMPTZ DEFAULT now(),
+                created_by UUID NULL
             )
         `, [
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_pkey PRIMARY KEY (id)',
@@ -387,6 +491,12 @@ async function initDatabase() {
             'CREATE INDEX relation_records_to_idx ON relation_records (to_directory_id, to_record_id)',
             'CREATE INDEX idx_rel_from_field ON relation_records (from_field_key)',
             'CREATE INDEX idx_rel_idempotent ON relation_records (from_directory_id, from_record_id, from_field_key, to_directory_id, to_record_id)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'to_field_key', sql: 'to_field_key TEXT' },
+            { name: 'relation_type', sql: 'relation_type TEXT NOT NULL' },
+            { name: 'bidirectional', sql: 'bidirectional BOOLEAN DEFAULT false' },
+            { name: 'created_by', sql: 'created_by UUID' }
         ]);
 
         await ensureTableExists('dir_jobs', `
@@ -452,7 +562,13 @@ async function initDatabase() {
             'ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)'
         ], [
             'CREATE INDEX users_email_unique_idx ON users (email)',
-            'CREATE INDEX users_status_idx ON users (status)'
+            'CREATE INDEX users_status_idx ON users (status)',
+            'CREATE INDEX users_created_at_idx ON users (created_at)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'avatar', sql: 'avatar TEXT' },
+            { name: 'last_login_at', sql: 'last_login_at TIMESTAMP' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
         ]);
 
         // 创建默认管理员用户
@@ -494,7 +610,14 @@ async function initDatabase() {
             'ALTER TABLE applications ADD CONSTRAINT applications_slug_unique UNIQUE (slug)'
         ], [
             'CREATE INDEX applications_owner_status_idx ON applications (owner_id, status)',
-            'CREATE INDEX applications_slug_unique_idx ON applications (slug)'
+            'CREATE INDEX applications_slug_unique_idx ON applications (slug)',
+            'CREATE INDEX applications_created_at_idx ON applications (created_at)'
+        ], [
+            // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'database_config', sql: 'database_config JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'is_public', sql: 'is_public BOOLEAN DEFAULT false' },
+            { name: 'version', sql: 'version TEXT DEFAULT \'1.0.0\'::text' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
         ]);
 
         // 创建默认应用
@@ -524,22 +647,32 @@ async function initDatabase() {
                 CREATE TABLE directories (
                     id UUID NOT NULL DEFAULT gen_random_uuid(),
                     application_id UUID NOT NULL,
+                    module_id UUID NOT NULL,
                     name TEXT NOT NULL,
-                    slug TEXT NOT NULL,
-                    description TEXT NULL,
-                    config JSONB NULL DEFAULT '{}'::jsonb,
-                    is_active BOOLEAN NULL DEFAULT true,
+                    type TEXT NOT NULL,
+                    supports_category BOOLEAN DEFAULT false,
+                    config JSONB DEFAULT '{}'::jsonb,
+                    "order" INTEGER DEFAULT 0,
+                    is_enabled BOOLEAN DEFAULT true,
                     created_at TIMESTAMP NOT NULL DEFAULT now(),
                     updated_at TIMESTAMP NOT NULL DEFAULT now()
                 )
             `, [
                 'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
                 'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
-                'ALTER TABLE directories ADD CONSTRAINT directories_slug_unique UNIQUE (slug)'
+                'ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id)'
             ], [
                 'CREATE INDEX directories_application_id_idx ON directories (application_id)',
-                'CREATE INDEX directories_slug_idx ON directories (slug)',
-                'CREATE INDEX directories_is_active_idx ON directories (is_active)'
+                'CREATE INDEX directories_app_module_idx ON directories (application_id, module_id)',
+                'CREATE INDEX directories_created_at_idx ON directories (created_at)'
+            ], [
+                // 如果表已存在，检查并添加可能缺失的字段
+                { name: 'module_id', sql: 'module_id UUID NOT NULL' },
+                { name: 'type', sql: 'type TEXT NOT NULL' },
+                { name: 'supports_category', sql: 'supports_category BOOLEAN DEFAULT false' },
+                { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+                { name: 'is_enabled', sql: 'is_enabled BOOLEAN DEFAULT true' },
+                { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
             ]);
 
             // 确保 modules 表存在
@@ -562,6 +695,12 @@ async function initDatabase() {
             ], [
                 'CREATE INDEX modules_app_enabled_idx ON modules (application_id, is_enabled)',
                 'CREATE INDEX modules_created_at_idx ON modules (created_at)'
+            ], [
+                // 如果表已存在，检查并添加可能缺失的字段
+                { name: 'icon', sql: 'icon TEXT' },
+                { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+                { name: 'is_enabled', sql: 'is_enabled BOOLEAN DEFAULT true' },
+                { name: 'updated_at', sql: 'updated_at TIMESTAMP NOT NULL DEFAULT now()' }
             ]);
 
             // 创建默认模块
