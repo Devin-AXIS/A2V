@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Plus, Settings } from "lucide-react"
+import { Plus, Settings, Sparkles } from "lucide-react"
 import { CascaderSelect, type CatNode } from "@/components/cascader-select"
 import { useLocale } from "@/hooks/use-locale"
 
@@ -29,6 +29,7 @@ export function ListFilters({
   addText = "新增记录",
   onAdd,
   onCategoryManage,
+  onAIOps,
   searchPlaceholder = "搜索...",
   catLabel = "按分类筛选",
   statusLabel = "按状态筛选",
@@ -45,6 +46,7 @@ export function ListFilters({
   addText?: string
   onAdd?: () => void
   onCategoryManage?: () => void
+  onAIOps?: () => void
   searchPlaceholder?: string
   catLabel?: string
   statusLabel?: string
@@ -114,6 +116,12 @@ export function ListFilters({
           <Plus className="mr-1 size-4" />
           {addText}
         </Button>
+        {onAIOps && (
+          <Button variant="outline" onClick={() => onAIOps?.()}>
+            <Sparkles className="mr-1 size-4" />
+            {locale === "zh" ? "AI运营" : "AI Ops"}
+          </Button>
+        )}
         {onCategoryManage && (
           <Button variant="outline" onClick={() => onCategoryManage()}>
             <Settings className="mr-1 size-4" />

@@ -15,6 +15,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
       <div className="pt-16">
         <ProfileClientView dict={pageDict} />
       </div>
+      <BottomNavigation />
     </div>
   )
 }

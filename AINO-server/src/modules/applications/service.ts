@@ -288,7 +288,8 @@ export class ApplicationService {
     const [application] = await db
       .select()
       .from(applications)
-      .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
+      .where(and(eq(applications.id, id)))
+    // eq(applications.ownerId, userId))
 
     if (!application) {
       throw new Error("应用不存在或无权限访问")

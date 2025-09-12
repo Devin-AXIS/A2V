@@ -1,11 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { AppCard } from "@/components/layout/app-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Globe, ExternalLink, Share2 } from "lucide-react"
 import type { BusinessCardProps } from "@/types"
+import { CardRegistry } from "../registry"
 
 interface InfoItem {
   label: string
@@ -25,14 +27,41 @@ interface UniversalInfoCardProps extends BusinessCardProps {
   deviceType?: 'universal' // 明确标注为通用
 }
 
-export function UniversalInfoCard({ data, onAction, deviceType = 'universal' }: UniversalInfoCardProps) {
-  const safeData = {
-    title: data?.title ?? "",
-    description: data?.description ?? undefined,
-    items: Array.isArray(data?.items) ? data.items : [],
-    showActions: data?.showActions ?? false,
-    source: data?.source ?? undefined,
-  }
+const defaultData: UniversalInfoCardProps['data'] = {
+  title: "信息概览",
+  description: "关键指标与状态汇总",
+  items: [
+    { label: '今日新增', value: 128, type: 'number', trend: 'up' },
+    { label: '活跃率', value: 67.5, type: 'percentage', trend: 'stable' },
+    { label: '收入', value: 52300, type: 'currency', trend: 'up' },
+    { label: '异常告警', value: 2, type: 'number', trend: 'down' },
+  ],
+  showActions: true,
+  source: '系统默认',
+}
+
+export function UniversalInfoCard({ onAction, deviceType = 'universal' }: UniversalInfoCardProps) {
+  const [safeData, setSafeData] = useState(defaultData)
+
+  useEffect(() => {
+    const newData = CardRegistry.getData("universal-info");
+    if (newData) {
+      setSafeData(newData || defaultData)
+    } else {
+      CardRegistry.listen((name, data) => {
+        if (name === 'universal-info') {
+          setSafeData(data || defaultData)
+        }
+      })
+    }
+  }, [])
+  // const safeData = {
+  //   title: data?.title ?? "",
+  //   description: data?.description ?? undefined,
+  //   items: Array.isArray(data?.items) ? data.items : [],
+  //   showActions: data?.showActions ?? false,
+  //   source: data?.source ?? undefined,
+  // }
   const handleAction = (action: string) => {
     onAction?.(action, { cardId: safeData.title })
   }

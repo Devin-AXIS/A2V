@@ -5,6 +5,7 @@ import type React from "react"
 import { MoreHorizontal, RotateCcw } from "lucide-react"
 import type { CardThemeConfig } from "@/types"
 import { Button } from "@/components/ui/button"
+import { useLocalThemeEditorVisibility } from "@/components/providers/local-theme-editor-visibility"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,10 @@ interface LocalCardThemeEditorProps {
 }
 
 export function LocalCardThemeEditor({ theme, setTheme, resetToGlobal }: LocalCardThemeEditorProps) {
+  const { visible } = useLocalThemeEditorVisibility()
+
+  // 仅在编辑模式（可见）下渲染，避免非编辑态出现悬浮样式菜单
+  if (!visible) return null
   const handleValueChange = (key: keyof CardThemeConfig, value: string) => {
     setTheme((prev) => ({ ...prev, [key]: value }))
   }

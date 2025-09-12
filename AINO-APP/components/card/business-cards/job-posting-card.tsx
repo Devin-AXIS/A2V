@@ -3,21 +3,25 @@
 import { useState } from "react"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
+import { CardRegistry } from "../registry"
+import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 
 interface JobPostingCardProps {
   disableLocalTheme?: boolean
 }
 
+const defaultData = {
+  title: "高级前端工程师",
+  company: "科技创新公司",
+  location: "北京·朝阳区",
+  salary: "20K-35K",
+  experience: "3-5年",
+  education: "本科",
+  tags: ["React", "TypeScript", "Node.js"],
+};
+
 export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProps) {
-  const [jobData, setJobData] = useState({
-    title: "高级前端工程师",
-    company: "科技创新公司",
-    location: "北京·朝阳区",
-    salary: "20K-35K",
-    experience: "3-5年",
-    education: "本科",
-    tags: ["React", "TypeScript", "Node.js"],
-  })
+  const jobData = useCardRegistryData("job-posting", defaultData)
 
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">

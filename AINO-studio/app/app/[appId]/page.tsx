@@ -29,6 +29,7 @@ import { ListFilters } from "@/components/builder/list-filters"
 import { SettingsSidebar } from "./settings-sidebar"
 import { SettingsContent } from "./settings-content"
 import { SimpleModuleDialog } from "@/components/dialogs/simple-module-dialog"
+import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 
 type SettingsSection = "personal" | "team" | "usage" | "api-keys" | "notifications" | "settings"
 
@@ -47,6 +48,7 @@ export default function BuilderPage() {
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [uninstallDialogOpen, setUninstallDialogOpen] = useState(false)
   const [selectedModule, setSelectedModule] = useState<any>(null)
+  const [aiOpsOpen, setAiOpsOpen] = useState(false)
 
   const typeNames: Record<FieldType, string> = useMemo(
     () => ({
@@ -466,6 +468,7 @@ export default function BuilderPage() {
                     ]}
                     addText={t("addRecord")}
                     onAdd={c.addRecord}
+                    onAIOps={() => setAiOpsOpen(true)}
                     onCategoryManage={() => c.setOpenCategory(true)}
                     searchPlaceholder={t("searchPlaceholder")}
                     catLabel={t("filterByCategory")}
@@ -725,6 +728,16 @@ export default function BuilderPage() {
         categories={c.currentDir?.categories || []}
         onConfirm={(categoryPath) => c.createRecordWithCategory(categoryPath)}
         title={locale === "zh" ? "选择内容分类" : "Select Content Category"}
+      />
+
+      <AIOpsDrawer
+        open={aiOpsOpen}
+        onOpenChange={setAiOpsOpen}
+        appId={String(params.appId)}
+        lang={locale === "zh" ? "zh" : "en"}
+        dirId={c.currentDir?.id}
+        dirName={c.currentDir?.name}
+        dirFields={c.currentDir?.fields as any}
       />
 
       {/* Simple Module Dialogs */}

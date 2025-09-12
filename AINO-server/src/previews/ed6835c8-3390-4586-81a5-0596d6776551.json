@@ -1,0 +1,33 @@
+{
+  "id": "ed6835c8-3390-4586-81a5-0596d6776551",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c3242be9-ad51-418e-86bf-01ef913e1fa8",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        }
+      ]
+    },
+    "dataSources": {
+      "table_ec211aa7-3e58-4bff-af17-6ff3f2bdedf1": {
+        "type": "table",
+        "tableId": "ec211aa7-3e58-4bff-af17-6ff3f2bdedf1",
+        "tableName": "课程",
+        "moduleName": "用户管理",
+        "label": "用户管理/课程"
+      }
+    }
+  },
+  "updatedAt": "2025-09-07T13:59:51.063Z"
+}

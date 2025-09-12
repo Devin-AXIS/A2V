@@ -5,14 +5,15 @@ import { useDataChartTheme } from "@/components/providers/unified-chart-theme-pr
 
 interface JobExperienceRatioChartProps {
   showTitle?: boolean
+  data: any[]
 }
 
-const data = [
-  { name: "1-3年", value: 25, jobs: 1, color: "#10b981" },
-  { name: "不限经验", value: 75, jobs: 3, color: "#06b6d4" },
-]
+// const data = [
+//   { name: "1-3年", value: 25, jobs: 1, color: "#10b981" },
+//   { name: "不限经验", value: 75, jobs: 3, color: "#06b6d4" },
+// ]
 
-export function JobExperienceRatioChart({ showTitle = true }: JobExperienceRatioChartProps) {
+export function JobExperienceRatioChart({ showTitle = true, data }: JobExperienceRatioChartProps) {
   const { palette } = useDataChartTheme()
 
   return (

@@ -5,20 +5,47 @@ import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
+import { setDatas } from "@/components/card/set-datas"
+import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
 
 export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
   const sp = useSearchParams()
   const router = useRouter()
+  const qs = new URLSearchParams(window.location.search)
+  const applicationId = qs.get('appId')
+  window.localStorage.setItem('APP_ID', applicationId || '')
+  const parentOrigin = qs.get('origin') || qs.get('parentOrigin') || '*'
+  const dataParam = qs.get('data')
+  if (dataParam) {
+    try {
+      const parsed = JSON.parse(dataParam)
+      window.localStorage.setItem('PREVIEW_SELECTED_DATA', JSON.stringify(parsed))
+    } catch {
+      window.localStorage.setItem('PREVIEW_SELECTED_DATA_RAW', dataParam)
+    }
+  }
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [manifest, setManifest] = useState<any>(null)
+  const bridge = useMemo(() => getIframeBridge({ targetOrigin: parentOrigin, channel: applicationId || undefined }), [parentOrigin, applicationId])
 
   // 仅做 App(移动) 版本预览；PC 版本后续再做
   const device = "mobile"
   const locale = params.locale || "zh"
   const id = params.id
+
+  useEffect(() => {
+    setDatas();
+  }, [])
+
+  // Notify parent ready and start auto height reporting
+  useEffect(() => {
+    const stop = startAutoHeightReporting(bridge)
+    bridge.post('aino:ready', { appId: applicationId, id, locale })
+    return () => { if (typeof stop === 'function') stop() }
+  }, [bridge, applicationId, id, locale])
 
   useEffect(() => {
     let canceled = false
@@ -35,8 +62,10 @@ export default function PreviewPage() {
             if (typeof window !== 'undefined' && mf?.app?.appKey) {
               localStorage.setItem('CURRENT_APP_ID', String(mf.app.appKey))
             }
-          } catch {}
+          } catch { }
           setManifest(mf)
+          // send manifest to parent when available
+          try { bridge.post('aino:manifest', { manifest: mf }) } catch { }
         }
       } catch (e: any) {
         if (!canceled) setError(e?.message || "error")
@@ -47,6 +76,12 @@ export default function PreviewPage() {
     run()
     return () => { canceled = true }
   }, [id])
+
+  // Report error to parent
+  useEffect(() => {
+    if (!error) return
+    try { bridge.post('aino:error', { message: error }) } catch { }
+  }, [error, bridge])
 
   // Seed default cards to localStorage once (for demo preview only)
   const [renderKey, setRenderKey] = useState(0)
@@ -59,11 +94,25 @@ export default function PreviewPage() {
       if (!exists) {
         const cardsDefault: string[] = (manifest?.pages?.home?.cardsDefault && manifest.pages.home.cardsDefault.length > 0)
           ? manifest.pages.home.cardsDefault
-          : ["mobile-navigation"]
+          : []
         const payload = { cards: cardsDefault.map((t) => ({ type: t })), themes: {}, updatedAt: Date.now() }
         localStorage.setItem(storageKey, JSON.stringify(payload))
         // 触发重新挂载以让动态页读取到最新布局
         setRenderKey((k) => k + 1)
+      } else {
+        // 清理历史缓存中残留的移动导航卡片（mobile-navigation）
+        try {
+          const parsed = JSON.parse(exists)
+          const before = Array.isArray(parsed?.cards) ? parsed.cards.length : 0
+          if (before > 0) {
+            const cleaned = parsed.cards.filter((c: any) => (c?.type || c) !== 'mobile-navigation')
+            if (cleaned.length !== before) {
+              const payload = { ...parsed, cards: cleaned, updatedAt: Date.now() }
+              localStorage.setItem(storageKey, JSON.stringify(payload))
+              setRenderKey((k) => k + 1)
+            }
+          }
+        } catch { }
       }
       // 同步底部导航到全局以便 profile 页面也显示一致
       try {
@@ -74,8 +123,8 @@ export default function PreviewPage() {
           return { href, label: i.label || i.key, iconName: i.icon }
         }) : []
         localStorage.setItem('CURRENT_APP_NAV_ITEMS', JSON.stringify(navItems))
-      } catch {}
-    } catch {}
+      } catch { }
+    } catch { }
   }, [manifest, locale])
 
   const pageCategory = useMemo(() => {
@@ -83,16 +132,7 @@ export default function PreviewPage() {
     return typeof cat === "string" ? cat : "workspace"
   }, [manifest])
 
-  const bottomItems = useMemo(() => {
-    const list = manifest?.app?.bottomNav || []
-    return Array.isArray(list)
-      ? list.map((i: any) => {
-          let href = i.route || "/"
-          if (href === "/me") href = "/profile"
-          return { href, label: i.label || i.key }
-        })
-      : []
-  }, [manifest])
+  // 底部导航改由 BottomNavigation 组件内部根据 APP_GLOBAL_CONFIG 或 CURRENT_APP_NAV_ITEMS 自行决定
 
   if (loading) {
     return (
@@ -114,9 +154,7 @@ export default function PreviewPage() {
   return (
     <main className="min-h-[100dvh] bg-transparent">
       <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
-      {bottomItems.length > 0 && (
-        <BottomNavigation items={bottomItems} />
-      )}
+      <BottomNavigation />
     </main>
   )
 }

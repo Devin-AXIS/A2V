@@ -11,3 +11,4 @@ export type { CardFactoryProps } from "./card-factory"
 
 // 保留AppCard，因为它是核心布局组件
 export { AppCard } from "@/components/layout/app-card"
+export { getMockProps } from "./mock-config"

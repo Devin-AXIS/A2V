@@ -28,6 +28,8 @@ import { TagInput } from "@/components/form-inputs/tag-input"
 import { RelationInput } from "@/components/form-inputs/relation-input"
 import { PhoneInput } from "@/components/form-inputs/phone-input"
 import { ProgressInput } from "@/components/form-inputs/progress-input"
+import { ProgressItemsInput } from "@/components/form-inputs/progress-items-input"
+import { MetaItemsInput } from "@/components/form-inputs/meta-items-input"
 
 function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) => void, app: AppModel) {
   const value = (record as any)[field.key]
@@ -48,14 +50,34 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
       case "constellation":
         return <ConstellationSelect value={value || ""} onChange={onChange} />
       case "progress":
+        // 统一为多子进度编辑器：将非数组值规范化为数组
+        if (!Array.isArray(value)) {
+          const defaults = field.progressConfig?.defaultItems || []
+          const items = (defaults.length > 0
+            ? defaults.map((d, idx) => ({ id: `${field.id}-${idx}`, key: d.key || `p${idx+1}`, label: d.label || `Item ${idx+1}`, status: d.status, weight: d.weight ?? 1, value: Number(value||0) }))
+            : [{ id: `${field.id}-0`, key: 'progress', label: 'Progress', status: 'planned', weight: 1, value: Number(value||0) }]
+          ) as any
+          return (
+            <ProgressItemsInput
+              items={items}
+              onChange={(arr)=>onChange(arr)}
+              aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
+              showProgressBar={field.progressConfig?.showProgressBar !== false}
+              showPercentage={field.progressConfig?.showPercentage !== false}
+              helpEnabled={field.progressConfig?.showHelp}
+              helpText={field.progressConfig?.helpText}
+            />
+          )
+        }
         return (
-          <ProgressInput
-            value={value || 0}
-            onChange={onChange}
-            maxValue={field.progressConfig?.maxValue || 100}
+          <ProgressItemsInput
+            items={value}
+            onChange={(arr)=>onChange(arr)}
+            aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
             showProgressBar={field.progressConfig?.showProgressBar !== false}
             showPercentage={field.progressConfig?.showPercentage !== false}
-            placeholder={field.placeholder}
+            helpEnabled={field.progressConfig?.showHelp}
+            helpText={field.progressConfig?.helpText}
           />
         )
       case "phone":
@@ -284,6 +306,17 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
           onChange={onChange}
           multiple={field.videoConfig?.multiple || false}
           defaultVideo={field.videoConfig?.defaultVideo || ""}
+        />
+      )
+    case "meta_items":
+      return (
+        <MetaItemsInput
+          items={value || []}
+          onChange={onChange}
+          schema={field.metaItemsConfig?.fields || []}
+          helpEnabled={field.metaItemsConfig?.showHelp}
+          helpText={field.metaItemsConfig?.helpText}
+          allowAddInForm={field.metaItemsConfig?.allowAddInForm !== false}
         />
       )
     case "multivideo":

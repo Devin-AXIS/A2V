@@ -1,6 +1,9 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { swaggerUI } from '@hono/swagger-ui'
 import { openApiConfig, apiRoutes } from './openapi'
+import { db } from '../db'
+import { applications } from '../db/schema'
+import { eq } from 'drizzle-orm'
 
 // 创建 OpenAPI 应用
 const openApiApp = new OpenAPIHono()
@@ -1137,6 +1140,90 @@ docsRoute.get('/openapi.json', (c) => {
 // 重定向根路径到 Swagger UI
 docsRoute.get('/', (c) => {
   return c.redirect('/docs/swagger')
+})
+
+// Per-application OpenAPI JSON (filtered) and Swagger UI (English title/description)
+docsRoute.get('/apps/:appId/openapi.json', async (c) => {
+  const { appId } = c.req.param()
+
+  // Deep clone the global document to avoid mutation
+  const doc: any = JSON.parse(JSON.stringify(openApiDoc))
+
+  // Resolve application name for nicer doc title
+  let appName = appId
+  try {
+    const rows = await db.select().from(applications).where(eq(applications.id, appId)).limit(1)
+    if (rows && rows[0]?.name) appName = rows[0].name
+  } catch {}
+
+  // English title/description for the application view
+  doc.info = {
+    ...doc.info,
+    title: `AINO-${appName}`,
+    description: `Per-application OpenAPI for ${appName}. Only app-scoped endpoints are included.`,
+  }
+
+  // Tag translation (zh -> en) and app-scope filtering
+  const tagNameMap: Record<string, { name: string; description: string }> = {
+    '应用': { name: 'Applications', description: 'Application management' },
+    '应用用户': { name: 'Application Users', description: 'Application-level users' },
+    '应用模块': { name: 'Modules', description: 'Application modules' },
+    '目录管理': { name: 'Directories', description: 'Directory management' },
+    '字段分类': { name: 'Field Categories', description: 'Field category management' },
+    '记录分类': { name: 'Record Categories', description: 'Record category management' },
+    '字段定义': { name: 'Field Definitions', description: 'Field definitions' },
+    '目录定义': { name: 'Directory Definitions', description: 'Directory definitions' },
+    '记录管理': { name: 'Records', description: 'Record management' },
+  }
+
+  const includeCnTags = new Set(Object.keys(tagNameMap))
+
+  // Filter and translate tags
+  if (Array.isArray(doc.tags)) {
+    doc.tags = doc.tags
+      .filter((t: any) => includeCnTags.has(t.name))
+      .map((t: any) => ({
+        name: tagNameMap[t.name].name,
+        description: tagNameMap[t.name].description,
+      }))
+  }
+
+  // Filter paths by allowed tags and translate operation tags
+  const newPaths: Record<string, any> = {}
+  for (const [p, item] of Object.entries<any>(doc.paths || {})) {
+    const newItem: Record<string, any> = {}
+    for (const [method, op] of Object.entries<any>(item)) {
+      const tags: string[] = Array.isArray(op.tags) ? op.tags : []
+      const hasIncluded = tags.some((t) => includeCnTags.has(t))
+      if (hasIncluded) {
+        // Exclude platform/global endpoints within included tags
+        // 1) Applications: only keep GET /applications/{id}
+        const isApplications = tags.some((t) => t === '应用')
+        if (isApplications) {
+          const isGetAppById = p === '/applications/{id}' && method.toLowerCase() === 'get'
+          if (!isGetAppById) continue
+        }
+
+        // 2) Modules: exclude global system modules endpoint
+        if (p === '/modules/system') continue
+
+        op.tags = tags
+          .filter((t) => includeCnTags.has(t))
+          .map((t) => tagNameMap[t].name)
+        newItem[method] = op
+      }
+    }
+    if (Object.keys(newItem).length > 0) newPaths[p] = newItem
+  }
+  doc.paths = newPaths
+
+  return c.json(doc)
+})
+
+docsRoute.get('/apps/:appId/swagger', (c) => {
+  const { appId } = c.req.param()
+  const ui = swaggerUI({ url: `/docs/apps/${appId}/openapi.json` })
+  return ui(c)
 })
 
 export { openApiApp }

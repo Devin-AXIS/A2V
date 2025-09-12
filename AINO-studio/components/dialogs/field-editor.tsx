@@ -12,7 +12,7 @@ function toDraft(app: AppModel, dir: DirectoryModel, f: FieldModel): FieldDraft 
     required: !!f.required,
     unique: !!f.unique,
     showInList: f.showInList !== false,
-    isDefault: f.isDefault || false,
+    isDefault: (f as any).isDefault || false,
     categoryId: (f as any).categoryId || undefined,
     options: Array.isArray(f.options) ? [...f.options] : undefined,
     defaultRaw: "",
@@ -25,6 +25,9 @@ function toDraft(app: AppModel, dir: DirectoryModel, f: FieldModel): FieldDraft 
     cascaderOptions: f.cascaderOptions ? (JSON.parse(JSON.stringify(f.cascaderOptions)) as any) : undefined,
     preset: (f as any).preset || undefined,
     skillsConfig: (f as any).skillsConfig || undefined,
+    progressConfig: (f as any).progressConfig || undefined,
+    // 关键：编辑时把已有 metaItemsConfig 带入初始草稿
+    metaItemsConfig: (f as any).metaItemsConfig || undefined,
     otherVerificationConfig: (f as any).otherVerificationConfig || undefined,
   }
 
@@ -96,6 +99,9 @@ function applyDraftToFieldModel(
     ;(f as any).dateMode = draft.dateMode || "single"
   } else if (draft.type === "cascader") {
     ;(f as any).cascaderOptions = draft.cascaderOptions ? JSON.parse(JSON.stringify(draft.cascaderOptions)) : []
+  } else if (draft.type === "meta_items") {
+    // 持久化数据项集合的配置
+    ;(f as any).metaItemsConfig = (draft as any).metaItemsConfig || undefined
   } else if (draft.type === "relation_one" || draft.type === "relation_many") {
     ;(f as any).relation = {
       targetDirId: draft.relationTargetId || null,
@@ -111,6 +117,9 @@ function applyDraftToFieldModel(
     ;(f as any).preset = draft.preset
     if (draft.preset === "skills" && draft.skillsConfig) {
       ;(f as any).skillsConfig = draft.skillsConfig
+    }
+    if (draft.preset === "progress" && draft.progressConfig) {
+      ;(f as any).progressConfig = draft.progressConfig
     }
     if (draft.preset === "other_verification" && draft.otherVerificationConfig) {
       ;(f as any).otherVerificationConfig = draft.otherVerificationConfig
@@ -213,10 +222,10 @@ export function FieldEditor({
       typeNames={typeNames}
       submitText={i18n.saveField || "保存字段"}
       onSubmit={(draft) => {
-        const next = structuredClone(dir)
+        const next: any = structuredClone(dir)
         applyDraftToFieldModel(next, field.id, draft, (msg) => window.confirm(msg))
         // 从更新后的目录中提取字段数据
-        const updatedField = next.fields.find(f => f.id === field.id)
+        const updatedField = next.fields.find((f: any) => f.id === field.id)
         if (updatedField) {
           onSubmit(updatedField)
         }

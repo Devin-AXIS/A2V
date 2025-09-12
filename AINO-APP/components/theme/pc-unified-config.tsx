@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Settings, Palette, Brush, Layers, Zap, Eye, Shield, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -15,45 +16,45 @@ import { useUnifiedTheme } from "@/components/providers/unified-theme-provider"
 
 // 默认配置数据（已整合到统一主题系统）
 const defaultPresets = [
-  { 
-    name: "默认", 
+  {
+    name: "默认",
     colors: [
       { id: 1, name: "主色", value: "#ffffff", enabled: true },
       { id: 2, name: "次色", value: "#f8fafc", enabled: true },
       { id: 3, name: "强调色", value: "#f1f5f9", enabled: true }
-    ] 
+    ]
   },
-  { 
-    name: "蓝色系", 
+  {
+    name: "蓝色系",
     colors: [
       { id: 1, name: "主色", value: "#dbeafe", enabled: true },
       { id: 2, name: "次色", value: "#bfdbfe", enabled: true },
       { id: 3, name: "强调色", value: "#93c5fd", enabled: true }
-    ] 
+    ]
   },
-  { 
-    name: "绿色系", 
+  {
+    name: "绿色系",
     colors: [
       { id: 1, name: "主色", value: "#dcfce7", enabled: true },
       { id: 2, name: "次色", value: "#bbf7d0", enabled: true },
       { id: 3, name: "强调色", value: "#86efac", enabled: true }
-    ] 
+    ]
   },
-  { 
-    name: "紫色系", 
+  {
+    name: "紫色系",
     colors: [
       { id: 1, name: "主色", value: "#f3e8ff", enabled: true },
       { id: 2, name: "次色", value: "#e9d5ff", enabled: true },
       { id: 3, name: "强调色", value: "#d8b4fe", enabled: true }
-    ] 
+    ]
   },
-  { 
-    name: "橙色系", 
+  {
+    name: "橙色系",
     colors: [
       { id: 1, name: "主色", value: "#fed7aa", enabled: true },
       { id: 2, name: "次色", value: "#fdba74", enabled: true },
       { id: 3, name: "强调色", value: "#fb923c", enabled: true }
-    ] 
+    ]
   }
 ]
 
@@ -66,13 +67,15 @@ import { RadiusConfig } from "./radius-config"
 export function PCUnifiedConfig() {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("background")
+  const sp = useSearchParams()
+  const isEditeParam = (sp.get('isEdite') === 'true' || sp.get('isEdit') === 'true')
 
   // 使用升级后的统一配置Hook
   const config = useUnifiedConfig()
-  
+
   // 使用统一主题Hook
   const unifiedTheme = useUnifiedTheme()
-  
+
   // 使用国际化
   const { locale } = useLocale()
   const isEnglish = locale === "en"
@@ -88,6 +91,8 @@ export function PCUnifiedConfig() {
   const handleCardOpacityChange = (opacity: "normal" | "high") => {
     config.card.setTheme((prev) => ({ ...prev, frostedOpacity: opacity }))
   }
+
+  if (!isEditeParam) return null
 
   return (
     <>
@@ -105,7 +110,7 @@ export function PCUnifiedConfig() {
       {/* 配置面板 */}
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
-          <div 
+          <div
             className="absolute right-0 top-0 h-full w-96 bg-white shadow-2xl border-l border-gray-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -297,7 +302,7 @@ export function PCUnifiedConfig() {
                       <h3 className="text-lg font-semibold mb-2">{isEnglish ? "Unified Theme" : "统一主题配置"}</h3>
                       <p className="text-sm text-muted-foreground">{isEnglish ? "One-click theme switching with font, component and chart colors" : "一键切换主题风格，同时更新字体、组件和数据图配色"}</p>
                     </div>
-                    
+
                     {/* 主题选择 */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">{isEnglish ? "Theme Selection" : "主题选择"}</Label>
@@ -340,14 +345,14 @@ export function PCUnifiedConfig() {
                       <div className="text-lg font-semibold text-gray-900 mt-1">{unifiedTheme.currentTheme.name}</div>
                       <div className="text-xs text-gray-600 mt-1">{unifiedTheme.currentTheme.description}</div>
                     </div>
-                    
+
                     {/* 个别调整功能 */}
                     <div className="space-y-4">
                       <div className="text-center">
                         <h4 className="text-md font-medium mb-2">个别调整</h4>
                         <p className="text-xs text-muted-foreground">在统一主题基础上进行微调</p>
                       </div>
-                      
+
                       {/* 字体颜色调整 */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">字体颜色调整</Label>
@@ -355,7 +360,7 @@ export function PCUnifiedConfig() {
                           <div className="flex flex-col items-center space-y-2">
                             <div className="text-xs text-muted-foreground">标题颜色</div>
                             <div className="relative">
-                              <div 
+                              <div
                                 className="w-12 h-12 rounded-lg border border-gray-200 cursor-pointer"
                                 style={{ backgroundColor: unifiedTheme.currentTheme.config.fontColors.heading }}
                               />
@@ -371,7 +376,7 @@ export function PCUnifiedConfig() {
                           <div className="flex flex-col items-center space-y-2">
                             <div className="text-xs text-muted-foreground">正文颜色</div>
                             <div className="relative">
-                              <div 
+                              <div
                                 className="w-12 h-12 rounded-lg border border-gray-200 cursor-pointer"
                                 style={{ backgroundColor: unifiedTheme.currentTheme.config.fontColors.body }}
                               />
@@ -386,7 +391,7 @@ export function PCUnifiedConfig() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* 组件颜色调整 */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">组件颜色调整</Label>
@@ -394,7 +399,7 @@ export function PCUnifiedConfig() {
                           <div className="flex flex-col items-center space-y-2">
                             <div className="text-xs text-muted-foreground">主要</div>
                             <div className="relative">
-                              <div 
+                              <div
                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer"
                                 style={{ backgroundColor: unifiedTheme.currentTheme.config.componentColors.primary }}
                               />
@@ -410,7 +415,7 @@ export function PCUnifiedConfig() {
                           <div className="flex flex-col items-center space-y-2">
                             <div className="text-xs text-muted-foreground">次要</div>
                             <div className="relative">
-                              <div 
+                              <div
                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer"
                                 style={{ backgroundColor: unifiedTheme.currentTheme.config.componentColors.secondary }}
                               />
@@ -426,7 +431,7 @@ export function PCUnifiedConfig() {
                           <div className="flex flex-col items-center space-y-2">
                             <div className="text-xs text-muted-foreground">危险</div>
                             <div className="relative">
-                              <div 
+                              <div
                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer"
                                 style={{ backgroundColor: unifiedTheme.currentTheme.config.componentColors.danger }}
                               />
@@ -441,7 +446,7 @@ export function PCUnifiedConfig() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* 数据图配色调整 */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">数据图配色调整</Label>
@@ -452,7 +457,7 @@ export function PCUnifiedConfig() {
                               <div key={index} className="flex flex-col items-center space-y-1">
                                 <div className="text-xs text-muted-foreground">颜色{index + 1}</div>
                                 <div className="relative">
-                                  <div 
+                                  <div
                                     className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer"
                                     style={{ backgroundColor: color }}
                                   />
@@ -476,9 +481,9 @@ export function PCUnifiedConfig() {
                     </div>
                   </div>
                 </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    </>
-  )
-}
+              </Tabs>
+            </div>
+          </div>
+        </>
+      )
+      }

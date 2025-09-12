@@ -1,7 +1,7 @@
 "use client"
 import { FrostPanel } from "@/components/frost"
 import { Button } from "@/components/ui/button"
-import { User, Users, Key, Bell, Settings } from "lucide-react"
+import { User, Users, Key, Bell, Settings, Shield } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 
 interface SettingsSidebarProps {
@@ -25,6 +25,11 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
             id: "team" as const,
             label: locale === "zh" ? "团队管理" : "Team Management",
             icon: Users,
+          },
+          {
+            id: "auth" as const,
+            label: locale === "zh" ? "授权管理" : "Authorization",
+            icon: Shield,
           },
           {
             id: "api-keys" as const,

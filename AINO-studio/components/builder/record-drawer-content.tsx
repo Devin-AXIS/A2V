@@ -6,7 +6,7 @@ import { useMemo, useState } from "react"
 import { SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { DirectoryModel, RecordRow, Props } from "@/lib/store"
+import type { AppModel, DirectoryModel, RecordRow } from "@/lib/store"
 import { findDirByIdAcrossModules, findNameField } from "@/lib/store"
 import { useToast } from "@/hooks/use-toast"
 import { FormField } from "@/components/form-field"
@@ -15,8 +15,11 @@ import { RelationOneTab } from "@/components/relation-tabs/relation-one-tab"
 import { DynamicRecords } from "./dynamic-records"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
+import { Progress } from "@/components/ui/progress"
 
-export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props) {
+type DrawerProps = { app: AppModel; dir: DirectoryModel; rec: RecordRow; onClose: () => void; onChange: (next: AppModel) => void }
+
+export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: DrawerProps) {
   const { toast } = useToast()
   const { t, locale } = useLocale()
   const [isEditing, setIsEditing] = useState(false)
@@ -27,7 +30,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
   const basicFields = useMemo(
     () =>
       dir.fields.filter(
-        (f) =>
+        (f: any) =>
           (f.enabled && f.type !== "relation_many" && f.type !== "relation_one") ||
           (f.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
       ),
@@ -37,7 +40,7 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
   const relationFields = useMemo(
     () =>
       dir.fields.filter(
-        (f) =>
+        (f: any) =>
           f.enabled &&
           (f.type === "relation_many" || f.type === "relation_one") &&
           (!f.preset || !["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
@@ -92,6 +95,112 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
     
     if (value === null || value === undefined || value === "") {
       return <span className="text-gray-400">{locale === "zh" ? "暂无数据" : "No data"}</span>
+    }
+
+    // 最强兜底：若值是形如 [{label?, value, weight?}, ...] 的数组，按进度渲染
+    if (Array.isArray(value) && value.every((x: any) => x && typeof x === 'object' && typeof x.value !== 'undefined')) {
+      const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+      const items = value as Array<{ label?: string; value?: number; weight?: number }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const mode = cfg.aggregation || 'weightedAverage'
+      const agg = (()=>{
+        if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {cfg.showProgressBar && (
+              <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {cfg.showPercentage && (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    // 兼容 preset === "progress"（历史上 baseType 不是 progress），避免显示 [object Object]
+    if (field.preset === "progress" && field.type !== "progress") {
+      const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+      const val = Array.isArray(value) ? value : [{ label: 'Progress', value: Number(value||0), weight: 1 }]
+      const items = val as Array<{ label?: string; value?: number; weight?: number }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const mode = cfg.aggregation || 'weightedAverage'
+      const agg = (()=>{
+        if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {cfg.showProgressBar && (
+              <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {cfg.showPercentage && (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    // 再兜底：若存在 progressConfig 且值为数组，也按进度字段展示
+    if (field.progressConfig && Array.isArray(value)) {
+      const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+      const items = value as Array<{ label?: string; value?: number; weight?: number }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const mode = cfg.aggregation || 'weightedAverage'
+      const agg = (()=>{
+        if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {cfg.showProgressBar && (
+              <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+            )}
+            {cfg.showPercentage && (
+              <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
     }
 
     switch (field.type) {
@@ -161,38 +270,82 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
         return <span>{value}</span>
       case "percent":
         return <span>{value}%</span>
-      case "progress":
-        if (field.progressConfig) {
-          const progressValue = Number(value ?? 0)
-          const maxValue = field.progressConfig.maxValue || 100
-          const percentage = Math.round((progressValue / maxValue) * 100)
-          
-          return (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                {field.progressConfig.showProgressBar && (
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-                      style={{
-                        width: `${Math.min(percentage, 100)}%`
-                      }}
-                    />
-                  </div>
-                )}
-                {field.progressConfig.showPercentage ? (
-                  <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
-                ) : (
-                  <span className="text-xs text-gray-600">{progressValue}/{maxValue}</span>
-                )}
-              </div>
-              <div className="text-xs text-gray-500">
-                {field.progressConfig.showPercentage ? `${progressValue}/${maxValue}` : `${percentage}%`}
-              </div>
+      case "meta_items": {
+        const cfg = field.metaItemsConfig || {}
+        const items = Array.isArray(value) ? value : []
+        const schema = cfg.fields || []
+        return (
+          <div className="space-y-2">
+            {cfg.showHelp && <div className="text-xs text-gray-500">{cfg.helpText || ''}</div>}
+            <div className="space-y-2 text-sm">
+              {items.length === 0 && <span className="text-gray-400">{locale==='zh'?'暂无数据':'No data'}</span>}
+              {items.map((it:any, i:number)=> (
+                <div key={i} className="space-y-1 border rounded-md bg-white/70 p-2">
+                  <div className="font-medium text-gray-700">{it.label}</div>
+                  {schema.filter((fd: any)=>fd.type==='text').map((fd: any)=>{
+                    const row = (it.texts||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 text-gray-800">{row?.value||''}</div></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='number').map((fd: any)=>{
+                    const row = (it.numbers||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}{fd.unit?`（${fd.unit}）`:''}</div><div className="col-span-12 text-gray-800">{typeof row?.value==='number'? row?.value: ''}</div></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='image').map((fd: any)=>{
+                    const row = (it.images||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12">{row?.url ? <img src={row.url} className="h-10 w-16 object-cover rounded border"/> : <span className="text-gray-400">-</span>}</div></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='select').map((fd: any)=>{
+                    const row = (it.selects||[]).find((r:any)=>r.fieldId===fd.id)
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 text-gray-800">{row?.value||'-'}</div></div>
+                  })}
+                  {schema.filter((fd: any)=>fd.type==='multiselect').map((fd: any)=>{
+                    const row = (it.multiselects||[]).find((r:any)=>r.fieldId===fd.id)
+                    const vals = Array.isArray(row?.value) ? row!.value : []
+                    return <div key={fd.id} className="grid grid-cols-12 gap-2"><div className="col-span-12 text-xs text-gray-500">{fd.label}</div><div className="col-span-12 flex flex-wrap gap-1">{vals.map((v:any,i:number)=>(<span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">{v}</span>))}{vals.length===0 && <span className="text-gray-400">-</span>}</div></div>
+                  })}
+                </div>
+              ))}
             </div>
-          )
-        }
-        return <span className="text-sm">{value}</span>
+          </div>
+        )
+      }
+      case "progress": {
+        const cfg = field.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+        const val = Array.isArray(value) ? value : [{ label: 'Progress', value: Number(value||0), weight: 1 }]
+        const items = val as Array<{ label?: string; value?: number; weight?: number }>
+        const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+        const mode = cfg.aggregation || 'weightedAverage'
+        const agg = (()=>{
+          if (mode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+          if (mode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+          const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+          const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+          return Math.round(sum / sw)
+        })()
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              {cfg.showProgressBar && (
+                <div className="flex-1"><Progress value={Math.max(0, Math.min(100, agg))} /></div>
+              )}
+              {cfg.showPercentage && (
+                <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+              {items.map((it, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="truncate" title={it.label || ''}>{it.label || `Item ${i+1}`}</span>
+                  <span className="ml-auto">{Math.round(Number(it.value||0))}%</span>
+                </div>
+              ))}
+            </div>
+            {cfg.showHelp && (
+              <div className="text-xs text-gray-500 pt-1">{cfg.helpText || ""}</div>
+            )}
+          </div>
+        )
+      }
       case "currency":
         return <span>¥{value}</span>
       case "image":
@@ -586,14 +739,13 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
               <form id="record-form" onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   {(() => {
-                    const singleRowFields = basicFields.filter(f => 
+                    const singleRowFields = basicFields.filter((f: any) => 
                       f.type === "textarea" || 
-                      f.type === "rich_text" || 
-                      f.type === "markdown" ||
-                      f.type === "json" ||
+                      f.type === "richtext" || 
                       f.type === "relation_many" ||
                       f.type === "relation_one" ||
-                      f.type === "experience"
+                      f.type === "experience" ||
+                      f.type === "meta_items"
                     )
                     const doubleRowFields = basicFields.filter(f => 
                       !singleRowFields.includes(f)
@@ -642,11 +794,9 @@ export function RecordDrawerContent({ app, dir, rec, onClose, onChange }: Props)
             ) : (
               <div className="space-y-6">
                 {(() => {
-                  const singleRowFields = basicFields.filter(f => 
+                  const singleRowFields = basicFields.filter((f: any) => 
                     f.type === "textarea" || 
-                    f.type === "rich_text" || 
-                    f.type === "markdown" ||
-                    f.type === "json" ||
+                    f.type === "richtext" ||
                     f.type === "relation_many" ||
                     f.type === "relation_one" ||
                     f.type === "experience"

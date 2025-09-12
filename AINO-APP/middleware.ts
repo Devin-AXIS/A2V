@@ -53,7 +53,11 @@ export function middleware(request: NextRequest) {
     )
     if (pathnameIsMissingLocale) {
       const locale = getLocale(request)
-      return NextResponse.redirect(new URL(`/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`, request.url))
+      const targetPathname =
+        pathname === "/" || pathname === ""
+          ? `/${locale}/preview`
+          : `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`
+      return NextResponse.redirect(new URL(targetPathname, request.url))
     }
   }
 

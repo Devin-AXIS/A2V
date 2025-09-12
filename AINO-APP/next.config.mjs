@@ -31,6 +31,14 @@ const nextConfig = {
   trailingSlash: false,
   // 优化构建输出
   output: 'standalone',
+  async rewrites() {
+    return [
+      {
+        source: '/:locale/p-:id',
+        destination: '/:locale/p/:id',
+      },
+    ]
+  },
 }
 
 export default withBundleAnalyzer(nextConfig)

@@ -99,6 +99,8 @@ export type FieldDraft = {
     showPercentage?: boolean
     showProgressBar?: boolean
   }
+  // meta items field extras
+  metaItemsConfig?: any
   // custom experience preset extras
   customExperienceConfig?: {
     experienceName?: string // 经历名称
@@ -197,6 +199,7 @@ const TYPE_ICON: Record<FieldType, JSX.Element> = {
   image: <ImageIcon className="size-4" />,
   profile: <User className="size-4" />,
   video: <Video className="size-4" />,
+  multivideo: <Video className="size-4" />,
   file: <Paperclip className="size-4" />,
   richtext: <FileTextIcon className="size-4" />,
   percent: <PercentIcon className="size-4" />,
@@ -206,6 +209,14 @@ const TYPE_ICON: Record<FieldType, JSX.Element> = {
   relation_one: <LinkIcon className="size-4" />,
   relation_many: <Link2 className="size-4" />,
   experience: <Briefcase className="size-4" />,
+  progress: <PercentIcon className="size-4" />,
+  datetime: <Clock className="size-4" />,
+  daterange: <Calendar className="size-4" />,
+  multidate: <Calendar className="size-4" />,
+  meta_items: <Boxes className="size-4" />,
+  multiimage: <ImageIcon className="size-4" />,
+  identity_verification: <User className="size-4" />,
+  other_verification: <User className="size-4" />,
 }
 
 const TYPE_TO_DTYPE: Record<FieldType, string> = {
@@ -230,6 +241,15 @@ const TYPE_TO_DTYPE: Record<FieldType, string> = {
   relation_one: "Relation(one)",
   relation_many: "Relation(many)",
   experience: "Experience[]",
+  progress: "Number|Items",
+  datetime: "Datetime",
+  daterange: "DateRange",
+  multidate: "Date[]",
+  meta_items: "Items[]",
+  multiimage: "Image[]",
+  multivideo: "Video[]",
+  identity_verification: "String",
+  other_verification: "String",
 }
 
 function toKey(label: string) {
@@ -319,8 +339,8 @@ const PRESETS: PresetDef[] = [
   { key: "education_experience", label: "教育经历", desc: "学校、专业、学历等", baseType: "experience" },
   { key: "certificate_experience", label: "证书资质", desc: "证书、颁发机构等", baseType: "experience" },
   { key: "custom_experience", label: "其他经历", desc: "自定义经历名称和事件", baseType: "experience" },
-  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "realname" },
-  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "certification" },
+  { key: "identity_verification", label: "实名认证", desc: "姓名、身份证号、身份证照片", baseType: "text" },
+  { key: "other_verification", label: "其他认证", desc: "自定义认证内容，支持文字和图片", baseType: "text" },
   { key: "barcode", label: "条码", desc: "二维码、条形码等", baseType: "text" },
   { key: "cascader", label: "级联选项", desc: "多级分类选择", baseType: "cascader" },
   { key: "relation", label: "关联", desc: "关联其他表的数据", baseType: "relation_one" },
@@ -444,9 +464,33 @@ export function AddFieldDialog({
 
   // Add progress configuration state
   const [progressConfig, setProgressConfig] = useState({
-    maxValue: 100,
-    showPercentage: true,
-    showProgressBar: true,
+    aggregation: (initialDraft?.progressConfig as any)?.aggregation || 'weightedAverage',
+    maxValue: (initialDraft?.progressConfig as any)?.maxValue || 100,
+    showPercentage: (initialDraft?.progressConfig as any)?.showPercentage ?? true,
+    showProgressBar: (initialDraft?.progressConfig as any)?.showProgressBar ?? true,
+    defaultItems: (initialDraft?.progressConfig as any)?.defaultItems || [],
+    showHelp: (initialDraft?.progressConfig as any)?.showHelp || false,
+    helpText: (initialDraft?.progressConfig as any)?.helpText || '',
+  })
+
+  // meta_items 配置
+  type MetaFieldDef = { id: string; type: 'text' | 'number' | 'image' | 'select' | 'multiselect'; label: string; unit?: string; options?: string[] }
+  type MetaItemsConfigState = {
+    showHelp: boolean
+    helpText: string
+    fields: MetaFieldDef[]
+    defaultItemLabels: string[]
+    allowAddInForm: boolean
+    primaryNumberFieldId?: string
+    aggregationMode?: 'sum' | 'avg' | 'min' | 'max'
+  }
+  const [metaItemsConfig, setMetaItemsConfig] = useState<MetaItemsConfigState>({
+    showHelp: false,
+    helpText: "",
+    fields: [],
+    defaultItemLabels: [],
+    allowAddInForm: true,
+    aggregationMode: 'avg',
   })
 
   // Add custom experience configuration state
@@ -602,10 +646,12 @@ export function AddFieldDialog({
         } : defaultSkillsConfig,
       )
       const defaultProgressConfig = {
+        aggregation: 'weightedAverage',
         maxValue: 100,
         showPercentage: true,
         showProgressBar: true,
-      }
+        defaultItems: [{ key: 'progress', label: locale === 'zh' ? '总进度' : 'Progress', status: 'doing', weight: 1 }]
+      } as any
       setProgressConfig(
         initialDraft.progressConfig ? {
           ...defaultProgressConfig,
@@ -697,6 +743,20 @@ export function AddFieldDialog({
           ...initialDraft.multiselectConfig,
         } : defaultMultiselectConfig,
       )
+      // 回填 meta_items 配置
+      const defaultMetaItemsConfig = {
+        showHelp: false,
+        helpText: "",
+        fields: [],
+        defaultItemLabels: [],
+        allowAddInForm: true,
+        aggregationMode: 'avg' as const,
+      }
+      setMetaItemsConfig(
+        (initialDraft as any).metaItemsConfig
+          ? { ...defaultMetaItemsConfig, ...(initialDraft as any).metaItemsConfig }
+          : defaultMetaItemsConfig,
+      )
       return
     }
     // create 模式默认
@@ -765,6 +825,15 @@ export function AddFieldDialog({
     setMultiselectConfig({
       minSelection: undefined,
       maxSelection: undefined,
+    })
+    // 重置 meta_items 配置
+    setMetaItemsConfig({
+      showHelp: false,
+      helpText: "",
+      fields: [],
+      defaultItemLabels: [],
+      allowAddInForm: true,
+      aggregationMode: 'avg',
     })
   }, [open, mode, initialDraft])
 
@@ -886,6 +955,7 @@ export function AddFieldDialog({
 
   const BUSINESS_TYPES: FieldType[] = [
     "profile",
+    "meta_items",
   ]
 
   const asideWrapCls =
@@ -1621,12 +1691,67 @@ export function AddFieldDialog({
               </div>
             )}
 
-            {/* 进度字段配置 */}
+            {/* 进度字段配置（统一为多进度，选择聚合展示规则） */}
             {preset === "progress" && (
               <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
                 <div className="text-sm font-medium text-blue-800 mb-3">{locale === "zh" ? "进度字段配置" : "Progress Field Configuration"}</div>
 
                 <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-blue-700 mb-1 block">{locale === 'zh' ? '聚合规则（展示用）' : 'Aggregation (for display)'}</label>
+                    <Select value={progressConfig.aggregation as any} onValueChange={(v: any) => setProgressConfig(prev => ({ ...prev, aggregation: v }))}>
+                      <SelectTrigger className="h-8 text-xs bg-white/80"><SelectValue placeholder={locale === 'zh' ? '请选择' : 'Select'} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weightedAverage">{locale === 'zh' ? '加权平均' : 'Weighted Average'}</SelectItem>
+                        <SelectItem value="max">{locale === 'zh' ? '取最大值' : 'Max'}</SelectItem>
+                        <SelectItem value="min">{locale === 'zh' ? '取最小值' : 'Min'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-blue-600 mt-1">{locale === 'zh' ? '字段实际存储为多条进度 items，列表展示聚合值' : 'Field stores multiple progress items; list shows aggregated value'}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs text-blue-700 mb-1">{locale === 'zh' ? '默认子进度' : 'Default Sub-Progress Items'}</div>
+                    <div className="space-y-2">
+                      {(progressConfig.defaultItems || []).map((it: any, idx: number) => (
+                        <div key={idx} className="grid grid-cols-3 gap-2 items-center">
+                          <Input className="h-8 text-xs bg-white/80" value={it.label || ''} onChange={(e) => {
+                            const arr = [...(progressConfig.defaultItems || [])]
+                            arr[idx] = { ...arr[idx], label: e.target.value, key: (e.target.value || `p${idx + 1}`).toString() }
+                            setProgressConfig(prev => ({ ...prev, defaultItems: arr }))
+                          }} placeholder={locale === 'zh' ? '名称' : 'Label'} />
+                          <button type="button" className="text-xs text-red-600" onClick={() => {
+                            const arr = [...(progressConfig.defaultItems || [])]
+                            arr.splice(idx, 1)
+                            setProgressConfig(prev => ({ ...prev, defaultItems: arr }))
+                          }}>{locale === 'zh' ? '删除' : 'Remove'}</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={() => {
+                        const arr = [...(progressConfig.defaultItems || []), { key: `p${(progressConfig.defaultItems?.length || 0) + 1}`, label: `${locale === 'zh' ? '子进度' : 'Item'} ${(progressConfig.defaultItems?.length || 0) + 1}` }]
+                        setProgressConfig(prev => ({ ...prev, defaultItems: arr }))
+                      }}>{locale === 'zh' ? '新增子进度' : 'Add Sub-Progress'}</button>
+                    </div>
+                  </div>
+                  {/* 说明配置 */}
+                  <div className="grid grid-cols-2 gap-3 items-start">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={(progressConfig as any).showHelp || false}
+                        onCheckedChange={(checked) => setProgressConfig(prev => ({ ...prev as any, showHelp: checked }))}
+                      />
+                      <label className="text-xs text-blue-700">{locale === 'zh' ? '显示说明' : 'Show Help'}</label>
+                    </div>
+                    {((progressConfig as any).showHelp) && (
+                      <Input
+                        className="h-8 text-xs bg-white/80 col-span-1"
+                        placeholder={locale === 'zh' ? '输入说明文字（前台显示）' : 'Help text to show on detail'}
+                        value={(progressConfig as any).helpText || ''}
+                        onChange={(e) => setProgressConfig(prev => ({ ...prev as any, helpText: e.target.value }))}
+                      />
+                    )}
+                  </div>
                   <div>
                     <label className="text-xs text-blue-700 mb-1 block">{locale === "zh" ? "最大值" : "Maximum Value"}</label>
                     <Input
@@ -1694,6 +1819,69 @@ export function AddFieldDialog({
                         {locale === "zh" ? `当前值：75 / ${progressConfig.maxValue || 100}` : `Current: 75 / ${progressConfig.maxValue || 100}`}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 业务字段：数据项集合（meta_items） */}
+            {type === "meta_items" && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+                <div className="text-sm font-medium text-blue-800 mb-3">{locale === 'zh' ? '数据项集合配置' : 'Meta Items Configuration'}</div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 items-start">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={metaItemsConfig.showHelp} onCheckedChange={(v) => setMetaItemsConfig(prev => ({ ...prev, showHelp: v }))} />
+                      <label className="text-xs text-blue-700">{locale === 'zh' ? '显示说明' : 'Show Help'}</label>
+                    </div>
+                    {metaItemsConfig.showHelp && (
+                      <Input
+                        className="h-8 text-xs bg-white/80"
+                        placeholder={locale === 'zh' ? '输入说明文本' : 'Enter help text'}
+                        value={metaItemsConfig.helpText}
+                        onChange={(e) => setMetaItemsConfig(prev => ({ ...prev, helpText: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                  {/* 输入层增行由业务决定，此处先移除该开关，保持配置最小化 */}
+                  <div>
+                    <div className="text-xs text-blue-700 mb-1">{locale === 'zh' ? '字段结构（名称与类型）' : 'Field schema (name & type)'}</div>
+                    <div className="space-y-2">
+                      {metaItemsConfig.fields.map((fd, idx) => (
+                        <div key={fd.id} className="grid grid-cols-12 gap-2 items-center">
+                          <Input className="h-8 text-xs bg-white/80 col-span-5" value={fd.label} onChange={(e) => {
+                            const arr = [...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], label: e.target.value }; setMetaItemsConfig(prev => ({ ...prev, fields: arr }))
+                          }} placeholder={locale === 'zh' ? '字段名称' : 'Field name'} />
+                          <select className="h-8 rounded border px-2 bg-white col-span-3" value={fd.type} onChange={(e) => {
+                            const arr = [...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], type: e.target.value as any }; setMetaItemsConfig(prev => ({ ...prev, fields: arr }))
+                          }}>
+                            <option value="text">{locale === 'zh' ? '文本' : 'Text'}</option>
+                            <option value="number">{locale === 'zh' ? '数字' : 'Number'}</option>
+                            <option value="image">{locale === 'zh' ? '图片' : 'Image'}</option>
+                            <option value="select">{locale === 'zh' ? '选项' : 'Select'}</option>
+                            <option value="multiselect">{locale === 'zh' ? '多选' : 'Multi-select'}</option>
+                          </select>
+                          {metaItemsConfig.fields[idx].type === 'number' && (
+                            <Input className="h-8 text-xs bg-white/80 col-span-2" value={fd.unit || ''} onChange={(e) => {
+                              const arr = [...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], unit: e.target.value }; setMetaItemsConfig(prev => ({ ...prev, fields: arr }))
+                            }} placeholder={locale === 'zh' ? '单位(可选)' : 'Unit (optional)'} />
+                          )}
+                          {(metaItemsConfig.fields[idx].type === 'select' || metaItemsConfig.fields[idx].type === 'multiselect') && (
+                            <Input className="h-8 text-xs bg-white/80 col-span-4" value={(fd.options || []).join(',')} onChange={(e) => {
+                              const arr = [...metaItemsConfig.fields]; arr[idx] = { ...arr[idx], options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }; setMetaItemsConfig(prev => ({ ...prev, fields: arr }))
+                            }} placeholder={locale === 'zh' ? '选项(逗号分隔)' : 'Options (comma separated)'} />
+                          )}
+                          <button type="button" className="text-xs text-red-600 col-span-2" onClick={() => {
+                            const arr = [...metaItemsConfig.fields]; arr.splice(idx, 1); setMetaItemsConfig(prev => ({ ...prev, fields: arr }))
+                          }}>{locale === 'zh' ? '删除字段' : 'Remove'}</button>
+                        </div>
+                      ))}
+                      <button type="button" className="text-xs px-2 py-1 rounded border bg-white" onClick={() => {
+                        setMetaItemsConfig(prev => ({ ...prev, fields: [...prev.fields, { id: Math.random().toString(36).slice(2), type: 'text', label: `${locale === 'zh' ? '字段' : 'Field'} ${prev.fields.length + 1}` }] }))
+                      }}>{locale === 'zh' ? '新增字段' : 'Add field'}</button>
+                    </div>
+
+                    {/* 默认子项名称：按需可恢复，此处先隐藏，保持从空开始由输入层新增 */}
                   </div>
                 </div>
               </div>
@@ -2479,8 +2667,6 @@ export function AddFieldDialog({
                     : undefined,
                 relationDisplayFieldKey: rel.displayFieldKey || null,
                 relationBidirectional: rel.bidirectional,
-                relationReverseFieldKey: rel.reverseFieldKey || null,
-                relationOnDelete: rel.onDelete || 'restrict',
                 relationAllowDuplicate: rel.allowDuplicate,
                 preset: preset || undefined,
                 ...(type === "date" ? { dateMode } : {}),
@@ -2488,6 +2674,7 @@ export function AddFieldDialog({
                 ...(preset === "user_select" ? { userAllowMultiple, userNotifyNew } : {}),
                 ...(preset === "skills" ? { skillsConfig } : {}),
                 ...(preset === "progress" ? { progressConfig } : {}),
+                ...(type === "meta_items" ? { metaItemsConfig } : {}),
                 ...(preset === "custom_experience" ? { customExperienceConfig } : {}),
                 ...(preset === "certificate_experience" ? { certificateConfig } : {}),
                 ...(preset === "identity_verification" ? { identityVerificationConfig } : {}),
@@ -2526,6 +2713,8 @@ export function AddFieldDialog({
             save: locale === "zh" ? "保存" : "Save",
             cancel: locale === "zh" ? "取消" : "Cancel",
             preview: locale === "zh" ? "预览：" : "Preview: ",
+            delete: locale === "zh" ? "删除" : "Delete",
+            confirmDelete: locale === "zh" ? "确认删除内容分类" : "Confirm delete",
           }}
         />
 

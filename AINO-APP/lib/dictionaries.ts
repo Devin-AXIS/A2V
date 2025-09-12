@@ -1,4 +1,4 @@
-import "server-only"
+// import "server-only"
 
 export const i18n = {
   defaultLocale: "zh" as const,

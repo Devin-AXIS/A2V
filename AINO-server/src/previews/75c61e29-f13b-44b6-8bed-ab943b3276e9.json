@@ -1,0 +1,24 @@
+{
+  "id": "75c61e29-f13b-44b6-8bed-ab943b3276e9",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c3242be9-ad51-418e-86bf-01ef913e1fa8",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        }
+      ]
+    }
+  },
+  "createdAt": "2025-09-05T08:09:26.501Z"
+}

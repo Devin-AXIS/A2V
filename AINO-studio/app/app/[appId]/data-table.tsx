@@ -9,6 +9,7 @@ import { findDirByIdAcrossModules, getRecordName } from "@/lib/store"
 import { useLocale } from "@/hooks/use-locale"
 import { getSkillById } from "@/lib/data/skills-data"
 import { api } from "@/lib/api"
+import { Progress } from "@/components/ui/progress"
 import { DeleteConfirmDialog } from "@/components/dialogs/delete-confirm-dialog"
 import {
   Pagination,
@@ -538,30 +539,67 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     )
   }
 
-  if (type === "progress" && f?.progressConfig) {
-    const value = Number(v ?? 0)
-    const maxValue = f.progressConfig.maxValue || 100
-    const percentage = Math.round((value / maxValue) * 100)
-
-    return (
-      <div className="flex items-center gap-2">
-        {f.progressConfig.showProgressBar && (
-          <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
-            <div
-              className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-              style={{
-                width: `${Math.min(percentage, 100)}%`
-              }}
-            />
+  if (type === "progress" || f?.preset === 'progress') {
+    const cfg = f?.progressConfig || { aggregation: 'weightedAverage', maxValue: 100, showProgressBar: true, showPercentage: true }
+    const aggMode = cfg.aggregation || 'weightedAverage'
+    if (Array.isArray(v)) {
+      const items = v as Array<{ value?: number; weight?: number; label?: string }>
+      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
+      const agg = (()=>{
+        if (aggMode === 'max') return Math.max(0, ...vals.map(x=>x.v))
+        if (aggMode === 'min') return Math.min(100, ...vals.map(x=>x.v))
+        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
+        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+        return Math.round(sum / sw)
+      })()
+      const visible = items.slice(0, 3)
+      const more = Math.max(0, items.length - visible.length)
+      return (
+        <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
+          {cfg.showProgressBar && (
+            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
+              <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
+            </div>
+          )}
+          {cfg.showPercentage ? (
+            <span className="text-xs text-gray-600 w-12 text-right">{Math.max(0, Math.min(100, agg))}%</span>
+          ) : null}
+          <div className="hidden xl:flex items-center gap-1 ml-1">
+            {visible.map((it, i) => (
+              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">
+                {(it.label || `Item ${i+1}`)} {Math.round(Number(it.value||0))}%
+              </span>
+            ))}
+            {more > 0 && (
+              <span className="text-[10px] text-muted-foreground">+{more}</span>
+            )}
           </div>
-        )}
-        {f.progressConfig.showPercentage ? (
-          <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
-        ) : (
-          <span className="text-xs text-gray-600">{value}/{maxValue}</span>
-        )}
-      </div>
-    )
+        </div>
+      )
+    } else {
+      const value = Number(v ?? 0)
+      const maxValue = cfg.maxValue || 100
+      const percentage = Math.round((value / maxValue) * 100)
+      return (
+        <div className="flex items-center gap-2">
+          {cfg.showProgressBar && (
+            <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
+              <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
+            </div>
+          )}
+          {cfg.showPercentage ? (
+            <span className="text-xs text-gray-600 w-12 text-right">{percentage}%</span>
+          ) : (
+            <span className="text-xs text-gray-600">{value}/{maxValue}</span>
+          )}
+        </div>
+      )
+    }
+  }
+
+  if (type === "meta_items") {
+    const arr = Array.isArray(v) ? v : []
+    return <span className="text-xs text-gray-600">{arr.length > 0 ? `${arr.length}` : '-'}</span>
   }
 
   if ((type === "skills" || (type === "multiselect" && f?.preset === "skills")) && Array.isArray(v) && v.length > 0) {
