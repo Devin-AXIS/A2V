@@ -187,11 +187,31 @@ echo "健康检查: http://localhost:$PORT/health"
 echo "按 Ctrl+C 停止服务器"
 echo "=================================="
 
-# 以开发模式启动（不编译，直接运行 tsx）
-if [ -f "pnpm-lock.yaml" ]; then
-    pnpm dev
-elif [ -f "yarn.lock" ]; then
-    yarn dev
+# 以开发模式启动（守护进程优先使用 pm2，否则回退到 nohup）
+mkdir -p logs
+
+if command -v pm2 >/dev/null 2>&1; then
+    echo "📦 使用 pm2 启动守护进程: aino-server-dev"
+    # 清理旧进程（忽略错误）
+    pm2 delete aino-server-dev >/dev/null 2>&1 || true
+    # 使用 pnpm 启动开发服务器
+    pm2 start pnpm --name aino-server-dev -- dev
+    pm2 save || true
+    pm2 status aino-server-dev
+    echo "✅ 已通过 pm2 启动，查看日志: pm2 logs aino-server-dev"
+    echo "🛑 停止: pm2 stop aino-server-dev；重启: pm2 restart aino-server-dev"
 else
-    npm run dev
+    echo "⚠️  pm2 未安装，改用 nohup 后台运行"
+    if [ -f "pnpm-lock.yaml" ]; then
+        nohup pnpm dev > logs/aino-server-dev.log 2>&1 &
+    elif [ -f "yarn.lock" ]; then
+        nohup yarn dev > logs/aino-server-dev.log 2>&1 &
+    else
+        nohup npm run dev > logs/aino-server-dev.log 2>&1 &
+    fi
+    echo $! > aino-server-dev.pid
+    echo "✅ 已通过 nohup 启动，PID: $(cat aino-server-dev.pid)"
+    echo "📄 日志: ./logs/aino-server-dev.log"
+    echo "🛑 停止: kill \$(cat aino-server-dev.pid) && rm aino-server-dev.pid"
+    tail -n 50 logs/aino-server-dev.log || true
 fi
