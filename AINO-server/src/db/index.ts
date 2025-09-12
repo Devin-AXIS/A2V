@@ -69,10 +69,19 @@ export async function smartQuery(sql: string, params?: any[]): Promise<any> {
   } catch (error) {
     // 如果表不存在，尝试自动创建
     if (error.message.includes('relation') && error.message.includes('does not exist')) {
-      console.log(`⚠️  检测到表不存在，尝试自动创建...`)
-      // 这里可以根据SQL语句推断需要创建的表
-      // 暂时重新抛出错误，让上层处理
-      throw error
+      console.log(`⚠️  检测到表不存在，尝试自动创建并重试当前操作...`)
+      try {
+        const initOk = await autoInitDatabase()
+        if (!initOk) {
+          console.error('❌ 自动创建表失败：初始化流程未成功')
+          throw error
+        }
+        // 初始化成功后重试一次
+        return await smartDB.query(sql, params)
+      } catch (retryErr) {
+        // 重试失败则抛出原始错误以便上层定位
+        throw error
+      }
     }
     throw error
   }
