@@ -17,7 +17,7 @@ async function startServer() {
       console.log('   或者')
       console.log('   ./scripts/setup-database.sh')
       console.log('\n然后重新启动服务器。')
-      process.exit(1)
+      // process.exit(1)
     }
 
     // 启动 HTTP 服务器
