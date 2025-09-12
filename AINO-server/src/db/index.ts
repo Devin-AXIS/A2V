@@ -33,6 +33,7 @@ export async function initDatabase(): Promise<boolean> {
 
   try {
     console.log('🚀 初始化数据库连接...')
+    console.log(`🔌 连接字符串: host=${env.DB_HOST} port=${env.DB_PORT} db=${env.DB_NAME} user=${env.DB_USER}`)
 
     // 自动初始化数据库
     const initSuccess = await autoInitDatabase()

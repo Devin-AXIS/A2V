@@ -12,12 +12,12 @@ async function startServer() {
     console.log('📊 检查数据库状态...')
     const dbInitSuccess = await initDatabase()
     if (!dbInitSuccess) {
-      console.log('\n⚠️  数据库未初始化，请先运行初始化脚本:')
+      console.log('\n⚠️  数据库未初始化或初始化失败，请先运行初始化脚本:')
       console.log('   node scripts/init-database.js')
       console.log('   或者')
       console.log('   ./scripts/setup-database.sh')
       console.log('\n然后重新启动服务器。')
-      // process.exit(1)
+      process.exit(1)
     }
 
     // 启动 HTTP 服务器
