@@ -5,14 +5,10 @@
  * 用于在新服务器上创建完整的数据库结构
  */
 
-import { Pool } from 'pg';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import bcrypt from 'bcryptjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const { Pool } = require('pg');
+const { readFileSync } = require('fs');
+const { join } = require('path');
+const bcrypt = require('bcryptjs');
 
 // 数据库配置 - 可以通过环境变量覆盖
 const DB_CONFIG = {
