@@ -961,7 +961,7 @@ export default function ClientConfigPage() {
   async function openPreview() {
     try {
       const body = draft
-      const res = await fetch("http://localhost:3007/api/preview-manifests", {
+      const res = await fetch("http://47.94.52.142:3007/api/preview-manifests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manifest: body }),
@@ -1022,7 +1022,7 @@ export default function ClientConfigPage() {
         return openPreview()
       }
       const body = bodyOverride ?? draft
-      const res = await fetch(`http://localhost:3007/api/preview-manifests/${previewId}`, {
+      const res = await fetch(`http://47.94.52.142:3007/api/preview-manifests/${previewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manifest: body }),
@@ -1151,7 +1151,7 @@ export default function ClientConfigPage() {
       const body = mergedDraft
       if (!previewId) {
         // 没有预览则创建
-        const res = await fetch("http://localhost:3007/api/preview-manifests", {
+        const res = await fetch("http://47.94.52.142:3007/api/preview-manifests", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ manifest: body }),
@@ -1165,7 +1165,7 @@ export default function ClientConfigPage() {
         setPreviewUrl(url)
       } else {
         // 已有预览则更新
-        const res = await fetch(`http://localhost:3007/api/preview-manifests/${previewId}`, {
+        const res = await fetch(`http://47.94.52.142:3007/api/preview-manifests/${previewId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ manifest: body }),
@@ -1246,7 +1246,7 @@ export default function ClientConfigPage() {
       if (!k) return
       const cfg = (draft.pages && (draft as any).pages[k]) || {}
       const base = String(previewUrl || `http://47.94.52.142:3008/${lang}/p/${k.replace(/^p-/, '')}`)
-      fetch('http://localhost:3007/api/page-configs', {
+      fetch('http://47.94.52.142:3007/api/page-configs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cfg),
@@ -1679,7 +1679,7 @@ export default function ClientConfigPage() {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
                                     const base = String(previewUrl || `http://47.94.52.142:3008/${lang}/p/${k.replace(/^p-/, '')}`)
-                                    fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                    fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                       .then(r => r.json().catch(() => null))
                                       .then(j => {
                                         const id = j && (j.id || j.data?.id)
@@ -1718,7 +1718,7 @@ export default function ClientConfigPage() {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
                                     const base = String(previewUrl || `http://47.94.52.142:3008/${lang}/p/${k.replace(/^p-/, '')}`)
-                                    fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                    fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                       .then(r => r.json().catch(() => null))
                                       .then(j => {
                                         const id = j && (j.id || j.data?.id)
@@ -1915,7 +1915,7 @@ export default function ClientConfigPage() {
                                       const rawCfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
                                       const cfg = { ...rawCfg, options: { ...(rawCfg?.options || {}), showBack: true } }
                                       // 将配置上传到后端，返回 cfgId，避免 URL 过长
-                                      fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                      fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                         .then(r => r.json().catch(() => null))
                                         .then(j => {
                                           const id = j && (j.id || j.data?.id)
@@ -1965,7 +1965,7 @@ export default function ClientConfigPage() {
                           const k = activePageKey as string
                           const cfg = draft.pages?.[k] || {}
                           const base = String(previewUrl || `http://47.94.52.142:3008/${lang}/p/${k.replace(/^p-/, '')}`)
-                          fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                          fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                             .then(r => r.json().catch(() => null))
                             .then(j => {
                               const id = j && (j.id || j.data?.id)
@@ -2282,7 +2282,7 @@ export default function ClientConfigPage() {
                     {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
                       {lang === "zh" ? "AI运营" : "AI Ops"}
                     </Button> */}
-                    <a href={`http://localhost:3007/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
+                    <a href={`http://47.94.52.142:3007/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
                       <Button variant="secondary">API</Button>
                     </a>
                   </div>

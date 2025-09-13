@@ -111,7 +111,7 @@ export function MobileLogin({
       const appConfigStr = window.localStorage.getItem('APPLICATION_CONFIG')
       const appConfig = JSON.parse(appConfigStr)
       const applicationId = appConfig?.id
-      const loginRes = await axios.post(`http://localhost:3007/api/modules/system/user/login?applicationId=${applicationId}`, {
+      const loginRes = await axios.post(`http://47.94.52.142:3007/api/modules/system/user/login?applicationId=${applicationId}`, {
         password,
         phone_number: phone
       })
