@@ -126,7 +126,12 @@ export class DirectoryService {
     const moduleExists = await this.repo.findModuleById(moduleId)
     if (!moduleExists) {
       console.log("❌ 模块不存在:", moduleId)
-      throw new Error(`模块不存在: ${moduleId}`)
+
+      // 获取可用的模块列表用于错误提示
+      const availableModules = await this.repo.getAvailableModules(applicationId)
+      const moduleList = availableModules.map(m => `ID: ${m.id}, 名称: ${m.name}`).join('\n')
+
+      throw new Error(`模块不存在: ${moduleId}\n\n可用的模块列表:\n${moduleList}`)
     }
     console.log("✅ 模块验证通过:", moduleExists.name || moduleExists.module_name)
 
@@ -140,9 +145,27 @@ export class DirectoryService {
     console.log("✅ 目录名称验证通过")
 
     console.log("🔍 开始创建目录...")
-    const result = await this.repo.create(data, applicationId, moduleId)
-    console.log("✅ 创建目录成功:", result.id)
-    return result
+    try {
+      const result = await this.repo.create(data, applicationId, moduleId)
+      console.log("✅ 创建目录成功:", result.id)
+      return result
+    } catch (error) {
+      console.log("❌ 创建目录时发生错误:", error)
+
+      // 检查是否是外键约束错误
+      if (error instanceof Error && error.message.includes('violates foreign key constraint')) {
+        if (error.message.includes('directories_module_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 模块不存在")
+          throw new Error(`模块不存在: ${moduleId}`)
+        } else if (error.message.includes('directories_application_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 应用程序不存在")
+          throw new Error(`应用程序不存在: ${applicationId}`)
+        }
+      }
+
+      // 重新抛出其他错误
+      throw error
+    }
   }
 
   async findMany(query: GetDirectoriesQuery, userId: string): Promise<DirectoriesListResponse> {
@@ -307,5 +330,20 @@ export class DirectoryService {
     const result = await this.repo.delete(id)
     console.log("删除目录成功:", result)
     return result
+  }
+
+  // 获取可用的模块列表
+  async getAvailableModules(applicationId: string): Promise<any[]> {
+    console.log("🔍 DirectoryService.getAvailableModules 开始执行:", applicationId)
+
+    // 验证应用程序是否存在
+    const application = await this.repo.findApplicationById(applicationId)
+    if (!application) {
+      throw new Error(`应用程序不存在: ${applicationId}`)
+    }
+
+    const modules = await this.repo.getAvailableModules(applicationId)
+    console.log("✅ 获取模块列表成功:", modules.length, "个模块")
+    return modules
   }
 }

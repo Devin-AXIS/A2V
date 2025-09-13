@@ -11,22 +11,44 @@ import type {
 
 export class DirectoryRepository {
   async create(data: CreateDirectoryRequest, applicationId: string, moduleId: string): Promise<DirectoryResponse> {
+    console.log("🔍 DirectoryRepository.create 开始执行:", { applicationId, moduleId, data })
+
     // 生成slug
     const slug = this.generateSlug(data.name)
+    console.log("🔍 生成的slug:", slug)
 
-    const [result] = await db.insert(directories).values({
-      applicationId,
-      moduleId,
-      name: data.name,
-      slug: slug, // 添加slug字段
-      type: data.type,
-      supportsCategory: data.supportsCategory,
-      config: data.config,
-      order: data.order,
-      isEnabled: true,
-    }).returning()
+    try {
+      const [result] = await db.insert(directories).values({
+        applicationId,
+        moduleId,
+        name: data.name,
+        slug: slug, // 添加slug字段
+        type: data.type,
+        supportsCategory: data.supportsCategory,
+        config: data.config,
+        order: data.order,
+        isEnabled: true,
+      }).returning()
 
-    return this.convertToResponse(result)
+      console.log("✅ 目录创建成功:", result.id)
+      return this.convertToResponse(result)
+    } catch (error) {
+      console.log("❌ 目录创建失败:", error)
+
+      // 检查是否是外键约束错误
+      if (error instanceof Error && error.message.includes('violates foreign key constraint')) {
+        if (error.message.includes('directories_module_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 模块不存在")
+          throw new Error(`模块不存在: ${moduleId}`)
+        } else if (error.message.includes('directories_application_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 应用程序不存在")
+          throw new Error(`应用程序不存在: ${applicationId}`)
+        }
+      }
+
+      // 重新抛出其他错误
+      throw error
+    }
   }
 
   async findMany(query: GetDirectoriesQuery): Promise<DirectoriesListResponse> {
@@ -200,6 +222,32 @@ export class DirectoryRepository {
   async getDirectoryDefByDirectoryId(directoryId: string): Promise<any> {
     const [result] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, directoryId)).limit(1)
     return result || null
+  }
+
+  // 获取可用的模块列表
+  async getAvailableModules(applicationId: string): Promise<any[]> {
+    console.log("🔍 DirectoryRepository.getAvailableModules 开始执行:", applicationId)
+
+    // 获取 modules 表中的模块
+    const modulesList = await db
+      .select()
+      .from(modules)
+      .where(eq(modules.applicationId, applicationId))
+
+    // 获取 module_installs 表中的模块
+    const moduleInstallsList = await db
+      .select()
+      .from(moduleInstalls)
+      .where(eq(moduleInstalls.applicationId, applicationId))
+
+    // 合并两个表的数据
+    const allModules = [
+      ...modulesList.map(m => ({ id: m.id, name: m.name, type: m.type, source: 'modules' })),
+      ...moduleInstallsList.map(m => ({ id: m.id, name: m.moduleName, type: m.moduleType, source: 'module_installs' }))
+    ]
+
+    console.log("✅ 找到可用模块:", allModules.length, "个")
+    return allModules
   }
 
   // 生成slug的辅助方法

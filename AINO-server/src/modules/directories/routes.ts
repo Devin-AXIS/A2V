@@ -11,6 +11,42 @@ import {
 const app = new Hono()
 const service = new DirectoryService()
 
+// 获取可用模块列表 - 必须在 /:id 路由之前定义
+app.get("/modules",
+  mockRequireAuthMiddleware,
+  async (c) => {
+    try {
+      const applicationId = c.req.query("applicationId")
+      const user = c.get("user")
+
+      if (!applicationId) {
+        return c.json({
+          success: false,
+          error: "缺少必要参数：applicationId"
+        }, 400)
+      }
+
+      // 验证用户权限
+      const hasAccess = await service.checkUserAccess(applicationId, user.id)
+      if (!hasAccess) {
+        return c.json({
+          success: false,
+          error: "没有权限访问该应用"
+        }, 403)
+      }
+
+      const modules = await service.getAvailableModules(applicationId)
+      return c.json({ success: true, data: modules })
+    } catch (error) {
+      console.error("获取模块列表失败:", error)
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : "获取模块列表失败"
+      }, 500)
+    }
+  }
+)
+
 // 获取目录列表
 // 支持分页、搜索、过滤等功能
 app.get("/",
@@ -50,11 +86,14 @@ app.post("/",
   mockRequireAuthMiddleware,
   zValidator("json", CreateDirectoryRequest),
   async (c) => {
+    console.log("🚀 创建目录API被调用 - 代码已更新!")
     try {
       const data = c.req.valid("json")
       const user = c.get("user")
       const applicationId = c.req.query("applicationId")
       const moduleId = c.req.query("moduleId")
+
+      console.log("🚀 创建目录参数:", { applicationId, moduleId, data })
 
       if (!applicationId || !moduleId) {
         return c.json({
