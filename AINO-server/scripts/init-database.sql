@@ -270,7 +270,8 @@ ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fk
 ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
-ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id);
+-- 移除 module_id 外键约束，支持引用 modules 和 module_installs 两个表
+-- ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id);
 ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id);
 ALTER TABLE field_categories ADD CONSTRAINT field_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
