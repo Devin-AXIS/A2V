@@ -84,6 +84,7 @@ export class FieldDefsService {
     // 创建反向关联字段
     const [reverseField] = await db.insert(fieldDefs)
       .values({
+        applicationId: targetDirectoryDef.applicationId, // 从目标目录定义中获取 applicationId
         directoryId: targetDirectoryDef.id, // 使用目录定义ID，不是目录ID
         key: reverseFieldKey,
         kind: 'relation',
@@ -161,7 +162,7 @@ export class FieldDefsService {
 
   // 创建字段定义
   async createFieldDef(data: CreateFieldDefData) {
-    // 验证目录定义是否存在
+    // 验证目录定义是否存在并获取 applicationId
     const [directory] = await db.select()
       .from(directoryDefs)
       .where(eq(directoryDefs.id, data.directoryId))
@@ -187,6 +188,7 @@ export class FieldDefsService {
     // 创建字段定义
     const [newField] = await db.insert(fieldDefs)
       .values({
+        applicationId: directory.applicationId, // 从目录定义中获取 applicationId
         directoryId: data.directoryId,
         key: data.key,
         kind: data.kind,

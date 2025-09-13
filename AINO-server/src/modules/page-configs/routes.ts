@@ -1,11 +1,14 @@
 import { Hono } from "hono"
 import { promises as fs } from "fs"
 import path from "path"
+import { fileURLToPath } from "url"
 
 const route = new Hono()
 
 // 将配置以 JSON 文件形式落盘，返回 cfgId；读取时通过 cfgId 获取
 const getStoreDir = () => {
+    // ES 模块中获取当前文件路径的方式
+    const __filename = fileURLToPath(import.meta.url)
     // 运行时代码目录 dist/src/modules/... → 取 dist/../uploads/page-configs
     const runtimeDir = path.dirname(__filename)
     const uploadsDir = path.resolve(runtimeDir, "../../../uploads/page-configs")
