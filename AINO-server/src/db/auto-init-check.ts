@@ -11,7 +11,7 @@ const pool = new Pool({
     connectionString: PG_URL,
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 10000, // 增加连接超时时间到10秒
     ssl: false,
 })
 

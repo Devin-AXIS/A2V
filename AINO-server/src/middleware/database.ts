@@ -6,6 +6,15 @@ import { pool } from '../db'
  * 自动处理表不存在的情况，尝试创建所需的表
  */
 export async function databaseMiddleware(c: Context, next: Next) {
+  // 添加重试计数器，避免无限循环
+  const retryCount = c.get('dbRetryCount') || 0
+  const maxRetries = 1 // 最多重试1次
+
+  if (retryCount >= maxRetries) {
+    console.error('❌ 数据库中间件重试次数超限，停止重试')
+    throw new Error('数据库操作重试次数超限')
+  }
+
   try {
     await next()
   } catch (error) {
@@ -24,7 +33,8 @@ export async function databaseMiddleware(c: Context, next: Next) {
           await createTableByName(tableName)
           console.log(`✅ 表 ${tableName} 创建成功`)
 
-          // 重新执行请求
+          // 设置重试计数器并重新执行请求
+          c.set('dbRetryCount', retryCount + 1)
           await next()
           return
         } catch (createError) {

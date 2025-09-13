@@ -6,7 +6,6 @@ import { autoInitDatabase, validateDatabase } from './auto-init'
 import { smartDB } from './smart-db'
 
 // 数据库连接配置
-console.log(env.host = "47.94.52.142")
 const PG_URL = `postgres://${env.DB_USER}:${env.DB_PASSWORD}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`
 
 // 创建连接池
@@ -14,7 +13,7 @@ const pool = new Pool({
   connectionString: PG_URL,
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // 增加连接超时时间到10秒
   ssl: false, // 禁用 SSL
 })
 

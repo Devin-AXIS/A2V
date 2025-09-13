@@ -236,6 +236,7 @@ export class ApplicationService {
             key: value.key,
             error: singleErr instanceof Error ? singleErr.message : String(singleErr),
           })
+          console.log(singleErr)
         }
       }
     }
