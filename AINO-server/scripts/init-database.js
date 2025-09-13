@@ -87,6 +87,58 @@ async function addColumnIfNotExists(tableName, columnName, columnSQL, special = 
                         console.warn(`⚠️  唯一约束添加警告:`, constraintErr.message);
                     }
                 }
+            } else if (special && columnName === 'name' && tableName === 'directory_defs') {
+                // 特殊处理 directory_defs.name 字段
+                // 1. 先添加可空字段
+                await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSQL}`);
+                console.log(`✅ 字段 ${tableName}.${columnName} 添加成功 (可空)`);
+
+                // 2. 更新现有数据，使用 title 字段的值
+                const updateResult = await pool.query(`UPDATE ${tableName} SET name = title WHERE name IS NULL`);
+                console.log(`✅ 更新了 ${updateResult.rowCount} 条记录的 name 值`);
+
+                // 3. 设置为 NOT NULL
+                await pool.query(`ALTER TABLE ${tableName} ALTER COLUMN ${columnName} SET NOT NULL`);
+                console.log(`✅ 字段 ${tableName}.${columnName} 设置为 NOT NULL`);
+            } else if (special && columnName === 'application_id' && tableName === 'field_defs') {
+                // 特殊处理 field_defs.application_id 字段
+                // 1. 先添加可空字段
+                await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSQL}`);
+                console.log(`✅ 字段 ${tableName}.${columnName} 添加成功 (可空)`);
+
+                // 2. 更新现有数据，从 directory_defs 表获取 application_id
+                const updateResult = await pool.query(`
+                    UPDATE field_defs 
+                    SET application_id = dd.application_id 
+                    FROM directory_defs dd 
+                    WHERE field_defs.directory_id = dd.id 
+                    AND field_defs.application_id IS NULL
+                `);
+                console.log(`✅ 更新了 ${updateResult.rowCount} 条记录的 application_id 值`);
+
+                // 3. 设置为 NOT NULL
+                await pool.query(`ALTER TABLE ${tableName} ALTER COLUMN ${columnName} SET NOT NULL`);
+                console.log(`✅ 字段 ${tableName}.${columnName} 设置为 NOT NULL`);
+
+                // 4. 添加外键约束
+                try {
+                    await pool.query(`ALTER TABLE ${tableName} ADD CONSTRAINT ${tableName}_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE`);
+                    console.log(`✅ 字段 ${tableName}.${columnName} 外键约束添加成功`);
+                } catch (constraintErr) {
+                    if (!constraintErr.message.includes('already exists')) {
+                        console.warn(`⚠️  外键约束添加警告:`, constraintErr.message);
+                    }
+                }
+
+                // 5. 添加索引
+                try {
+                    await pool.query(`CREATE INDEX ${tableName}_application_id_idx ON ${tableName} (application_id)`);
+                    console.log(`✅ 字段 ${tableName}.${columnName} 索引添加成功`);
+                } catch (indexErr) {
+                    if (!indexErr.message.includes('already exists')) {
+                        console.warn(`⚠️  索引添加警告:`, indexErr.message);
+                    }
+                }
             } else {
                 await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSQL}`);
                 console.log(`✅ 字段 ${tableName}.${columnName} 添加成功`);
@@ -364,6 +416,7 @@ async function initDatabase() {
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
                 slug TEXT NOT NULL,
                 title TEXT NOT NULL,
+                name TEXT NOT NULL,
                 version INTEGER NOT NULL DEFAULT 1,
                 status TEXT NOT NULL DEFAULT 'active'::text,
                 application_id UUID NULL,
@@ -383,6 +436,7 @@ async function initDatabase() {
         ], [
             // 如果表已存在，检查并添加可能缺失的字段
             { name: 'title', sql: 'title TEXT NOT NULL' },
+            { name: 'name', sql: 'name TEXT', special: true }, // 特殊处理：需要更新现有数据
             { name: 'version', sql: 'version INTEGER NOT NULL DEFAULT 1' },
             { name: 'status', sql: 'status TEXT NOT NULL DEFAULT \'active\'::text' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMPTZ DEFAULT now()' }
@@ -424,6 +478,7 @@ async function initDatabase() {
         await ensureTableExists('field_defs', `
             CREATE TABLE field_defs (
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
+                application_id UUID NOT NULL,
                 directory_id UUID NOT NULL,
                 key TEXT NOT NULL,
                 kind TEXT NOT NULL,
@@ -441,12 +496,15 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_pkey PRIMARY KEY (id)',
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directory_defs(id)'
         ], [
+            'CREATE INDEX field_defs_application_id_idx ON field_defs (application_id)',
             'CREATE INDEX field_defs_directory_idx ON field_defs (directory_id)',
             'CREATE INDEX field_defs_key_idx ON field_defs (key)'
         ], [
             // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'application_id', sql: 'application_id UUID', special: true }, // 特殊处理：需要更新现有数据
             { name: 'directory_id', sql: 'directory_id UUID NOT NULL' },
             { name: 'kind', sql: 'kind TEXT NOT NULL' },
             { name: 'schema', sql: 'schema JSONB' },
