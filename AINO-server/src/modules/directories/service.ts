@@ -34,7 +34,7 @@ export class DirectoryService {
       if (directory && directory.config && directory.config.categories) {
         return directory.config.categories
       }
-      
+
       // 如果没有配置分类，尝试从recordCategories表获取
       const categories = await this.recordCategoriesRepo.findMany({
         applicationId,
@@ -42,7 +42,7 @@ export class DirectoryService {
         page: 1,
         limit: 100
       }, applicationId)
-      
+
       // 转换为前端期望的格式
       return this.convertCategoriesToFrontendFormat(categories.categories)
     } catch (error) {
@@ -61,10 +61,10 @@ export class DirectoryService {
         console.log("未找到目录定义:", directoryId)
         return []
       }
-      
+
       // 获取字段定义
       const fieldDefs = await this.fieldDefsService.getFieldDefsByDirectoryId(directoryDef.id)
-      
+
       // 转换为前端期望的格式
       return fieldDefs.map(field => ({
         id: field.id,
@@ -107,6 +107,18 @@ export class DirectoryService {
       throw new Error("没有权限访问该应用")
     }
 
+    // 验证应用程序是否存在
+    const application = await this.repo.findApplicationById(applicationId)
+    if (!application) {
+      throw new Error(`应用程序不存在: ${applicationId}`)
+    }
+
+    // 验证模块是否存在
+    const moduleExists = await this.repo.findModuleById(moduleId)
+    if (!moduleExists) {
+      throw new Error(`模块不存在: ${moduleId}`)
+    }
+
     // 检查名称是否已存在
     const nameExists = await this.repo.checkNameExists(data.name, applicationId)
     if (nameExists) {
@@ -120,11 +132,11 @@ export class DirectoryService {
 
   async findMany(query: GetDirectoriesQuery, userId: string): Promise<DirectoriesListResponse> {
     console.log("获取目录列表:", { query, userId })
-    
+
     try {
       // 使用真实数据库操作
       const result = await this.repo.findMany(query)
-      
+
       // 为每个目录获取分类数据和字段定义并转换为前端期望的格式
       const directoriesWithData = await Promise.all(
         result.directories.map(async (dir) => {
@@ -154,7 +166,7 @@ export class DirectoryService {
           }
         })
       )
-      
+
       console.log("查询目录列表成功，共", directoriesWithData.length, "个目录")
       return {
         ...result,
@@ -186,7 +198,7 @@ export class DirectoryService {
           updatedAt: new Date().toISOString()
         }
       ]
-      
+
       return {
         directories: mockDirectories,
         pagination: {
@@ -217,7 +229,7 @@ export class DirectoryService {
         this.getDirectoryCategories(id, result.applicationId),
         this.getDirectoryFields(id)
       ])
-      
+
       console.log("查询目录详情成功:", result.id)
       return {
         ...result,

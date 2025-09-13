@@ -1,5 +1,5 @@
 import { db } from "../../db"
-import { directories, applications, directoryDefs } from "../../db/schema"
+import { directories, applications, directoryDefs, modules } from "../../db/schema"
 import { eq, and, desc, asc, count, sql } from "drizzle-orm"
 import type {
   CreateDirectoryRequest,
@@ -139,6 +139,17 @@ export class DirectoryRepository {
       .select()
       .from(applications)
       .where(eq(applications.id, applicationId))
+      .limit(1)
+
+    return result
+  }
+
+  // 查找模块信息
+  async findModuleById(moduleId: string): Promise<any> {
+    const [result] = await db
+      .select()
+      .from(modules)
+      .where(eq(modules.id, moduleId))
       .limit(1)
 
     return result
