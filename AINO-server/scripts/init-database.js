@@ -690,6 +690,31 @@ async function initDatabase() {
             'CREATE INDEX dir_users_tenant_idx ON dir_users (tenant_id)'
         ]);
 
+        // 15. application_users 表
+        await ensureTableExists('application_users', `
+            CREATE TABLE application_users (
+                id UUID NOT NULL DEFAULT gen_random_uuid(),
+                application_id UUID NOT NULL,
+                phone TEXT NOT NULL,
+                password TEXT NULL,
+                status TEXT NOT NULL DEFAULT 'active'::text,
+                role TEXT NOT NULL DEFAULT 'user'::text,
+                metadata JSONB NULL DEFAULT '{}'::jsonb,
+                last_login_at TIMESTAMP NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT now(),
+                updated_at TIMESTAMP NOT NULL DEFAULT now()
+            )
+        `, [
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_pkey PRIMARY KEY (id)',
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_phone_key UNIQUE (application_id, phone)'
+        ], [
+            'CREATE INDEX application_users_created_at_idx ON application_users (created_at)',
+            'CREATE INDEX application_users_app_status_idx ON application_users (application_id, status)',
+            'CREATE INDEX application_users_app_phone_idx ON application_users (application_id, phone)',
+            'CREATE INDEX application_users_phone_idx ON application_users (phone)'
+        ]);
+
         console.log('✅ 所有核心表检测完成');
 
         console.log('\n📋 步骤 3: 创建基础数据...');
