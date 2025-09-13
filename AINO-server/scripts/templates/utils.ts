@@ -49,6 +49,7 @@ export async function createDirectory(
     applicationId,
     directoryId: createdDirectory.id,
     title: template.name,
+    name: template.name, // 添加name字段
     slug: `${template.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
     status: 'active',
   }).returning()

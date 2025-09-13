@@ -63,6 +63,7 @@ export class DirectoryDefsService {
       .values({
         slug: data.slug,
         title: data.title,
+        name: data.title, // 添加name字段，使用title作为name
         version: data.version || 1,
         status: data.status || 'active',
         applicationId: data.applicationId,

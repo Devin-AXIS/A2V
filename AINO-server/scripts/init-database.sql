@@ -112,6 +112,7 @@ CREATE TABLE directory_defs (
   id UUID NOT NULL DEFAULT gen_random_uuid(),
   slug TEXT NOT NULL,
   title TEXT NOT NULL,
+  name TEXT NOT NULL,
   version INTEGER NOT NULL DEFAULT 1,
   status TEXT NOT NULL DEFAULT 'active'::text,
   application_id UUID NULL,

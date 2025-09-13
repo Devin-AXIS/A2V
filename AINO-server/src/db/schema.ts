@@ -197,6 +197,7 @@ export const directoryDefs = pgTable('directory_defs', {
   id: uuid('id').primaryKey().defaultRandom(),
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
+  name: text('name').notNull(), // 添加name字段
   version: integer('version').notNull().default(1),
   status: text('status').notNull().default('active'),
   applicationId: uuid('application_id').references(() => applications.id, { onDelete: 'cascade' }),

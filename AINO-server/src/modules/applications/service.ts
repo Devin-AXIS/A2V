@@ -100,6 +100,7 @@ export class ApplicationService {
         applicationId,
         directoryId: createdDirectory.id,
         title: '用户列表',
+        name: '用户列表', // 添加name字段
         slug: `user-list-${Date.now()}`,
         status: 'active',
       }).returning()
