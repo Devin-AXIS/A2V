@@ -63,21 +63,21 @@ async function addColumnIfNotExists(tableName, columnName, columnSQL, special = 
         const exists = await checkColumnExists(tableName, columnName);
         if (!exists) {
             console.log(`📋 添加字段: ${tableName}.${columnName}`);
-            
+
             if (special && columnName === 'slug' && tableName === 'directories') {
                 // 特殊处理 directories.slug 字段
                 // 1. 先添加可空字段
                 await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSQL}`);
                 console.log(`✅ 字段 ${tableName}.${columnName} 添加成功 (可空)`);
-                
+
                 // 2. 更新现有数据
                 const updateResult = await pool.query(`UPDATE ${tableName} SET slug = LOWER(REPLACE(name, ' ', '-')) WHERE slug IS NULL`);
                 console.log(`✅ 更新了 ${updateResult.rowCount} 条记录的 slug 值`);
-                
+
                 // 3. 设置为 NOT NULL
                 await pool.query(`ALTER TABLE ${tableName} ALTER COLUMN ${columnName} SET NOT NULL`);
                 console.log(`✅ 字段 ${tableName}.${columnName} 设置为 NOT NULL`);
-                
+
                 // 4. 添加唯一约束
                 try {
                     await pool.query(`ALTER TABLE ${tableName} ADD CONSTRAINT ${tableName}_slug_unique UNIQUE (slug)`);
@@ -631,27 +631,6 @@ async function initDatabase() {
             'CREATE INDEX dir_users_created_at_idx ON dir_users (created_at)',
             'CREATE INDEX dir_users_tenant_idx ON dir_users (tenant_id)'
         ]);
-
-        // 15. test_table 表 (新增)
-        await ensureTableExists('test_table', `
-            CREATE TABLE test_table (
-                id INTEGER NOT NULL DEFAULT nextval('test_table_id_seq'::regclass),
-                name VARCHAR(100) NULL,
-                created_at TIMESTAMP WITHOUT TIME ZONE NULL DEFAULT now()
-            )
-        `, [
-            'ALTER TABLE test_table ADD CONSTRAINT test_table_pkey PRIMARY KEY (id)'
-        ], [
-            'CREATE INDEX test_table_created_at_idx ON test_table (created_at)'
-        ]);
-
-        // 确保 test_table_id_seq 序列存在
-        try {
-            await pool.query('CREATE SEQUENCE IF NOT EXISTS test_table_id_seq');
-            console.log('✅ test_table_id_seq 序列创建成功');
-        } catch (seqErr) {
-            console.warn('⚠️  创建序列 test_table_id_seq 失败:', seqErr.message);
-        }
 
         console.log('✅ 所有核心表检测完成');
 
