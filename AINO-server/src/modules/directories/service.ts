@@ -101,32 +101,47 @@ export class DirectoryService {
   }
 
   async create(data: CreateDirectoryRequest, applicationId: string, moduleId: string, userId: string): Promise<DirectoryResponse> {
+    console.log("🔍 DirectoryService.create 开始执行:", { applicationId, moduleId, userId, data })
+
     // 验证用户权限
+    console.log("🔍 验证用户权限...")
     const hasAccess = await this.checkUserAccess(applicationId, userId)
     if (!hasAccess) {
+      console.log("❌ 用户权限验证失败")
       throw new Error("没有权限访问该应用")
     }
+    console.log("✅ 用户权限验证通过")
 
     // 验证应用程序是否存在
+    console.log("🔍 验证应用程序是否存在:", applicationId)
     const application = await this.repo.findApplicationById(applicationId)
     if (!application) {
+      console.log("❌ 应用程序不存在:", applicationId)
       throw new Error(`应用程序不存在: ${applicationId}`)
     }
+    console.log("✅ 应用程序验证通过:", application.name)
 
     // 验证模块是否存在
+    console.log("🔍 验证模块是否存在:", moduleId)
     const moduleExists = await this.repo.findModuleById(moduleId)
     if (!moduleExists) {
+      console.log("❌ 模块不存在:", moduleId)
       throw new Error(`模块不存在: ${moduleId}`)
     }
+    console.log("✅ 模块验证通过:", moduleExists.name || moduleExists.module_name)
 
     // 检查名称是否已存在
+    console.log("🔍 检查目录名称是否已存在:", data.name)
     const nameExists = await this.repo.checkNameExists(data.name, applicationId)
     if (nameExists) {
+      console.log("❌ 目录名称已存在:", data.name)
       throw new Error("目录名称已存在")
     }
+    console.log("✅ 目录名称验证通过")
 
+    console.log("🔍 开始创建目录...")
     const result = await this.repo.create(data, applicationId, moduleId)
-    console.log("创建目录成功:", result.id)
+    console.log("✅ 创建目录成功:", result.id)
     return result
   }
 

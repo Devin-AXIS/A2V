@@ -146,7 +146,10 @@ export class DirectoryRepository {
 
   // 查找模块信息 - 支持检查 modules 和 moduleInstalls 两个表
   async findModuleById(moduleId: string): Promise<any> {
+    console.log("🔍 DirectoryRepository.findModuleById 开始执行:", moduleId)
+
     // 首先检查 modules 表
+    console.log("🔍 检查 modules 表...")
     const [moduleResult] = await db
       .select()
       .from(modules)
@@ -154,15 +157,24 @@ export class DirectoryRepository {
       .limit(1)
 
     if (moduleResult) {
+      console.log("✅ 在 modules 表中找到模块:", moduleResult.name)
       return moduleResult
     }
+    console.log("❌ 在 modules 表中未找到模块")
 
     // 如果 modules 表中没有找到，检查 moduleInstalls 表
+    console.log("🔍 检查 module_installs 表...")
     const [moduleInstallResult] = await db
       .select()
       .from(moduleInstalls)
       .where(eq(moduleInstalls.id, moduleId))
       .limit(1)
+
+    if (moduleInstallResult) {
+      console.log("✅ 在 module_installs 表中找到模块:", moduleInstallResult.module_name)
+    } else {
+      console.log("❌ 在 module_installs 表中也未找到模块")
+    }
 
     return moduleInstallResult
   }
