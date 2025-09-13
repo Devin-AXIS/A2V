@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 const TEST_TOKEN = 'test-token'
 
 // API请求辅助函数
@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -101,7 +101,7 @@ async function testFieldInputs() {
             test_tags: ['标签1', '标签2'],
           }
         }
-        
+
         const createResult = await apiRequest(`/api/records/${dirId}`, {
           method: 'POST',
           body: JSON.stringify(testRecord)
@@ -125,7 +125,7 @@ async function testFieldInputs() {
               test_tags: ['标签3', '标签4', '标签5'],
             }
           }
-          
+
           const updateResult = await apiRequest(`/api/records/${dirId}/${recordId}`, {
             method: 'PATCH',
             body: JSON.stringify(updateRecord)

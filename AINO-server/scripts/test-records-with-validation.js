@@ -1,20 +1,20 @@
 const { Pool } = require('pg')
 
 const pool = new Pool({
-  connectionString: process.env.PG_URL || 'postgresql://aino:pass@localhost:5433/aino'
+  connectionString: process.env.PG_URL || 'postgresql://aino:pass@47.94.52.142:5433/aino'
 })
 
 async function testRecordsWithValidation() {
   const client = await pool.connect()
-  
+
   try {
     console.log('🧪 测试带字段验证的 Records API...\n')
-    
+
     // 1. 创建字段定义
     console.log('1. 创建字段定义...')
     const dirResult = await client.query('SELECT id FROM directory_defs WHERE slug = $1', ['users'])
     const directoryId = dirResult.rows[0].id
-    
+
     // 插入字段定义
     await client.query(`
       INSERT INTO field_defs (directory_id, key, kind, type, required, schema) 
@@ -30,16 +30,16 @@ async function testRecordsWithValidation() {
       ON CONFLICT DO NOTHING
     `, [directoryId])
     console.log('✅ 字段定义创建完成')
-    
+
     // 2. 测试API调用
     console.log('\n2. 测试API调用...')
-    
-    const baseUrl = 'http://localhost:3001/api/records'
-    const headers = { 
+
+    const baseUrl = 'http://47.94.52.142:3001/api/records'
+    const headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer test-token'
     }
-    
+
     // 测试用例1：有效数据
     console.log('   - 测试有效数据...')
     const validData = {
@@ -52,13 +52,13 @@ async function testRecordsWithValidation() {
       birthDate: '1993-05-15',
       isActive: true
     }
-    
+
     const createResponse = await fetch(`${baseUrl}/users`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ props: validData })
     })
-    
+
     if (createResponse.ok) {
       const createdRecord = await createResponse.json()
       console.log('   ✅ 创建成功:', createdRecord.data.id)
@@ -67,7 +67,7 @@ async function testRecordsWithValidation() {
       const error = await createResponse.text()
       console.log('   ❌ 创建失败:', error)
     }
-    
+
     // 测试用例2：无效数据
     console.log('\n   - 测试无效数据...')
     const invalidData = {
@@ -80,20 +80,20 @@ async function testRecordsWithValidation() {
       birthDate: 'invalid-date', // 无效日期
       isActive: 'not-boolean' // 无效布尔值
     }
-    
+
     const invalidResponse = await fetch(`${baseUrl}/users`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ props: invalidData })
     })
-    
+
     if (invalidResponse.ok) {
       console.log('   ❌ 应该失败但成功了')
     } else {
       const error = await invalidResponse.text()
       console.log('   ✅ 验证失败（预期）:', error)
     }
-    
+
     // 测试用例3：部分有效数据
     console.log('\n   - 测试部分有效数据...')
     const partialData = {
@@ -103,13 +103,13 @@ async function testRecordsWithValidation() {
       role: 'admin',
       isActive: 'true' // 字符串布尔值
     }
-    
+
     const partialResponse = await fetch(`${baseUrl}/users`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ props: partialData })
     })
-    
+
     if (partialResponse.ok) {
       const partialRecord = await partialResponse.json()
       console.log('   ✅ 创建成功:', partialRecord.data.id)
@@ -118,9 +118,9 @@ async function testRecordsWithValidation() {
       const error = await partialResponse.text()
       console.log('   ❌ 创建失败:', error)
     }
-    
+
     console.log('\n🎉 带字段验证的 Records API 测试完成！')
-    
+
   } catch (error) {
     console.error('❌ 测试失败:', error)
   } finally {

@@ -2,7 +2,7 @@
 
 import fetch from 'node-fetch'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = 'http://47.94.52.142:3001'
 const TOKEN = 'test-token'
 
 async function apiRequest(endpoint, options = {}) {
@@ -38,7 +38,7 @@ async function testCountryField() {
     if (!appsResponse.success) {
       throw new Error('获取应用列表失败')
     }
-    
+
     const app = appsResponse.data.applications[0]
     console.log(`✅ 找到应用: ${app.name} (${app.id})`)
 
@@ -48,7 +48,7 @@ async function testCountryField() {
     if (!modulesResponse.success) {
       throw new Error('获取应用模块失败')
     }
-    
+
     const module = modulesResponse.data.modules[0]
     console.log(`✅ 找到模块: ${module.name} (${module.id})`)
 
@@ -58,7 +58,7 @@ async function testCountryField() {
     if (!directoriesResponse.success) {
       throw new Error('获取目录列表失败')
     }
-    
+
     const directory = directoriesResponse.data.directories[0]
     console.log(`✅ 找到目录: ${directory.name} (${directory.id})`)
     console.log(`   字段数量: ${directory.config?.fields?.length || 0}`)
@@ -70,7 +70,7 @@ async function testCountryField() {
       console.log('❌ 未找到国家字段 (g_sp19)')
       return
     }
-    
+
     console.log('✅ 找到国家字段:')
     console.log(`   标签: ${countryField.label}`)
     console.log(`   键: ${countryField.key}`)
@@ -92,12 +92,12 @@ async function testCountryField() {
     const testRecord = {
       g_sp19: '中国'
     }
-    
+
     const createResponse = await apiRequest(`/api/records/${directory.id}`, {
       method: 'POST',
       body: JSON.stringify(testRecord)
     })
-    
+
     if (createResponse.success) {
       console.log('✅ 记录创建成功')
       console.log(`   记录ID: ${createResponse.data.id}`)

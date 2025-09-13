@@ -420,53 +420,44 @@ export function useGlobalRadius() {
     const currentPreset = tokens.globalRadius.presets[tokens.globalRadius.active]
     if (!currentPreset) return
 
-    // 获取当前预设的边角值
+    // 只获取卡片组件的边角值
     const cardRadius = getComponentRadius('card')
-    const buttonRadius = getComponentRadius('button')
-    const inputRadius = getComponentRadius('input')
-    const modalRadius = getComponentRadius('modal')
 
-    console.log('🎯 应用边角到组件:', {
+    console.log('🎯 应用边角到卡片组件:', {
       preset: tokens.globalRadius.active,
-      card: cardRadius,
-      button: buttonRadius,
-      input: inputRadius,
-      modal: modalRadius
+      card: cardRadius
     })
 
     // 使用CSS变量方式，避免直接DOM操作
     const root = document.documentElement
-    console.log(cardRadius, 23232323)
     root.style.setProperty('--radius-current-card', cardRadius)
-    root.style.setProperty('--radius-current-button', buttonRadius)
-    root.style.setProperty('--radius-current-input', inputRadius)
-    root.style.setProperty('--radius-current-modal', modalRadius)
 
-    // 创建简洁的CSS覆盖样式
+    // 创建只针对卡片组件的CSS覆盖样式
     const overrideStyles = `
-      .rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full {
+      /* 只影响卡片组件 - 使用更精确的选择器 */
+      .rounded-xl.group,
+      [class*="card"].rounded-xl,
+      [class*="Card"].rounded-xl,
+      .card.rounded-xl,
+      .Card.rounded-xl,
+      [data-card].rounded-xl,
+      [data-component="card"].rounded-xl,
+      /* AppCard 组件的特定选择器 */
+      .group.rounded-xl,
+      /* 确保只影响卡片容器，不影响内部元素 */
+      .group.rounded-xl:not(button):not(input):not(textarea):not(select):not(.btn):not([class*="button"]) {
         border-radius: var(--radius-current-card) !important;
         transition: border-radius 0.2s ease-in-out;
       }
-      button, .btn, [class*="button"] {
-        border-radius: var(--radius-current-button) !important;
-        transition: border-radius 0.2s ease-in-out;
-      }
-      input, textarea, select {
-        border-radius: var(--radius-current-input) !important;
-        transition: border-radius 0.2s ease-in-out;
-      }
-      [class*="card"], [class*="Card"] {
-        border-radius: var(--radius-current-card) !important;
-        transition: border-radius 0.2s ease-in-out;
-      }
-      [class*="modal"], [class*="Modal"] {
-        border-radius: var(--radius-current-modal) !important;
-        transition: border-radius 0.2s ease-in-out;
-      }
-      [class*="rounded"] {
-        border-radius: var(--radius-current-card) !important;
-        transition: border-radius 0.2s ease-in-out;
+      
+      /* 明确排除非卡片元素，确保它们保持原有圆角 */
+      button:not([class*="card"]):not([class*="Card"]),
+      .btn:not([class*="card"]):not([class*="Card"]),
+      [class*="button"]:not([class*="card"]):not([class*="Card"]),
+      input:not([class*="card"]):not([class*="Card"]),
+      textarea:not([class*="card"]):not([class*="Card"]),
+      select:not([class*="card"]):not([class*="Card"]) {
+        /* 保持原有圆角，不受全局配置影响 */
       }
     `
 
@@ -479,7 +470,7 @@ export function useGlobalRadius() {
     }
     styleTag.textContent = overrideStyles
 
-    console.log('✅ 边角已通过CSS变量应用')
+    console.log('✅ 卡片边角配置已应用，其他组件保持原有圆角')
   }, [tokens, getComponentRadius])
 
   // 应用边角预设到DOM

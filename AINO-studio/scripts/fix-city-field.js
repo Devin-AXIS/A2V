@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 const TEST_TOKEN = 'test-token'
 
 // API请求辅助函数
@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -59,18 +59,18 @@ async function fixCityField() {
     // 3. 查找并修复城市字段
     for (const directory of directories.data.directories) {
       console.log(`3️⃣ 检查目录: ${directory.name}`)
-      
+
       if (directory.config && directory.config.fields) {
         let hasCityField = false
         let needsUpdate = false
-        
+
         // 检查是否有城市字段
         for (const field of directory.config.fields) {
-          if (field.label === '城市1' || field.key === 'c_89a6' || 
-              (field.type === 'text' && field.label.includes('城市'))) {
+          if (field.label === '城市1' || field.key === 'c_89a6' ||
+            (field.type === 'text' && field.label.includes('城市'))) {
             hasCityField = true
             console.log(`   找到城市字段: ${field.label} (${field.key})`)
-            
+
             // 检查是否已有预设
             if (!field.preset) {
               console.log('   ❌ 缺少预设信息，正在修复...')
@@ -82,10 +82,10 @@ async function fixCityField() {
             break
           }
         }
-        
+
         if (hasCityField && needsUpdate) {
           console.log('   🔧 更新目录配置...')
-          
+
           // 更新目录配置
           const updateResult = await apiRequest(`/api/directories/${directory.id}`, {
             method: 'PATCH',
@@ -93,7 +93,7 @@ async function fixCityField() {
               config: directory.config
             })
           })
-          
+
           if (updateResult.success) {
             console.log('   ✅ 城市字段预设修复成功')
           } else {
@@ -126,7 +126,7 @@ async function fixCityField() {
         placeholder: '请选择省/市/区',
         preset: 'city'
       }
-      
+
       // 添加到目录配置
       if (!firstDirectory.config) {
         firstDirectory.config = { fields: [] }
@@ -134,19 +134,19 @@ async function fixCityField() {
       if (!firstDirectory.config.fields) {
         firstDirectory.config.fields = []
       }
-      
+
       // 检查是否已存在城市字段
       const existingCityField = firstDirectory.config.fields.find(f => f.key === 'city')
       if (!existingCityField) {
         firstDirectory.config.fields.push(newCityField)
-        
+
         const createResult = await apiRequest(`/api/directories/${firstDirectory.id}`, {
           method: 'PATCH',
           body: JSON.stringify({
             config: firstDirectory.config
           })
         })
-        
+
         if (createResult.success) {
           console.log('✅ 新城市字段创建成功')
         } else {

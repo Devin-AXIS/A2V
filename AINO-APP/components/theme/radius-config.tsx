@@ -224,36 +224,21 @@ export function RadiusConfig() {
         </div>
       </div>
 
-      {/* 组件边角预览 */}
+      {/* 卡片边角预览 */}
       <div className="space-y-2">
         <Label>
-          {isEnglish ? "Component Radius Preview" : "组件边角预览"}
+          {isEnglish ? "Card Radius Preview" : "卡片边角预览"}
         </Label>
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="text-sm">
           <div className="flex justify-between">
             <span>{isEnglish ? "Card" : "卡片"}:</span>
             <Badge variant="outline">
               {config.radius.getComponentRadius('card')}
             </Badge>
           </div>
-          <div className="flex justify-between">
-            <span>{isEnglish ? "Button" : "按钮"}:</span>
-            <Badge variant="outline">
-              {config.radius.getComponentRadius('button')}
-            </Badge>
-          </div>
-          <div className="flex justify-between">
-            <span>{isEnglish ? "Input" : "输入框"}:</span>
-            <Badge variant="outline">
-              {config.radius.getComponentRadius('input')}
-            </Badge>
-          </div>
-          <div className="flex justify-between">
-            <span>{isEnglish ? "Modal" : "模态框"}:</span>
-            <Badge variant="outline">
-              {config.radius.getComponentRadius('modal')}
-            </Badge>
-          </div>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {isEnglish ? "Only affects card components" : "仅影响卡片组件"}
         </div>
       </div>
 

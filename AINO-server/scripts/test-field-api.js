@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 
 // 测试数据
 const testDirectoryId = 'test-directory-123'
@@ -39,22 +39,22 @@ async function apiRequest(method, endpoint, data = null) {
       'Content-Type': 'application/json',
     }
   }
-  
+
   if (data) {
     options.body = JSON.stringify(data)
   }
-  
+
   try {
     const response = await fetch(url, options)
     const contentType = response.headers.get('content-type')
-    
+
     let result
     if (contentType && contentType.includes('application/json')) {
       result = await response.json()
     } else {
       result = await response.text()
     }
-    
+
     return { status: response.status, data: result }
   } catch (error) {
     return { status: 500, data: { success: false, error: error.message } }
@@ -106,12 +106,12 @@ async function runTests() {
   if (createRecordResult.data.success) {
     console.log('记录ID:', createRecordResult.data.data.id)
     const recordId = createRecordResult.data.data.id
-    
+
     // 获取记录详情
     console.log('\n获取记录详情...')
     const getRecordResult = await apiRequest('GET', `/api/records/${testDirectoryId}/${recordId}`)
     console.log('获取结果:', getRecordResult.status === 200 ? '✅ 成功' : '❌ 失败')
-    
+
     // 更新记录
     console.log('\n更新记录...')
     const updateData = {
@@ -122,7 +122,7 @@ async function runTests() {
     }
     const updateRecordResult = await apiRequest('PATCH', `/api/records/${testDirectoryId}/${recordId}`, updateData)
     console.log('更新结果:', updateRecordResult.status === 200 ? '✅ 成功' : '❌ 失败')
-    
+
     // 获取记录列表
     console.log('\n获取记录列表...')
     const listRecordsResult = await apiRequest('GET', `/api/records/${testDirectoryId}`)
@@ -130,7 +130,7 @@ async function runTests() {
     if (listRecordsResult.data.success) {
       console.log('记录数量:', listRecordsResult.data.data.length)
     }
-    
+
     // 删除记录
     console.log('\n删除记录...')
     const deleteRecordResult = await apiRequest('DELETE', `/api/records/${testDirectoryId}/${recordId}`)

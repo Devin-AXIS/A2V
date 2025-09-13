@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 const TEST_TOKEN = 'test-token'
 
 // API请求辅助函数
@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -54,17 +54,17 @@ async function testCityFieldFrontend() {
       console.log(`   预设: ${cityField.preset}`)
       console.log(`   启用: ${cityField.enabled}`)
       console.log('')
-      
+
       // 3. 检查字段过滤逻辑
       console.log('3️⃣ 检查字段过滤逻辑...')
       const isBasicField = (cityField.enabled && cityField.type !== "relation_many" && cityField.type !== "relation_one") ||
-                          (cityField.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(cityField.preset))
-      
+        (cityField.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(cityField.preset))
+
       console.log(`   是否为基础字段: ${isBasicField}`)
       console.log(`   字段类型检查: ${cityField.type !== "relation_many" && cityField.type !== "relation_one"}`)
       console.log(`   预设检查: ${cityField.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(cityField.preset)}`)
       console.log('')
-      
+
       if (isBasicField) {
         console.log('✅ 城市字段会被正确包含在基础字段中')
       } else {
@@ -99,17 +99,17 @@ async function testCityFieldFrontend() {
         c_89a6: '广东省 / 深圳市 / 南山区'
       }
     }
-    
+
     const createRecord = await apiRequest('/api/records/047f40ea-13ff-4ede-92e9-85694329f5f6', {
       method: 'POST',
       body: JSON.stringify(testRecord)
     })
-    
+
     if (createRecord.success) {
       console.log('✅ 记录创建成功')
       console.log(`   城市字段值: ${testRecord.props.c_89a6}`)
       console.log('')
-      
+
       // 查询记录
       const getRecord = await apiRequest(`/api/records/047f40ea-13ff-4ede-92e9-85694329f5f6/${createRecord.data.id}`)
       if (getRecord.success) {
@@ -117,7 +117,7 @@ async function testCityFieldFrontend() {
         console.log(`   记录ID: ${createRecord.data.id}`)
         console.log('')
       }
-      
+
       // 清理测试数据
       await apiRequest(`/api/records/047f40ea-13ff-4ede-92e9-85694329f5f6/${createRecord.data.id}`, {
         method: 'DELETE'

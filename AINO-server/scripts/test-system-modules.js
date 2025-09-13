@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 
 async function testSystemModules() {
   console.log('🧪 测试系统模块自动创建...\n')
@@ -21,15 +21,15 @@ async function testSystemModules() {
         isPublic: false
       })
     })
-    
+
     const createData = await createResponse.json()
     console.log('   状态码:', createResponse.status)
     console.log('   响应:', JSON.stringify(createData, null, 2))
-    
+
     if (createData.success && createData.data) {
       const applicationId = createData.data.id
       console.log('   应用ID:', applicationId)
-      
+
       // 2. 获取应用的模块列表
       console.log('\n2. 获取应用模块列表...')
       const modulesResponse = await fetch(`${BASE_URL}/api/applications/${applicationId}/modules`, {
@@ -37,11 +37,11 @@ async function testSystemModules() {
           'Authorization': 'Bearer test-token'
         }
       })
-      
+
       const modulesData = await modulesResponse.json()
       console.log('   状态码:', modulesResponse.status)
       console.log('   响应:', JSON.stringify(modulesData, null, 2))
-      
+
       if (modulesData.success && modulesData.data.modules) {
         console.log('\n✅ 系统模块创建成功！')
         console.log('   模块数量:', modulesData.data.modules.length)
@@ -50,11 +50,11 @@ async function testSystemModules() {
         })
       }
     }
-    
+
   } catch (error) {
     console.log('   错误:', error.message)
   }
-  
+
   console.log('\n🎯 测试完成！')
 }
 

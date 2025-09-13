@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 const TEST_TOKEN = 'test-token'
 
 // API请求辅助函数
@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {

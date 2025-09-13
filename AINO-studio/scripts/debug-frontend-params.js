@@ -7,7 +7,7 @@
 
 import fetch from 'node-fetch'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 const TEST_TOKEN = 'test-token'
 
 // API请求辅助函数
@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -43,7 +43,7 @@ async function debugFrontendParams() {
       console.log(`   名称: ${app.name}`)
       console.log(`   ID: ${app.id}`)
       console.log('')
-      
+
       // 2. 获取应用模块
       console.log('2️⃣ 获取应用模块...')
       const modulesResponse = await apiRequest(`/api/applications/${app.id}/modules`)
@@ -53,7 +53,7 @@ async function debugFrontendParams() {
         console.log(`   名称: ${module.name}`)
         console.log(`   ID: ${module.id}`)
         console.log('')
-        
+
         // 3. 使用正确的参数获取目录
         console.log('3️⃣ 使用正确的参数获取目录...')
         const directoriesResponse = await apiRequest(`/api/directories?applicationId=${app.id}&moduleId=${module.id}`)
@@ -64,7 +64,7 @@ async function debugFrontendParams() {
           console.log(`   ID: ${directory.id}`)
           console.log(`   字段数量: ${directory.config?.fields?.length || 0}`)
           console.log('')
-          
+
           // 4. 检查城市字段
           if (directory.config?.fields) {
             const cityField = directory.config.fields.find(f => f.key === 'c_89a6')
@@ -77,7 +77,7 @@ async function debugFrontendParams() {
               console.log(`   预设: ${cityField.preset}`)
               console.log(`   启用: ${cityField.enabled}`)
               console.log('')
-              
+
               // 5. 检查前端数据转换
               console.log('5️⃣ 检查前端数据转换...')
               const transformedDirectory = {
@@ -88,7 +88,7 @@ async function debugFrontendParams() {
                 categories: directory.config?.categories || [],
                 records: [],
               }
-              
+
               const transformedCityField = transformedDirectory.fields.find(f => f.key === 'c_89a6')
               if (transformedCityField) {
                 console.log('✅ 转换后的城市字段:')
@@ -96,7 +96,7 @@ async function debugFrontendParams() {
                 console.log(`   启用: ${transformedCityField.enabled}`)
                 console.log(`   类型: ${transformedCityField.type}`)
                 console.log('')
-                
+
                 // 6. 检查字段过滤
                 console.log('6️⃣ 检查字段过滤...')
                 const basicFields = transformedDirectory.fields.filter(
@@ -104,10 +104,10 @@ async function debugFrontendParams() {
                     (f.enabled && f.type !== "relation_many" && f.type !== "relation_one") ||
                     (f.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
                 )
-                
+
                 const cityFieldInBasic = basicFields.find(f => f.key === 'c_89a6')
                 console.log(`城市字段是否在基础字段中: ${cityFieldInBasic ? '是' : '否'}`)
-                
+
                 if (cityFieldInBasic) {
                   console.log('✅ 城市字段会被包含在基础字段中')
                   console.log('   应该使用 CitySelect 组件')

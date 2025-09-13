@@ -5,7 +5,7 @@
  * 使用方法: node scripts/test-default-directories.js
  */
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 
 // 模拟用户登录获取token
 async function login() {
@@ -153,7 +153,7 @@ async function testDefaultDirectories() {
   console.log('5. 获取用户模块的目录列表...')
   const directories = await getDirectories(token, application.id, userModule.id)
   console.log(`✅ 找到 ${directories.length} 个目录:`)
-  
+
   if (directories.length === 0) {
     console.log('   ⚠️  没有找到默认目录，可能需要检查数据库迁移')
   } else {
@@ -173,7 +173,7 @@ async function testDefaultDirectories() {
   console.log('6. 验证默认目录...')
   const expectedDirectories = ['用户列表', '部门管理', '用户注册']
   const foundDirectories = directories.map(d => d.name)
-  
+
   for (const expected of expectedDirectories) {
     if (foundDirectories.includes(expected)) {
       console.log(`   ✅ ${expected}`)

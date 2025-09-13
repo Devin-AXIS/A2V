@@ -289,7 +289,7 @@ export function PCUnifiedConfig() {
                   <div>
                     <Label className="text-gray-600 mb-3 block flex items-center gap-2">
                       <Square className="w-4 h-4" />
-                      {isEnglish ? "Global Radius" : "全局边角"}
+                      {isEnglish ? "Card Radius" : "卡片圆角"}
                     </Label>
                     <RadiusConfig />
                   </div>
