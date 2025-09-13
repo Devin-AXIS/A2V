@@ -420,19 +420,22 @@ export function useGlobalRadius() {
     const currentPreset = tokens.globalRadius.presets[tokens.globalRadius.active]
     if (!currentPreset) return
 
-    // 只获取卡片组件的边角值
+    // 获取卡片和按钮组件的边角值
     const cardRadius = getComponentRadius('card')
+    const buttonRadius = getComponentRadius('button')
 
-    console.log('🎯 应用边角到卡片组件:', {
+    console.log('🎯 应用边角到组件:', {
       preset: tokens.globalRadius.active,
-      card: cardRadius
+      card: cardRadius,
+      button: buttonRadius
     })
 
     // 使用CSS变量方式，避免直接DOM操作
     const root = document.documentElement
     root.style.setProperty('--radius-current-card', cardRadius)
+    root.style.setProperty('--radius-current-button', buttonRadius)
 
-    // 创建只针对卡片组件的CSS覆盖样式
+    // 创建针对卡片和按钮组件的CSS覆盖样式
     const overrideStyles = `
       /* 只影响卡片组件 - 使用更精确的选择器 */
       .rounded-xl.group,
@@ -450,10 +453,21 @@ export function useGlobalRadius() {
         transition: border-radius 0.2s ease-in-out;
       }
       
-      /* 明确排除非卡片元素，确保它们保持原有圆角 */
-      button:not([class*="card"]):not([class*="Card"]),
-      .btn:not([class*="card"]):not([class*="Card"]),
-      [class*="button"]:not([class*="card"]):not([class*="Card"]),
+      /* 影响按钮组件 - 只针对特定按钮 */
+      button[class*="rounded-lg"],
+      button[class*="rounded-md"],
+      button[class*="rounded-xl"],
+      .btn[class*="rounded-lg"],
+      .btn[class*="rounded-md"],
+      .btn[class*="rounded-xl"],
+      [class*="button"][class*="rounded-lg"],
+      [class*="button"][class*="rounded-md"],
+      [class*="button"][class*="rounded-xl"] {
+        border-radius: var(--radius-current-button) !important;
+        transition: border-radius 0.2s ease-in-out;
+      }
+      
+      /* 明确排除非目标元素，确保它们保持原有圆角 */
       input:not([class*="card"]):not([class*="Card"]),
       textarea:not([class*="card"]):not([class*="Card"]),
       select:not([class*="card"]):not([class*="Card"]) {
@@ -470,7 +484,7 @@ export function useGlobalRadius() {
     }
     styleTag.textContent = overrideStyles
 
-    console.log('✅ 卡片边角配置已应用，其他组件保持原有圆角')
+    console.log('✅ 卡片和按钮边角配置已应用')
   }, [tokens, getComponentRadius])
 
   // 应用边角预设到DOM

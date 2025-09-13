@@ -352,7 +352,7 @@ export function MobileUnifiedConfig() {
               <div>
                 <Label className="text-gray-600 mb-3 block flex items-center gap-2">
                   <Square className="w-4 h-4" />
-                  {isEnglish ? "Card Radius" : "卡片圆角"}
+                  {isEnglish ? "Component Radius" : "组件圆角"}
                 </Label>
                 <RadiusConfig />
               </div>
