@@ -211,6 +211,7 @@ export const directoryDefs = pgTable('directory_defs', {
 
 export const fieldDefs = pgTable('field_defs', {
   id: uuid('id').primaryKey().defaultRandom(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
   directoryId: uuid('directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
   key: text('key').notNull(),
   kind: text('kind').notNull(), // 'primitive' | 'composite' | 'relation' | 'lookup' | 'computed'
@@ -225,7 +226,9 @@ export const fieldDefs = pgTable('field_defs', {
   required: boolean('required').default(false),
   categoryId: uuid('category_id').references(() => fieldCategories.id, { onDelete: 'set null' }),
 }, (table) => ({
+  applicationIdx: index("field_defs_application_id_idx").on(table.applicationId),
   directoryIdx: index("field_defs_directory_idx").on(table.directoryId),
+  categoryIdx: index("field_defs_category_id_idx").on(table.categoryId),
   keyIdx: index("field_defs_key_idx").on(table.key),
 }))
 

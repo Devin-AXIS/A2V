@@ -344,6 +344,7 @@ async function initDatabase() {
         await ensureTableExists('field_defs', `
             CREATE TABLE field_defs (
                 id UUID NOT NULL DEFAULT gen_random_uuid(),
+                application_id UUID NOT NULL,
                 directory_id UUID NOT NULL,
                 key TEXT NOT NULL,
                 kind TEXT NOT NULL,
@@ -360,14 +361,17 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_pkey PRIMARY KEY (id)',
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id)',
             'ALTER TABLE field_defs ADD CONSTRAINT field_defs_category_id_fkey FOREIGN KEY (category_id) REFERENCES field_categories(id)'
         ], [
+            'CREATE INDEX field_defs_application_id_idx ON field_defs (application_id)',
             'CREATE INDEX field_defs_directory_id_idx ON field_defs (directory_id)',
             'CREATE INDEX field_defs_category_idx ON field_defs (category_id)',
             'CREATE INDEX field_defs_key_idx ON field_defs (key)'
         ], [
             // 如果表已存在，检查并添加可能缺失的字段
+            { name: 'application_id', sql: 'application_id UUID NOT NULL' },
             { name: 'kind', sql: 'kind TEXT NOT NULL' },
             { name: 'schema', sql: 'schema JSONB' },
             { name: 'relation', sql: 'relation JSONB' },

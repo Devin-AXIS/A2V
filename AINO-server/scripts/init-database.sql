@@ -139,6 +139,7 @@ CREATE TABLE field_categories (
 -- 创建表: field_defs
 CREATE TABLE field_defs (
   id UUID NOT NULL DEFAULT gen_random_uuid(),
+  application_id UUID NOT NULL,
   directory_id UUID NOT NULL,
   key TEXT NOT NULL,
   kind TEXT NOT NULL,
@@ -274,7 +275,9 @@ ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_application_id_fkey FOR
 ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id);
 ALTER TABLE field_categories ADD CONSTRAINT field_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 ALTER TABLE field_categories ADD CONSTRAINT field_categories_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id);
+ALTER TABLE field_defs ADD CONSTRAINT field_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 ALTER TABLE field_defs ADD CONSTRAINT field_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directory_defs(id);
+ALTER TABLE field_defs ADD CONSTRAINT field_defs_category_id_fkey FOREIGN KEY (category_id) REFERENCES field_categories(id);
 ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 ALTER TABLE module_installs ADD CONSTRAINT module_installs_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
 ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
@@ -318,7 +321,9 @@ CREATE INDEX directory_defs_created_at_idx ON directory_defs (created_at);
 CREATE INDEX directory_defs_slug_unique ON directory_defs (slug);
 CREATE INDEX field_categories_app_dir_idx ON field_categories (application_id, directory_id);
 CREATE INDEX field_categories_created_at_idx ON field_categories (created_at);
+CREATE INDEX field_defs_application_id_idx ON field_defs (application_id);
 CREATE INDEX field_defs_directory_idx ON field_defs (directory_id);
+CREATE INDEX field_defs_category_id_idx ON field_defs (category_id);
 CREATE INDEX field_defs_key_idx ON field_defs (key);
 CREATE INDEX field_indexes_created_at_idx ON field_indexes (created_at);
 CREATE INDEX field_indexes_dir_slug_idx ON field_indexes (dir_slug);

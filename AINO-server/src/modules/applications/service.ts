@@ -117,7 +117,7 @@ export class ApplicationService {
       }
 
       try {
-        await this.createUserModuleDefaultFields(directoryDef.id, createdDirectory.id)
+        await this.createUserModuleDefaultFields(applicationId, directoryDef.id, createdDirectory.id)
       } catch (err) {
         console.error('创建用户模块默认字段失败（已忽略）:', {
           applicationId,
@@ -165,7 +165,7 @@ export class ApplicationService {
   }
 
   // 创建用户模块默认字段
-  private async createUserModuleDefaultFields(directoryDefId: string, directoryId: string) {
+  private async createUserModuleDefaultFields(applicationId: string, directoryDefId: string, directoryId: string) {
     // 先获取刚创建的分类ID
     const categories = await db.select().from(fieldCategories).where(eq(fieldCategories.directoryId, directoryId))
     const categoryMap: Record<string, string> = {}
@@ -201,6 +201,7 @@ export class ApplicationService {
     ]
 
     const fieldValues = fields.map(field => ({
+      applicationId,
       directoryId: directoryDefId,
       key: field.key,
       kind: 'primitive',
