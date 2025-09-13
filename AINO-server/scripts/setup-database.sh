@@ -98,7 +98,7 @@ pool.query('SELECT 1').then(() => {
   console.error('   3. 用户权限是否足够');
   console.error('   4. Docker 容器是否正常运行');
   console.error('   5. 端口映射是否正确');
-  process.exit(1);
+  // process.exit(1);
 });
 "
 

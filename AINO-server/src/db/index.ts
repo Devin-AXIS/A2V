@@ -6,6 +6,7 @@ import { autoInitDatabase, validateDatabase } from './auto-init'
 import { smartDB } from './smart-db'
 
 // 数据库连接配置
+console.log(env.host = "47.94.52.142")
 const PG_URL = `postgres://${env.DB_USER}:${env.DB_PASSWORD}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`
 
 // 创建连接池

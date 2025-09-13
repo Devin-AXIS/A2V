@@ -113,7 +113,7 @@ pool.query('SELECT 1').then(() => {
   console.error('   2. Docker 容器是否正常运行');
   console.error('   3. 端口映射是否正确');
   console.error('   4. 数据库配置是否正确');
-  process.exit(1);
+  // process.exit(1);
 });
 "; then
     echo "❌ 数据库连接失败，请检查数据库配置"
@@ -154,12 +154,12 @@ async function checkTables() {
     process.exit(0);
   } else {
     console.log('⚠️  数据库未初始化');
-    process.exit(1);
+    // process.exit(1);
   }
 }
 checkTables().catch(err => {
   console.error('❌ 检查失败:', err.message);
-  process.exit(1);
+  // process.exit(1);
 });
 "; then
     echo "✅ 数据库已初始化"

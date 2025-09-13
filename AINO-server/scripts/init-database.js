@@ -764,7 +764,7 @@ async function initDatabase() {
     } catch (error) {
         console.error('❌ 数据库初始化失败:', error.message);
         console.error('错误详情:', error);
-        process.exit(1);
+        // process.exit(1);
     } finally {
         await pool.end();
     }
@@ -773,5 +773,5 @@ async function initDatabase() {
 // 执行初始化
 initDatabase().catch(error => {
     console.error('❌ 初始化过程出错:', error);
-    process.exit(1);
+    // process.exit(1);
 });

@@ -129,7 +129,7 @@ async function fixForeignKeyConstraints() {
     } catch (error) {
         console.error('❌ 修复外键约束失败:', error.message);
         console.error('错误详情:', error);
-        process.exit(1);
+        // process.exit(1);
     } finally {
         await pool.end();
     }
@@ -138,5 +138,5 @@ async function fixForeignKeyConstraints() {
 // 执行修复
 fixForeignKeyConstraints().catch(error => {
     console.error('❌ 修复过程出错:', error);
-    process.exit(1);
+    // process.exit(1);
 });

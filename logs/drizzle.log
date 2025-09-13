@@ -7,5 +7,24 @@ Reading config file '/Users/wemo/new-flow/AINO/AINO-server/drizzle.config.ts'
 Using 'pg' driver for database querying
 
  Warning  Drizzle Studio is currently in Beta. If you find anything that is not working as expected or should be improved, feel free to create an issue on GitHub: https://github.com/drizzle-team/drizzle-kit-mirror/issues/new or write to us on Discord: https://discord.gg/WcRKz2FFxN
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
 
-Drizzle Studio is up and running on https://local.drizzle.studio
+Error: listen EADDRINUSE: address already in use 127.0.0.1:4983
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '127.0.0.1',
+  port: 4983
+}
+
+Node.js v22.18.0
+ ELIFECYCLE  Command failed with exit code 1.

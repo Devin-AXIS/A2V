@@ -38,6 +38,22 @@ export const users = pgTable("users", {
   statusIdx: index("users_status_idx").on(table.status),
 }))
 
+// 应用成员表 - 管理应用的用户权限
+export const applicationMembers = pgTable("application_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").default("member").notNull(),
+  permissions: jsonb("permissions").default({}),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  invitedBy: uuid("invited_by").references(() => users.id),
+  status: text("status").default("active").notNull(),
+}, (table) => ({
+  applicationIdIdx: index("application_members_application_id_idx").on(table.applicationId),
+  userIdIdx: index("application_members_user_id_idx").on(table.userId),
+  statusIdx: index("application_members_status_idx").on(table.status),
+}))
+
 // 模块表
 export const modules = pgTable("modules", {
   id: uuid("id").primaryKey().defaultRandom(),

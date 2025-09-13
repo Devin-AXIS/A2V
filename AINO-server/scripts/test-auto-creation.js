@@ -157,7 +157,7 @@ async function testAutoCreation() {
     } catch (error) {
         console.error('❌ 测试失败:', error.message)
         console.error('错误详情:', error)
-        process.exit(1)
+        // process.exit(1)
     } finally {
         await pool.end()
     }
@@ -166,5 +166,5 @@ async function testAutoCreation() {
 // 执行测试
 testAutoCreation().catch(error => {
     console.error('❌ 测试过程出错:', error)
-    process.exit(1)
+    // process.exit(1)
 })

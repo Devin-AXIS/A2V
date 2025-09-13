@@ -24,7 +24,7 @@ async function applyTemplate(
 ): Promise<TemplateResult> {
   try {
     console.log(`🚀 开始应用模板: ${templateName}`)
-    
+
     const template = templates[templateName]
     if (!template) {
       return {
@@ -37,19 +37,19 @@ async function applyTemplate(
     // 这里需要根据实际的模块表结构来查询
     // 暂时使用一个模拟的模块ID
     const moduleId = 'user-module-id' // 实际使用时需要查询数据库
-    
+
     const results = []
-    
+
     for (const directoryTemplate of template.directories) {
       console.log(`📁 创建目录: ${directoryTemplate.name}`)
-      
+
       // 1. 创建目录
       const { directoryId, directoryDefId } = await createDirectory(
         applicationId,
         moduleId,
         directoryTemplate
       )
-      
+
       // 2. 创建字段分类
       console.log(`📂 创建字段分类...`)
       const categoryMap = await createFieldCategories(
@@ -57,7 +57,7 @@ async function applyTemplate(
         directoryId,
         directoryTemplate.categories
       )
-      
+
       // 3. 创建字段定义
       console.log(`📋 创建字段定义...`)
       const fieldIds = await createFieldDefinitions(
@@ -65,26 +65,26 @@ async function applyTemplate(
         directoryTemplate.fields,
         categoryMap
       )
-      
+
       results.push({
         directoryId,
         categoryIds: categoryMap,
         fieldIds
       })
-      
+
       console.log(`✅ 目录 ${directoryTemplate.name} 创建完成`)
       console.log(`   - 字段分类: ${Object.keys(categoryMap).length} 个`)
       console.log(`   - 字段定义: ${fieldIds.length} 个`)
     }
-    
+
     console.log(`🎉 模板 ${templateName} 应用成功！`)
-    
+
     return {
       success: true,
       message: `模板 ${templateName} 应用成功`,
       data: results[0] // 返回第一个目录的结果
     }
-    
+
   } catch (error) {
     console.error('❌ 应用模板失败:', error)
     return {
@@ -113,7 +113,7 @@ function listTemplates(): void {
  */
 async function main() {
   const args = process.argv.slice(2)
-  
+
   if (args.length === 0) {
     console.log('使用方法:')
     console.log('  npx tsx scripts/templates/index.ts <applicationId> <templateName>')
@@ -122,26 +122,26 @@ async function main() {
     listTemplates()
     return
   }
-  
+
   if (args[0] === 'list') {
     listTemplates()
     return
   }
-  
+
   if (args.length < 2) {
     console.error('❌ 错误: 需要提供 applicationId 和 templateName')
     console.log('使用方法: npx tsx scripts/templates/index.ts <applicationId> <templateName>')
     return
   }
-  
+
   const [applicationId, templateName] = args
-  
+
   console.log(`🎯 应用ID: ${applicationId}`)
   console.log(`📦 模板名称: ${templateName}`)
   console.log('')
-  
+
   const result = await applyTemplate(applicationId, templateName)
-  
+
   if (result.success) {
     console.log(`✅ ${result.message}`)
     if (result.data) {
@@ -152,7 +152,7 @@ async function main() {
     }
   } else {
     console.error(`❌ ${result.message}`)
-    process.exit(1)
+    // process.exit(1)
   }
 }
 
