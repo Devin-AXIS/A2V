@@ -1,6 +1,6 @@
 import { db } from "../../db"
-import { directories, applications, directoryDefs, modules } from "../../db/schema"
-import { eq, and, desc, asc, count, sql } from "drizzle-orm"
+import { directories, applications, directoryDefs, modules, moduleInstalls } from "../../db/schema"
+import { eq, and, desc, asc, count, sql, or } from "drizzle-orm"
 import type {
   CreateDirectoryRequest,
   UpdateDirectoryRequest,
@@ -144,15 +144,27 @@ export class DirectoryRepository {
     return result
   }
 
-  // 查找模块信息
+  // 查找模块信息 - 支持检查 modules 和 moduleInstalls 两个表
   async findModuleById(moduleId: string): Promise<any> {
-    const [result] = await db
+    // 首先检查 modules 表
+    const [moduleResult] = await db
       .select()
       .from(modules)
       .where(eq(modules.id, moduleId))
       .limit(1)
 
-    return result
+    if (moduleResult) {
+      return moduleResult
+    }
+
+    // 如果 modules 表中没有找到，检查 moduleInstalls 表
+    const [moduleInstallResult] = await db
+      .select()
+      .from(moduleInstalls)
+      .where(eq(moduleInstalls.id, moduleId))
+      .limit(1)
+
+    return moduleInstallResult
   }
 
   private convertToResponse(dbRecord: any): DirectoryResponse {
