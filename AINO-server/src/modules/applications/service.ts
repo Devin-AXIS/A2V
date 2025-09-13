@@ -320,14 +320,21 @@ export class ApplicationService {
 
   // 删除应用
   async deleteApplication(id: string, userId: string) {
-    const [result] = await db
-      .delete(applications)
+    // 先检查应用是否存在且用户有权限
+    const application = await db
+      .select()
+      .from(applications)
       .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
-      .returning()
+      .limit(1)
 
-    if (!result) {
+    if (!application.length) {
       throw new Error("应用不存在或无权限访问")
     }
+
+    // 直接删除应用，级联删除会自动处理相关记录
+    await db
+      .delete(applications)
+      .where(eq(applications.id, id))
 
     return { success: true }
   }

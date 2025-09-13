@@ -193,7 +193,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE application_members ADD CONSTRAINT application_members_pkey PRIMARY KEY (id)',
-            'ALTER TABLE application_members ADD CONSTRAINT application_members_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE application_members ADD CONSTRAINT application_members_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE application_members ADD CONSTRAINT application_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id)',
             'ALTER TABLE application_members ADD CONSTRAINT application_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)'
         ], [
@@ -217,7 +217,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE application_users ADD CONSTRAINT application_users_pkey PRIMARY KEY (id)',
-            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)'
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
             'CREATE INDEX application_users_application_id_idx ON application_users (application_id)',
             'CREATE INDEX application_users_app_status_idx ON application_users (application_id, status)',
@@ -245,7 +245,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (id)',
-            'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)'
         ], [
             'CREATE INDEX audit_logs_app_user_idx ON audit_logs (application_id, user_id)',
@@ -271,7 +271,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
-            'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE directories ADD CONSTRAINT directories_slug_unique UNIQUE (slug)'
         ], [
             'CREATE INDEX directories_application_id_idx ON directories (application_id)',
@@ -293,7 +293,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_pkey PRIMARY KEY (id)',
-            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id)',
             'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_slug_unique UNIQUE (slug)'
         ], [
@@ -324,7 +324,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE field_categories ADD CONSTRAINT field_categories_pkey PRIMARY KEY (id)',
-            'ALTER TABLE field_categories ADD CONSTRAINT field_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE field_categories ADD CONSTRAINT field_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE field_categories ADD CONSTRAINT field_categories_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id)',
             'ALTER TABLE field_categories ADD CONSTRAINT field_categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES field_categories(id)'
         ], [
@@ -414,7 +414,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_pkey PRIMARY KEY (id)',
-            'ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_module_key_key UNIQUE (application_id, module_key)'
         ], [
             'CREATE INDEX module_installs_application_id_idx ON module_installs (application_id)',
@@ -449,7 +449,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_pkey PRIMARY KEY (id)',
-            'ALTER TABLE record_categories ADD CONSTRAINT record_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE record_categories ADD CONSTRAINT record_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id)',
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES record_categories(id)'
         ], [
@@ -481,7 +481,7 @@ async function initDatabase() {
             )
         `, [
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_pkey PRIMARY KEY (id)',
-            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_from_directory_id_fkey FOREIGN KEY (from_directory_id) REFERENCES directory_defs(id)',
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_to_directory_id_fkey FOREIGN KEY (to_directory_id) REFERENCES directory_defs(id)',
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_unique UNIQUE (from_directory_id, from_record_id, from_field_key, to_directory_id, to_record_id)'
@@ -659,7 +659,7 @@ async function initDatabase() {
                 )
             `, [
                 'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
-                'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)',
+                'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
                 'ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id)'
             ], [
                 'CREATE INDEX directories_application_id_idx ON directories (application_id)',
@@ -691,7 +691,7 @@ async function initDatabase() {
                 )
             `, [
                 'ALTER TABLE modules ADD CONSTRAINT modules_pkey PRIMARY KEY (id)',
-                'ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id)'
+                'ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
             ], [
                 'CREATE INDEX modules_app_enabled_idx ON modules (application_id, is_enabled)',
                 'CREATE INDEX modules_created_at_idx ON modules (created_at)'
