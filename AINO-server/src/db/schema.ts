@@ -100,6 +100,7 @@ export const directories = pgTable("directories", {
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
   moduleId: uuid("module_id").notNull(), // 移除外键约束，支持引用 modules 和 moduleInstalls 表
   name: text("name").notNull(),
+  slug: text("slug").notNull(), // 添加slug字段
   type: text("type").notNull(), // table, category, form
   supportsCategory: boolean("supports_category").default(false),
   config: jsonb("config").default({}),
@@ -110,6 +111,7 @@ export const directories = pgTable("directories", {
 }, (table) => ({
   createdAtIdx: index("directories_created_at_idx").on(table.createdAt),
   appModuleIdx: index("directories_app_module_idx").on(table.applicationId, table.moduleId),
+  slugIdx: index("directories_slug_idx").on(table.slug), // 添加slug索引
 }))
 
 // 字段分类表

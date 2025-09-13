@@ -17,31 +17,31 @@ const pool = new Pool({
 async function createDefaultDirectories() {
   try {
     console.log('🚀 开始创建用户模块默认目录...\n')
-    
+
     // 1. 获取最新的应用
     const appResult = await pool.query("SELECT id, name FROM applications ORDER BY created_at DESC LIMIT 1")
     if (appResult.rows.length === 0) {
       console.error('❌ 没有找到应用')
       return
     }
-    
+
     const application = appResult.rows[0]
     console.log(`📝 使用应用: ${application.name} (ID: ${application.id})\n`)
-    
+
     // 2. 获取用户管理模块
     const moduleResult = await pool.query(
       "SELECT id, name FROM modules WHERE application_id = $1 AND name = '用户管理'",
       [application.id]
     )
-    
+
     if (moduleResult.rows.length === 0) {
       console.error('❌ 没有找到用户管理模块')
       return
     }
-    
+
     const userModule = moduleResult.rows[0]
     console.log(`📝 找到用户管理模块: ${userModule.name} (ID: ${userModule.id})\n`)
-    
+
     // 3. 创建默认目录
     const defaultDirectories = [
       {
@@ -83,18 +83,22 @@ async function createDefaultDirectories() {
       },
 
     ]
-    
+
     console.log('📝 创建默认目录...')
     for (const directory of defaultDirectories) {
+      // 生成slug
+      const slug = `dir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
       const result = await pool.query(
         `INSERT INTO directories (
-          application_id, module_id, name, type, supports_category, 
+          application_id, module_id, name, slug, type, supports_category, 
           config, "order", is_enabled, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING id, name`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING id, name`,
         [
           application.id,
           userModule.id,
           directory.name,
+          slug, // 添加slug字段
           directory.type,
           directory.supportsCategory,
           JSON.stringify(directory.config),
@@ -102,24 +106,24 @@ async function createDefaultDirectories() {
           true
         ]
       )
-      
+
       const createdDirectory = result.rows[0]
       console.log(`   ✅ ${createdDirectory.name} (ID: ${createdDirectory.id})`)
     }
-    
+
     console.log('\n🎉 默认目录创建完成！')
-    
+
     // 4. 验证创建的目录
     const verifyResult = await pool.query(
       "SELECT id, name, type, supports_category FROM directories WHERE application_id = $1 AND module_id = $2 ORDER BY \"order\"",
       [application.id, userModule.id]
     )
-    
+
     console.log(`\n📊 验证结果: 共创建 ${verifyResult.rows.length} 个目录`)
     verifyResult.rows.forEach(dir => {
       console.log(`   - ${dir.name} (${dir.type}) - 支持分类: ${dir.supports_category}`)
     })
-    
+
   } catch (error) {
     console.error('❌ 创建默认目录失败:', error.message)
   } finally {

@@ -649,6 +649,7 @@ async function initDatabase() {
                     application_id UUID NOT NULL,
                     module_id UUID NOT NULL,
                     name TEXT NOT NULL,
+                    slug TEXT NOT NULL,
                     type TEXT NOT NULL,
                     supports_category BOOLEAN DEFAULT false,
                     config JSONB DEFAULT '{}'::jsonb,
@@ -660,7 +661,8 @@ async function initDatabase() {
             `, [
                 'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
                 'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
-                'ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id)'
+                'ALTER TABLE directories ADD CONSTRAINT directories_module_id_fkey FOREIGN KEY (module_id) REFERENCES modules(id)',
+                'ALTER TABLE directories ADD CONSTRAINT directories_slug_unique UNIQUE (slug)'
             ], [
                 'CREATE INDEX directories_application_id_idx ON directories (application_id)',
                 'CREATE INDEX directories_app_module_idx ON directories (application_id, module_id)',

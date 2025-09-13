@@ -11,10 +11,14 @@ import type {
 
 export class DirectoryRepository {
   async create(data: CreateDirectoryRequest, applicationId: string, moduleId: string): Promise<DirectoryResponse> {
+    // 生成slug
+    const slug = this.generateSlug(data.name)
+
     const [result] = await db.insert(directories).values({
       applicationId,
       moduleId,
       name: data.name,
+      slug: slug, // 添加slug字段
       type: data.type,
       supportsCategory: data.supportsCategory,
       config: data.config,
@@ -83,7 +87,7 @@ export class DirectoryRepository {
 
   async update(id: string, data: UpdateDirectoryRequest): Promise<DirectoryResponse | null> {
     const updateData: any = {}
-    
+
     if (data.name !== undefined) updateData.name = data.name
     if (data.type !== undefined) updateData.type = data.type
     if (data.supportsCategory !== undefined) updateData.supportsCategory = data.supportsCategory
@@ -146,6 +150,7 @@ export class DirectoryRepository {
       applicationId: String(dbRecord.applicationId),
       moduleId: String(dbRecord.moduleId),
       name: String(dbRecord.name),
+      slug: String(dbRecord.slug), // 添加slug字段
       type: String(dbRecord.type),
       supportsCategory: Boolean(dbRecord.supportsCategory),
       config: dbRecord.config || {},
@@ -160,5 +165,17 @@ export class DirectoryRepository {
   async getDirectoryDefByDirectoryId(directoryId: string): Promise<any> {
     const [result] = await db.select().from(directoryDefs).where(eq(directoryDefs.directoryId, directoryId)).limit(1)
     return result || null
+  }
+
+  // 生成slug的辅助方法
+  private generateSlug(name: string): string {
+    // 如果是英文，使用原来的逻辑
+    if (/^[a-zA-Z0-9\s]+$/.test(name)) {
+      return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    }
+
+    // 如果是中文或其他字符，使用时间戳作为slug
+    const timestamp = Date.now()
+    return `dir-${timestamp}`
   }
 }

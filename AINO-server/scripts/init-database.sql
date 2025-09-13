@@ -97,6 +97,7 @@ CREATE TABLE directories (
   application_id UUID NOT NULL,
   module_id UUID NOT NULL,
   name TEXT NOT NULL,
+  slug TEXT NOT NULL,
   type TEXT NOT NULL,
   supports_category BOOLEAN NULL DEFAULT false,
   config JSONB NULL DEFAULT '{}'::jsonb,

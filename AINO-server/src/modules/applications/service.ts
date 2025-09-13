@@ -76,11 +76,15 @@ export class ApplicationService {
     // 找到用户管理模块
     const userModule = modules.find(m => m.name === '用户管理')
     if (userModule) {
+      // 生成目录的slug
+      const directorySlug = `user-list-${Date.now()}`
+
       // 创建用户列表目录
       const [createdDirectory] = await db.insert(directories).values({
         applicationId,
         moduleId: userModule.id,
         name: '用户列表',
+        slug: directorySlug, // 添加slug字段
         type: 'table',
         supportsCategory: false,
         config: {
