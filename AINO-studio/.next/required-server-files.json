@@ -99,7 +99,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/Users/wemo/new-flow/AINO/AINO-studio",
+    "outputFileTracingRoot": "/Users/wemo/new-flow/ai/AINO/AINO-studio",
     "experimental": {
       "allowedDevOrigins": [],
       "nodeMiddleware": false,
@@ -178,7 +178,7 @@
       "forceSwcTransforms": false,
       "largePageDataBytes": 128000,
       "turbo": {
-        "root": "/Users/wemo/new-flow/AINO/AINO-studio"
+        "root": "/Users/wemo/new-flow/ai/AINO/AINO-studio"
       },
       "typedRoutes": false,
       "typedEnv": false,
@@ -284,7 +284,7 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.mjs"
   },
-  "appDir": "/Users/wemo/new-flow/AINO/AINO-studio",
+  "appDir": "/Users/wemo/new-flow/ai/AINO/AINO-studio",
   "relativeAppDir": "",
   "files": [
     ".next/routes-manifest.json",
