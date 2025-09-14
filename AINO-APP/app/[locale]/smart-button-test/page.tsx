@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { SmartButton } from "@/components/ui/smart-button"
 import { PillButton } from "@/components/basic/pill-button"
 import { Button } from "@/components/ui/button"
 
-export default function SmartButtonTestPage() {
+function SmartButtonTestContent() {
   const [testColors] = useState([
     "#FF6B6B", // 红色
     "#4ECDC4", // 青色
@@ -34,7 +34,7 @@ export default function SmartButtonTestPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {testColors.map((color, index) => (
             <div key={index} className="space-y-2">
-              <div 
+              <div
                 className="w-full h-8 rounded border"
                 style={{ backgroundColor: color }}
               />
@@ -58,7 +58,7 @@ export default function SmartButtonTestPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {testColors.map((color, index) => (
             <div key={index} className="space-y-2">
-              <div 
+              <div
                 className="w-full h-8 rounded border"
                 style={{ backgroundColor: color }}
               />
@@ -83,7 +83,7 @@ export default function SmartButtonTestPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {testColors.map((color, index) => (
             <div key={index} className="space-y-2">
-              <div 
+              <div
                 className="w-full h-8 rounded border"
                 style={{ backgroundColor: color }}
               />
@@ -112,5 +112,13 @@ export default function SmartButtonTestPage() {
         </ul>
       </div>
     </div>
+  )
+}
+
+export default function SmartButtonTestPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-8 text-center">加载中...</div>}>
+      <SmartButtonTestContent />
+    </Suspense>
   )
 }

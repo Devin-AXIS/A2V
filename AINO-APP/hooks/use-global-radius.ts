@@ -421,8 +421,18 @@ export function useGlobalRadius() {
     if (!currentPreset) return
 
     // 获取卡片和按钮组件的边角值
-    const cardRadius = getComponentRadius('card')
-    const buttonRadius = getComponentRadius('button')
+    let cardRadius = getComponentRadius('card')
+    let buttonRadius = getComponentRadius('button')
+
+    if (tokens.globalRadius.active === "rounded") {
+      cardRadius = '9999px';
+      buttonRadius = '9999px';
+    }
+
+    if (tokens.globalRadius.active === "default") {
+      cardRadius = '0.75rem';
+      buttonRadius = '0.75rem';
+    }
 
     console.log('🎯 应用边角到组件:', {
       preset: tokens.globalRadius.active,

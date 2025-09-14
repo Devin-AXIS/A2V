@@ -1,10 +1,10 @@
 "use client"
 
-import React from "react"
+import React, { Suspense } from "react"
 import { useFontSizeConfig } from "@/hooks/use-font-size-config"
 import type { FontSize } from "@/types"
 
-export default function FontSizeTestPage() {
+function FontSizeTestContent() {
   const { currentPreset, fontSizes, getFontSize } = useFontSizeConfig()
 
   return (
@@ -15,7 +15,7 @@ export default function FontSizeTestPage() {
           测试字体大小配置系统
         </p>
       </div>
-      
+
       <div className="space-y-6">
         {/* 字体大小控制 */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -55,7 +55,7 @@ export default function FontSizeTestPage() {
             ].map((text, index) => (
               <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
                 <div className="text-sm text-gray-500 mb-1">{text.label}</div>
-                <div 
+                <div
                   className="font-semibold"
                   style={{ fontSize: getFontSize(text.size as keyof FontSize) }}
                 >
@@ -77,5 +77,13 @@ export default function FontSizeTestPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function FontSizeTestPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-6 text-center">加载中...</div>}>
+      <FontSizeTestContent />
+    </Suspense>
   )
 }

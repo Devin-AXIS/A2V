@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, HelpCircle, Headphones, Settings, Gift, PlusCircle, LogIn, UserPlus, Crown, Sparkles } from "lucide-react"
@@ -9,6 +9,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { AuthAvatar } from "@/components/auth/auth-avatar"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
+import { useEffect } from "react"
 
 interface ProfileClientViewProps {
   dict: {
@@ -32,6 +33,7 @@ interface ProfileClientViewProps {
 
 export function ProfileClientView({ dict }: ProfileClientViewProps) {
   const { locale } = useParams()
+  const router = useRouter()
   const { user, isAuthenticated, logout } = useAuth()
 
   const StatItem = ({ value, label }: { value: string; label: string }) => (
@@ -58,70 +60,76 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
 
   const handleLogout = () => {
     logout();
-    window.location.replace(`/${locale}/auth/login`)
+    router.replace(`/${locale}/auth/login`)
   }
+
+  // 未登录状态处理
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace(`/${locale}/auth/login`)
+    }
+  }, [isAuthenticated, locale, router])
 
   // 未登录状态显示
   if (!isAuthenticated) {
-    window.location.replace(`/${locale}/auth/login`)
-    // return (
-    //   <main className="p-4 space-y-6">
-    //     {/* 未登录提示 */}
-    //     <AppCard className="p-6 text-center">
-    //       <div className="flex flex-col items-center space-y-4">
-    //         <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-    //           <User className="w-10 h-10 text-blue-500" />
-    //         </div>
-    //         <div>
-    //           <h3 className="text-lg font-bold text-gray-900 mb-2">欢迎使用 AINO</h3>
-    //           <p className="text-sm text-gray-600 mb-4">请登录或注册以享受完整功能</p>
-    //         </div>
-    //         <div className="flex space-x-3">
-    //           <Button
-    //             onClick={() => window.location.href = '/auth/login'}
-    //             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-    //           >
-    //             <LogIn className="w-4 h-4 mr-2" />
-    //             登录
-    //           </Button>
-    //           <Button
-    //             variant="outline"
-    //             onClick={() => window.location.href = '/auth/register'}
-    //             className="border-blue-500 text-blue-500 hover:bg-blue-50"
-    //           >
-    //             <UserPlus className="w-4 h-4 mr-2" />
-    //             注册
-    //           </Button>
-    //         </div>
-    //       </div>
-    //     </AppCard>
+    return (
+      <main className="p-4 space-y-6">
+        {/* 未登录提示 */}
+        <AppCard className="p-6 text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+              <User className="w-10 h-10 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">欢迎使用 AINO</h3>
+              <p className="text-sm text-gray-600 mb-4">请登录或注册以享受完整功能</p>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => router.push(`/${locale}/auth/login`)}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                登录
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/${locale}/auth/register`)}
+                className="border-blue-500 text-blue-500 hover:bg-blue-50"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                注册
+              </Button>
+            </div>
+          </div>
+        </AppCard>
 
-    //     {/* 功能预览 */}
-    //     <AppCard className="p-5">
-    //       <h4 className="text-sm font-medium mb-4" style={{ color: "var(--card-title-color)" }}>
-    //         功能预览
-    //       </h4>
-    //       <div className="grid grid-cols-2 gap-4">
-    //         <div className="text-center p-3 bg-gray-50 rounded-lg">
-    //           <Sparkles className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-    //           <p className="text-xs text-gray-600">积分系统</p>
-    //         </div>
-    //         <div className="text-center p-3 bg-gray-50 rounded-lg">
-    //           <Crown className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-    //           <p className="text-xs text-gray-600">VIP特权</p>
-    //         </div>
-    //         <div className="text-center p-3 bg-gray-50 rounded-lg">
-    //           <User className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-    //           <p className="text-xs text-gray-600">个人资料</p>
-    //         </div>
-    //         <div className="text-center p-3 bg-gray-50 rounded-lg">
-    //           <Settings className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-    //           <p className="text-xs text-gray-600">设置中心</p>
-    //         </div>
-    //       </div>
-    //     </AppCard>
-    //   </main>
-    // )
+        {/* 功能预览 */}
+        <AppCard className="p-5">
+          <h4 className="text-sm font-medium mb-4" style={{ color: "var(--card-title-color)" }}>
+            功能预览
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <Sparkles className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">积分系统</p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <Crown className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">VIP特权</p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <User className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">个人资料</p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <Settings className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">设置中心</p>
+            </div>
+          </div>
+        </AppCard>
+      </main>
+    )
   }
 
   return (

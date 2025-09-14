@@ -82,6 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = () => {
       try {
+        // 确保在客户端环境中才访问 localStorage
+        if (typeof window === 'undefined') {
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          })
+          return
+        }
+
         const storedUser = localStorage.getItem(STORAGE_KEYS.USER)
         const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
 
@@ -173,12 +183,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = `mock_token_${Date.now()}`
 
       // 保存到本地存储（绑定到当前 appId 以便多租户区分）
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
-      const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
-      if (appId) {
-        localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(user))
-        localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
+        const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
+        if (appId) {
+          localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(user))
+          localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+        }
       }
 
       setAuthState({
@@ -227,12 +239,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = `mock_token_${Date.now()}`
 
       // 保存到本地存储（绑定到当前 appId）
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser))
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
-      const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
-      if (appId) {
-        localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(newUser))
-        localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser))
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
+        const appId = localStorage.getItem(STORAGE_KEYS.APP_ID)
+        if (appId) {
+          localStorage.setItem(`${STORAGE_KEYS.USER}:${appId}`, JSON.stringify(newUser))
+          localStorage.setItem(`${STORAGE_KEYS.AUTH_TOKEN}:${appId}`, token)
+        }
       }
 
       setAuthState({
@@ -251,8 +265,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     // 清除本地存储
-    localStorage.removeItem(STORAGE_KEYS.USER)
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.USER)
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    }
 
     setAuthState({
       user: null,
@@ -267,7 +283,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthState(prev => ({ ...prev, user: updatedUser }))
 
       // 更新本地存储
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+      }
     }
   }
 

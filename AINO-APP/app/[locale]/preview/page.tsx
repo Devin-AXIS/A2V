@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, Suspense } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { setDatas } from "@/components/card/set-datas"
 import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
 
-export default function PreviewPage() {
+function PreviewContent() {
   const params = useParams<{ locale: string; id: string }>()
   const sp = useSearchParams()
   const router = useRouter()
@@ -47,6 +47,7 @@ export default function PreviewPage() {
     } catch { }
     setMergedOnce(true)
   }, [sp, params, router, mergedOnce])
+
   const qs = new URLSearchParams(window.location.search)
   const applicationId = qs.get('appId')
   window.localStorage.setItem('APP_ID', applicationId || '')
@@ -191,5 +192,13 @@ export default function PreviewPage() {
       <DynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="mobile" />
       <BottomNavigation />
     </main>
+  )
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={<main className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">Loading...</main>}>
+      <PreviewContent />
+    </Suspense>
   )
 }
