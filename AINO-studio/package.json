@@ -8,6 +8,12 @@
     "lint": "next lint",
     "start": "next start -p 3006"
   },
+  "postcss": {
+    "plugins": {
+      "tailwindcss": {},
+      "autoprefixer": {}
+    }
+  },
   "dependencies": {
     "@aws-sdk/client-rds-data": "latest",
     "@cloudflare/workers-types": "latest",

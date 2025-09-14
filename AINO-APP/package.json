@@ -80,6 +80,12 @@
     "vaul": "^0.9.9",
     "zod": "^3.25.76"
   },
+  "postcss": {
+    "plugins": {
+      "tailwindcss": {},
+      "autoprefixer": {}
+    }
+  },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.2",
     "@tailwindcss/postcss": "^4.1.12",
