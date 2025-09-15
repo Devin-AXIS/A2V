@@ -5,6 +5,7 @@
 
 # next.js
 /out/
+.next/cache/
 
 # production
 /build
