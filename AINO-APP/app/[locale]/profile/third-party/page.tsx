@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { AppHeader } from "@/components/navigation/app-header"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
@@ -60,7 +60,7 @@ const platforms = [
   },
 ]
 
-export default function ThirdPartyAccountsPage() {
+function ThirdPartyAccountsContent() {
   const router = useRouter()
   const { locale } = useParams()
   const [accounts, setAccounts] = useState(platforms)
@@ -112,5 +112,13 @@ export default function ThirdPartyAccountsPage() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function ThirdPartyAccountsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">加载中...</div>}>
+      <ThirdPartyAccountsContent />
+    </Suspense>
   )
 }

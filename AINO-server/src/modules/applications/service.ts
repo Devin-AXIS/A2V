@@ -76,11 +76,15 @@ export class ApplicationService {
     // 找到用户管理模块
     const userModule = modules.find(m => m.name === '用户管理')
     if (userModule) {
+      // 生成目录的slug
+      const directorySlug = `user-list-${Date.now()}`
+
       // 创建用户列表目录
       const [createdDirectory] = await db.insert(directories).values({
         applicationId,
         moduleId: userModule.id,
         name: '用户列表',
+        slug: directorySlug, // 添加slug字段
         type: 'table',
         supportsCategory: false,
         config: {
@@ -96,6 +100,7 @@ export class ApplicationService {
         applicationId,
         directoryId: createdDirectory.id,
         title: '用户列表',
+        name: '用户列表', // 添加name字段
         slug: `user-list-${Date.now()}`,
         status: 'active',
       }).returning()
@@ -112,7 +117,7 @@ export class ApplicationService {
       }
 
       try {
-        await this.createUserModuleDefaultFields(directoryDef.id, createdDirectory.id)
+        await this.createUserModuleDefaultFields(applicationId, directoryDef.id, createdDirectory.id)
       } catch (err) {
         console.error('创建用户模块默认字段失败（已忽略）:', {
           applicationId,
@@ -160,7 +165,7 @@ export class ApplicationService {
   }
 
   // 创建用户模块默认字段
-  private async createUserModuleDefaultFields(directoryDefId: string, directoryId: string) {
+  private async createUserModuleDefaultFields(applicationId: string, directoryDefId: string, directoryId: string) {
     // 先获取刚创建的分类ID
     const categories = await db.select().from(fieldCategories).where(eq(fieldCategories.directoryId, directoryId))
     const categoryMap: Record<string, string> = {}
@@ -196,6 +201,7 @@ export class ApplicationService {
     ]
 
     const fieldValues = fields.map(field => ({
+      applicationId,
       directoryId: directoryDefId,
       key: field.key,
       kind: 'primitive',
@@ -230,6 +236,7 @@ export class ApplicationService {
             key: value.key,
             error: singleErr instanceof Error ? singleErr.message : String(singleErr),
           })
+          console.log(singleErr)
         }
       }
     }
@@ -320,14 +327,21 @@ export class ApplicationService {
 
   // 删除应用
   async deleteApplication(id: string, userId: string) {
-    const [result] = await db
-      .delete(applications)
+    // 先检查应用是否存在且用户有权限
+    const application = await db
+      .select()
+      .from(applications)
       .where(and(eq(applications.id, id), eq(applications.ownerId, userId)))
-      .returning()
+      .limit(1)
 
-    if (!result) {
+    if (!application.length) {
       throw new Error("应用不存在或无权限访问")
     }
+
+    // 直接删除应用，级联删除会自动处理相关记录
+    await db
+      .delete(applications)
+      .where(eq(applications.id, id))
 
     return { success: true }
   }

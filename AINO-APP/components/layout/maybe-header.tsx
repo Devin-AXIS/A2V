@@ -24,7 +24,7 @@ export function MaybeHeader({ title }: Props) {
         return
       }
       if (cfgId) {
-        fetch(`http://localhost:3001/api/page-configs/${encodeURIComponent(cfgId)}`)
+        fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
           .then((r) => r.json().catch(() => null))
           .then((j) => {
             const data = j && (j.data ?? j)

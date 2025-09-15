@@ -146,7 +146,7 @@ export const setDatas = async () => {
             let realData;
             let resultData;
             if (type === "table") {
-                const { data } = await axios.get(`http://localhost:3001/api/records/${dirId}?noAuth=true`);
+                const { data } = await axios.get(`http://localhost:3007/api/records/${dirId}?noAuth=true`);
                 realData = data.data;
                 resultData = [];
                 realData.forEach(item => {
@@ -157,7 +157,7 @@ export const setDatas = async () => {
                     resultData.push(currentRealData)
                 })
             } else if (type === 'record') {
-                const { data } = await axios.get(`http://localhost:3001/api/records/${dirId}/${recordId}?noAuth=true`)
+                const { data } = await axios.get(`http://localhost:3007/api/records/${dirId}/${recordId}?noAuth=true`)
                 realData = data.data
                 resultData = {};
                 Object.keys(dataMapping).forEach(key => {

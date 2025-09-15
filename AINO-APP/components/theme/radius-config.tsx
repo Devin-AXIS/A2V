@@ -242,18 +242,9 @@ export function RadiusConfig() {
               {config.radius.getComponentRadius('button')}
             </Badge>
           </div>
-          <div className="flex justify-between">
-            <span>{isEnglish ? "Input" : "输入框"}:</span>
-            <Badge variant="outline">
-              {config.radius.getComponentRadius('input')}
-            </Badge>
-          </div>
-          <div className="flex justify-between">
-            <span>{isEnglish ? "Modal" : "模态框"}:</span>
-            <Badge variant="outline">
-              {config.radius.getComponentRadius('modal')}
-            </Badge>
-          </div>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {isEnglish ? "Affects card and button components" : "影响卡片和按钮组件"}
         </div>
       </div>
 

@@ -34,7 +34,7 @@ export class DirectoryService {
       if (directory && directory.config && directory.config.categories) {
         return directory.config.categories
       }
-      
+
       // 如果没有配置分类，尝试从recordCategories表获取
       const categories = await this.recordCategoriesRepo.findMany({
         applicationId,
@@ -42,7 +42,7 @@ export class DirectoryService {
         page: 1,
         limit: 100
       }, applicationId)
-      
+
       // 转换为前端期望的格式
       return this.convertCategoriesToFrontendFormat(categories.categories)
     } catch (error) {
@@ -61,10 +61,10 @@ export class DirectoryService {
         console.log("未找到目录定义:", directoryId)
         return []
       }
-      
+
       // 获取字段定义
       const fieldDefs = await this.fieldDefsService.getFieldDefsByDirectoryId(directoryDef.id)
-      
+
       // 转换为前端期望的格式
       return fieldDefs.map(field => ({
         id: field.id,
@@ -101,30 +101,80 @@ export class DirectoryService {
   }
 
   async create(data: CreateDirectoryRequest, applicationId: string, moduleId: string, userId: string): Promise<DirectoryResponse> {
+    console.log("🔍 DirectoryService.create 开始执行:", { applicationId, moduleId, userId, data })
+
     // 验证用户权限
+    console.log("🔍 验证用户权限...")
     const hasAccess = await this.checkUserAccess(applicationId, userId)
     if (!hasAccess) {
+      console.log("❌ 用户权限验证失败")
       throw new Error("没有权限访问该应用")
     }
+    console.log("✅ 用户权限验证通过")
+
+    // 验证应用程序是否存在
+    console.log("🔍 验证应用程序是否存在:", applicationId)
+    const application = await this.repo.findApplicationById(applicationId)
+    if (!application) {
+      console.log("❌ 应用程序不存在:", applicationId)
+      throw new Error(`应用程序不存在: ${applicationId}`)
+    }
+    console.log("✅ 应用程序验证通过:", application.name)
+
+    // 验证模块是否存在
+    console.log("🔍 验证模块是否存在:", moduleId)
+    const moduleExists = await this.repo.findModuleById(moduleId)
+    if (!moduleExists) {
+      console.log("❌ 模块不存在:", moduleId)
+
+      // 获取可用的模块列表用于错误提示
+      const availableModules = await this.repo.getAvailableModules(applicationId)
+      const moduleList = availableModules.map(m => `ID: ${m.id}, 名称: ${m.name}`).join('\n')
+
+      throw new Error(`模块不存在: ${moduleId}\n\n可用的模块列表:\n${moduleList}`)
+    }
+    console.log("✅ 模块验证通过:", moduleExists.name || moduleExists.module_name)
 
     // 检查名称是否已存在
+    console.log("🔍 检查目录名称是否已存在:", data.name)
     const nameExists = await this.repo.checkNameExists(data.name, applicationId)
     if (nameExists) {
+      console.log("❌ 目录名称已存在:", data.name)
       throw new Error("目录名称已存在")
     }
+    console.log("✅ 目录名称验证通过")
 
-    const result = await this.repo.create(data, applicationId, moduleId)
-    console.log("创建目录成功:", result.id)
-    return result
+    console.log("🔍 开始创建目录...")
+    try {
+      const result = await this.repo.create(data, applicationId, moduleId)
+      console.log("✅ 创建目录成功:", result.id)
+      return result
+    } catch (error) {
+      console.log("❌ 创建目录时发生错误:", error)
+
+      // 检查是否是外键约束错误
+      if (error instanceof Error && error.message.includes('violates foreign key constraint')) {
+        if (error.message.includes('directories_module_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 模块不存在")
+          throw new Error(`模块不存在: ${moduleId}`)
+        } else if (error.message.includes('directories_application_id_fkey')) {
+          console.log("❌ 数据库外键约束错误 - 应用程序不存在")
+          throw new Error(`应用程序不存在: ${applicationId}`)
+        }
+      }
+
+      // 重新抛出其他错误
+      throw error
+    }
   }
 
   async findMany(query: GetDirectoriesQuery, userId: string): Promise<DirectoriesListResponse> {
     console.log("获取目录列表:", { query, userId })
-    
+
     try {
       // 使用真实数据库操作
       const result = await this.repo.findMany(query)
-      
+
       // 为每个目录获取分类数据和字段定义并转换为前端期望的格式
       const directoriesWithData = await Promise.all(
         result.directories.map(async (dir) => {
@@ -154,7 +204,7 @@ export class DirectoryService {
           }
         })
       )
-      
+
       console.log("查询目录列表成功，共", directoriesWithData.length, "个目录")
       return {
         ...result,
@@ -186,7 +236,7 @@ export class DirectoryService {
           updatedAt: new Date().toISOString()
         }
       ]
-      
+
       return {
         directories: mockDirectories,
         pagination: {
@@ -217,7 +267,7 @@ export class DirectoryService {
         this.getDirectoryCategories(id, result.applicationId),
         this.getDirectoryFields(id)
       ])
-      
+
       console.log("查询目录详情成功:", result.id)
       return {
         ...result,
@@ -280,5 +330,20 @@ export class DirectoryService {
     const result = await this.repo.delete(id)
     console.log("删除目录成功:", result)
     return result
+  }
+
+  // 获取可用的模块列表
+  async getAvailableModules(applicationId: string): Promise<any[]> {
+    console.log("🔍 DirectoryService.getAvailableModules 开始执行:", applicationId)
+
+    // 验证应用程序是否存在
+    const application = await this.repo.findApplicationById(applicationId)
+    if (!application) {
+      throw new Error(`应用程序不存在: ${applicationId}`)
+    }
+
+    const modules = await this.repo.getAvailableModules(applicationId)
+    console.log("✅ 获取模块列表成功:", modules.length, "个模块")
+    return modules
   }
 }

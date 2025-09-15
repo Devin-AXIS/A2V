@@ -63,6 +63,7 @@ export class DirectoryDefsService {
       .values({
         slug: data.slug,
         title: data.title,
+        name: data.title, // 添加name字段，使用title作为name
         version: data.version || 1,
         status: data.status || 'active',
         applicationId: data.applicationId,
@@ -168,7 +169,7 @@ export class DirectoryDefsService {
     const [result] = await db.update(directoryDefs)
       .set({
         ...data,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date()
       })
       .where(eq(directoryDefs.id, id))
       .returning()
@@ -196,7 +197,7 @@ export class DirectoryDefsService {
   // 根据旧目录ID获取或创建目录定义
   async getOrCreateDirectoryDefByDirectoryId(directoryId: string, applicationId: string) {
     console.log("🔍 查找目录定义，参数:", { directoryId, applicationId })
-    
+
     // 先尝试查找现有的目录定义
     const [existing] = await db.select()
       .from(directoryDefs)
@@ -209,7 +210,7 @@ export class DirectoryDefsService {
     }
 
     console.log("🔍 未找到目录定义，查找目录信息...")
-    
+
     // 如果没有找到，获取目录信息并创建新的目录定义
     const [directory] = await db.select()
       .from(directories)
@@ -224,15 +225,15 @@ export class DirectoryDefsService {
 
     // 生成唯一的slug
     let baseSlug = directory.name.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '-')
-    
+
     // 如果slug为空或全是连字符，使用目录ID的前8位
     if (!baseSlug || baseSlug.replace(/-/g, '') === '') {
       baseSlug = `dir-${directoryId.substring(0, 8)}`
     }
-    
+
     // 清理多余的连字符
     baseSlug = baseSlug.replace(/-+/g, '-').replace(/^-|-$/g, '')
-    
+
     let slug = baseSlug
     let counter = 1
 

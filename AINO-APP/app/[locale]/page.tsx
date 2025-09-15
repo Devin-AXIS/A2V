@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { MaybeHeader } from "@/components/layout/maybe-header"
 import { CategoryCard } from "@/components/browser/category-card"
+import { AppCard } from "@/components/layout/app-card"
 import Link from "next/link"
 import { getDictionary } from "@/lib/dictionaries"
 import type { Locale } from "@/lib/dictionaries"
@@ -38,7 +39,7 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
 
       {/* PC版本入口 */}
       <div className="px-4 pt-4">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 mb-6 border border-blue-100">
+        <AppCard className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 mb-6 border border-blue-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -59,10 +60,10 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
               </Link>
             </Button>
           </div>
-        </div>
+        </AppCard>
 
         {/* AI卡片浏览入口 */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 mb-6 border border-purple-100">
+        <AppCard className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 mb-6 border border-purple-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -91,7 +92,7 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
               </Link>
             </Button>
           </div>
-        </div>
+        </AppCard>
 
         {/* 实例demo入口区域 */}
         <div className="mb-6">
@@ -100,7 +101,7 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
           </h2>
           <div className="grid grid-cols-1 gap-4">
             {/* 教育应用demo入口 */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
+            <AppCard className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 border border-green-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -126,10 +127,10 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
                   </Link>
                 </Button>
               </div>
-            </div>
+            </AppCard>
 
             {/* 内容应用demo入口 */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-100">
+            <AppCard className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -155,7 +156,7 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
                   </Link>
                 </Button>
               </div>
-            </div>
+            </AppCard>
           </div>
         </div>
       </div>

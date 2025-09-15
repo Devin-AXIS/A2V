@@ -38,6 +38,22 @@ export const users = pgTable("users", {
   statusIdx: index("users_status_idx").on(table.status),
 }))
 
+// 应用成员表 - 管理应用的用户权限
+export const applicationMembers = pgTable("application_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").default("member").notNull(),
+  permissions: jsonb("permissions").default({}),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  invitedBy: uuid("invited_by").references(() => users.id),
+  status: text("status").default("active").notNull(),
+}, (table) => ({
+  applicationIdIdx: index("application_members_application_id_idx").on(table.applicationId),
+  userIdIdx: index("application_members_user_id_idx").on(table.userId),
+  statusIdx: index("application_members_status_idx").on(table.status),
+}))
+
 // 模块表
 export const modules = pgTable("modules", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -84,6 +100,7 @@ export const directories = pgTable("directories", {
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
   moduleId: uuid("module_id").notNull(), // 移除外键约束，支持引用 modules 和 moduleInstalls 表
   name: text("name").notNull(),
+  slug: text("slug").notNull(), // 添加slug字段
   type: text("type").notNull(), // table, category, form
   supportsCategory: boolean("supports_category").default(false),
   config: jsonb("config").default({}),
@@ -94,6 +111,7 @@ export const directories = pgTable("directories", {
 }, (table) => ({
   createdAtIdx: index("directories_created_at_idx").on(table.createdAt),
   appModuleIdx: index("directories_app_module_idx").on(table.applicationId, table.moduleId),
+  slugIdx: index("directories_slug_idx").on(table.slug), // 添加slug索引
 }))
 
 // 字段分类表
@@ -179,6 +197,7 @@ export const directoryDefs = pgTable('directory_defs', {
   id: uuid('id').primaryKey().defaultRandom(),
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
+  name: text('name').notNull(), // 添加name字段
   version: integer('version').notNull().default(1),
   status: text('status').notNull().default('active'),
   applicationId: uuid('application_id').references(() => applications.id, { onDelete: 'cascade' }),
@@ -192,6 +211,7 @@ export const directoryDefs = pgTable('directory_defs', {
 
 export const fieldDefs = pgTable('field_defs', {
   id: uuid('id').primaryKey().defaultRandom(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
   directoryId: uuid('directory_id').notNull().references(() => directoryDefs.id, { onDelete: 'cascade' }),
   key: text('key').notNull(),
   kind: text('kind').notNull(), // 'primitive' | 'composite' | 'relation' | 'lookup' | 'computed'
@@ -206,7 +226,9 @@ export const fieldDefs = pgTable('field_defs', {
   required: boolean('required').default(false),
   categoryId: uuid('category_id').references(() => fieldCategories.id, { onDelete: 'set null' }),
 }, (table) => ({
+  applicationIdx: index("field_defs_application_id_idx").on(table.applicationId),
   directoryIdx: index("field_defs_directory_idx").on(table.directoryId),
+  categoryIdx: index("field_defs_category_id_idx").on(table.categoryId),
   keyIdx: index("field_defs_key_idx").on(table.key),
 }))
 

@@ -16,9 +16,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # 构建产物
-dist/
-build/
-.next/
+# dist/
+# build/
+.next/cache/
 out/
 *.tsbuildinfo
 

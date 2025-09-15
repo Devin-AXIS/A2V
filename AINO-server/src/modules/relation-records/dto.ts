@@ -75,7 +75,7 @@ export const RelatedRecordResponse = z.object({
   id: z.string().uuid(),
   directoryId: z.string().uuid(),
   directoryName: z.string(),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   relationType: RelationTypeEnum,
   createdAt: z.string(),
 })

@@ -65,7 +65,7 @@ export default function TestApiPage() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">API 集成测试</h1>
-      
+
       <div className="grid gap-6">
         {/* 登录测试 */}
         <Card>
@@ -121,7 +121,7 @@ export default function TestApiPage() {
                   {loading ? "创建中..." : "创建测试应用"}
                 </Button>
               </div>
-              
+
               {applications.length > 0 && (
                 <div className="mt-4">
                   <h3 className="font-medium mb-2">应用列表 ({applications.length}):</h3>
@@ -149,7 +149,7 @@ export default function TestApiPage() {
             <div className="space-y-2 text-sm">
               <div>后端 API: <span className="text-green-600">http://localhost:3001</span></div>
               <div>前端地址: <span className="text-green-600">http://localhost:3000</span></div>
-              <div>Token: <span className="text-gray-600">{localStorage.getItem('aino_token') || '未设置'}</span></div>
+              <div>Token: <span className="text-gray-600">{typeof window !== 'undefined' ? (localStorage.getItem('aino_token') || '未设置') : '未设置'}</span></div>
             </div>
           </CardContent>
         </Card>

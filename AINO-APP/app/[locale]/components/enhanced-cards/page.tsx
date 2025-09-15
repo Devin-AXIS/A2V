@@ -2,6 +2,7 @@ import { BrowserHeader } from "@/components/layout/browser-header"
 import { CardShowcase } from "@/components/card/card-showcase"
 import { getDictionary } from "@/lib/dictionaries"
 import type { Locale } from "@/lib/dictionaries"
+import { Suspense } from "react"
 
 export default async function EnhancedCardsPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params
@@ -34,7 +35,9 @@ export default async function EnhancedCardsPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <CardShowcase />
+        <Suspense fallback={<div className="p-4 text-center">加载中...</div>}>
+          <CardShowcase />
+        </Suspense>
       </div>
     </div>
   )

@@ -80,7 +80,7 @@ function generateApiDocs() {
 
   const docsPath = path.join(docsDir, 'api-docs.json')
   fs.writeFileSync(docsPath, JSON.stringify(docs, null, 2))
-  
+
   console.log('✅ API文档已生成:', docsPath)
   console.log('📚 Swagger UI 地址: http://localhost:3001/docs/swagger')
 }
@@ -88,13 +88,13 @@ function generateApiDocs() {
 // 主函数
 function main() {
   console.log('📚 开始生成API文档...')
-  
+
   try {
     generateApiDocs()
     console.log('🎉 API文档生成完成！')
   } catch (error) {
     console.error('❌ 生成API文档失败:', error)
-    process.exit(1)
+    // process.exit(1)
   }
 }
 

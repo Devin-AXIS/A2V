@@ -6,7 +6,7 @@ console.log('🚀 启动 AINO 后端服务...');
 const env = {
   ...process.env,
   NODE_ENV: 'development',
-  PORT: '3001',
+  PORT: '3007',
   DB_HOST: 'localhost',
   DB_PORT: '5433',
   DB_USER: 'aino',

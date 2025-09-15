@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, sql, count } from "drizzle-orm"
 import { db } from "@/db"
-import { fields, fieldCategories, directories, applications } from "@/db/schema"
+import { fieldDefs, fieldCategories, directories, applications } from "@/db/schema"
 import type { CreateFieldRequest, UpdateFieldRequest, GetFieldsRequest } from "./dto"
 import type { CreateFieldCategoryRequest, UpdateFieldCategoryRequest } from "./dto"
 
@@ -8,7 +8,7 @@ export class FieldsRepository {
   // 字段相关操作
   async createField(data: CreateFieldRequest & { applicationId: string; directoryId: string }) {
     const [field] = await db
-      .insert(fields)
+      .insert(fieldDefs)
       .values({
         applicationId: data.applicationId,
         directoryId: data.directoryId,
@@ -58,7 +58,7 @@ export class FieldsRepository {
 
   async updateField(id: string, data: UpdateFieldRequest) {
     const [field] = await db
-      .update(fields)
+      .update(fieldDefs)
       .set({
         categoryId: data.categoryId || null,
         label: data.label,
@@ -99,7 +99,7 @@ export class FieldsRepository {
         order: data.order,
         updatedAt: new Date(),
       })
-      .where(eq(fields.id, id))
+      .where(eq(fieldDefs.id, id))
       .returning()
 
     return field
@@ -107,8 +107,8 @@ export class FieldsRepository {
 
   async deleteField(id: string) {
     const [field] = await db
-      .delete(fields)
-      .where(eq(fields.id, id))
+      .delete(fieldDefs)
+      .where(eq(fieldDefs.id, id))
       .returning()
 
     return field
@@ -117,8 +117,8 @@ export class FieldsRepository {
   async getField(id: string) {
     const [field] = await db
       .select()
-      .from(fields)
-      .where(eq(fields.id, id))
+      .from(fieldDefs)
+      .where(eq(fieldDefs.id, id))
 
     return field
   }
@@ -128,37 +128,37 @@ export class FieldsRepository {
     const offset = (page - 1) * limit
 
     // 构建查询条件
-    const conditions = [eq(fields.applicationId, applicationId)]
-    
+    const conditions = [eq(fieldDefs.applicationId, applicationId)]
+
     if (directoryId) {
-      conditions.push(eq(fields.directoryId, directoryId))
+      conditions.push(eq(fieldDefs.directoryId, directoryId))
     }
-    
+
     if (categoryId) {
-      conditions.push(eq(fields.categoryId, categoryId))
+      conditions.push(eq(fieldDefs.categoryId, categoryId))
     }
-    
+
     if (type) {
-      conditions.push(eq(fields.type, type))
+      conditions.push(eq(fieldDefs.type, type))
     }
-    
+
     if (enabled !== undefined) {
-      conditions.push(eq(fields.enabled, enabled))
+      conditions.push(eq(fieldDefs.enabled, enabled))
     }
 
     // 查询字段列表
     const fieldsList = await db
       .select()
-      .from(fields)
+      .from(fieldDefs)
       .where(and(...conditions))
-      .orderBy(asc(fields.order), asc(fields.createdAt))
+      .orderBy(asc(fieldDefs.order), asc(fieldDefs.createdAt))
       .limit(limit)
       .offset(offset)
 
     // 查询总数
     const [{ count: total }] = await db
       .select({ count: count() })
-      .from(fields)
+      .from(fieldDefs)
       .where(and(...conditions))
 
     return {
@@ -173,24 +173,24 @@ export class FieldsRepository {
   async getFieldsByDirectory(directoryId: string) {
     return await db
       .select()
-      .from(fields)
-      .where(eq(fields.directoryId, directoryId))
-      .orderBy(asc(fields.order), asc(fields.createdAt))
+      .from(fieldDefs)
+      .where(eq(fieldDefs.directoryId, directoryId))
+      .orderBy(asc(fieldDefs.order), asc(fieldDefs.createdAt))
   }
 
   async checkFieldKeyExists(key: string, directoryId: string, excludeId?: string) {
     const conditions = [
-      eq(fields.key, key),
-      eq(fields.directoryId, directoryId)
+      eq(fieldDefs.key, key),
+      eq(fieldDefs.directoryId, directoryId)
     ]
-    
+
     if (excludeId) {
-      conditions.push(sql`${fields.id} != ${excludeId}`)
+      conditions.push(sql`${fieldDefs.id} != ${excludeId}`)
     }
 
     const [field] = await db
-      .select({ id: fields.id })
-      .from(fields)
+      .select({ id: fieldDefs.id })
+      .from(fieldDefs)
       .where(and(...conditions))
 
     return !!field
@@ -198,9 +198,9 @@ export class FieldsRepository {
 
   async updateFieldOrder(fieldId: string, order: number) {
     const [field] = await db
-      .update(fields)
+      .update(fieldDefs)
       .set({ order, updatedAt: new Date() })
-      .where(eq(fields.id, fieldId))
+      .where(eq(fieldDefs.id, fieldId))
       .returning()
 
     return field
@@ -263,7 +263,7 @@ export class FieldsRepository {
 
   async getFieldCategories(applicationId: string, directoryId?: string) {
     const conditions = [eq(fieldCategories.applicationId, applicationId)]
-    
+
     if (directoryId) {
       conditions.push(eq(fieldCategories.directoryId, directoryId))
     }
@@ -280,7 +280,7 @@ export class FieldsRepository {
       eq(fieldCategories.name, name),
       eq(fieldCategories.directoryId, directoryId)
     ]
-    
+
     if (excludeId) {
       conditions.push(sql`${fieldCategories.id} != ${excludeId}`)
     }

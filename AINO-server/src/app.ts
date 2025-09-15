@@ -23,6 +23,7 @@ import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
 import crawlRoute from "./modules/crawl/routes"
 import pageConfigsRoute from "./modules/page-configs/routes"
+import { databaseMiddleware } from "./middleware/database"
 
 const app = new Hono()
 
@@ -33,6 +34,9 @@ app.use("*", cors({
   credentials: true,
   maxAge: 86400,
 }))
+
+// 添加数据库中间件
+app.use("*", databaseMiddleware)
 
 app.get("/health", (c) => c.text("ok"))
 

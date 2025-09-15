@@ -6,10 +6,10 @@ const pool = new Pool({
 
 async function testRecordsAPI() {
   const client = await pool.connect()
-  
+
   try {
     console.log('🧪 测试 Records API...\n')
-    
+
     // 1. 创建目录定义
     console.log('1. 创建目录定义...')
     const dirDefResult = await client.query(`
@@ -19,11 +19,11 @@ async function testRecordsAPI() {
       RETURNING *
     `)
     console.log('✅ 目录定义:', dirDefResult.rows[0]?.slug || '已存在')
-    
+
     // 2. 创建字段定义
     console.log('\n2. 创建字段定义...')
     const dirId = dirDefResult.rows[0]?.id || (await client.query('SELECT id FROM directory_defs WHERE slug = $1', ['users'])).rows[0].id
-    
+
     await client.query(`
       INSERT INTO field_defs (directory_id, key, kind, type, required) 
       VALUES 
@@ -34,16 +34,16 @@ async function testRecordsAPI() {
       ON CONFLICT DO NOTHING
     `, [dirId])
     console.log('✅ 字段定义创建完成')
-    
+
     // 3. 测试API调用
     console.log('\n3. 测试API调用...')
-    
+
     const baseUrl = 'http://localhost:3001/api/records'
-    const headers = { 
+    const headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer test-token' // 修改为test-token
     }
-    
+
     // 创建记录
     console.log('   - 创建用户记录...')
     const createResponse = await fetch(`${baseUrl}/users`, {
@@ -58,12 +58,12 @@ async function testRecordsAPI() {
         }
       })
     })
-    
+
     if (createResponse.ok) {
       const createdRecord = await createResponse.json()
       console.log('   ✅ 创建成功:', createdRecord.id)
       console.log('   📄 创建返回数据:', JSON.stringify(createdRecord, null, 2))
-      
+
       // 查询记录
       console.log('   - 查询记录列表...')
       const listResponse = await fetch(`${baseUrl}/users?page=1&limit=10`, { headers })
@@ -76,7 +76,7 @@ async function testRecordsAPI() {
       } else {
         console.log('   ❌ 查询失败:', await listResponse.text())
       }
-      
+
       // 查询单个记录
       console.log('   - 查询单个记录...')
       const getResponse = await fetch(`${baseUrl}/users/${createdRecord.id}`, { headers })
@@ -84,7 +84,7 @@ async function testRecordsAPI() {
         const record = await getResponse.json()
         console.log('   ✅ 查询成功:', record.props.name)
       }
-      
+
       // 更新记录
       console.log('   - 更新记录...')
       const updateResponse = await fetch(`${baseUrl}/users/${createdRecord.id}`, {
@@ -100,18 +100,18 @@ async function testRecordsAPI() {
           version: createdRecord.version
         })
       })
-      
+
       if (updateResponse.ok) {
         const updatedRecord = await updateResponse.json()
         console.log('   ✅ 更新成功:', updatedRecord.props.name)
       }
-      
+
     } else {
       console.log('   ❌ 创建失败:', await createResponse.text())
     }
-    
+
     console.log('\n🎉 Records API 测试完成！')
-    
+
   } catch (error) {
     console.error('❌ 测试失败:', error)
   } finally {

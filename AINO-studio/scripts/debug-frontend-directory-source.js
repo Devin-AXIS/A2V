@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -45,7 +45,7 @@ async function debugFrontendDirectorySource() {
 
     // 2. 检查不同的API端点
     console.log('2️⃣ 检查不同的API端点...')
-    
+
     // 端点1: 带参数的目录列表
     console.log('端点1: /api/directories?applicationId=test-app&moduleId=test-module')
     const response1 = await apiRequest('/api/directories?applicationId=test-app&moduleId=test-module')
@@ -80,7 +80,7 @@ async function debugFrontendDirectorySource() {
 
     // 3. 检查前端可能使用的其他数据源
     console.log('3️⃣ 检查前端可能使用的其他数据源...')
-    
+
     // 检查是否有其他API端点
     const endpoints = [
       '/api/applications/test-app/modules',
@@ -88,7 +88,7 @@ async function debugFrontendDirectorySource() {
       '/api/directories?applicationId=test-app',
       '/api/directories?moduleId=test-module'
     ]
-    
+
     for (const endpoint of endpoints) {
       try {
         const response = await apiRequest(endpoint)

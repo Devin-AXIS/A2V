@@ -1,7 +1,7 @@
 import { FieldsRepository } from "./repo"
-import type { 
-  CreateFieldRequest, 
-  UpdateFieldRequest, 
+import type {
+  CreateFieldRequest,
+  UpdateFieldRequest,
   GetFieldsRequest,
   CreateFieldCategoryRequest,
   UpdateFieldCategoryRequest
@@ -273,7 +273,7 @@ export class FieldsService {
       categoryId: id,
       page: 1,
       limit: 1
-    }, userId)
+    })
 
     if (fieldsInCategory.total > 0) {
       throw new Error(`该分类下还有 ${fieldsInCategory.total} 个字段，请先移除或重新分类这些字段`)

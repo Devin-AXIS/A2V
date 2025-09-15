@@ -111,7 +111,7 @@ export function MobileLogin({
       const appConfigStr = window.localStorage.getItem('APPLICATION_CONFIG')
       const appConfig = JSON.parse(appConfigStr)
       const applicationId = appConfig?.id
-      const loginRes = await axios.post(`http://localhost:3001/api/modules/system/user/login?applicationId=${applicationId}`, {
+      const loginRes = await axios.post(`http://localhost:3007/api/modules/system/user/login?applicationId=${applicationId}`, {
         password,
         phone_number: phone
       })
@@ -223,6 +223,15 @@ export function MobileLogin({
             使用密码登录
           </button>
         </div>
+        <div className="text-center text-sm text-muted-foreground mt-2">
+          <button
+            type="button"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            onClick={onRegister}
+          >
+            {currentLocale === 'en' ? 'Create Account' : '创建账户'}
+          </button>
+        </div>
         {renderSocialIcons()}
       </div>
     </motion.div>
@@ -251,6 +260,15 @@ export function MobileLogin({
             }}
           >
             使用密码登录
+          </button>
+        </div>
+        <div className="text-center text-sm text-muted-foreground mt-2">
+          <button
+            type="button"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            onClick={onRegister}
+          >
+            {currentLocale === 'en' ? 'Create Account' : '创建账户'}
           </button>
         </div>
         {renderSocialIcons()}
@@ -331,6 +349,15 @@ export function MobileLogin({
         >
           {isLoading ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />登录中...</>) : '登录'}
         </Button>
+        <div className="text-center text-sm text-muted-foreground mt-4">
+          <button
+            type="button"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            onClick={onRegister}
+          >
+            {currentLocale === 'en' ? 'Create Account' : '创建账户'}
+          </button>
+        </div>
         {renderSocialIcons()}
       </div>
     </motion.div>
