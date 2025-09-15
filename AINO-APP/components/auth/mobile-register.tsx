@@ -99,7 +99,7 @@ export function MobileRegister({
       const applicationId = appConfig?.id
 
       // 调用Studio的注册API
-      const registerRes = await axios.post(`http://47.94.52.142:3007/api/modules/system/user/register?applicationId=${applicationId}`, {
+      const registerRes = await axios.post(`http://localhost:3007/api/modules/system/user/register?applicationId=${applicationId}`, {
         phone_number: formData.phone,
         password: formData.password,
         name: formData.name

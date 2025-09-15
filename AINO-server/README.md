@@ -45,12 +45,12 @@ pnpm install
 pnpm dev
 ```
 
-服务器将在 http://47.94.52.142:3001 启动
+服务器将在 http://localhost:3001 启动
 
 ### 3. 测试健康检查
 
 ```bash
-curl http://47.94.52.142:3001/health
+curl http://localhost:3001/health
 ```
 
 应该返回: `ok`
@@ -73,7 +73,7 @@ curl http://47.94.52.142:3001/health
 #### 用户登录
 
 ```bash
-curl -X POST http://47.94.52.142:3001/api/users/login \
+curl -X POST http://localhost:3001/api/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@aino.com",
@@ -84,7 +84,7 @@ curl -X POST http://47.94.52.142:3001/api/users/login \
 #### 用户注册
 
 ```bash
-curl -X POST http://47.94.52.142:3001/api/users/register \
+curl -X POST http://localhost:3001/api/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "新用户",

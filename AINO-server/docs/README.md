@@ -44,7 +44,7 @@ pnpm db:push
 pnpm dev
 ```
 
-服务将在 http://47.94.52.142:3001 启动。
+服务将在 http://localhost:3001 启动。
 
 ## 📁 项目结构
 
@@ -65,8 +65,8 @@ src/
 
 ## 📚 API 文档
 
-- **Swagger UI**: http://47.94.52.142:3001/docs/swagger
-- **OpenAPI JSON**: http://47.94.52.142:3001/docs/openapi.json
+- **Swagger UI**: http://localhost:3001/docs/swagger
+- **OpenAPI JSON**: http://localhost:3001/docs/openapi.json
 
 ## 👥 用户体系
 

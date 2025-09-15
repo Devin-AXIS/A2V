@@ -208,7 +208,7 @@ if (existingUser) {
 
 ### 测试场景1：新用户注册
 ```bash
-curl -X POST "http://47.94.52.142:3001/api/modules/system/user/register?applicationId=xxx" \
+curl -X POST "http://localhost:3001/api/modules/system/user/register?applicationId=xxx" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test-token" \
   -d '{
@@ -229,7 +229,7 @@ curl -X POST "http://47.94.52.142:3001/api/modules/system/user/register?applicat
 ### 测试场景2：合并现有用户
 ```bash
 # 1. 后台添加用户
-curl -X POST "http://47.94.52.142:3001/api/modules/system/user?applicationId=xxx" \
+curl -X POST "http://localhost:3001/api/modules/system/user?applicationId=xxx" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test-token" \
   -d '{
@@ -240,7 +240,7 @@ curl -X POST "http://47.94.52.142:3001/api/modules/system/user?applicationId=xxx
   }'
 
 # 2. 相同手机号注册
-curl -X POST "http://47.94.52.142:3001/api/modules/system/user/register?applicationId=xxx" \
+curl -X POST "http://localhost:3001/api/modules/system/user/register?applicationId=xxx" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test-token" \
   -d '{
