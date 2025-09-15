@@ -128,12 +128,36 @@ export class DirectoryRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const [result] = await db
-      .delete(directories)
-      .where(eq(directories.id, id))
-      .returning()
+    try {
+      // 使用事务确保数据一致性
+      return await db.transaction(async (tx) => {
+        // 1. 先删除所有相关的 directory_defs 记录
+        await tx.delete(directoryDefs).where(eq(directoryDefs.directoryId, id))
+        console.log(`✅ 已删除目录 ${id} 的所有 directory_defs 记录`)
 
-    return !!result
+        // 2. 删除所有相关的 field_categories 记录
+        const { fieldCategories } = await import("../../db/schema")
+        await tx.delete(fieldCategories).where(eq(fieldCategories.directoryId, id))
+        console.log(`✅ 已删除目录 ${id} 的所有 field_categories 记录`)
+
+        // 3. 删除所有相关的 record_categories 记录
+        const { recordCategories } = await import("../../db/schema")
+        await tx.delete(recordCategories).where(eq(recordCategories.directoryId, id))
+        console.log(`✅ 已删除目录 ${id} 的所有 record_categories 记录`)
+
+        // 4. 最后删除目录本身
+        const [result] = await tx
+          .delete(directories)
+          .where(eq(directories.id, id))
+          .returning()
+
+        console.log(`✅ 目录 ${id} 删除成功`)
+        return !!result
+      })
+    } catch (error) {
+      console.error(`❌ 删除目录 ${id} 失败:`, error)
+      throw error
+    }
   }
 
   async checkNameExists(name: string, applicationId: string, excludeId?: string) {

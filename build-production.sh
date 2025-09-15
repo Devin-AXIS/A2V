@@ -49,6 +49,11 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
+echo "🔨 删除旧.next文件夹..."
+rm -rf AINO-APP/.next
+rm -rf AINO-APP/.next
+echo "✅ 删除旧.next文件夹完成"
+
 echo "🔨 开始构建项目..."
 
 # 构建前端 (AINO-studio)
