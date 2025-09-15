@@ -1086,6 +1086,12 @@ export default function ClientConfigPage() {
       const data = event.data || {};
       // 仅处理 AINO 规范的消息
       if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
+      
+      // 确保frame存在
+      if (!frame) {
+        console.warn("Frame element not found, skipping message handling");
+        return;
+      }
 
       switch (data.type) {
         case "aino:ready":

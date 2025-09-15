@@ -21,6 +21,7 @@ import relationRecordsRoute from "./modules/relation-records/routes"
 import { docsRoute } from "./docs/routes"
 import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
+import crawlRoute from "./modules/crawl/routes"
 import pageConfigsRoute from "./modules/page-configs/routes"
 import { databaseMiddleware } from "./middleware/database"
 
@@ -29,7 +30,7 @@ const app = new Hono()
 app.use("*", cors({
   origin: (origin) => origin ?? "*",
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization"],
+  allowHeaders: ["Content-Type", "Authorization", "x-aino-firecrawl-key", "x-aino-openai-endpoint", "x-aino-openai-key"],
   credentials: true,
   maxAge: 86400,
 }))
@@ -92,6 +93,9 @@ app.route("/api/preview-manifests", previewManifestsRoute)
 
 // AI 网关路由（OpenAI 兼容）
 app.route("/api/ai", aiRoute)
+
+// 爬取服务路由（Firecrawl 集成）
+app.route("/api/crawl", crawlRoute)
 
 // 页面配置临时存储/读取
 app.route("/api/page-configs", pageConfigsRoute)
