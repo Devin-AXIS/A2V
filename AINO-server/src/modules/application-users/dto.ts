@@ -8,7 +8,7 @@ export const ApplicationUser = z.object({
   password: z.string().optional(), // 不返回给前端
   status: z.enum(['active', 'inactive', 'pending']).default('active'),
   role: z.enum(['admin', 'user', 'guest']).default('user'),
-  metadata: z.record(z.any()).default({}),
+  metadata: z.record(z.string(), z.any()).default({}),
   lastLoginAt: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -29,7 +29,7 @@ export const CreateApplicationUserRequest = z.object({
   password: z.string().min(6, "密码至少6位").optional(),
   role: z.enum(['admin', 'user', 'guest']).default('user'),
   status: z.enum(['active', 'inactive', 'pending']).default('active'),
-  metadata: z.record(z.any()).default({}),
+  metadata: z.record(z.string(), z.any()).default({}),
 })
 
 export type TCreateApplicationUserRequest = z.infer<typeof CreateApplicationUserRequest>
@@ -40,7 +40,7 @@ export const UpdateApplicationUserRequest = z.object({
   password: z.string().min(6, "密码至少6位").optional(),
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   role: z.enum(['admin', 'user', 'guest']).optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 })
 
 export type TUpdateApplicationUserRequest = z.infer<typeof UpdateApplicationUserRequest>

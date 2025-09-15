@@ -9,7 +9,7 @@
 async function apiRequest(endpoint, options = {}) {
   const baseUrl = 'http://localhost:3001'
   const url = `${baseUrl}${endpoint}`
-  
+
   const defaultOptions = {
     method: 'GET',
     headers: {
@@ -17,17 +17,17 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': 'Bearer test-token'
     }
   }
-  
+
   const finalOptions = { ...defaultOptions, ...options }
-  
+
   if (finalOptions.body && typeof finalOptions.body === 'object') {
     finalOptions.body = JSON.stringify(finalOptions.body)
   }
-  
+
   try {
     const response = await fetch(url, finalOptions)
     const data = await response.json()
-    
+
     return {
       success: response.ok,
       data: data.data || data,
@@ -55,7 +55,7 @@ async function debugBackendFieldProcessor() {
         y_4nzv: "test@example.com"
       }
     })
-    
+
     if (simpleResponse.success) {
       console.log('✅ 简单记录创建成功')
     } else {
@@ -79,7 +79,7 @@ async function debugBackendFieldProcessor() {
         ]
       }
     })
-    
+
     if (experienceResponse.success) {
       console.log('✅ 工作经历记录创建成功')
     } else {
@@ -98,7 +98,7 @@ async function debugBackendFieldProcessor() {
         b_qocn: ["标签1", "标签2"]
       }
     })
-    
+
     if (tagsResponse.success) {
       console.log('✅ 标签记录创建成功')
     } else {
@@ -117,7 +117,7 @@ async function debugBackendFieldProcessor() {
         d_cive: ["选项1", "选项2"]
       }
     })
-    
+
     if (multiselectResponse.success) {
       console.log('✅ 多选记录创建成功')
     } else {

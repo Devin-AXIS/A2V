@@ -11,7 +11,13 @@ export const SystemModuleConfig = z.object({
     requireLowercase: z.boolean().default(false),
     requireNumbers: z.boolean().default(false),
     requireSpecialChars: z.boolean().default(false),
-  }).default({}),
+  }).default({
+    minLength: 8,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSpecialChars: false,
+  }),
 })
 
 export type TSystemModuleConfig = z.infer<typeof SystemModuleConfig>

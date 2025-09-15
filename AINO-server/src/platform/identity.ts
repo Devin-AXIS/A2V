@@ -9,6 +9,18 @@ export const Identity = z.object({
 
 export type TIdentity = z.infer<typeof Identity>
 
+// JWT Payload类型
+export const JWTPayload = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  roles: z.array(z.string()).default([]),
+  iat: z.number(),
+  exp: z.number(),
+})
+
+export type TJWTPayload = z.infer<typeof JWTPayload>
+
 // 身份验证中间件类型
 export interface IdentityContext {
   user?: TIdentity

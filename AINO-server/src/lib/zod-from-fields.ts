@@ -4,10 +4,10 @@ import type { FieldDef } from './field-processors'
 // 根据字段定义生成Zod校验器
 export function zodFromFields(fields: FieldDef[]) {
   const schema: Record<string, z.ZodTypeAny> = {}
-  
+
   for (const field of fields) {
     let fieldSchema: z.ZodTypeAny
-    
+
     // 根据字段类型生成校验规则
     switch (field.type) {
       case 'text':
@@ -117,7 +117,7 @@ export function zodFromFields(fields: FieldDef[]) {
         }).optional()
         break
       case 'other_verification':
-        fieldSchema = z.record(z.union([z.string(), z.array(z.string())])).optional()
+        fieldSchema = z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional()
         break
       case 'json':
         fieldSchema = z.any()
@@ -128,7 +128,7 @@ export function zodFromFields(fields: FieldDef[]) {
       default:
         fieldSchema = z.any()
     }
-    
+
     // 添加验证规则
     if (field.validators) {
       if (field.validators.min !== undefined && (field.type === 'number' || field.type === 'progress' || field.type === 'percent') && fieldSchema instanceof z.ZodNumber) {
@@ -153,27 +153,27 @@ export function zodFromFields(fields: FieldDef[]) {
         fieldSchema = fieldSchema.max(field.validators.maxItems)
       }
     }
-    
+
     // 处理必填字段
     if (field.required) {
       // 必填字段保持原样
     } else {
       fieldSchema = fieldSchema.optional()
     }
-    
+
     schema[field.key] = fieldSchema
   }
-  
+
   return z.object(schema)
 }
 
 // 生成部分更新校验器（所有字段都是可选的）
 export function zodFromFieldsPartial(fields: FieldDef[]) {
   const schema: Record<string, z.ZodTypeAny> = {}
-  
+
   for (const field of fields) {
     let fieldSchema: z.ZodTypeAny
-    
+
     // 根据字段类型生成校验规则
     switch (field.type) {
       case 'text':
@@ -283,7 +283,7 @@ export function zodFromFieldsPartial(fields: FieldDef[]) {
         }).optional()
         break
       case 'other_verification':
-        fieldSchema = z.record(z.union([z.string(), z.array(z.string())])).optional()
+        fieldSchema = z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional()
         break
       case 'json':
         fieldSchema = z.any()
@@ -294,7 +294,7 @@ export function zodFromFieldsPartial(fields: FieldDef[]) {
       default:
         fieldSchema = z.any()
     }
-    
+
     // 添加验证规则
     if (field.validators) {
       if (field.validators.min !== undefined && (field.type === 'number' || field.type === 'progress' || field.type === 'percent') && fieldSchema instanceof z.ZodNumber) {
@@ -319,11 +319,11 @@ export function zodFromFieldsPartial(fields: FieldDef[]) {
         fieldSchema = fieldSchema.max(field.validators.maxItems)
       }
     }
-    
+
     // 部分更新时所有字段都是可选的
     schema[field.key] = fieldSchema.optional()
   }
-  
+
   return z.object(schema)
 }
 

@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -40,13 +40,13 @@ async function debugFrontendDirectoryData() {
     if (!directory.success) {
       throw new Error('获取目录信息失败')
     }
-    
+
     console.log('✅ 后端返回的目录数据结构:')
     console.log('目录ID:', directory.data.id)
     console.log('目录名称:', directory.data.name)
     console.log('配置字段数量:', directory.data.config?.fields?.length || 0)
     console.log('')
-    
+
     // 2. 检查城市字段的原始数据
     const cityField = directory.data.config.fields.find(f => f.key === 'c_89a6')
     if (cityField) {
@@ -68,7 +68,7 @@ async function debugFrontendDirectoryData() {
     console.log('  records: [],')
     console.log('}))')
     console.log('')
-    
+
     // 4. 检查转换后的数据结构
     const transformedDirectory = {
       id: directory.data.id,
@@ -78,13 +78,13 @@ async function debugFrontendDirectoryData() {
       categories: directory.data.config?.categories || [],
       records: [],
     }
-    
+
     const transformedCityField = transformedDirectory.fields.find(f => f.key === 'c_89a6')
     if (transformedCityField) {
       console.log('✅ 转换后的城市字段数据:')
       console.log(JSON.stringify(transformedCityField, null, 2))
       console.log('')
-      
+
       // 5. 检查preset属性是否丢失
       if (transformedCityField.preset) {
         console.log('✅ preset属性存在:', transformedCityField.preset)
@@ -102,10 +102,10 @@ async function debugFrontendDirectoryData() {
         (f.enabled && f.type !== "relation_many" && f.type !== "relation_one") ||
         (f.preset && ["constellation", "skills", "city", "country", "phone", "email", "url", "map", "currency", "rating", "progress", "work_experience", "education_experience", "certificate_experience", "custom_experience", "identity_verification", "other_verification", "barcode", "cascader"].includes(f.preset)),
     )
-    
+
     const cityFieldInBasic = basicFields.find(f => f.key === 'c_89a6')
     console.log(`城市字段是否在基础字段中: ${cityFieldInBasic ? '是' : '否'}`)
-    
+
     if (cityFieldInBasic) {
       console.log('✅ 城市字段会被包含在基础字段中')
     } else {

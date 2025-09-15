@@ -9,7 +9,7 @@ console.log("🌐 API 基础 URL:", API_BASE_URL)
 async function testLogin() {
   try {
     console.log("🔐 测试登录请求...")
-    
+
     const response = await fetch(`${API_BASE_URL}/api/users/login`, {
       method: 'POST',
       headers: {
@@ -20,13 +20,13 @@ async function testLogin() {
         password: 'admin123'
       })
     })
-    
+
     console.log("📡 响应状态:", response.status)
     console.log("📡 响应头:", Object.fromEntries(response.headers.entries()))
-    
+
     const data = await response.json()
     console.log("📡 响应数据:", data)
-    
+
     if (response.ok) {
       console.log("✅ 登录成功!")
       // 存储 token
@@ -45,21 +45,21 @@ async function testLogin() {
 async function testApplications() {
   try {
     console.log("📋 测试应用列表请求...")
-    
+
     const token = localStorage.getItem('aino_token')
     console.log("🔑 使用 Token:", token)
-    
+
     const response = await fetch(`${API_BASE_URL}/api/applications`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       }
     })
-    
+
     console.log("📡 响应状态:", response.status)
     const data = await response.json()
     console.log("📡 响应数据:", data)
-    
+
     if (response.ok) {
       console.log("✅ 获取应用列表成功!")
     } else {

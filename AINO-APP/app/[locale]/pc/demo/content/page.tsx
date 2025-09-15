@@ -1,9 +1,9 @@
 "use client"
 import { DynamicPageComponent, PAGE_CATEGORIES } from "@/components/dynamic-page/dynamic-page-component"
 import type { Locale } from "@/lib/dictionaries"
+import { Suspense } from "react"
 
-export default async function PCContentDemoPage({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params
+function PCContentDemoContent({ locale }: { locale: Locale }) {
   return (
     <DynamicPageComponent
       category={PAGE_CATEGORIES["pc-content"]}
@@ -12,5 +12,14 @@ export default async function PCContentDemoPage({ params }: { params: Promise<{ 
       backUrl={`/${locale}/pc`}
       mobileUrl={`/${locale}/demo/content`}
     />
+  )
+}
+
+export default async function PCContentDemoPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">加载中...</div>}>
+      <PCContentDemoContent locale={locale} />
+    </Suspense>
   )
 }

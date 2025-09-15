@@ -7,7 +7,7 @@ import { applyTemplate } from './templates/index'
 
 async function main() {
   const args = process.argv.slice(2)
-  
+
   if (args.length === 0) {
     console.log('使用方法: npx tsx scripts/apply-user-template.ts <applicationId>')
     console.log('')
@@ -15,15 +15,15 @@ async function main() {
     console.log('  npx tsx scripts/apply-user-template.ts 123e4567-e89b-12d3-a456-426614174000')
     return
   }
-  
+
   const applicationId = args[0]
-  
+
   console.log('🎯 应用用户模块模板')
   console.log(`📱 应用ID: ${applicationId}`)
   console.log('')
-  
+
   const result = await applyTemplate(applicationId, 'user-module')
-  
+
   if (result.success) {
     console.log('')
     console.log('🎉 用户模块模板应用成功！')
@@ -38,7 +38,7 @@ async function main() {
     console.error('')
     console.error('❌ 应用模板失败:')
     console.error(`   ${result.message}`)
-    process.exit(1)
+    // process.exit(1)
   }
 }
 

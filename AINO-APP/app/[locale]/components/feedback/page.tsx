@@ -1,6 +1,7 @@
 import { getDictionary, type Locale } from "@/lib/dictionaries"
 import { AppHeader } from "@/components/navigation/app-header"
 import { FeedbackClientView } from "./client-view"
+import { Suspense } from "react"
 
 export default async function FeedbackPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params
@@ -11,7 +12,9 @@ export default async function FeedbackPage({ params }: { params: Promise<{ local
     <div className="min-h-screen pb-32">
       <AppHeader title={pageDict.title} showBackButton />
       <main className="pt-20">
-        <FeedbackClientView />
+        <Suspense fallback={<div className="p-4 text-center">加载中...</div>}>
+          <FeedbackClientView />
+        </Suspense>
       </main>
     </div>
   )

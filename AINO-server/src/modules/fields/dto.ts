@@ -49,6 +49,7 @@ export const CreateFieldRequest = z.object({
   enabled: z.boolean().default(true),
   desc: z.string().optional(),
   placeholder: z.string().optional(),
+  categoryId: z.string().uuid().optional(),
 
 
   // 数值配置
@@ -108,6 +109,7 @@ export const UpdateFieldRequest = CreateFieldRequest.partial().omit({ key: true 
 export const GetFieldsRequest = z.object({
   applicationId: z.string().uuid(),
   directoryId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
 
   type: FieldTypeEnum.optional(),
   enabled: z.boolean().optional(),
@@ -120,6 +122,7 @@ export const FieldResponse = z.object({
   id: z.string().uuid(),
   applicationId: z.string().uuid(),
   directoryId: z.string().uuid(),
+  categoryId: z.string().uuid().nullable(),
 
   key: z.string(),
   label: z.string(),

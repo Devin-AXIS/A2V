@@ -371,16 +371,16 @@ Authorization: Bearer <token>
 
   // 按标签分组
   const tags = [...new Set(apiEndpoints.flatMap(ep => ep.tags))]
-  
+
   tags.forEach(tag => {
     markdown += `### ${tag}\n\n`
-    
+
     const endpoints = apiEndpoints.filter(ep => ep.tags.includes(tag))
     endpoints.forEach(endpoint => {
       markdown += `#### ${endpoint.summary}\n\n`
       markdown += `**路径:** \`${endpoint.method} ${endpoint.path}\`\n\n`
       markdown += `**描述:** ${endpoint.description}\n\n`
-      
+
       if (endpoint.pathParams) {
         markdown += `**路径参数:**\n`
         Object.entries(endpoint.pathParams).forEach(([key, desc]) => {
@@ -388,7 +388,7 @@ Authorization: Bearer <token>
         })
         markdown += '\n'
       }
-      
+
       if (endpoint.queryParams) {
         markdown += `**查询参数:**\n`
         Object.entries(endpoint.queryParams).forEach(([key, desc]) => {
@@ -396,21 +396,21 @@ Authorization: Bearer <token>
         })
         markdown += '\n'
       }
-      
+
       if (endpoint.requestBody) {
         markdown += `**请求体:**\n\`\`\`json\n${JSON.stringify(endpoint.requestBody, null, 2)}\n\`\`\`\n\n`
       }
-      
+
       markdown += `**响应:**\n`
       Object.entries(endpoint.responses).forEach(([code, desc]) => {
         markdown += `- ${code}: ${desc}\n`
       })
       markdown += '\n'
-      
+
       if (endpoint.responseExample) {
         markdown += `**响应示例:**\n\`\`\`json\n${JSON.stringify(endpoint.responseExample, null, 2)}\n\`\`\`\n\n`
       }
-      
+
       markdown += '---\n\n'
     })
   })
@@ -525,7 +525,7 @@ function generateHtmlEndpoints(): string {
 
   tags.forEach(tag => {
     html += `<h3>${tag}</h3>`
-    
+
     const endpoints = apiEndpoints.filter(ep => ep.tags.includes(tag))
     endpoints.forEach(endpoint => {
       html += `<div class="endpoint">

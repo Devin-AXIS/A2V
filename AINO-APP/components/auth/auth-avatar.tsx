@@ -4,19 +4,19 @@ import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { 
-  User, 
-  LogIn, 
-  UserPlus, 
-  LogOut, 
-  Settings, 
+import {
+  User,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Settings,
   Crown,
   Sparkles
 } from 'lucide-react'
@@ -30,11 +30,11 @@ interface AuthAvatarProps {
   onClick?: () => void
 }
 
-export function AuthAvatar({ 
-  className, 
-  size = 'md', 
+export function AuthAvatar({
+  className,
+  size = 'md',
   showDropdown = true,
-  onClick 
+  onClick
 }: AuthAvatarProps) {
   const { user, isAuthenticated, logout } = useAuth()
   const router = useRouter()
@@ -81,16 +81,17 @@ export function AuthAvatar({
         {showDropdown ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="flex items-center space-x-2 bg-white/20 backdrop-blur-md border-white/30 hover:bg-white/30"
+                onClick={handleLogin}
               >
                 <User className="w-4 h-4" />
                 登录
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            {/* <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleLogin} className="cursor-pointer">
                 <LogIn className="w-4 h-4 mr-2" />
                 登录
@@ -99,12 +100,12 @@ export function AuthAvatar({
                 <UserPlus className="w-4 h-4 mr-2" />
                 注册
               </DropdownMenuItem>
-            </DropdownMenuContent>
+            </DropdownMenuContent> */}
           </DropdownMenu>
         ) : (
           <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleLogin}
               className="bg-white/20 backdrop-blur-md border-white/30 hover:bg-white/30"
@@ -112,8 +113,8 @@ export function AuthAvatar({
               <LogIn className="w-4 h-4 mr-2" />
               登录
             </Button>
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               size="sm"
               onClick={handleRegister}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
@@ -146,10 +147,10 @@ export function AuthAvatar({
                   {user?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
-              
+
               {/* 在线状态指示器 */}
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-              
+
               {/* VIP 标识 */}
               {user?.points && user.points > 1000 && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -184,7 +185,7 @@ export function AuthAvatar({
                 </div>
               </div>
             </div>
-            
+
             {/* 菜单项 */}
             <DropdownMenuItem onClick={handleProfile} className="cursor-pointer">
               <User className="w-4 h-4 mr-2" />
@@ -194,11 +195,11 @@ export function AuthAvatar({
               <Settings className="w-4 h-4 mr-2" />
               设置
             </DropdownMenuItem>
-            
+
             <DropdownMenuSeparator />
-            
-            <DropdownMenuItem 
-              onClick={handleLogout} 
+
+            <DropdownMenuItem
+              onClick={handleLogout}
               className="cursor-pointer text-red-600 focus:text-red-600"
               disabled={isLoading}
             >
@@ -221,10 +222,10 @@ export function AuthAvatar({
               {user?.name?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
-          
+
           {/* 在线状态指示器 */}
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-          
+
           {/* VIP 标识 */}
           {user?.points && user.points > 1000 && (
             <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -238,17 +239,17 @@ export function AuthAvatar({
 }
 
 // 简化的头像组件，用于导航栏等地方
-export function SimpleAuthAvatar({ 
-  className, 
+export function SimpleAuthAvatar({
+  className,
   size = 'sm',
-  onClick 
+  onClick
 }: {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   onClick?: () => void
 }) {
   return (
-    <AuthAvatar 
+    <AuthAvatar
       className={className}
       size={size}
       showDropdown={false}

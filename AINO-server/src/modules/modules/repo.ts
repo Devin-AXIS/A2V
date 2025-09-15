@@ -128,7 +128,7 @@ export class ModuleRepository {
   // 根据应用ID和模块Key获取安装记录
   async findByAppAndModule(applicationId: string, moduleKey: string) {
     console.log('🔍 findByAppAndModule 查询参数:', { applicationId, moduleKey })
-    
+
     // 先尝试从 module_installs 表查询
     let [module] = await db
       .select()
@@ -150,7 +150,7 @@ export class ModuleRepository {
 
     // 如果 module_installs 表没有数据，从 modules 表查询
     console.log('🔍 尝试从 modules 表查询...')
-    
+
     // 尝试多种查询方式：按名称、按ID、按类型
     let [moduleFromModules] = await db
       .select()
@@ -178,7 +178,7 @@ export class ModuleRepository {
           )
           .limit(1)
       }
-      
+
       // 如果还是没找到，尝试模糊匹配名称
       if (!moduleFromModules) {
         console.log('🔍 尝试模糊匹配模块名称...')
@@ -186,13 +186,13 @@ export class ModuleRepository {
           .select()
           .from(modules)
           .where(eq(modules.applicationId, applicationId))
-        
+
         console.log('🔍 该应用的所有模块:', allModules.map(m => ({ id: m.id, name: m.name, type: m.type })))
-        
+
         // 查找名称包含 moduleKey 的模块
-        moduleFromModules = allModules.find(m => 
+        moduleFromModules = allModules.find(m =>
           m.name.includes(moduleKey) || moduleKey.includes(m.name)
-        )
+        )!
       }
     }
 
@@ -221,11 +221,11 @@ export class ModuleRepository {
         .select()
         .from(moduleInstalls)
         .where(eq(moduleInstalls.applicationId, applicationId))
-      
+
       console.log('🔍 该应用的所有已安装模块:', allInstalledModules.map(m => ({ id: m.id, moduleKey: m.moduleKey, moduleName: m.moduleName, moduleType: m.moduleType })))
-      
+
       // 查找名称包含 moduleKey 的模块
-      const foundModule = allInstalledModules.find(m => 
+      const foundModule = allInstalledModules.find(m =>
         m.moduleName.includes(moduleKey) || moduleKey.includes(m.moduleName) ||
         m.moduleKey.includes(moduleKey) || moduleKey.includes(m.moduleKey)
       )
@@ -367,7 +367,7 @@ export class ModuleRepository {
           )
         )
         .returning()
-      
+
       if (deletedModule) {
         console.log('✅ 从 module_installs 表按 moduleKey 卸载成功')
         return deletedModule
@@ -387,7 +387,7 @@ export class ModuleRepository {
           )
         )
         .returning()
-      
+
       if (deletedModule) {
         console.log('✅ 从 module_installs 表按 moduleName 卸载成功')
         return deletedModule

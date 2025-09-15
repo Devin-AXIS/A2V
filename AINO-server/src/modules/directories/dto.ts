@@ -35,6 +35,7 @@ export const DirectoryResponse = z.object({
   applicationId: z.string(),
   moduleId: z.string(),
   name: z.string(),
+  slug: z.string(), // 添加slug字段
   type: z.string(),
   supportsCategory: z.boolean(),
   config: z.record(z.string(), z.any()),

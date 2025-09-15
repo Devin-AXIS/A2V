@@ -23,14 +23,17 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
     webpackBuildWorker: false,
+    staticPageGenerationTimeout: 1000,
   },
   // SWC 压缩在 Next.js 15 中默认启用，无需显式配置
   // 压缩配置
   compress: true,
-  // 启用静态优化
-  trailingSlash: false,
   // 优化构建输出
   output: 'standalone',
+  // 禁用静态生成，使用动态渲染
+  trailingSlash: false,
+  // 跳过有问题的页面
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
       {

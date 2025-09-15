@@ -19,9 +19,9 @@ async function apiRequest(endpoint, options = {}) {
       'Authorization': `Bearer ${TEST_TOKEN}`,
     },
   }
-  
+
   const response = await fetch(url, { ...defaultOptions, ...options })
-  
+
   if (response.headers.get('content-type')?.includes('application/json')) {
     return await response.json()
   } else {
@@ -66,7 +66,7 @@ async function testCityField() {
         console.log('4️⃣ 获取字段定义...')
         const fieldDefs = await apiRequest(`/api/field-defs?directoryId=${dirId}`)
         console.log('✅ 字段定义获取成功')
-        
+
         if (fieldDefs.success && fieldDefs.data.length > 0) {
           console.log('字段列表:')
           fieldDefs.data.forEach(field => {
@@ -98,7 +98,7 @@ async function testCityField() {
               required: false,
               description: '当前居住城市'
             }
-            
+
             const createField = await apiRequest(`/api/field-defs`, {
               method: 'POST',
               body: JSON.stringify({
@@ -106,7 +106,7 @@ async function testCityField() {
                 ...newCityField
               })
             })
-            
+
             if (createField.success) {
               console.log('✅ 城市字段创建成功')
               console.log('')
@@ -123,12 +123,12 @@ async function testCityField() {
               city: '广东省 / 深圳市 / 南山区'
             }
           }
-          
+
           const createRecord = await apiRequest(`/api/records/${dirId}`, {
             method: 'POST',
             body: JSON.stringify(testRecord)
           })
-          
+
           if (createRecord.success) {
             console.log('✅ 记录创建成功，城市字段值:', testRecord.props.city)
             console.log('')

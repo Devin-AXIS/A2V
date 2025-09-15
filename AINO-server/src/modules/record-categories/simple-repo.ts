@@ -10,9 +10,9 @@ export class SimpleRecordCategoriesRepository {
       WHERE application_id = ${applicationId} AND directory_id = ${directoryId}
       ORDER BY level, "order", name
     `
-    
+
     const result = await db.execute(query)
-    
+
     return result.rows
   }
 
@@ -32,9 +32,9 @@ export class SimpleRecordCategoriesRepository {
       VALUES (gen_random_uuid(), ${data.applicationId}, ${data.directoryId}, ${data.name}, ${data.path}, ${data.level}, ${data.parentId || null}, ${data.order || 0}, ${data.enabled !== false}, NOW(), NOW())
       RETURNING id, application_id, directory_id, name, path, level, parent_id, "order", enabled, created_at, updated_at
     `
-    
+
     const result = await db.execute(query)
-    
+
     return result.rows[0]
   }
 
@@ -46,14 +46,14 @@ export class SimpleRecordCategoriesRepository {
       WHERE application_id = ${applicationId} AND directory_id = ${directoryId}
       ORDER BY level, "order", name
     `
-    
+
     const result = await db.execute(query)
-    
+
     // 构建分类树
     const categories = result.rows
     const categoryMap = new Map()
-    const rootCategories = []
-    
+    const rootCategories: any[] = []
+
     // 先创建所有分类的映射
     categories.forEach(category => {
       categoryMap.set(category.id, {
@@ -61,7 +61,7 @@ export class SimpleRecordCategoriesRepository {
         children: []
       })
     })
-    
+
     // 构建树形结构
     categories.forEach(category => {
       if (category.parent_id) {
@@ -73,7 +73,7 @@ export class SimpleRecordCategoriesRepository {
         rootCategories.push(categoryMap.get(category.id))
       }
     })
-    
+
     return rootCategories
   }
 }

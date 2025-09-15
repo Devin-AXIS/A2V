@@ -1,9 +1,9 @@
 import { db } from "../../db"
 import { relationRecords, directoryDefs } from "../../db/schema"
 import { eq, and, or, desc, asc, sql, lt, count } from "drizzle-orm"
-import type { 
-  CreateRelationRequest, 
-  GetRelationsRequest, 
+import type {
+  CreateRelationRequest,
+  GetRelationsRequest,
   DeleteRelationRequest,
   RelationsListResponse,
   RelatedRecordsListResponse
@@ -114,7 +114,7 @@ export class RelationRecordsRepository {
 
     // 构建查询条件
     const conditions = [eq(relationRecords.applicationId, applicationId)]
-    
+
     if (directoryId && recordId) {
       conditions.push(
         or(
@@ -126,23 +126,23 @@ export class RelationRecordsRepository {
             eq(relationRecords.toDirectoryId, directoryId),
             eq(relationRecords.toRecordId, recordId)
           )
-        )
+        )!
       )
     }
-    
+
     if (fieldKey) {
       conditions.push(
         or(
           eq(relationRecords.fromFieldKey, fieldKey),
           eq(relationRecords.toFieldKey, fieldKey)
-        )
+        )!
       )
     }
-    
+
     if (relationType) {
       conditions.push(eq(relationRecords.relationType, relationType))
     }
-    
+
     if (bidirectional !== undefined) {
       conditions.push(eq(relationRecords.bidirectional, bidirectional))
     }
@@ -165,7 +165,7 @@ export class RelationRecordsRepository {
       .offset(offset)
 
     return {
-      relations,
+      relations: relations as any,
       total,
       page,
       limit,
@@ -235,11 +235,11 @@ export class RelationRecordsRepository {
       directoryName: '', // TODO: 从directoryDefs查询
       data: {}, // TODO: 从对应的记录表查询
       relationType: rel.relationType,
-      createdAt: rel.createdAt.toISOString(),
+      createdAt: rel.createdAt?.toISOString() || new Date().toISOString(),
     }))
 
     return {
-      records,
+      records: records as any,
       total,
       page,
       limit,
@@ -454,7 +454,7 @@ export class RelationRecordsRepository {
       return { relation, created: true };
     } catch (error) {
       // 如果是唯一约束冲突，说明已存在，返回现有记录
-      if (error.code === '23505') { // PostgreSQL unique violation
+      if ((error as any).code === '23505') { // PostgreSQL unique violation
         const [existing] = await db
           .select()
           .from(relationRecords)
@@ -485,7 +485,7 @@ export class RelationRecordsRepository {
     relations: Omit<CreateRelationRequest, 'applicationId'>[]
   ) {
     const results = [];
-    
+
     for (const relation of relations) {
       const result = await this.createIdempotent({
         ...relation,

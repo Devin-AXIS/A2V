@@ -11,7 +11,8 @@ const nextConfig = {
   },
   // 固定端口配置
   env: {
-    PORT: '3000',
+    PORT: '3006',
+    NEXT_PUBLIC_API_URL: 'http://localhost:3007',
   },
 }
 

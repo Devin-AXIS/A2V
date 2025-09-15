@@ -103,7 +103,7 @@ usersRoute.post("/login", async (c) => {
   }
 
   const { generateToken } = await import('../../platform/auth')
-  const token = generateToken(user.id, user.email, user.roles || ['user'])
+  const token = generateToken(user.id, user.email, user.roles || [user.role])
 
   // 兼容多种前端期望：同时返回 success/data/token/user/code/message
   return c.json({
@@ -112,11 +112,11 @@ usersRoute.post("/login", async (c) => {
     message: "OK",
     data: {
       token,
-      user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
+      user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar || '', roles: user.roles || [user.role] },
     },
     // 兼容一些直接取顶层字段的实现
     token,
-    user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
+    user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar || '', roles: user.roles || [user.role] },
   }, 200)
 })
 
@@ -131,7 +131,7 @@ usersRoute.get("/me", async (c) => {
   const { getUserFromToken } = await import('../../platform/auth')
   const identity = await getUserFromToken(token)
   if (identity) {
-    return c.json({ success: true, data: { id: identity.id, email: identity.email, name: identity.name, avatar: identity.avatar, roles: identity.roles } }, 200)
+    return c.json({ success: true, data: { id: identity.id, email: identity.displayName || '', name: identity.displayName || '', avatar: '', roles: identity.roles } }, 200)
   }
   return c.json({ success: false, code: "UNAUTHORIZED", message: "令牌无效或已过期" }, 401)
 })
@@ -175,7 +175,7 @@ usersRoute.patch("/me", async (c) => {
 
   return c.json({
     success: true,
-    data: { id: updated.id, email: updated.email, name: updated.name, avatar: updated.avatar, roles: updated.roles },
+    data: { id: updated.id, email: updated.email, name: updated.name, avatar: updated.avatar || '', roles: updated.roles || [updated.role] },
   }, 200)
 })
 
@@ -197,7 +197,7 @@ usersRoute.post("/register", async (c) => {
     }
 
     const user = await createUser(parsed.data)
-    const token = generateToken(user.id, user.email, user.roles || ['user'])
+    const token = generateToken(user.id, user.email, user.roles || [user.role])
 
     return c.json({
       success: true,
@@ -205,10 +205,10 @@ usersRoute.post("/register", async (c) => {
       message: 'OK',
       data: {
         token,
-        user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
+        user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar || '', roles: user.roles || [user.role] },
       },
       token,
-      user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, roles: user.roles },
+      user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar || '', roles: user.roles || [user.role] },
     }, 200)
   } catch (err: any) {
     console.error('注册失败:', err)

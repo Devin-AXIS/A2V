@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import type { Locale } from "@/lib/dictionaries"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,6 +20,12 @@ function DemoAwareBottomNavigation({ dict }: { dict: any }) {
 
   useEffect(() => {
     try {
+      // 确保在客户端环境中才访问 localStorage
+      if (typeof window === 'undefined') {
+        setItems(null)
+        return
+      }
+
       // 优先读取页面级别配置（由 Studio 以 pageCfg 或本地存储写入）
       const route = "/" + (pathname?.split("/").slice(2).join("/") || "")
       const rawPage = localStorage.getItem(`APP_PAGE_ROUTE_${route}`)
@@ -66,20 +72,20 @@ export function LayoutClient({
       try {
         if (typeof window === 'undefined') return
         const qs = new URLSearchParams(window.location.search)
-        const appId = qs.get('appId') || localStorage.getItem('APP_ID') || ''
+        const appId = qs.get('appId') || (typeof window !== 'undefined' ? localStorage.getItem('APP_ID') : '') || ''
         if (!appId) return
-        try { localStorage.setItem('APP_ID', appId) } catch { }
+        try { if (typeof window !== 'undefined') localStorage.setItem('APP_ID', appId) } catch { }
 
-        const res = await fetch(`http://localhost:3001/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
+        const res = await fetch(`http://localhost:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
         let json: any = null
         try { json = await res.json() } catch { json = null }
         if (!res.ok || !json) return
         const config = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json
         if (aborted) return
-        try { localStorage.setItem('QUERY_STRING', window.location.search) } catch { }
-        try { localStorage.setItem('PREVIEW_ID', qs.get('previewId')) } catch { }
-        try { localStorage.setItem('APPLICATION_CONFIG', JSON.stringify(config)) } catch { }
-        try { localStorage.setItem(`APPLICATION_CONFIG:${appId}`, JSON.stringify(config)) } catch { }
+        try { if (typeof window !== 'undefined') localStorage.setItem('QUERY_STRING', window.location.search) } catch { }
+        try { if (typeof window !== 'undefined') localStorage.setItem('PREVIEW_ID', qs.get('previewId')) } catch { }
+        try { if (typeof window !== 'undefined') localStorage.setItem('APPLICATION_CONFIG', JSON.stringify(config)) } catch { }
+        try { if (typeof window !== 'undefined') localStorage.setItem(`APPLICATION_CONFIG:${appId}`, JSON.stringify(config)) } catch { }
       } catch { }
     }
     initAppConfig()
@@ -92,7 +98,9 @@ export function LayoutClient({
         <div className="relative min-h-screen overflow-hidden">
           <DynamicBackground />
           <main className="relative z-10">{children}</main>
-          <MobileUnifiedConfig />
+          <Suspense fallback={null}>
+            <MobileUnifiedConfig />
+          </Suspense>
         </div>
       </UnifiedProvider>
     </div>

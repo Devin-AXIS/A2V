@@ -129,7 +129,7 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     heart: Heart,
   }
 
-  const hrefQs = localStorage.getItem('QUERY_STRING')
+  const hrefQs = typeof window !== 'undefined' ? localStorage.getItem('QUERY_STRING') : null
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
@@ -163,9 +163,9 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
           })}
 
           {/* 字体大小切换按钮 */}
-          <div className="border-l border-gray-200/30 pl-2">
+          {/* <div className="border-l border-gray-200/30 pl-2">
             <FontSizeToggleIcon />
-          </div>
+          </div> */}
         </div>
       </AppCard>
     </div>
