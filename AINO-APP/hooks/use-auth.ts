@@ -29,10 +29,9 @@ interface AuthContextType extends AuthState {
 
 export interface RegisterData {
   phone: string
-  countryCode: string
-  code: string
   password: string
   confirmPassword: string
+  name: string
   agreeTerms: boolean
 }
 
@@ -211,9 +210,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }))
 
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
       // 检查用户是否已存在
       const existingUser = MOCK_USERS.find(u => u.phone === data.phone)
       if (existingUser) {
@@ -224,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newUser: User = {
         id: Date.now().toString(),
         phone: data.phone,
-        name: `用户${data.phone.slice(-4)}`,
+        name: data.name || `用户${data.phone.slice(-4)}`,
         avatar: '/generic-user-avatar.png',
         points: 100, // 新用户赠送100积分
         followers: 0,

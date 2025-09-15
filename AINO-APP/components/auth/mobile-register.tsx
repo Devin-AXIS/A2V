@@ -1,17 +1,13 @@
 "use client"
-
 import axios from 'axios'
 import React, { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff, ArrowLeft, User, Lock, Smartphone, Check, AlertCircle } from 'lucide-react'
-import { PhoneInput, CountryCodeSelector } from './phone-input'
-import { VerificationCodeInput, SendCodeButton } from './verification-code-input'
-import { AppHeader } from '@/components/navigation/app-header'
+import { Eye, EyeOff, User, Lock, Smartphone, Check } from 'lucide-react'
+import { PhoneInput } from './phone-input'
 import { Button } from '@/components/ui/button'
-import { useDesignTokens } from '@/components/providers/design-tokens-provider'
-import { getOptimalTextColor } from '@/lib/contrast-utils'
 import { TextInput } from '@/components/input/text-input'
+import { motion } from 'framer-motion'
 
 interface MobileRegisterProps {
   onRegister?: (data: RegisterData) => void
@@ -21,20 +17,115 @@ interface MobileRegisterProps {
 
 export interface RegisterData {
   phone: string
-  countryCode: string
-  code: string
   password: string
   confirmPassword: string
+  name: string
   agreeTerms: boolean
 }
 
-type RegisterStage = 'phone' | 'verify' | 'password' | 'success'
+type RegisterStage = 'form' | 'success'
 
 export function MobileRegister({
   onRegister,
   onLogin,
   className
 }: MobileRegisterProps) {
+  const [stage, setStage] = useState<RegisterStage>('form')
+  const [formData, setFormData] = useState<RegisterData>({
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    name: '',
+    agreeTerms: false
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<{
+    phone?: string
+    password?: string
+    confirmPassword?: string
+    name?: string
+    agreeTerms?: string
+  }>({})
+
+  const handleInputChange = (field: keyof RegisterData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = '请输入姓名'
+    }
+
+    if (!formData.phone) {
+      newErrors.phone = '请输入手机号'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.phone)) {
+      newErrors.phone = '请输入正确的手机号'
+    }
+
+    if (!formData.password) {
+      newErrors.password = '请输入密码'
+    } else if (formData.password.length < 6) {
+      newErrors.password = '密码至少需要6个字符'
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = '两次输入的密码不一致'
+    }
+
+    if (!formData.agreeTerms) {
+      newErrors.agreeTerms = '请同意服务条款和隐私政策'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleRegister = async () => {
+    if (!validateForm()) return
+
+    setIsLoading(true)
+    setErrors({})
+
+    try {
+      const appConfigStr = window.localStorage.getItem('APPLICATION_CONFIG')
+      const appConfig = JSON.parse(appConfigStr || '{}')
+      const applicationId = appConfig?.id
+
+      // 调用Studio的注册API
+      const registerRes = await axios.post(`http://47.94.52.142:3007/api/modules/system/user/register?applicationId=${applicationId}`, {
+        phone_number: formData.phone,
+        password: formData.password,
+        name: formData.name
+      })
+
+      console.log('注册响应:', registerRes.data)
+
+      if (registerRes.data?.success) {
+        setStage('success')
+        // 延迟调用onRegister回调
+        setTimeout(() => {
+          onRegister?.(formData)
+        }, 1500)
+      } else {
+        throw new Error(registerRes.data?.error || '注册失败')
+      }
+    } catch (error: any) {
+      console.error('注册失败:', error)
+      const errorMessage = error.response?.data?.error || error.message || '注册失败，请重试'
+      setErrors(prev => ({ ...prev, phone: errorMessage }))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 读取 APP_AUTH_CONFIG 决定注册配置
   const pathname = usePathname()
   const [authConfig, setAuthConfig] = useState<any>(null)
   useEffect(() => {
@@ -67,402 +158,201 @@ export function MobileRegister({
     if (typeof t === 'string') return t
     return t[currentLocale] || t.zh || t.en || null
   }, [authConfig, currentLocale])
-  const [stage, setStage] = useState<RegisterStage>('phone')
-  const [countryCode, setCountryCode] = useState('+86')
-  const [phone, setPhone] = useState<string>(() => {
-    try {
-      const sp = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-      return sp.get('phone') || ''
-    } catch { return '' }
-  })
-  const [code, setCode] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [agreeTerms, setAgreeTerms] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<{
-    phone?: string
-    code?: string
-    password?: string
-    confirmPassword?: string
-    agreeTerms?: string
-  }>({})
 
-  // 统一按钮走公用 Button + 主题变量
-
-  const handlePhoneChange = (value: string) => {
-    setPhone(value)
-    if (errors.phone) {
-      setErrors(prev => ({ ...prev, phone: undefined }))
-    }
-  }
-
-  const handleCodeChange = (value: string) => {
-    setCode(value)
-    if (errors.code) {
-      setErrors(prev => ({ ...prev, code: undefined }))
-    }
-  }
-
-  const handlePasswordChange = (value: string) => {
-    setPassword(value)
-    if (errors.password) {
-      setErrors(prev => ({ ...prev, password: undefined }))
-    }
-  }
-
-  const handleConfirmPasswordChange = (value: string) => {
-    setConfirmPassword(value)
-    if (errors.confirmPassword) {
-      setErrors(prev => ({ ...prev, confirmPassword: undefined }))
-    }
-  }
-
-  const handleSendCode = async () => {
-    if (!phone) {
-      setErrors(prev => ({ ...prev, phone: '请输入手机号' }))
-      return
-    }
-
-    // 这里应该调用发送验证码的API
-    console.log('发送验证码到:', countryCode + phone)
-  }
-
-  const validateStep1 = () => {
-    const newErrors: typeof errors = {}
-
-    if (!phone) {
-      newErrors.phone = '请输入手机号'
-    }
-
-    if (!code) {
-      newErrors.code = '请输入验证码'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const validateStep2 = () => {
-    const newErrors: typeof errors = {}
-
-    if (!password) {
-      newErrors.password = '请输入密码'
-    } else if (password.length < 6) {
-      newErrors.password = '密码至少6位'
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = '请确认密码'
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = '两次密码不一致'
-    }
-
-    if (!agreeTerms) {
-      newErrors.agreeTerms = '请同意用户协议和隐私政策'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleNext = () => {
-    if (stage === 'phone' && validateStep1()) {
-      setStage('verify')
-    } else if (stage === 'verify') {
-      setStage('password')
-    } else if (stage === 'password' && validateStep2()) {
-      handleRegister()
-    }
-  }
-
-  const handleRegister = async () => {
-    setIsLoading(true)
-
-    try {
-      // 模拟注册请求
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const applicationId = window.localStorage.getItem('APP_ID')
-      const urlAppId = new URLSearchParams(window.location.search).get('appId')
-      const resolvedAppId = applicationId || process.env.NEXT_PUBLIC_DEFAULT_APP_ID || urlAppId || ''
-
-      if (!resolvedAppId) {
-        alert('缺少应用ID，请通过预览链接附带 appId 或先写入 localStorage.APP_ID')
-        return
-      }
-
-      const res = await axios.post(
-        `http://localhost:3007/api/application-users/register?applicationId=${resolvedAppId}`,
-        {
-          password,
-          phone_number: phone
-        }
-      )
-      const result = res.data?.data;
-
-      onRegister?.({
-        phone: result.phone,
-        countryCode,
-        code: result.userId,
-        password,
-        confirmPassword,
-        agreeTerms
-      })
-
-      setStage('success')
-    } catch (error: any) {
-      const serverMsg = error?.response?.data?.error || error?.response?.data?.message
-      const detail = typeof serverMsg === 'string' ? serverMsg : ''
-      console.error('注册失败:', detail || error)
-      if (detail.includes('用户已注册') || detail.includes('手机号已存在')) {
-        alert('该手机号已注册，请直接登录')
-      } else if (detail.includes('缺少应用ID')) {
-        alert('缺少应用ID，请通过预览链接附带 appId 或先写入 localStorage.APP_ID')
-      } else if (detail) {
-        alert(detail)
-      } else {
-        alert('注册失败，请稍后再试')
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const renderStep1 = () => (
-    <>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>{introTitle || (currentLocale === 'en' ? 'Sign up' : '注册账号')}</h1>
-        <p className="text-muted-foreground" style={bodyStyle}>{introText || (currentLocale === 'en' ? 'Enter your phone number' : '请输入您的手机号码')}</p>
-      </div>
-
-      {/* 国家代码 + 手机号（同一行） */}
-      <div className="mb-6 flex items-stretch gap-3 w-full">
-        <CountryCodeSelector
-          value={countryCode}
-          onChange={setCountryCode}
-          className="shrink-0 w-28 sm:w-32"
-        />
-        <PhoneInput
-          value={phone}
-          onChange={handlePhoneChange}
-          error={errors.phone}
-          placeholder="请输入手机号"
-          className="flex-1 min-w-0"
-        />
-      </div>
-
-      {/* 发送验证码按钮 */}
-      <div className="mb-6">
-        <Button type="button" variant="secondary" className="w-full rounded-full h-11" disabled={!phone} onClick={() => setStage('verify')}>发送验证码</Button>
-      </div>
-
-      <Button
-        type="button"
-        onClick={handleNext}
-        size="lg"
-        className="w-full rounded-full h-12 text-base"
-        variant="default"
-      >
-        下一步
-      </Button>
-    </>
-  )
-
-  const renderStep2 = () => (
-    <>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>设置密码</h1>
-        <p className="text-muted-foreground" style={bodyStyle}>请设置您的登录密码</p>
-      </div>
-
-      {/* 密码输入 */}
-      <div className="mb-6">
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-            <Lock className="w-5 h-5 text-gray-400" />
-          </div>
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => handlePasswordChange(e.target.value)}
-            placeholder="请设置密码（至少6位）"
-            className={cn(
-              "w-full pl-12 pr-12 py-4",
-              "bg-background border border-border",
-              "rounded-lg",
-              "text-foreground placeholder-muted-foreground",
-              "text-base font-medium",
-              "outline-none transition-all duration-300",
-              "focus:border-primary focus:bg-accent",
-              errors.password && "border-red-300"
-            )}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 h-auto w-auto p-1"
-          >
-            {showPassword ? (
-              <EyeOff className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <Eye className="w-5 h-5 text-muted-foreground" />
-            )}
-          </Button>
+  const renderRegisterForm = () => (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      <div className="max-w-sm mx-auto pt-8 pb-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-semibold mb-2" style={titleStyle}>
+            {introTitle || (currentLocale === 'en' ? 'Create Account' : '创建账户')}
+          </h2>
+          <p className="text-sm text-muted-foreground" style={bodyStyle}>
+            {introText || (currentLocale === 'en' ? 'Fill in the information to create your new account' : '填写信息以创建您的新账户')}
+          </p>
         </div>
-        {errors.password && (
-          <div className="mt-2 text-sm text-red-600">{errors.password}</div>
-        )}
-      </div>
 
-      {/* 确认密码输入 */}
-      <div className="mb-6">
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-            <Lock className="w-5 h-5 text-gray-400" />
-          </div>
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-            placeholder="请再次输入密码"
-            className={cn(
-              "w-full pl-12 pr-12 py-4",
-              "bg-background border border-border",
-              "rounded-lg",
-              "text-foreground placeholder-muted-foreground",
-              "text-base font-medium",
-              "outline-none transition-all duration-300",
-              "focus:border-primary focus:bg-accent",
-              errors.confirmPassword && "border-red-300"
-            )}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 h-auto w-auto p-1"
-          >
-            {showConfirmPassword ? (
-              <EyeOff className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <Eye className="w-5 h-5 text-muted-foreground" />
-            )}
-          </Button>
-        </div>
-        {errors.confirmPassword && (
-          <div className="mt-2 text-sm text-red-600">{errors.confirmPassword}</div>
-        )}
-      </div>
-
-      {/* 用户协议 */}
-      <div className="mb-6">
-        <label className="flex items-start space-x-3 cursor-pointer">
-          <div className="relative">
-            <input
-              type="checkbox"
-              checked={agreeTerms}
-              onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="sr-only"
-            />
+        <div className="space-y-4">
+          {/* 姓名输入 */}
+          <div>
+            <label htmlFor="name" className="block text-xs font-medium text-gray-600 mb-1.5">
+              {currentLocale === 'en' ? 'Name' : '姓名'}
+            </label>
             <div className={cn(
-              "w-5 h-5 rounded border-2 flex items-center justify-center",
-              "transition-all duration-200",
-              agreeTerms
-                ? "bg-blue-500 border-blue-500"
-                : "border-gray-300 hover:border-gray-400"
+              "group bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 transition-all duration-300",
+              "focus-within:ring-2 focus-within:shadow-lg",
+              "flex items-center"
             )}>
-              {agreeTerms && <Check className="w-3 h-3 text-white" />}
+              <User className="w-4 h-4 text-gray-400 ml-3" />
+              <input
+                id="name"
+                type="text"
+                className="flex-1 px-3 py-2.5 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+                placeholder={currentLocale === 'en' ? 'Enter your name' : '请输入您的姓名'}
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+              />
             </div>
+            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
           </div>
-          <span className="text-sm text-gray-600 leading-relaxed">
-            我已阅读并同意
-            <button type="button" className="text-blue-600 hover:text-blue-800 mx-1">
-              《用户协议》
-            </button>
-            和
-            <button type="button" className="text-blue-600 hover:text-blue-800 mx-1">
-              《隐私政策》
-            </button>
-          </span>
-        </label>
-        {errors.agreeTerms && (
-          <div className="mt-2 text-sm text-red-600">{errors.agreeTerms}</div>
-        )}
-      </div>
 
-      <Button
-        type="button"
-        onClick={handleNext}
-        disabled={isLoading}
-        size="lg"
-        className="w-full rounded-full h-12 text-base"
-        variant="default"
-      >
-        {isLoading ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            注册中...
-          </>
-        ) : (
-          '完成注册'
-        )}
-      </Button>
-    </>
-  )
+          {/* 手机号输入 */}
+          <div>
+            <PhoneInput
+              value={formData.phone}
+              onChange={(value) => handleInputChange('phone', value)}
+              error={errors.phone}
+              placeholder={currentLocale === 'en' ? 'Enter your phone number' : '请输入手机号'}
+            />
+          </div>
 
-  const renderStep3 = () => (
-    <>
-      <div className="text-center">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Check className="w-10 h-10 text-green-600" />
+          {/* 密码输入 */}
+          <div>
+            <label htmlFor="password" className="block text-xs font-medium text-gray-600 mb-1.5">
+              {currentLocale === 'en' ? 'Password' : '密码'}
+            </label>
+            <div className={cn(
+              "group bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 transition-all duration-300",
+              "focus-within:ring-2 focus-within:shadow-lg",
+              "flex items-center"
+            )}>
+              <Lock className="w-4 h-4 text-gray-400 ml-3" />
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className="flex-1 px-3 py-2.5 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+                placeholder={currentLocale === 'en' ? 'Enter your password (at least 6 characters)' : '请输入密码（至少6个字符）'}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                className="pr-3 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+          </div>
+
+          {/* 确认密码输入 */}
+          <div>
+            <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-600 mb-1.5">
+              {currentLocale === 'en' ? 'Confirm Password' : '确认密码'}
+            </label>
+            <div className={cn(
+              "group bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 transition-all duration-300",
+              "focus-within:ring-2 focus-within:shadow-lg",
+              "flex items-center"
+            )}>
+              <Lock className="w-4 h-4 text-gray-400 ml-3" />
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="flex-1 px-3 py-2.5 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+                placeholder={currentLocale === 'en' ? 'Enter your password again' : '请再次输入密码'}
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+              />
+              <button
+                type="button"
+                aria-label={showConfirmPassword ? '隐藏密码' : '显示密码'}
+                className="pr-3 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
+          </div>
+
+          {/* 同意条款 */}
+          <div className="flex items-start space-x-2">
+            <button
+              type="button"
+              onClick={() => handleInputChange('agreeTerms', !formData.agreeTerms)}
+              className={cn(
+                "mt-1 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors",
+                formData.agreeTerms
+                  ? "bg-blue-500 border-blue-500 text-white"
+                  : "border-gray-300 hover:border-gray-400"
+              )}
+            >
+              {formData.agreeTerms && <Check className="w-3 h-3" />}
+            </button>
+            <label className="text-xs text-gray-600 leading-relaxed cursor-pointer" onClick={() => handleInputChange('agreeTerms', !formData.agreeTerms)}>
+              {currentLocale === 'en' ? 'I agree to the' : '我同意'}{' '}
+              <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+                {currentLocale === 'en' ? 'Terms of Service' : '服务条款'}
+              </a>{' '}
+              {currentLocale === 'en' ? 'and' : '和'}{' '}
+              <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+                {currentLocale === 'en' ? 'Privacy Policy' : '隐私政策'}
+              </a>
+            </label>
+          </div>
+          {errors.agreeTerms && <p className="text-xs text-red-500">{errors.agreeTerms}</p>}
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">注册成功！</h1>
-        <p className="text-gray-600 mb-8">欢迎加入我们，现在可以开始使用了</p>
 
-        <Button
-          type="button"
-          onClick={onLogin}
-          size="lg"
-          className="w-full"
-        >
-          立即登录
-        </Button>
+        <div className="mt-6">
+          <Button
+            type="button"
+            onClick={handleRegister}
+            disabled={isLoading}
+            size="lg"
+            className="w-full rounded-full h-12 text-base"
+            variant="default"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                {currentLocale === 'en' ? 'Creating Account...' : '创建账户中...'}
+              </>
+            ) : (
+              currentLocale === 'en' ? 'Create Account' : '创建账户'
+            )}
+          </Button>
+        </div>
+
+        <div className="text-center text-sm text-muted-foreground mt-4">
+          {currentLocale === 'en' ? 'Already have an account?' : '已有账户？'}{' '}
+          <button
+            type="button"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            onClick={onLogin}
+          >
+            {currentLocale === 'en' ? 'Sign In Now' : '立即登录'}
+          </button>
+        </div>
       </div>
-    </>
+    </motion.div>
   )
 
-  const renderVerify = () => (
-    <>
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold mb-2" style={titleStyle}>输入验证码</h1>
-        <p className="text-muted-foreground text-sm" style={bodyStyle}>已发送至 {countryCode}{phone}</p>
+  const renderSuccess = () => (
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+      <div className="max-w-sm mx-auto pt-8 pb-8">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-semibold mb-2" style={titleStyle}>
+            {currentLocale === 'en' ? 'Account Created Successfully!' : '账户创建成功！'}
+          </h2>
+          <p className="text-sm text-muted-foreground" style={bodyStyle}>
+            {currentLocale === 'en' ? 'Welcome to our platform' : '欢迎加入我们的平台'}
+          </p>
+        </div>
       </div>
-      <div className="mb-6">
-        <VerificationCodeInput value={code} onChange={handleCodeChange} error={errors.code} onComplete={(v) => setCode(v)} size="sm" />
-      </div>
-      <div className="text-center mb-6">
-        <Button type="button" variant="link" className="text-sm" onClick={() => setStage('phone')}>修改手机号</Button>
-      </div>
-      <Button type="button" onClick={handleNext} size="lg" className="w-full rounded-full h-12 text-base" variant="default">继续</Button>
-    </>
+    </motion.div>
   )
 
   return (
-    <div className="min-h-screen pb-24">
-      {/* 注册页不显示全局 AppHeader */}
-      <div className="pt-12">
+    <div className="min-h-screen pb-8">
+      <div className="pt-6">
         <div className="container mx-auto px-4">
-          <div className="max-w-sm mx-auto">
-            {stage === 'phone' && renderStep1()}
-            {stage === 'verify' && renderVerify()}
-            {stage === 'password' && renderStep2()}
-            {stage === 'success' && renderStep3()}
-          </div>
+          {stage === 'form' ? renderRegisterForm() : null}
+          {stage === 'success' ? renderSuccess() : null}
         </div>
       </div>
     </div>

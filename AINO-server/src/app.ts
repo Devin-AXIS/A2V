@@ -172,7 +172,7 @@ app.post("/api/upload", async (c) => {
     const arrayBuffer = await file.arrayBuffer()
     await fs.writeFile(filepath, Buffer.from(arrayBuffer))
 
-    const origin = `http://localhost:${env.PORT}`
+    const origin = `http://47.94.52.142:${env.PORT}`
     const url = `${origin}/uploads/${filename}`
     return c.json({ success: true, url })
   } catch (err) {

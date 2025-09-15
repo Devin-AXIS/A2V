@@ -16,18 +16,29 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, isLoading, router])
 
+  // 读取 Studio 传入的 authCfg（或本地存储），用于实时预览注册配置
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      const cfgStr = sp.get('authCfg')
+      if (cfgStr) {
+        window.localStorage.setItem('APP_AUTH_CONFIG', cfgStr)
+      }
+    } catch { }
+  }, [])
+
   const handleRegister = async (data: any) => {
     console.log('注册数据:', data)
 
-    // const success = await register(data)
+    const success = await register(data)
 
-    // if (success) {
-    // 注册成功，自动登录并跳转到个人中心
-    router.push('/profile')
-    // } else {
-    // 注册失败，显示错误提示
-    //   alert('注册失败，请检查信息或稍后重试')
-    // }
+    if (success) {
+      // 注册成功，跳转到个人中心
+      router.push('/profile')
+    } else {
+      // 注册失败，可以显示错误提示
+      alert('注册失败，请检查手机号或密码')
+    }
   }
 
   const handleLogin = () => {

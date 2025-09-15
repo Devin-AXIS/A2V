@@ -171,7 +171,7 @@ docker exec -i aino-postgres psql -U aino -d aino < backup.sql
 
 ```bash
 # 测试健康检查
-curl http://localhost:3007/health
+curl http://47.94.52.142:3007/health
 
 # 应该返回: ok
 ```

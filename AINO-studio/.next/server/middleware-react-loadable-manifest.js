@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"app/app/[appId]/client-config/page.tsx -> @monaco-editor/react":{"id":55386,"files":["static/chunks/5386.07376d5885ccb0ec.js"]},"app/debug/page.tsx -> @/lib/api":{"id":91650,"files":["static/chunks/1650-e3bac011df7238e0.js"]}}';

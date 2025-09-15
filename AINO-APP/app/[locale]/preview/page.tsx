@@ -89,7 +89,7 @@ function PreviewContent() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`http://localhost:3007/api/preview-manifests/${id}`)
+        const res = await fetch(`http://47.94.52.142:3007/api/preview-manifests/${id}`)
         const data = await res.json()
         if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
         if (!canceled) {

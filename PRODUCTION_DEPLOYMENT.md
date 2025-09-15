@@ -42,9 +42,9 @@
 
 | 服务 | 端口 | 地址 | 状态 |
 |------|------|------|------|
-| AINO-APP | 3005 | http://localhost:3005 | ✅ 运行中 |
-| AINO-Studio | 3006 | http://localhost:3006 | ✅ 运行中 |
-| AINO-Server | 3007 | http://localhost:3007 | ✅ 运行中 |
+| AINO-APP | 3005 | http://47.94.52.142:3005 | ✅ 运行中 |
+| AINO-Studio | 3006 | http://47.94.52.142:3006 | ✅ 运行中 |
+| AINO-Server | 3007 | http://47.94.52.142:3007 | ✅ 运行中 |
 | Drizzle Studio | - | https://local.drizzle.studio | ✅ 运行中 |
 
 ## 🔧 PM2 管理命令
@@ -152,13 +152,13 @@ pm2 restart all
 
 ```bash
 # 检查后端健康状态
-curl http://localhost:3007/health
+curl http://47.94.52.142:3007/health
 
 # 检查前端服务
-curl -I http://localhost:3006
+curl -I http://47.94.52.142:3006
 
 # 检查 aino-app 服务
-curl -I http://localhost:3005
+curl -I http://47.94.52.142:3005
 
 # 查看 PM2 状态
 pm2 status

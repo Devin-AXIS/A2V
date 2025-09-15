@@ -30,7 +30,7 @@ export default function AppRuntimePage() {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`http://localhost:3007/api/apps/${encodeURIComponent(String(appKey))}/manifest?state=published`)
+                const res = await fetch(`http://47.94.52.142:3007/api/apps/${encodeURIComponent(String(appKey))}/manifest?state=published`)
                 const data = await res.json()
                 if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
                 if (!canceled) setManifest(data.data?.manifest || data.data)
@@ -95,7 +95,7 @@ export default function AppRuntimePage() {
     return (
         <main className="min-h-[100dvh] bg-transparent">
             <AppContextProvider appKey={String(appKey)} locale={String(locale)} device={"mobile"}>
-                <PageDataProvider manifest={manifest} pageKey={currentPageKey} baseUrl="http://localhost:3007">
+                <PageDataProvider manifest={manifest} pageKey={currentPageKey} baseUrl="http://47.94.52.142:3007">
                     <DynamicPageComponent category={pageCategory} locale={locale} layout="mobile" pageKey={currentPageKey} />
                 </PageDataProvider>
                 <BottomNavigation />

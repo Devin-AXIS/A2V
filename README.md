@@ -25,9 +25,9 @@ AINO/
 ```
 
 这将启动：
-- 🎨 前端应用 (AINO-studio): http://localhost:3000
-- 📱 前台客户端 (AINO-APP): http://localhost:3002
-- 📡 后端API (AINO-server): http://localhost:3001
+- 🎨 前端应用 (AINO-studio): http://47.94.52.142:3000
+- 📱 前台客户端 (AINO-APP): http://47.94.52.142:3002
+- 📡 后端API (AINO-server): http://47.94.52.142:3001
 - 🗄️ 数据库管理 (Drizzle Studio): https://local.drizzle.studio
 
 ### 查看服务状态
@@ -74,10 +74,10 @@ pnpm studio
 
 ## 服务地址
 
-- **前端应用 (AINO-studio)**: http://localhost:3000
-- **前台客户端 (AINO-APP)**: http://localhost:3002
-- **后端API**: http://localhost:3001
-- **健康检查**: http://localhost:3001/health
+- **前端应用 (AINO-studio)**: http://47.94.52.142:3000
+- **前台客户端 (AINO-APP)**: http://47.94.52.142:3002
+- **后端API**: http://47.94.52.142:3001
+- **健康检查**: http://47.94.52.142:3001/health
 - **数据库管理**: https://local.drizzle.studio
 
 ## 日志文件

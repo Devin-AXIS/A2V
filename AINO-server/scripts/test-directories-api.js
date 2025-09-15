@@ -5,7 +5,7 @@
  * 使用方法: node scripts/test-directories-api.js
  */
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 
 // 模拟用户登录获取token
 async function login() {
