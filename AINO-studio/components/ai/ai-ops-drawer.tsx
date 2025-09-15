@@ -387,10 +387,26 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, scrape: true }))
       setStatusMsg(t("正在抓取样例…", "Scraping sample…"))
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
       const r = await fetch(`${getApiBase()}/api/crawl/scrape`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ url: firstUrl, options: { formats: ['markdown', 'html'] } })
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        },
+        body: JSON.stringify({ 
+          url: firstUrl, 
+          domain: domain,
+          nlRule: nlRule,
+          options: { formats: ['markdown', 'html'] } 
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'scrape failed')
@@ -420,10 +436,26 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStart: true }))
       setStatusMsg(t("正在启动爬取…", "Starting crawl…"))
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
       const r = await fetch(`${getApiBase()}/api/crawl/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ url: startUrl, options: { limit: 10 } })
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        },
+        body: JSON.stringify({ 
+          urls: [startUrl], 
+          domain: domain,
+          nlRule: nlRule,
+          options: { limit: 10 } 
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'start failed')
@@ -444,8 +476,18 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStatus: true }))
       setStatusMsg(t("正在获取状态…", "Fetching status…"))
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
       const r = await fetch(`${getApiBase()}/api/crawl/status/${encodeURIComponent(crawlId)}`, {
-        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        }
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'status failed')
@@ -476,10 +518,26 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, batchStart: true }))
       setStatusMsg(t("正在启动批量抓取…", "Starting batch…"))
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
       const r = await fetch(`${getApiBase()}/api/crawl/batch/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ urls: list, options: { options: { formats: ['markdown'] } } })
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        },
+        body: JSON.stringify({ 
+          urls: list, 
+          domain: domain,
+          nlRule: nlRule,
+          options: { options: { formats: ['markdown'] } } 
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
@@ -499,8 +557,18 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !batchId) return
     try {
       setBusy((b) => ({ ...b, batchStatus: true }))
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
       const r = await fetch(`${getApiBase()}/api/crawl/batch/status/${encodeURIComponent(batchId)}`, {
-        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        }
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch status failed')
@@ -522,7 +590,20 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !crawlId) return
     try {
       setBusy((b) => ({ ...b, cancel: true }))
-      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, { method: 'POST', headers: { 'x-aino-firecrawl-key': firecrawlKey } })
+      
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      
+      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, { 
+        method: 'POST', 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey 
+        } 
+      })
       const ok = r.ok
       toast({ description: ok ? t("已取消", "Cancelled") : t("取消失败", "Cancel failed"), variant: ok ? undefined : ("destructive" as any) })
       setStatusMsg(ok ? t("爬取已取消", "Crawl cancelled") : t("取消失败", "Cancel failed"))
