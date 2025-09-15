@@ -17,36 +17,133 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
   // 初始化处理后的选项
   const processedOptions = { ...baseOptions }
   
-  // 解析城市条件
-  const cityMatch = rule.match(/城市[=：:]\s*([^,，\s]+)/)
-  if (cityMatch) {
-    processedOptions.city = cityMatch[1]
-    console.log('🏙️ 提取城市条件:', processedOptions.city)
+  // 检查是否是通用数据采集需求
+  const generalDataPatterns = [
+    /我想要任何数据/,
+    /我要所有数据/,
+    /采集所有内容/,
+    /获取全部信息/,
+    /抓取所有数据/,
+    /全部都要/,
+    /不限制条件/,
+    /无限制/,
+    /随便什么都可以/,
+    /都可以/,
+    /全部/,
+    /所有/,
+    /任何/,
+  ]
+  
+  const isGeneralRequest = generalDataPatterns.some(pattern => pattern.test(rule))
+  
+  if (isGeneralRequest) {
+    console.log('🌐 检测到通用数据采集需求，不设置特定过滤条件')
+    // 对于通用需求，不设置特定的过滤条件，让Firecrawl抓取所有内容
+    processedOptions.generalDataCollection = true
+    processedOptions.contentFilter = {
+      include: ['所有内容', '全部信息'],
+      exclude: []
+    }
+    console.log('✅ 自然语言规则处理完成 (通用采集):', processedOptions)
+    return processedOptions
   }
   
-  // 解析岗位条件
-  const roleMatch = rule.match(/岗位[=：:]\s*([^,，\s]+)/)
-  if (roleMatch) {
-    processedOptions.role = roleMatch[1]
-    console.log('💼 提取岗位条件:', processedOptions.role)
+  // 城市解析 - 支持多种表达方式
+  const cityPatterns = [
+    /城市[=：:]\s*([^,，\s]+)/,           // 城市=北京
+    /只要\s*([^,，\s]+)区/,              // 只要海淀区
+    /只要\s*([^,，\s]+)市/,              // 只要北京市
+    /只要\s*([^,，\s]+)的/,              // 只要北京的
+    /([^,，\s]+)区\s*的/,               // 海淀区的
+    /([^,，\s]+)市\s*的/,               // 北京市的
+    /在\s*([^,，\s]+)区/,               // 在海淀区
+    /在\s*([^,，\s]+)市/,               // 在北京市
+  ]
+  
+  for (const pattern of cityPatterns) {
+    const match = rule.match(pattern)
+    if (match) {
+      processedOptions.city = match[1]
+      console.log('🏙️ 提取城市条件:', processedOptions.city)
+      break
+    }
   }
   
-  // 解析薪资条件
-  const salaryMatch = rule.match(/薪资[>大于]\s*(\d+)k?/)
-  if (salaryMatch) {
-    processedOptions.minSalary = parseInt(salaryMatch[1]) * 1000
-    console.log('💰 提取薪资条件:', processedOptions.minSalary)
+  // 岗位解析 - 支持多种表达方式
+  const rolePatterns = [
+    /岗位[=：:]\s*([^,，\s]+)/,           // 岗位=前端
+    /只要\s*([^,，\s]+)开发/,            // 只要前端开发
+    /只要\s*([^,，\s]+)工程师/,          // 只要前端工程师
+    /只要\s*([^,，\s]+)师/,              // 只要前端师
+    /([^,，\s]+)开发\s*的/,              // 前端开发的
+    /([^,，\s]+)工程师\s*的/,            // 前端工程师的
+    /([^,，\s]+)师\s*的/,                // 前端师的
+    /需要\s*([^,，\s]+)开发/,            // 需要前端开发
+    /需要\s*([^,，\s]+)工程师/,          // 需要前端工程师
+  ]
+  
+  for (const pattern of rolePatterns) {
+    const match = rule.match(pattern)
+    if (match) {
+      processedOptions.role = match[1]
+      console.log('💼 提取岗位条件:', processedOptions.role)
+      break
+    }
   }
   
-  // 解析公司条件
-  const companyMatch = rule.match(/公司[=：:]\s*([^,，\s]+)/)
-  if (companyMatch) {
-    processedOptions.company = companyMatch[1]
-    console.log('🏢 提取公司条件:', processedOptions.company)
+  // 薪资解析 - 支持多种表达方式
+  const salaryPatterns = [
+    /薪资[>大于]\s*(\d+)k?/,             // 薪资>10k
+    /薪资[>大于]\s*(\d+)/,               // 薪资>10000
+    /(\d+)k\s*以上/,                     // 10k以上
+    /(\d+)\s*以上/,                      // 10000以上
+    /(\d+)\s*万\s*以上/,                 // 1万以上
+    /超过\s*(\d+)k/,                     // 超过10k
+    /超过\s*(\d+)/,                      // 超过10000
+    /最低\s*(\d+)k/,                     // 最低10k
+    /最低\s*(\d+)/,                      // 最低10000
+  ]
+  
+  for (const pattern of salaryPatterns) {
+    const match = rule.match(pattern)
+    if (match) {
+      let salary = parseInt(match[1])
+      // 如果是万为单位，转换为千
+      if (rule.includes('万')) {
+        salary = salary * 10
+      }
+      // 如果数字小于100，认为是k为单位
+      if (salary < 100) {
+        salary = salary * 1000
+      }
+      processedOptions.minSalary = salary
+      console.log('💰 提取薪资条件:', processedOptions.minSalary)
+      break
+    }
   }
   
-  // 解析平台条件
-  const platformMatch = rule.match(/(boss直聘|智联|拉勾|前程无忧|猎聘)/)
+  // 公司解析 - 支持多种表达方式
+  const companyPatterns = [
+    /公司[=：:]\s*([^,，\s]+)/,           // 公司=腾讯
+    /只要\s*([^,，\s]+)公司/,            // 只要腾讯公司
+    /只要\s*([^,，\s]+)的/,              // 只要腾讯的
+    /([^,，\s]+)公司\s*的/,              // 腾讯公司的
+    /([^,，\s]+)\s*的/,                  // 腾讯的
+    /在\s*([^,，\s]+)公司/,              // 在腾讯公司
+    /在\s*([^,，\s]+)工作/,              // 在腾讯工作
+  ]
+  
+  for (const pattern of companyPatterns) {
+    const match = rule.match(pattern)
+    if (match) {
+      processedOptions.company = match[1]
+      console.log('🏢 提取公司条件:', processedOptions.company)
+      break
+    }
+  }
+  
+  // 平台解析
+  const platformMatch = rule.match(/(boss直聘|智联|拉勾|前程无忧|猎聘|boss|智联招聘|拉勾网|前程无忧网|猎聘网)/)
   if (platformMatch) {
     processedOptions.platform = platformMatch[1]
     console.log('🌐 提取平台条件:', processedOptions.platform)

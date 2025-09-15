@@ -101,16 +101,154 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
   const [mappingTransform, setMappingTransform] = useState<Record<string, string>>({}) // fieldKey -> transform
   const [progressMap, setProgressMap] = useState<Record<string, { arrayPath: string; labelKey: string; valueKey: string; statusKey?: string; weightKey?: string; aggregation: 'weightedAverage' | 'max' | 'min' }>>({})
-  const sampleSourceKeys = ["title", "desc", "salary", "city", "company", "link", "posted_at"]
+  const [sampleSourceKeys, setSampleSourceKeys] = useState<string[]>([])
   const [keySearch, setKeySearch] = useState("")
   const [saveMsg, setSaveMsg] = useState("")
   const [previewJson, setPreviewJson] = useState<string>("")
+  
+  // 分析采集回来的数据结构，提取可用字段
+  function analyzeScrapedData(data: any[]): string[] {
+    if (!data || data.length === 0) return []
+    
+    const fields = new Set<string>()
+    
+    // 分析第一个数据项的所有字段
+    const firstItem = data[0]
+    if (firstItem && typeof firstItem === 'object') {
+      // 递归提取所有字段路径
+      function extractFields(obj: any, prefix = ''): void {
+        for (const [key, value] of Object.entries(obj)) {
+          const fieldPath = prefix ? `${prefix}.${key}` : key
+          
+          // 如果是基本类型，添加到字段列表
+          if (value !== null && value !== undefined && 
+              (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
+            fields.add(fieldPath)
+          }
+          // 如果是对象，递归处理
+          else if (value && typeof value === 'object' && !Array.isArray(value)) {
+            extractFields(value, fieldPath)
+          }
+          // 如果是数组，添加数组路径
+          else if (Array.isArray(value)) {
+            fields.add(fieldPath)
+          }
+        }
+      }
+      
+      extractFields(firstItem)
+    }
+    
+    return Array.from(fields).sort()
+  }
+  
+  // 当采集数据更新时，自动分析字段
+  useEffect(() => {
+    if (sampleRecords && sampleRecords.length > 0) {
+      const extractedFields = analyzeScrapedData(sampleRecords)
+      setSampleSourceKeys(extractedFields)
+      console.log('🔍 分析采集数据结构，发现字段:', extractedFields)
+      
+      // 自动进行字段匹配
+      autoMatchFromScrapedData(extractedFields)
+    }
+  }, [sampleRecords])
+  
+  // 基于实际采集数据自动匹配字段
+  function autoMatchFromScrapedData(availableFields: string[]) {
+    const next: Record<string, string> = {}
+    
+    // 智能匹配规则
+    const matchRules = {
+      'title': ['title', 'name', 'job_title', 'position', '职位', '岗位', '名称', 'jobName', 'positionName'],
+      'description': ['description', 'desc', 'content', 'detail', '描述', '内容', '详情', '介绍', 'jobDesc', 'jobDescription'],
+      'salary': ['salary', 'pay', 'wage', '薪资', '工资', '待遇', '报酬', 'money', 'compensation'],
+      'city': ['city', 'location', 'address', '城市', '地点', '地址', '位置', 'area', 'region'],
+      'company': ['company', 'employer', 'corp', '公司', '企业', '雇主', 'companyName', 'employerName'],
+      'url': ['url', 'link', 'href', '链接', '网址', 'jobUrl', 'detailUrl'],
+      'date': ['date', 'time', 'created', 'posted', '日期', '时间', '发布时间', 'publishTime', 'createTime'],
+      'experience': ['experience', 'exp', 'years', '经验', '年限', 'workExp', 'workExperience'],
+      'education': ['education', 'degree', '学历', '学位', 'edu', 'educationLevel'],
+      'type': ['type', 'category', 'kind', '类型', '分类', 'jobType', 'category'],
+      'level': ['level', 'grade', '级别', '等级', 'jobLevel', 'positionLevel'],
+      'skills': ['skills', 'requirements', '技能', '要求', '要求技能', 'jobSkills', 'requiredSkills'],
+      'benefits': ['benefits', 'perks', '福利', '待遇', 'jobBenefits', 'companyBenefits'],
+    }
+    
+    for (const f of mockFields) {
+      // 首先尝试精确匹配
+      const exactMatch = availableFields.find(field => 
+        matchRules[f.key]?.some(rule => 
+          field.toLowerCase().includes(rule.toLowerCase()) ||
+          rule.toLowerCase().includes(field.toLowerCase())
+        )
+      )
+      
+      if (exactMatch) {
+        next[f.key] = exactMatch
+        continue
+      }
+      
+      // 然后尝试模糊匹配
+      const fuzzyMatch = availableFields.find(field => 
+        field.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
+        f.key.toLowerCase().includes(field.toLowerCase().slice(0, 4))
+      )
+      
+      if (fuzzyMatch) {
+        next[f.key] = fuzzyMatch
+      }
+    }
+    
+    setMapping(next)
+    if (Object.keys(next).length > 0) {
+      toast({ description: t("已自动匹配采集数据字段", "Auto matched scraped data fields") })
+    }
+  }
+  
   function autoMatch() {
     const next: Record<string, string> = {}
-    for (const f of mockFields) {
-      const guess = sampleSourceKeys.find((s) => s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)))
-      if (guess) next[f.key] = guess
+    
+    // 智能匹配规则
+    const matchRules = {
+      // 标题相关
+      'title': ['title', 'name', 'job_title', 'position', '职位', '岗位', '名称'],
+      'description': ['description', 'desc', 'content', 'detail', '描述', '内容', '详情', '介绍'],
+      'salary': ['salary', 'pay', 'wage', '薪资', '工资', '待遇', '报酬'],
+      'city': ['city', 'location', 'address', '城市', '地点', '地址', '位置'],
+      'company': ['company', 'employer', 'corp', '公司', '企业', '雇主'],
+      'url': ['url', 'link', 'href', '链接', '网址'],
+      'date': ['date', 'time', 'created', 'posted', '日期', '时间', '发布时间'],
+      'experience': ['experience', 'exp', 'years', '经验', '年限'],
+      'education': ['education', 'degree', '学历', '学位'],
+      'type': ['type', 'category', 'kind', '类型', '分类'],
+      'level': ['level', 'grade', '级别', '等级'],
+      'skills': ['skills', 'requirements', '技能', '要求', '要求技能'],
+      'benefits': ['benefits', 'perks', '福利', '待遇'],
     }
+    
+    for (const f of mockFields) {
+      // 首先尝试精确匹配
+      const exactMatch = sampleSourceKeys.find(s => 
+        matchRules[f.key]?.some(rule => s.toLowerCase().includes(rule.toLowerCase()))
+      )
+      
+      if (exactMatch) {
+        next[f.key] = exactMatch
+        continue
+      }
+      
+      // 然后尝试模糊匹配
+      const fuzzyMatch = sampleSourceKeys.find(s => 
+        s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
+        f.key.toLowerCase().includes(s.toLowerCase().slice(0, 4))
+      )
+      
+      if (fuzzyMatch) {
+        next[f.key] = fuzzyMatch
+      }
+    }
+    
     setMapping(next)
     toast({ description: t("已自动匹配相近字段", "Auto matched similar fields") })
   }
@@ -175,12 +313,15 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     return s
   }
   function candidatesForField(f: MockField): string[] {
-    const list = sampleKeys
+    // 使用从采集数据中提取的字段，如果没有则使用默认字段
+    const availableFields = sampleSourceKeys.length > 0 ? sampleSourceKeys : sampleKeys
+    
+    const list = availableFields
       .map((k) => ({ k, s: scoreKey(f.key, k) }))
       .sort((a, b) => b.s - a.s)
       .map((x) => x.k)
     const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
-    return filtered.slice(0, 6)
+    return filtered.slice(0, 8) // 显示更多候选字段
   }
 
   // ---------- Progress helpers ----------
@@ -650,8 +791,22 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     </div>
                     <div className="space-y-1">
                       <Label>{t("自然语言规则", "Natural language rule")}</Label>
-                      <Textarea value={nlRule} onChange={(e) => setNlRule(e.target.value)} placeholder={t("例如：BOSS直聘/智联，城市=北京，岗位=前端，薪资>20k", "e.g. Boss/Zhaopin, city=Beijing, role=frontend, salary>20k")} />
-                      <div className="text-xs text-muted-foreground">{t("右侧会解析为结构化条件，便于确认。", "Parsed structured conditions will be shown on the right for confirmation.")}</div>
+                      <Textarea 
+                        value={nlRule} 
+                        onChange={(e) => setNlRule(e.target.value)} 
+                        placeholder={t("例如：我想要任何数据 / 只要海淀区的 / 城市=北京，岗位=前端，薪资>20k", "e.g. I want any data / Only Haidian district / city=Beijing, role=frontend, salary>20k")} 
+                        className="min-h-[80px]"
+                      />
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>{t("支持多种表达方式：", "Supports various expressions:")}</div>
+                        <div className="grid grid-cols-1 gap-1 text-[10px]">
+                          <div>• {t("通用采集：我想要任何数据、全部都要、都可以", "General: I want any data, all data, anything")}</div>
+                          <div>• {t("城市筛选：只要海淀区、城市=北京、在海淀区", "City: Only Haidian, city=Beijing, in Haidian")}</div>
+                          <div>• {t("岗位筛选：只要前端开发、岗位=前端、需要前端工程师", "Role: Only frontend dev, role=frontend, need frontend engineer")}</div>
+                          <div>• {t("薪资筛选：10k以上、薪资>20k、最低15k", "Salary: Above 10k, salary>20k, minimum 15k")}</div>
+                          <div>• {t("公司筛选：只要腾讯的、公司=腾讯、在腾讯工作", "Company: Only Tencent, company=Tencent, work at Tencent")}</div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -781,8 +936,48 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">{t("字段映射", "Field Mapping")}</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">{t("字段映射", "Field Mapping")}</div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配", "Auto match")}</Button>
+                          <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
+                        </div>
+                      </div>
+                      
+                      {/* 字段映射说明 */}
+                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="text-sm font-medium text-blue-900 mb-2">
+                          {t("字段映射说明", "Field Mapping Guide")}
+                        </div>
+                        <div className="text-xs text-blue-800 space-y-1">
+                          <div>• {t("采集数据 → 映射字段 → 格式化存储", "Scraped Data → Map Fields → Format & Store")}</div>
+                          <div>• {t("例如：采集到'职位名称' → 映射到'title'字段 → 存储为文本格式", "e.g. 'Job Title' → map to 'title' field → store as text")}</div>
+                          <div>• {t("例如：采集到'薪资15k' → 映射到'salary'字段 → 转换为数字15000", "e.g. 'Salary 15k' → map to 'salary' field → convert to number 15000")}</div>
+                        </div>
+                      </div>
+                      
+                      {/* 采集数据字段展示 */}
+                      {sampleSourceKeys.length > 0 && (
+                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                          <div className="text-sm font-medium text-green-900 mb-2">
+                            {t("采集数据字段", "Scraped Data Fields")} ({sampleSourceKeys.length})
+                          </div>
+                          <div className="text-xs text-green-800">
+                            <div className="flex flex-wrap gap-1">
+                              {sampleSourceKeys.map(field => (
+                                <span key={field} className="px-2 py-1 bg-green-100 rounded text-green-700">
+                                  {field}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="mt-2 text-green-600">
+                              {t("系统已自动分析采集数据结构，并尝试匹配到您的字段", "System has analyzed scraped data structure and attempted to match to your fields")}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onScrapeTest} disabled={!!busy.scrape}>
                           {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("试抓取", "Scrape test")}
@@ -802,7 +997,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <Button variant="outline" size="sm" disabled={!batchId || !!busy.batchStatus} onClick={onBatchStatus}>
                           {busy.batchStatus ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("查询中", "Fetching")}</> : t("批量状态", "Batch status")}
                         </Button>
-                        <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配", "Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
                         <Button variant="outline" size="sm" onClick={saveTemplate}>{t("保存模板", "Save template")}</Button>
                         <Button variant="outline" size="sm" onClick={loadTemplate}>{t("加载模板", "Load template")}</Button>
