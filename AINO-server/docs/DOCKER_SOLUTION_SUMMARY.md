@@ -132,13 +132,13 @@ npm start
 ✅ 发现 72 个索引
 ✅ 发现 25 个外键约束
 ✅ 数据库初始化完成
-🚀 AINO Server running at http://47.94.52.142:3007
+🚀 AINO Server running at http://localhost:3007
 ✅ 服务器启动完成！
 ```
 
 ### 健康检查测试
 ```bash
-curl http://47.94.52.142:3007/health
+curl http://localhost:3007/health
 # 返回: ok
 ```
 
@@ -183,7 +183,7 @@ curl http://47.94.52.142:3007/health
 
 3. **验证部署**:
    ```bash
-   curl http://47.94.52.142:3007/health
+   curl http://localhost:3007/health
    ```
 
 ### 环境变量配置

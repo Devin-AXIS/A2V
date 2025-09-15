@@ -57,7 +57,7 @@ pnpm dev
 # 或使用 npm: npm run dev
 ```
 
-应用将在 [http://47.94.52.142:3002](http://47.94.52.142:3002) 启动。
+应用将在 [http://localhost:3002](http://localhost:3002) 启动。
 
 ### 构建生产版本
 

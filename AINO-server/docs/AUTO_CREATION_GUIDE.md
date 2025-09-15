@@ -145,7 +145,7 @@ node scripts/test-auto-creation.js
 ✅ 发现 72 个索引
 ✅ 发现 25 个外键约束
 ✅ 数据库初始化完成
-🚀 AINO Server running at http://47.94.52.142:3007
+🚀 AINO Server running at http://localhost:3007
 ✅ 服务器启动完成！
 ```
 

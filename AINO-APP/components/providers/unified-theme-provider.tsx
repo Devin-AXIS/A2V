@@ -10,7 +10,7 @@ const UnifiedThemeContext = createContext<UnifiedThemeContextType | undefined>(u
 export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<UnifiedThemePreset>(getThemePreset("极简") || unifiedThemePresets[0])
   const [isHydrated, setIsHydrated] = useState(false)
-  const API_BASE = (typeof process !== "undefined" && (process as any).env?.NEXT_PUBLIC_API_BASE) || "http://47.94.52.142:3007"
+  const API_BASE = (typeof process !== "undefined" && (process as any).env?.NEXT_PUBLIC_API_BASE) || "http://localhost:3007"
 
   const getAppId = useCallback((): string | null => {
     try {

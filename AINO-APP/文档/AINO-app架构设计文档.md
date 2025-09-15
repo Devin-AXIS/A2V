@@ -872,7 +872,7 @@ pnpm install
 # 启动开发服务器
 pnpm dev
 
-# 项目将在 http://47.94.52.142:3002 启动
+# 项目将在 http://localhost:3002 启动
 ```
 
 ### 构建和部署
