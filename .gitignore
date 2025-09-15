@@ -18,7 +18,7 @@ lerna-debug.log*
 # 构建产物
 # dist/
 # build/
-.next/cache
+.next/cache/
 out/
 *.tsbuildinfo
 
