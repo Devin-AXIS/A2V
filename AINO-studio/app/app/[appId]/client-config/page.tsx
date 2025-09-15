@@ -582,7 +582,7 @@ export default function ClientConfigPage() {
   const [displayOpen, setDisplayOpen] = useState(false)
   const [displayCardName, setDisplayCardName] = useState("")
   const [displayCardType, setDisplayCardType] = useState("")
-  const [displayLimit, setDisplayLimit] = useState<string>("1")
+  const [displayLimit, setDisplayLimit] = useState<string>("1") // LOG: 显示数量
   const [displayUnlimited, setDisplayUnlimited] = useState(false)
   const [displayMode, setDisplayMode] = useState<'pick' | 'filter' | 'time' | 'hot'>("time")
   // 顶部标签管理/新增
@@ -611,6 +611,7 @@ export default function ClientConfigPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [filterFields, setFilterFields] = useState<any[]>([])
   const [filterSelected, setFilterSelected] = useState<Record<string, any>>({})
+  const pendingFiltersRef = useRef<any>(null)
 
   const tableDataSources = useMemo(() => {
     const entries = Object.entries(draft.dataSources || {})
@@ -621,58 +622,76 @@ export default function ClientConfigPage() {
 
   // 本地演示字段（无数据时兜底）
   function getMockFilterFields() {
-    return [
-      {
-        id: 'mock_category',
-        key: 'category',
-        label: lang === 'zh' ? '类别' : 'Category',
-        type: 'select',
-        options: [{ label: lang === 'zh' ? '全部' : 'All', value: 'all' }, { label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }],
-        optionsTree: [],
-      },
-      {
-        id: 'mock_region',
-        key: 'region',
-        label: lang === 'zh' ? '地区' : 'Region',
-        type: 'cascader',
-        options: [],
-        optionsTree: [
-          { id: 'cn', name: lang === 'zh' ? '中国' : 'China', children: [{ id: 'bj', name: lang === 'zh' ? '北京' : 'Beijing' }, { id: 'sh', name: lang === 'zh' ? '上海' : 'Shanghai' }] },
-          { id: 'us', name: 'USA', children: [{ id: 'ny', name: 'New York' }, { id: 'sf', name: 'San Francisco' }] },
-        ],
-      },
-    ]
+    return []
   }
 
   async function loadFilterFields(dsKey: string) {
     try {
       setFilterLoading(true)
+      // 解析数据源，优先使用 draft.dataSources[dsKey]，否则支持 'table:{id}' 直连表ID
       const ds = (draft.dataSources || {})[dsKey]
-      if (!ds?.tableId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s) => { const next = { ...s }; mock.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
+      let tableId: string | undefined = ds?.tableId
+      if (!tableId && typeof dsKey === 'string' && dsKey.startsWith('table:')) {
+        tableId = dsKey.replace(/^table:/, '')
+      }
+      if (!tableId) { setFilterFields([]); return }
       const appId = String(params.appId)
-      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(ds.tableId, appId)
+      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(tableId, appId)
       const defId = defRes?.data?.id
-      if (!defId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s) => { const next = { ...s }; mock.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
-      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 200 })
-      const list = Array.isArray(fieldsRes?.data) ? fieldsRes.data : []
-      const candidates = list
-        .map((f: any) => ({
-          id: f.id,
-          key: f.key,
-          label: f.schema?.label || f.key,
-          type: f.type,
-          options: f.schema?.options || [],
-          optionsTree: f.schema?.cascaderOptions || [],
-        }))
-        .filter((f: any) => f.type === 'select' || f.type === 'cascader')
-      const toUse = candidates.length > 0 ? candidates : getMockFilterFields()
+      if (!defId) { setFilterFields([]); return }
+      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 100 })
+      const raw = (fieldsRes && (fieldsRes as any).data != null) ? (fieldsRes as any).data : fieldsRes
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.records)
+            ? raw.records
+            : []
+      // Include all fields so that when the data source is a full table, users can choose any field
+      const candidatesAll = list
+        .map((f: any) => {
+          const schema = f.schema || {}
+          const mappedType = f.type || schema.type || 'text'
+          const label = schema.label || f.label || f.key
+          return {
+            id: f.id,
+            key: f.key,
+            label,
+            type: mappedType,
+            options: Array.isArray(schema.options) ? schema.options : [],
+            optionsTree: Array.isArray(schema.cascaderOptions) ? schema.cascaderOptions : [],
+          }
+        })
+        // optional: sort to show select/cascader first for better UX
+        .sort((a: any, b: any) => {
+          const rank = (t: string) => (t === 'select' || t === 'cascader') ? 0 : 1
+          return rank(a.type) - rank(b.type)
+        })
+      const toUse = candidatesAll
       setFilterFields(toUse)
-      // 初始化选中项保留
-      setFilterSelected((s) => {
-        const next: Record<string, any> = { ...s }
-        toUse.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } })
-        return next
-      })
+      // 如果有待应用的覆盖筛选，并且数据源匹配，则根据覆盖勾选字段；否则初始化占位条目
+      if (pendingFiltersRef.current && pendingFiltersRef.current.dataSourceKey === dsKey) {
+        const ov = pendingFiltersRef.current
+        const chosen = new Set<string>((ov.fields || []).map((f: any) => String(f.fieldId)))
+        setFilterSelected(() => {
+          const next: Record<string, any> = {}
+          toUse.forEach((f) => {
+            const checked = chosen.has(String(f.key))
+            next[f.key] = { fieldId: f.key, type: f.type, label: f.label, __checked: checked }
+          })
+          return next
+        })
+        pendingFiltersRef.current = null
+      } else {
+        setFilterSelected((s) => {
+          const next: Record<string, any> = { ...s }
+          toUse.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } })
+          return next
+        })
+      }
+    } catch (err) {
+      setFilterFields([])
     } finally {
       setFilterLoading(false)
     }
@@ -686,7 +705,7 @@ export default function ClientConfigPage() {
         setWorkspaceCardsByCategory((s) => ({ ...s, [d.category]: d.cards }))
         setActiveWorkspaceCategory(d.category || "")
       } else if (d && d.type === 'OVERRIDE') {
-        const { pageId: pid, sectionKey, cardType, props, jsx } = d
+        const { pageId: pid, sectionKey, cardType, props, jsx, filters } = d
         try {
           // 根据返回类型写入对应扩展名
           // JSX 模式暂时隐藏，不自动切换或写入编辑器
@@ -699,6 +718,14 @@ export default function ClientConfigPage() {
               setJsonText(content)
               setMonacoLanguage('json')
               setViewTab('code')
+            }
+          }
+          // 同步已存在的筛选覆盖：优先采用覆盖里的数据源与字段
+          if (filters && typeof filters === 'object') {
+            pendingFiltersRef.current = filters
+            if (filters.dataSourceKey) {
+              setFilterDsKey(String(filters.dataSourceKey))
+              loadFilterFields(String(filters.dataSourceKey))
             }
           }
         } catch { }
@@ -1874,13 +1901,32 @@ export default function ClientConfigPage() {
                                   const sectionKey = tbb?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                                   setFilterCardName(it.displayName || it.type)
                                   setFilterCardType(it.type)
-                                  // 默认选择第一个表数据源
-                                  const first = tableDataSources[0]?.key || ''
-                                  const nextKey = filterDsKey || first
-                                  setFilterDsKey(nextKey)
-                                  // 无数据源也加载本地演示字段
-                                  loadFilterFields(nextKey)
-                                  // 触发预览拉取现有覆盖，备用
+                                  // 优先级：已有 filters.dataSourceKey -> incomingMappings 的 dsKey/tableId -> 第一个表数据源
+                                  let preferredKey = ''
+                                  // 1) 从 overrides 中读取（若存在）
+                                  try {
+                                    const raw = localStorage.getItem(`APP_PAGE_${k.replace(/^p-/, '')}`)
+                                    const cfg = raw ? JSON.parse(raw) : {}
+                                    const ov = cfg?.overrides?.[sectionKey]?.[it.type]
+                                    const ovKey = ov?.filters?.dataSourceKey
+                                    if (ovKey) preferredKey = String(ovKey)
+                                  } catch { }
+                                  // 2) 从 incomingMappings 匹配当前卡片，取其 dsKey 或 tableId
+                                  if (!preferredKey) {
+                                    try {
+                                      const entries = Object.entries(incomingMappings || {})
+                                      const hit = entries.find(([mKey, ctx]: any) => String(ctx?.cardType) === String(it.type))?.[1] as any
+                                      if (hit) {
+                                        if (hit.dataSourceKey) preferredKey = String(hit.dataSourceKey)
+                                        else if (hit.tableId) preferredKey = `table:${String(hit.tableId)}`
+                                      }
+                                    } catch { }
+                                  }
+                                  // 3) 回退到第一个“表”数据源
+                                  if (!preferredKey) preferredKey = tableDataSources[0]?.key || ''
+                                  setFilterDsKey(preferredKey)
+                                  loadFilterFields(preferredKey)
+                                  // 请求预览回传覆盖（用于回填字段勾选）
                                   window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
                                   setFilterOpen(true)
                                 } catch { }
@@ -2518,12 +2564,12 @@ export default function ClientConfigPage() {
 
             {/* 字段选择 */}
             <div className="space-y-2">
-              <div className="text-xs text-muted-foreground">{lang === 'zh' ? '可作为筛选的字段（单选/级联）' : 'Filterable fields (select/cascader)'}</div>
+              <div className="text-xs text-muted-foreground">{lang === 'zh' ? '可作为筛选的字段（来自所选数据源）' : 'Fields from selected data source'}</div>
               <ScrollArea className="max-h-[40vh] border rounded-md">
                 <div className="p-3 space-y-2">
                   {filterLoading && (<div className="text-xs text-muted-foreground">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>)}
                   {!filterLoading && filterFields.length === 0 && (
-                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '无可用字段（请在字段管理中配置 select/cascader）。' : 'No fields available (configure select/cascader in Fields).'}</div>
+                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '当前数据源无可用字段或数据源未选择。' : 'No fields for current data source or none selected.'}</div>
                   )}
                   {filterFields.map((f: any) => {
                     const checked = !!filterSelected[f.key]?.__checked
@@ -2544,7 +2590,7 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFilterOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               try {
                 const k = activePageKey as string
                 const tba = (draft.pages as any)?.[k]?.topBar
@@ -2560,8 +2606,9 @@ export default function ClientConfigPage() {
                 }))
                 const filtersCfg: any = { enabled, dataSourceKey: filterDsKey || undefined, fields: fieldsCfg }
                 const cardType = filterCardType || ''
+                // 1) 通知预览即时生效
                 window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, filters: filtersCfg }, '*')
-                // 同步写回到对应 JSON 文件（若已打开/存在）
+                // 2) 同步写回到对应 JSON 文件（若已打开/存在）
                 const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
                 const existing = virtualFiles[path]
                 if (existing) {
@@ -2576,8 +2623,36 @@ export default function ClientConfigPage() {
                     }
                   } catch { }
                 }
-                setFilterOpen(false)
+                // 3) 写入到草稿 manifest：pages[k].overrides[sectionKey][cardType].filters
+                let updatedDraft: any
+                setDraft((s: any) => {
+                  const next = { ...(s || {}) }
+                  next.pages = next.pages || {}
+                  const p = { ...(next.pages[k] || {}) }
+                  const ov = { ...(p.overrides || {}) }
+                  const sec = { ...(ov[sectionKey] || {}) }
+                  const card = { ...(sec[cardType] || {}) }
+                  card.filters = filtersCfg
+                  sec[cardType] = card
+                  ov[sectionKey] = sec
+                  p.overrides = ov
+                  next.pages[k] = p
+                  updatedDraft = next
+                  return next
+                })
+                // 4) 持久化到 /api/applications/[id]
+                try {
+                  const appId = String(params.appId)
+                  let existingConfig: Record<string, any> = {}
+                  try {
+                    const getRes = await api.applications.getApplication(appId)
+                    existingConfig = (getRes.success && getRes.data ? (getRes.data as any).config : {}) || {}
+                  } catch { existingConfig = {} }
+                  const nextConfig = { ...existingConfig, clientManifest: updatedDraft }
+                  await api.applications.updateApplication(appId, { config: nextConfig })
+                } catch { }
               } catch { }
+              setFilterOpen(false)
             }}>{lang === 'zh' ? '保存' : 'Save'}</Button>
           </DialogFooter>
         </DialogContent>
@@ -2634,7 +2709,7 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDisplayOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               try {
                 const k = activePageKey as string
                 const tba = (draft.pages as any)?.[k]?.topBar
@@ -2642,8 +2717,9 @@ export default function ClientConfigPage() {
                 const limitNum = displayUnlimited ? undefined : Math.max(1, parseInt(displayLimit || '1', 10))
                 const displayCfg: any = { mode: displayMode, limit: limitNum, unlimited: !!displayUnlimited }
                 const cardType = displayCardType || ''
+                // 1) 通知右侧预览即时生效
                 window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, display: displayCfg }, '*')
-                // 同步写回到对应 JSON 文件（若已打开/存在）
+                // 2) 同步写回到对应 JSON 文件（若已打开/存在）
                 const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
                 const existing = virtualFiles[path]
                 if (existing) {
@@ -2658,6 +2734,34 @@ export default function ClientConfigPage() {
                     }
                   } catch { }
                 }
+                // 3) 写入到草稿 manifest：pages[k].overrides[sectionKey][cardType].display
+                let updatedDraft: any
+                setDraft((s: any) => {
+                  const next = { ...(s || {}) }
+                  next.pages = next.pages || {}
+                  const p = { ...(next.pages[k] || {}) }
+                  const ov = { ...(p.overrides || {}) }
+                  const sec = { ...(ov[sectionKey] || {}) }
+                  const card = { ...(sec[cardType] || {}) }
+                  card.display = displayCfg
+                  sec[cardType] = card
+                  ov[sectionKey] = sec
+                  p.overrides = ov
+                  next.pages[k] = p
+                  updatedDraft = next
+                  return next
+                })
+                // 4) 持久化到 /api/applications/[id]：挂载到 applications.config.clientManifest
+                try {
+                  const appId = String(params.appId)
+                  let existingConfig: Record<string, any> = {}
+                  try {
+                    const getRes = await api.applications.getApplication(appId)
+                    existingConfig = (getRes.success && getRes.data ? (getRes.data as any).config : {}) || {}
+                  } catch { existingConfig = {} }
+                  const nextConfig = { ...existingConfig, clientManifest: updatedDraft }
+                  await api.applications.updateApplication(appId, { config: nextConfig })
+                } catch { }
               } catch { }
               setDisplayOpen(false)
             }}>{lang === 'zh' ? '保存' : 'Save'}</Button>

@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { MonthlyJobAreaChart } from "@/components/data-display/monthly-job-area-chart"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface MonthlyJobGrowthCardProps {
     disableLocalTheme?: boolean
@@ -30,7 +31,8 @@ const defaultData: MonthlyJobGrowthData = {
 }
 
 export function MonthlyJobGrowthCard({ disableLocalTheme, className }: MonthlyJobGrowthCardProps) {
-    const data = useCardRegistryData<MonthlyJobGrowthData>("monthly-job-growth", defaultData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
     data.chartData = data.chartData.map(item => ({ ...item, jobs: Number(item.jobs) }))
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>

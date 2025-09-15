@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { JobProspectLineChart } from "@/components/data-display/job-prospect-line-chart"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface ProspectTrendData {
     title: string
@@ -31,8 +32,12 @@ const defaultData: ProspectTrendData = {
 }
 
 export function JobProspectTrendCard({ disableLocalTheme, className }: JobProspectTrendCardProps) {
-    const data = useCardRegistryData("job-prospect-trend", defaultData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
     data.chartData = data.chartData.map(item => ({ ...item, value: Number(item.value) }))
+
+    let renderData = data.chartData;
+    if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">

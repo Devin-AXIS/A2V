@@ -41,6 +41,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/page.js"
+    ],
+    "/[locale]/demo/education/jobs/related-post/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/demo/education/jobs/related-post/[id]/page.js"
     ]
   }
 }

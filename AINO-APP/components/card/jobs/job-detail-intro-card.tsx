@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { SalaryExperienceDonut } from "@/components/data-display/salary-experience-donut"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface JobDetailIntroData {
     title: string
@@ -25,7 +26,8 @@ const defaultData: JobDetailIntroData = {
 }
 
 export function JobDetailIntroCard({ disableLocalTheme, className }: JobDetailIntroCardProps) {
-    const data = useCardRegistryData("job-detail-intro", defaultData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
 
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>

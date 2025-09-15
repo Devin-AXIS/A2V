@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { PercentageRankingCard } from "@/components/data-display/percentage-ranking-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface EducationSalaryRecord {
     label: string
@@ -35,7 +36,11 @@ const defaultData: EducationSalaryRequirementsData = {
 }
 
 export function EducationSalaryRequirementsCard({ disableLocalTheme, className }: EducationSalaryRequirementsCardProps) {
-    const data = useCardRegistryData("education-salary-requirements", defaultData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+
+    let renderData = data.data;
+    if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">

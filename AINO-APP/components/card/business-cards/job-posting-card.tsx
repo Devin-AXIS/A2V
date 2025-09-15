@@ -5,6 +5,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { CardRegistry } from "../registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface JobPostingCardProps {
   disableLocalTheme?: boolean
@@ -21,7 +22,8 @@ const defaultData = {
 };
 
 export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProps) {
-  const jobData = useCardRegistryData("job-posting", defaultData)
+  const { key: providedKey } = useLocalThemeKey()
+  const { realData: jobData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
 
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">

@@ -337,6 +337,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     } catch { return null }
   }, [pageId, activeTopIndex, overrideTick])
 
+
+  const cardDisplayData = useMemo(() => {
+    if (pageConfig?.overrides?.['icon-0']) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem('CARD_DISPLAY_DATA', JSON.stringify(pageConfig.overrides['icon-0']))
+      } else {
+        localStorage.removeItem('CARD_DISPLAY_DATA');
+      }
+    }
+  }, [pageConfig])
+
   // 归一化顶部标签栏为文本型导航（只用作切换）。优先使用外部传入的 topTabsConfig
   const computedTopTabs = useMemo(() => {
     try {
@@ -1110,7 +1121,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                                 return (<InlineSandbox code={overrideJsx} data={defaultData} props={overrideProps} theme={themeObj} className="w-full" />)
                               }
                               // 构造筛选条 items 与当前值
-                              const items = (() => {
+                              let items = (() => {
                                 try {
                                   if (!overrideFilters?.enabled || !Array.isArray(overrideFilters?.fields)) return []
                                   return (overrideFilters.fields as any[]).map((f: any) => {
@@ -1186,12 +1197,32 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                                 return map
                               })()
 
-                              const mergedProps = { ...(overrideProps || {}), listLimit: (overrideDisplay && overrideDisplay.limit), activeFilters }
 
+                              const da = CardRegistry.getRealData(card.id);
+                              if (overrideFilters?.fields && items.length) {
+                                items.forEach(item => {
+                                  const current = overrideFilters.fields.find(fie => fie.label === item.category);
+                                  item.options.push({
+                                    value: 'none',
+                                    label: '不限',
+                                  })
+                                  if (current) {
+                                    da.forEach(d => {
+                                      item.options.push({
+                                        value: d[current.fieldId],
+                                        fieldId: current.fieldId,
+                                        label: d[current.fieldId],
+                                      })
+                                    });
+                                  }
+                                })
+                              }
+
+                              const mergedProps = { ...(overrideProps || {}), listLimit: (overrideDisplay && overrideDisplay.limit), activeFilters }
                               return (
                                 <div className="space-y-2">
                                   {overrideFilters?.enabled && items.length > 0 && (
-                                    <DropdownFilterTabs items={items as any} values={values} onValueChange={handleValueChange} />
+                                    <DropdownFilterTabs cardId={card.id} items={items as any} values={values} onValueChange={handleValueChange} />
                                   )}
                                   {React.createElement(CardComponent as any, {
                                     data: defaultData,

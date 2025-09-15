@@ -35,6 +35,10 @@ import { CompanyInfoCard } from "@/components/card/jobs/company-info-card"
 import { ApplyResumeCard } from "@/components/card/jobs/apply-resume-card"
 
 const datas = {};
+const realDatas = {};
+const filters = {};
+const filtedDatas = {};
+const listens = {};
 
 class CardRegistry {
   private static cards = new Map<string, CardConfig>()
@@ -98,23 +102,54 @@ class CardRegistry {
     this.actionHandlers.delete(name)
   }
 
-  static setData(name, data) {
+  static setData(name, data, realData) {
     datas[name] = data;
-    this.listens.forEach(cb => cb(name, data));
+    realDatas[name] = realData;
+    listens[name](name, data);
+    // this.listens.forEach(cb => cb(name, data));
   }
 
   static getData(name) {
     return datas[name];
   }
 
+  static getRealData(name) {
+    return realDatas[name];
+  }
+
   static getAllData() {
     return datas;
   }
 
+  static getAllRealData() {
+    return realDatas;
+  }
+
+  static selectFilter(name, filter) {
+    if (filter.value === 'none') {
+      listens[name](name, datas[name]);
+      return;
+    }
+    filters[name] = filter;
+    const currentRealData = realDatas[name];
+    const currentData = datas[name];
+    filtedDatas[name] = [];
+    currentRealData.forEach((item, index) => {
+      if (item[filter.fieldId] === filter.value) {
+        filtedDatas[name].push(currentData[index]);
+      }
+    });
+    listens[name](name, filtedDatas[name]);
+  }
+
+  static getFilter(name) {
+    return filters[name];
+  }
+
   static listens = [];
 
-  static listen(cb) {
-    this.listens.push(cb)
+  static listen(name, cb) {
+    listens[name] = cb;
   }
 }
 

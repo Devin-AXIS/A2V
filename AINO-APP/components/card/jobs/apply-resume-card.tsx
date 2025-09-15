@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 export interface ApplyResumeData {
     buttonText: string
@@ -27,7 +28,8 @@ export function ApplyResumeCard({ data, onApply, className }: ApplyResumeCardPro
         }
     }
 
-    const merged = useCardRegistryData('apply-resume', defaultApplyResumeData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultApplyResumeData)
 
     return (
         <AppCard className={className}>
