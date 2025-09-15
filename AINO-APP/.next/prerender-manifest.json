@@ -1,11 +1,1 @@
-{
-  "version": 4,
-  "routes": {},
-  "dynamicRoutes": {},
-  "notFoundRoutes": [],
-  "preview": {
-    "previewModeId": "ba4d1391a73ac218eab3892bfd5084fc",
-    "previewModeSigningKey": "9a55c5c7834e5e24e3d0f4f8b63aad40a7429f9c24b17284ace1a5dab0c220ba",
-    "previewModeEncryptionKey": "e1f9116def658d62795fbc182e08e57d088554ee0199a97f106a8d253f5d0d33"
-  }
-}
+{"version":4,"routes":{"/zh/preview":{},"/en/preview":{},"/zh/auth/login":{},"/en/auth/login":{}},"dynamicRoutes":{"/[locale]/preview":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/preview","routeRegex":"^\\/([^/]+?)\\/preview(?:\\/)?$","allowHeader":[]},"/[locale]/auth/login":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/auth/login","routeRegex":"^\\/([^/]+?)\\/auth\\/login(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"ba4d1391a73ac218eab3892bfd5084fc","previewModeSigningKey":"9a55c5c7834e5e24e3d0f4f8b63aad40a7429f9c24b17284ace1a5dab0c220ba","previewModeEncryptionKey":"e1f9116def658d62795fbc182e08e57d088554ee0199a97f106a8d253f5d0d33"}}
