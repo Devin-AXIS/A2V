@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X, Monitor, Smartphone } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
@@ -113,6 +113,7 @@ type DraftManifest = {
     locale: string
     theme: string
     bottomNav: BottomNavItem[]
+    pcTopNav: BottomNavItem[]
   }
 }
 
@@ -148,6 +149,7 @@ export default function ClientConfigPage() {
       out.app.defaultLanguage = out.app.defaultLanguage || defaults.app.defaultLanguage
       out.app.locale = out.app.locale || defaults.app.locale
       if (!Array.isArray(out.app.bottomNav)) out.app.bottomNav = defaults.app.bottomNav
+      if (!Array.isArray(out.app.pcTopNav)) out.app.pcTopNav = defaults.app.pcTopNav
       if (saved.pages) out.pages = saved.pages
       if (saved.dataSources) out.dataSources = saved.dataSources
       return out
@@ -195,6 +197,7 @@ export default function ClientConfigPage() {
         { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/preview" },
         { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/profile" },
       ],
+      pcTopNav: [],
     },
     dataSources: {},
   })
@@ -1069,6 +1072,14 @@ export default function ClientConfigPage() {
         const fallback = `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
+      
+      // 同时保存到localStorage，确保PC导航配置能实时同步
+      try {
+        const key = `STUDIO_CLIENT_CFG_${params.appId}`
+        const payload = { ...body, __ui: { activePageKey, pageTabIndex } }
+        window.localStorage.setItem(key, JSON.stringify(payload))
+      } catch { }
+      
       toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
@@ -1372,10 +1383,40 @@ export default function ClientConfigPage() {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
               <div className="h-full overflow-y-auto p-3 space-y-3">
+                {/* 设备切换按钮 - 固定在顶部 */}
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="text-xs font-medium text-muted-foreground">{lang === "zh" ? "设备类型" : "Device"}</div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant={device === "pc" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDevice("pc")}
+                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
+                    >
+                      <Monitor className="w-3 h-3" />
+                      PC
+                    </Button>
+                    <Button
+                      variant={device === "mobile" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDevice("mobile")}
+                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      Mobile
+                    </Button>
+                  </div>
+                </div>
+                
                 {!authUIOpen && !pageUIOpen ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-semibold">{lang === "zh" ? "配置/构建" : "Config/Build"}</div>
+                      <div className="text-sm font-semibold">
+                        {device === "pc" 
+                          ? (lang === "zh" ? "PC配置/构建" : "PC Config/Build")
+                          : (lang === "zh" ? "Mobile配置/构建" : "Mobile Config/Build")
+                        }
+                      </div>
                       <Tabs value="config" className="-mr-2">
                         <TabsList>
                           <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
@@ -1398,8 +1439,81 @@ export default function ClientConfigPage() {
                         <Input value={draft.app.theme} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, theme: e.target.value } }))} />
                       </div>
                     )}
-                    <div className="space-y-2">
-                      <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
+                    {/* 根据设备类型显示不同的导航配置 */}
+                    {device === "pc" ? (
+                      // PC模式：顶部导航配置
+                      <div className="space-y-2">
+                        <Label>{lang === "zh" ? "PC顶部导航（最多8项）" : "PC Top Nav (max 8)"}</Label>
+                        <div className="space-y-2">
+                          {(draft.app.pcTopNav || []).map((item: any, idx: number) => (
+                            <div
+                              key={item.key}
+                              className="space-y-2 p-3 border rounded-lg bg-gray-50"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("text/plain", String(idx))
+                              }}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault()
+                                const from = Number(e.dataTransfer.getData("text/plain"))
+                                const to = idx
+                                if (Number.isNaN(from) || from === to) return
+                                setDraft((s: any) => {
+                                  const next = [...(s.app.pcTopNav || [])]
+                                  const [moved] = next.splice(from, 1)
+                                  next.splice(to, 0, moved)
+                                  return { ...s, app: { ...s.app, pcTopNav: next } }
+                                })
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                                <Input 
+                                  value={item.label} 
+                                  onChange={(e) => {
+                                    const newDraft = { ...draft, app: { ...draft.app, pcTopNav: (draft.app.pcTopNav || []).map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }
+                                    setDraft(newDraft)
+                                    setTimeout(() => { savePreview(newDraft, true) }, 0)
+                                  }} 
+                                  placeholder={lang === "zh" ? "导航名称" : "Nav Label"} 
+                                  className="flex-1"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setDraft((s: any) => {
+                                      const next = { ...s, app: { ...s.app, pcTopNav: (s.app.pcTopNav || []).filter((_: any, i: number) => i !== idx) } }
+                                      setTimeout(() => { savePreview(next, true) }, 0)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />{lang === "zh" ? "删除" : "Delete"}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          {(draft.app.pcTopNav || []).length < 8 && (
+                            <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                              const key = `pc-${Date.now()}`
+                              const next = { ...s }
+                              next.app = { ...next.app, pcTopNav: [...(next.app.pcTopNav || []), { key, label: lang === "zh" ? "新导航" : "New Nav" }] }
+                              setTimeout(() => { savePreview(next, true) }, 0)
+                              return next
+                            })}>
+                              {lang === "zh" ? "添加导航项" : "Add Nav Item"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      // Mobile模式：底部导航配置
+                      <div className="space-y-2">
+                        <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
                       <div className="space-y-2">
                         {draft.app.bottomNav.map((item: any, idx: number) => (
                           <div
@@ -1485,6 +1599,7 @@ export default function ClientConfigPage() {
                         )}
                       </div>
                     </div>
+                    )}
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -2328,8 +2443,6 @@ export default function ClientConfigPage() {
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
                     </Button>
-                    <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
-                    <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
                     {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
                       {lang === "zh" ? "AI运营" : "AI Ops"}

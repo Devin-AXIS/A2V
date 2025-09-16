@@ -77,8 +77,8 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     try {
       if (typeof window !== 'undefined') {
         const rawGlobal = localStorage.getItem('APPLICATION_CONFIG')
-        const cfg = JSON.parse(rawGlobal)
         if (rawGlobal) {
+          const cfg = JSON.parse(rawGlobal)
           const nav = Array.isArray(cfg?.config?.clientManifest?.app?.bottomNav) ? cfg.config.clientManifest.app.bottomNav : []
           if (nav.length > 0) {
             navItems = nav
@@ -135,13 +135,13 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
       <AppCard className="px-4 py-1">
         <div className="flex items-center space-x-2 md:space-x-3">
-          {navItems.map(({ href, icon: Icon, iconName, label }) => {
+          {navItems.map(({ href, icon: Icon, iconName, label }, index) => {
             const fullHref = `/${locale}${href === "/" ? "" : href}${hrefQs}`
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
             const IconComp = Icon ?? (iconName ? iconMap[iconName] : undefined) ?? LayoutGrid
 
             return (
-              <Link href={fullHref} key={label}>
+              <Link href={fullHref} key={`${label}-${index}-${href}`}>
                 <Button
                   variant="ghost"
                   className="rounded-2xl w-12 h-12 flex flex-col items-center justify-center transition-all duration-300 group"
