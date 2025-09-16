@@ -105,13 +105,13 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [keySearch, setKeySearch] = useState("")
   const [saveMsg, setSaveMsg] = useState("")
   const [previewJson, setPreviewJson] = useState<string>("")
-  
+
   // 分析采集回来的数据结构，提取可用字段
   function analyzeScrapedData(data: any[]): string[] {
     if (!data || data.length === 0) return []
-    
+
     const fields = new Set<string>()
-    
+
     // 分析第一个数据项的所有字段
     const firstItem = data[0]
     if (firstItem && typeof firstItem === 'object') {
@@ -119,10 +119,10 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       function extractFields(obj: any, prefix = ''): void {
         for (const [key, value] of Object.entries(obj)) {
           const fieldPath = prefix ? `${prefix}.${key}` : key
-          
+
           // 如果是基本类型，添加到字段列表
-          if (value !== null && value !== undefined && 
-              (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
+          if (value !== null && value !== undefined &&
+            (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
             fields.add(fieldPath)
           }
           // 如果是对象，递归处理
@@ -135,29 +135,29 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
           }
         }
       }
-      
+
       extractFields(firstItem)
     }
-    
+
     return Array.from(fields).sort()
   }
-  
+
   // 当采集数据更新时，自动分析字段
   useEffect(() => {
     if (sampleRecords && sampleRecords.length > 0) {
       const extractedFields = analyzeScrapedData(sampleRecords)
       setSampleSourceKeys(extractedFields)
       console.log('🔍 分析采集数据结构，发现字段:', extractedFields)
-      
+
       // 自动进行字段匹配
       autoMatchFromScrapedData(extractedFields)
     }
   }, [sampleRecords])
-  
+
   // 基于实际采集数据自动匹配字段
   function autoMatchFromScrapedData(availableFields: string[]) {
     const next: Record<string, string> = {}
-    
+
     // 智能匹配规则
     const matchRules = {
       'title': ['title', 'name', 'job_title', 'position', '职位', '岗位', '名称', 'jobName', 'positionName'],
@@ -174,41 +174,41 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       'skills': ['skills', 'requirements', '技能', '要求', '要求技能', 'jobSkills', 'requiredSkills'],
       'benefits': ['benefits', 'perks', '福利', '待遇', 'jobBenefits', 'companyBenefits'],
     }
-    
+
     for (const f of mockFields) {
       // 首先尝试精确匹配
-      const exactMatch = availableFields.find(field => 
-        matchRules[f.key]?.some(rule => 
+      const exactMatch = availableFields.find(field =>
+        matchRules[f.key]?.some(rule =>
           field.toLowerCase().includes(rule.toLowerCase()) ||
           rule.toLowerCase().includes(field.toLowerCase())
         )
       )
-      
+
       if (exactMatch) {
         next[f.key] = exactMatch
         continue
       }
-      
+
       // 然后尝试模糊匹配
-      const fuzzyMatch = availableFields.find(field => 
+      const fuzzyMatch = availableFields.find(field =>
         field.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
         f.key.toLowerCase().includes(field.toLowerCase().slice(0, 4))
       )
-      
+
       if (fuzzyMatch) {
         next[f.key] = fuzzyMatch
       }
     }
-    
+
     setMapping(next)
     if (Object.keys(next).length > 0) {
       toast({ description: t("已自动匹配采集数据字段", "Auto matched scraped data fields") })
     }
   }
-  
+
   function autoMatch() {
     const next: Record<string, string> = {}
-    
+
     // 智能匹配规则
     const matchRules = {
       // 标题相关
@@ -226,29 +226,29 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       'skills': ['skills', 'requirements', '技能', '要求', '要求技能'],
       'benefits': ['benefits', 'perks', '福利', '待遇'],
     }
-    
+
     for (const f of mockFields) {
       // 首先尝试精确匹配
-      const exactMatch = sampleSourceKeys.find(s => 
+      const exactMatch = sampleSourceKeys.find(s =>
         matchRules[f.key]?.some(rule => s.toLowerCase().includes(rule.toLowerCase()))
       )
-      
+
       if (exactMatch) {
         next[f.key] = exactMatch
         continue
       }
-      
+
       // 然后尝试模糊匹配
-      const fuzzyMatch = sampleSourceKeys.find(s => 
+      const fuzzyMatch = sampleSourceKeys.find(s =>
         s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
         f.key.toLowerCase().includes(s.toLowerCase().slice(0, 4))
       )
-      
+
       if (fuzzyMatch) {
         next[f.key] = fuzzyMatch
       }
     }
-    
+
     setMapping(next)
     toast({ description: t("已自动匹配相近字段", "Auto matched similar fields") })
   }
@@ -315,7 +315,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   function candidatesForField(f: MockField): string[] {
     // 使用从采集数据中提取的字段，如果没有则使用默认字段
     const availableFields = sampleSourceKeys.length > 0 ? sampleSourceKeys : sampleKeys
-    
+
     const list = availableFields
       .map((k) => ({ k, s: scoreKey(f.key, k) }))
       .sort((a, b) => b.s - a.s)
@@ -528,25 +528,27 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, scrape: true }))
       setStatusMsg(t("正在抓取样例…", "Scraping sample…"))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
+
       const r = await fetch(`${getApiBase()}/api/crawl/scrape`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
+          'x-aino-firecrawl-key': firecrawlKey
         },
-        body: JSON.stringify({ 
-          url: firstUrl, 
+        body: JSON.stringify({
+          url: firstUrl,
           domain: domain,
           nlRule: nlRule,
-          options: { formats: ['markdown', 'html'] } 
+          options: { formats: ['markdown', 'html'] }
         })
       })
       const data = await r.json().catch(() => ({}))
@@ -577,25 +579,27 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStart: true }))
       setStatusMsg(t("正在启动爬取…", "Starting crawl…"))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
+
       const r = await fetch(`${getApiBase()}/api/crawl/start`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
+          'x-aino-firecrawl-key': firecrawlKey
         },
-        body: JSON.stringify({ 
-          urls: [startUrl], 
+        body: JSON.stringify({
+          urls: [startUrl],
           domain: domain,
           nlRule: nlRule,
-          options: { limit: 10 } 
+          options: { limit: 10 }
         })
       })
       const data = await r.json().catch(() => ({}))
@@ -617,17 +621,19 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStatus: true }))
       setStatusMsg(t("正在获取状态…", "Fetching status…"))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
+
       const r = await fetch(`${getApiBase()}/api/crawl/status/${encodeURIComponent(crawlId)}`, {
-        headers: { 
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
+          'x-aino-firecrawl-key': firecrawlKey
         }
       })
       const data = await r.json().catch(() => ({}))
@@ -659,25 +665,27 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, batchStart: true }))
       setStatusMsg(t("正在启动批量抓取…", "Starting batch…"))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
+
       const r = await fetch(`${getApiBase()}/api/crawl/batch/start`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
+          'x-aino-firecrawl-key': firecrawlKey
         },
-        body: JSON.stringify({ 
-          urls: list, 
+        body: JSON.stringify({
+          urls: list,
           domain: domain,
           nlRule: nlRule,
-          options: { options: { formats: ['markdown'] } } 
+          options: { options: { formats: ['markdown'] } }
         })
       })
       const data = await r.json().catch(() => ({}))
@@ -698,17 +706,19 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !batchId) return
     try {
       setBusy((b) => ({ ...b, batchStatus: true }))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
+
       const r = await fetch(`${getApiBase()}/api/crawl/batch/status/${encodeURIComponent(batchId)}`, {
-        headers: { 
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
+          'x-aino-firecrawl-key': firecrawlKey
         }
       })
       const data = await r.json().catch(() => ({}))
@@ -731,19 +741,21 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !crawlId) return
     try {
       setBusy((b) => ({ ...b, cancel: true }))
-      
+
       // 获取认证token
       let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
       if (!token) {
         token = 'test-token'
       }
-      
-      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, { 
-        method: 'POST', 
-        headers: { 
+
+      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, {
+        method: 'POST',
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
           'Authorization': `Bearer ${token}`,
-          'x-aino-firecrawl-key': firecrawlKey 
-        } 
+          'x-aino-firecrawl-key': firecrawlKey
+        }
       })
       const ok = r.ok
       toast({ description: ok ? t("已取消", "Cancelled") : t("取消失败", "Cancel failed"), variant: ok ? undefined : ("destructive" as any) })
@@ -791,10 +803,10 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     </div>
                     <div className="space-y-1">
                       <Label>{t("自然语言规则", "Natural language rule")}</Label>
-                      <Textarea 
-                        value={nlRule} 
-                        onChange={(e) => setNlRule(e.target.value)} 
-                        placeholder={t("例如：我想要任何数据 / 只要海淀区的 / 城市=北京，岗位=前端，薪资>20k", "e.g. I want any data / Only Haidian district / city=Beijing, role=frontend, salary>20k")} 
+                      <Textarea
+                        value={nlRule}
+                        onChange={(e) => setNlRule(e.target.value)}
+                        placeholder={t("例如：我想要任何数据 / 只要海淀区的 / 城市=北京，岗位=前端，薪资>20k", "e.g. I want any data / Only Haidian district / city=Beijing, role=frontend, salary>20k")}
                         className="min-h-[80px]"
                       />
                       <div className="text-xs text-muted-foreground space-y-1">
@@ -944,7 +956,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                           <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
                         </div>
                       </div>
-                      
+
                       {/* 字段映射说明 */}
                       <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                         <div className="text-sm font-medium text-blue-900 mb-2">
@@ -956,7 +968,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                           <div>• {t("例如：采集到'薪资15k' → 映射到'salary'字段 → 转换为数字15000", "e.g. 'Salary 15k' → map to 'salary' field → convert to number 15000")}</div>
                         </div>
                       </div>
-                      
+
                       {/* 采集数据字段展示 */}
                       {sampleSourceKeys.length > 0 && (
                         <div className="bg-green-50 p-3 rounded-lg border border-green-200">
@@ -977,7 +989,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onScrapeTest} disabled={!!busy.scrape}>
                           {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("试抓取", "Scrape test")}

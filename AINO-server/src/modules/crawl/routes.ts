@@ -10,13 +10,13 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
   }
 
   console.log('🔍 处理自然语言规则:', nlRule)
-  
+
   // 解析自然语言规则，提取关键词和条件
   const rule = nlRule.toLowerCase().trim()
-  
+
   // 初始化处理后的选项
   const processedOptions = { ...baseOptions }
-  
+
   // 检查是否是通用数据采集需求
   const generalDataPatterns = [
     /我想要任何数据/,
@@ -33,9 +33,9 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     /所有/,
     /任何/,
   ]
-  
+
   const isGeneralRequest = generalDataPatterns.some(pattern => pattern.test(rule))
-  
+
   if (isGeneralRequest) {
     console.log('🌐 检测到通用数据采集需求，不设置特定过滤条件')
     // 对于通用需求，不设置特定的过滤条件，让Firecrawl抓取所有内容
@@ -47,7 +47,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     console.log('✅ 自然语言规则处理完成 (通用采集):', processedOptions)
     return processedOptions
   }
-  
+
   // 城市解析 - 支持多种表达方式
   const cityPatterns = [
     /城市[=：:]\s*([^,，\s]+)/,           // 城市=北京
@@ -59,7 +59,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     /在\s*([^,，\s]+)区/,               // 在海淀区
     /在\s*([^,，\s]+)市/,               // 在北京市
   ]
-  
+
   for (const pattern of cityPatterns) {
     const match = rule.match(pattern)
     if (match) {
@@ -68,7 +68,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
       break
     }
   }
-  
+
   // 岗位解析 - 支持多种表达方式
   const rolePatterns = [
     /岗位[=：:]\s*([^,，\s]+)/,           // 岗位=前端
@@ -81,7 +81,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     /需要\s*([^,，\s]+)开发/,            // 需要前端开发
     /需要\s*([^,，\s]+)工程师/,          // 需要前端工程师
   ]
-  
+
   for (const pattern of rolePatterns) {
     const match = rule.match(pattern)
     if (match) {
@@ -90,7 +90,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
       break
     }
   }
-  
+
   // 薪资解析 - 支持多种表达方式
   const salaryPatterns = [
     /薪资[>大于]\s*(\d+)k?/,             // 薪资>10k
@@ -103,7 +103,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     /最低\s*(\d+)k/,                     // 最低10k
     /最低\s*(\d+)/,                      // 最低10000
   ]
-  
+
   for (const pattern of salaryPatterns) {
     const match = rule.match(pattern)
     if (match) {
@@ -121,7 +121,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
       break
     }
   }
-  
+
   // 公司解析 - 支持多种表达方式
   const companyPatterns = [
     /公司[=：:]\s*([^,，\s]+)/,           // 公司=腾讯
@@ -132,7 +132,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
     /在\s*([^,，\s]+)公司/,              // 在腾讯公司
     /在\s*([^,，\s]+)工作/,              // 在腾讯工作
   ]
-  
+
   for (const pattern of companyPatterns) {
     const match = rule.match(pattern)
     if (match) {
@@ -141,32 +141,32 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
       break
     }
   }
-  
+
   // 平台解析
   const platformMatch = rule.match(/(boss直聘|智联|拉勾|前程无忧|猎聘|boss|智联招聘|拉勾网|前程无忧网|猎聘网)/)
   if (platformMatch) {
     processedOptions.platform = platformMatch[1]
     console.log('🌐 提取平台条件:', processedOptions.platform)
   }
-  
+
   // 生成搜索关键词
   const keywords = []
   if (processedOptions.role) keywords.push(processedOptions.role)
   if (processedOptions.city) keywords.push(processedOptions.city)
   if (processedOptions.company) keywords.push(processedOptions.company)
-  
+
   if (keywords.length > 0) {
     processedOptions.searchKeywords = keywords.join(' ')
     console.log('🔍 生成搜索关键词:', processedOptions.searchKeywords)
   }
-  
+
   // 设置内容过滤规则
   if (processedOptions.city || processedOptions.role || processedOptions.minSalary) {
     processedOptions.contentFilter = {
       include: [],
       exclude: []
     }
-    
+
     if (processedOptions.city) {
       processedOptions.contentFilter.include.push(`城市:${processedOptions.city}`)
     }
@@ -177,7 +177,7 @@ async function processNaturalLanguageRule(nlRule: string | undefined, baseOption
       processedOptions.contentFilter.include.push(`薪资:${processedOptions.minSalary}+`)
     }
   }
-  
+
   console.log('✅ 自然语言规则处理完成:', processedOptions)
   return processedOptions
 }
@@ -233,31 +233,20 @@ crawlRoute.post('/scrape', mockRequireAuthMiddleware, zValidator('json', scrapeR
     }
 
     const { url, domain, nlRule, options = {} } = c.req.valid('json')
-    
+
     console.log('🔍 开始单页面抓取:', { url, domain, nlRule, options })
-    
-    // 处理自然语言规则
-    const processedOptions = await processNaturalLanguageRule(nlRule, options)
 
     // 调用Firecrawl API
-    const firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/scrape', {
+    const firecrawlResponse = await fetch('https://api.scrapegraphai.com/v1/smartscraper', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${firecrawlKey}`,
-        'Content-Type': 'application/json'
+        'sgai-apikey': `firecrawlKey`,
+        'Content-Type': 'application/json',
+        'sgai-apikey': `${firecrawlKey}`,
       },
       body: JSON.stringify({
-        url,
-        formats: processedOptions.formats || ['markdown', 'html'],
-        onlyMainContent: processedOptions.onlyMainContent || false,
-        includeHtml: processedOptions.includeHtml || false,
-        includeMarkdown: processedOptions.includeMarkdown || true,
-        // 如果有内容过滤规则，使用Firecrawl的原生LLM提取功能
-        ...(processedOptions.contentFilter && {
-          jsonOptions: {
-            prompt: `请从网页中提取以下信息：${processedOptions.contentFilter.include.join(', ')}。只返回符合条件的内容，以JSON格式返回。`
-          }
-        })
+        website_url: url,
+        user_prompt: nlRule || "",
       })
     })
 
@@ -299,9 +288,9 @@ crawlRoute.post('/start', mockRequireAuthMiddleware, zValidator('json', crawlSta
     }
 
     const { urls, domain, nlRule, options = {} } = c.req.valid('json')
-    
+
     console.log('🔍 开始爬取任务:', { urls: urls.length, domain, nlRule })
-    
+
     // 处理自然语言规则
     const processedOptions = await processNaturalLanguageRule(nlRule, options)
 
@@ -430,9 +419,9 @@ crawlRoute.post('/batch/start', mockRequireAuthMiddleware, zValidator('json', ba
     }
 
     const { urls, domain, nlRule, options = {} } = c.req.valid('json')
-    
+
     console.log('🔍 开始批量爬取:', { urls: urls.length, domain, nlRule })
-    
+
     // 处理自然语言规则
     const processedOptions = await processNaturalLanguageRule(nlRule, options)
 

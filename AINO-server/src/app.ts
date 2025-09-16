@@ -27,13 +27,54 @@ import { databaseMiddleware } from "./middleware/database"
 
 const app = new Hono()
 
+// Allowed origins for CORS (Studio / App dev servers)
+const allowedOrigins = new Set<string>([
+  'http://localhost:3006',
+  'http://localhost:3007',
+  'http://localhost:3003',
+  'http://127.0.0.1:3006',
+  'http://127.0.0.1:3007',
+  'http://127.0.0.1:3003',
+  process.env.STUDIO_ORIGIN || '',
+  process.env.APP_ORIGIN || '',
+].filter(Boolean))
+
 app.use("*", cors({
-  origin: (origin) => origin ?? "*",
+  origin: (origin) => {
+    if (origin && allowedOrigins.has(origin)) return origin
+    // Fallback: echo back origin if provided to support local testing
+    return origin || "http://localhost:3006"
+  },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "x-aino-firecrawl-key", "x-aino-openai-endpoint", "x-aino-openai-key"],
+  allowHeaders: [
+    "*",
+    "Content-Type",
+    "content-type",
+    "Authorization",
+    "authorization",
+    "x-aino-firecrawl-key",
+    "x-aino-openai-endpoint",
+    "x-aino-openai-key",
+    "X-Requested-With"
+  ],
+  exposeHeaders: ["Content-Type", "Authorization", "x-aino-firecrawl-key"],
   credentials: true,
   maxAge: 86400,
 }))
+
+// 显式处理所有预检请求，确保 CORS 预检稳定通过
+app.options("*", (c) => {
+  const reqOrigin = c.req.header("Origin") || ""
+  const origin = (reqOrigin && allowedOrigins.has(reqOrigin)) ? reqOrigin : (reqOrigin || "http://localhost:3006")
+  const reqHeaders = c.req.header("Access-Control-Request-Headers") || "Content-Type, Authorization, x-aino-firecrawl-key"
+  c.header("Access-Control-Allow-Origin", origin)
+  c.header("Vary", "Origin")
+  c.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+  c.header("Access-Control-Allow-Headers", reqHeaders)
+  c.header("Access-Control-Allow-Credentials", "true")
+  c.header("Access-Control-Max-Age", "86400")
+  return c.body(null, 204)
+})
 
 // 添加数据库中间件
 app.use("*", databaseMiddleware)
