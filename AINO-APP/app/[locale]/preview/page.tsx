@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
+import { PCDynamicPageComponent } from "@/components/dynamic-page/pc-dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { setDatas } from "@/components/card/set-datas"
@@ -48,29 +49,41 @@ function PreviewContent() {
     setMergedOnce(true)
   }, [sp, params, router, mergedOnce])
 
-  const qs = new URLSearchParams(window.location.search)
+  // 安全地获取URL参数，避免SSR错误
+  const qs = useMemo(() => {
+    if (typeof window === 'undefined') return new URLSearchParams()
+    return new URLSearchParams(window.location.search)
+  }, [])
+  
   const applicationId = qs.get('appId')
-  window.localStorage.setItem('APP_ID', applicationId || '')
   const parentOrigin = qs.get('origin') || qs.get('parentOrigin') || '*'
   const dataParam = qs.get('data')
-  if (dataParam) {
-    try {
-      const parsed = JSON.parse(dataParam)
-      window.localStorage.setItem('PREVIEW_SELECTED_DATA', JSON.stringify(parsed))
-    } catch {
-      window.localStorage.setItem('PREVIEW_SELECTED_DATA_RAW', dataParam)
+  
+  // 安全地设置localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('APP_ID', applicationId || '')
+      if (dataParam) {
+        try {
+          const parsed = JSON.parse(dataParam)
+          window.localStorage.setItem('PREVIEW_SELECTED_DATA', JSON.stringify(parsed))
+        } catch {
+          window.localStorage.setItem('PREVIEW_SELECTED_DATA_RAW', dataParam)
+        }
+      }
     }
-  }
+  }, [applicationId, dataParam])
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [manifest, setManifest] = useState<any>(null)
   const bridge = useMemo(() => getIframeBridge({ targetOrigin: parentOrigin, channel: applicationId || undefined }), [parentOrigin, applicationId])
 
-  // 仅做 App(移动) 版本预览；PC 版本后续再做
-  const device = "mobile"
+  // 从URL参数获取设备类型，默认为mobile
+  const device = qs.get('device') || "mobile"
   const locale = params.locale || "zh"
   const id = qs.get('previewId')// || params.id
+  
 
   useEffect(() => {
     setDatas();
@@ -183,6 +196,15 @@ function PreviewContent() {
       <main className="min-h-[100dvh] flex flex-col items-center justify-center gap-3">
         <div className="text-sm text-red-600">{error}</div>
         <Button variant="outline" onClick={() => router.refresh()}>Retry</Button>
+      </main>
+    )
+  }
+
+  // 根据设备类型选择不同的布局
+  if (device === "pc") {
+    return (
+      <main className="min-h-screen bg-transparent">
+        <PCDynamicPageComponent key={renderKey} category={pageCategory} locale={locale} layout="pc" />
       </main>
     )
   }
