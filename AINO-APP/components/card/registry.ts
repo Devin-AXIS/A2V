@@ -135,7 +135,7 @@ class CardRegistry {
     const currentData = datas[name];
     filtedDatas[name] = [];
     currentRealData.forEach((item, index) => {
-      if (item[filter.fieldId] === filter.value) {
+      if (`${item[filter.fieldId]}` === filter.value) {
         filtedDatas[name].push(currentData[index]);
       }
     });

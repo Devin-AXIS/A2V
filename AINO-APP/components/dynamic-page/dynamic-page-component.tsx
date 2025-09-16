@@ -1228,13 +1228,17 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                                     label: '不限',
                                   })
                                   if (current) {
+                                    const options = {};
                                     da.forEach(d => {
-                                      item.options.push({
-                                        value: d[current.fieldId],
-                                        fieldId: current.fieldId,
-                                        label: d[current.fieldId],
-                                      })
+                                      options[d[current.fieldId]] = current.fieldId;
                                     });
+                                    Object.keys(options).forEach(key => {
+                                      item.options.push({
+                                        value: key,
+                                        fieldId: options[key],
+                                        label: key,
+                                      })
+                                    })
                                   }
                                 })
                               }
