@@ -338,15 +338,36 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   }, [pageId, activeTopIndex, overrideTick])
 
 
-  const cardDisplayData = useMemo(() => {
-    if (pageConfig?.overrides?.['icon-0']) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem('CARD_DISPLAY_DATA', JSON.stringify(pageConfig.overrides['icon-0']))
-      } else {
-        localStorage.removeItem('CARD_DISPLAY_DATA');
+  // const cardDisplayData = useMemo(() => {
+  //   if (pageConfig?.overrides?.['icon-0']) {
+  //     if (typeof window !== "undefined") {
+  //       localStorage.setItem('CARD_DISPLAY_DATA', JSON.stringify(pageConfig.overrides['icon-0']))
+  //     } else {
+  //       localStorage.removeItem('CARD_DISPLAY_DATA');
+  //     }
+  //   }
+  // }, [pageConfig])
+
+  const getCardDisplayData = async () => {
+    if (window !== undefined) {
+      const appId = window.localStorage.getItem('APP_ID');
+      const res = await fetch(`http://localhost:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
+      let json: any = null
+      try { json = await res.json() } catch { json = null }
+      if (!res.ok || !json) return
+      const { config } = ((json && typeof json === 'object' && 'data' in json) ? (json as any).data : json) || {};
+      const qs = new URLSearchParams(window.location.search);
+      const tab = qs.get('tab') || 0;
+      if (config?.clientManifest?.pages?.[`p-${pageId}`]?.overrides?.[`tab-${tab}`]) {
+        const overrides = config?.clientManifest?.pages?.[`p-${pageId}`]?.overrides?.[`tab-${tab}`];
+        localStorage.setItem('CARD_DISPLAY_DATA', JSON.stringify(overrides))
       }
     }
-  }, [pageConfig])
+  }
+
+  useEffect(() => {
+    getCardDisplayData();
+  }, [pageId]);
 
   // 归一化顶部标签栏为文本型导航（只用作切换）。优先使用外部传入的 topTabsConfig
   const computedTopTabs = useMemo(() => {
