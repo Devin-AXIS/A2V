@@ -28,7 +28,9 @@ records.use('*', mockRequireAuthMiddleware)
 // 查询参数验证
 const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(50).default(20),
+  pageSize: z.coerce.number().min(1).max(100).default(20),
+  // 兼容前端传 limit
+  limit: z.coerce.number().min(1).max(100).optional(),
   sort: z.string().optional(),
   fields: z.string().optional(),
   filter: z.string().optional(),
@@ -83,8 +85,10 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
     // 使用目录对应的 applicationId 作为租户隔离标识
     const tenantId = directory.applicationId
 
+    // 统一 pageSize：兼容 limit 参数
+    const pageSize = (query as any).limit ? (query as any).limit : query.pageSize
     // 计算偏移量
-    const offset = (query.page - 1) * query.pageSize
+    const offset = (query.page - 1) * pageSize
 
     // 构建查询条件
     const whereConditions = [
@@ -139,7 +143,7 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
       .from(t)
       .where(and(...whereConditions))
       .orderBy(orderBy)
-      .limit(query.pageSize)
+      .limit(pageSize)
       .offset(offset)
 
     // 格式化返回数据
@@ -153,10 +157,16 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
       updatedBy: row.updatedBy
     }))
 
-    // 前端期望直接返回记录数组，不包含pagination信息
+    // 返回数据与分页信息
     return c.json({
       success: true,
-      data
+      data,
+      pagination: {
+        page: query.page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / Math.max(1, pageSize)))
+      }
     })
   } catch (error) {
     console.error('获取记录列表失败:', error)

@@ -15,6 +15,86 @@ import { useToast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api"
 import { Loader2 } from "lucide-react"
 
+/**
+ * 将JSON路径按最长公共前缀进行分组
+ * @param pathMapping 包含键值对的对象，值为JSON路径字符串
+ * @returns 按最长公共前缀分组的对象，键为最长公共前缀路径，值为包含该前缀的键名数组
+ * 
+ * @example
+ * const input = {
+ *   a: "$.items.result.jobs.salary",
+ *   b: "$.items.result.jobs.job_title", 
+ *   c: "$.items.status.success"
+ * }
+ * 
+ * const result = groupPathsByPrefix(input)
+ * // 返回: {
+ * //   "$.items.result": ["a", "b"],
+ * //   "$.items.status": ["c"]
+ * // }
+ */
+function groupPathsByPrefix(pathMapping: Record<string, string>): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+
+  // 遍历所有键值对
+  for (const [key, path] of Object.entries(pathMapping)) {
+    // 将路径按点分割
+    const pathParts = path.split('.')
+
+    // 生成所有可能的前缀（从最短到最长）
+    for (let i = 1; i <= pathParts.length; i++) {
+      const prefix = pathParts.slice(0, i).join('.')
+
+      // 如果这个前缀还没有在结果中，创建空数组
+      if (!result[prefix]) {
+        result[prefix] = []
+      }
+
+      // 将当前键添加到这个前缀的数组中
+      result[prefix].push(key)
+    }
+  }
+
+  // 过滤掉只有一个键的前缀，只保留有多个键共享的前缀
+  const multiKeyPrefixes: Record<string, string[]> = {}
+  for (const [prefix, keys] of Object.entries(result)) {
+    if (keys.length > 1) {
+      multiKeyPrefixes[prefix] = keys
+    }
+  }
+
+  // 找到每个键的最长公共前缀
+  const finalResult: Record<string, string[]> = {}
+  const processedKeys = new Set<string>()
+
+  // 按前缀长度从长到短排序，优先处理更长的前缀
+  const sortedPrefixes = Object.keys(multiKeyPrefixes).sort((a, b) => b.length - a.length)
+
+  for (const prefix of sortedPrefixes) {
+    const keys = multiKeyPrefixes[prefix]
+
+    // 检查这些键是否已经被处理过
+    const unprocessedKeys = keys.filter(key => !processedKeys.has(key))
+
+    if (unprocessedKeys.length > 1) {
+      // 标记这些键为已处理
+      unprocessedKeys.forEach(key => processedKeys.add(key))
+      finalResult[prefix] = unprocessedKeys
+    }
+  }
+
+  return finalResult
+}
+
+const getJsonDataByPath = (path, data) => {
+  const parts = path.split('.')
+  let cur = data
+  for (const part of parts) {
+    cur = cur[part]
+  }
+  return cur
+}
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -77,6 +157,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [batchId, setBatchId] = useState<string>("")
   const [busy, setBusy] = useState<{ scrape?: boolean; crawlStart?: boolean; crawlStatus?: boolean; batchStart?: boolean; batchStatus?: boolean; cancel?: boolean }>({})
   const [statusMsg, setStatusMsg] = useState<string>("")
+  const [upserting, setUpserting] = useState<boolean>(false)
+  const [upsertProgress, setUpsertProgress] = useState<{ total: number; done: number; ok: number; fail: number }>({ total: 0, done: 0, ok: 0, fail: 0 })
 
   // mock fields for mapping UI
   type MockField = { key: string; label: string; type: 'text' | 'number' | 'date' | 'tags' | 'url' | 'boolean' | 'select' | 'multiselect'; required?: boolean }
@@ -129,9 +211,13 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
           else if (value && typeof value === 'object' && !Array.isArray(value)) {
             extractFields(value, fieldPath)
           }
-          // 如果是数组，添加数组路径
+          // 如果是数组，添加数组路径，并分析数组内对象的字段
           else if (Array.isArray(value)) {
             fields.add(fieldPath)
+            // 分析数组内第一个对象的字段
+            if (value.length > 0 && value[0] && typeof value[0] === 'object') {
+              extractFields(value[0], fieldPath)
+            }
           }
         }
       }
@@ -142,15 +228,48 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     return Array.from(fields).sort()
   }
 
+  // 规范化路径，确保以 $. 开头
+  function ensureAbsolutePath(p: string): string {
+    if (!p) return p
+    return p.startsWith('$.') || p === '$' ? p : (p.startsWith('$') ? `$.${p.slice(1)}` : `$.${p}`)
+  }
+
+  // 将相对路径与当前数组路径组合成完整候选，如 $.result.jobs.title
+  function addArrayPathPrefix(relativeKey: string, arrPath: string): string {
+    const base = ensureAbsolutePath(arrPath || '$')
+    const rel = relativeKey.replace(/^\$\.?/, '')
+    const sep = base.endsWith('.') || base === '$' ? '' : '.'
+    return `${base}${sep}${rel}`
+  }
+
   // 当采集数据更新时，自动分析字段
   useEffect(() => {
     if (sampleRecords && sampleRecords.length > 0) {
       const extractedFields = analyzeScrapedData(sampleRecords)
-      setSampleSourceKeys(extractedFields)
+      // 同时提供：
+      // 1) 相对键: title
+      // 2) 分层相对键: jobs.title / result.jobs.title（来自 arrayPath 的各层）
+      // 3) 绝对键: $.jobs.title / $.result.jobs.title
+      const absBase = (ensureAbsolutePath(arrayPath) || '').replace(/^\$\.?/, '')
+      const parts = absBase.split('.').filter(Boolean)
+      const layeredPrefixes: string[] = []
+      for (let i = 1; i <= parts.length; i++) {
+        layeredPrefixes.push(parts.slice(parts.length - i).join('.'))
+      }
+      const layeredRel = extractedFields.flatMap(k => layeredPrefixes.map(p => `${p}.${k}`))
+      const layeredAbs = layeredRel.map(k => ensureAbsolutePath(k))
+      const withAbsFull = extractedFields.map(k => addArrayPathPrefix(k, arrayPath))
+      const keys = Array.from(new Set([...
+        extractedFields,
+      ...layeredRel,
+      ...layeredAbs,
+      ...withAbsFull,
+      ])).sort()
+      setSampleSourceKeys(keys)
       console.log('🔍 分析采集数据结构，发现字段:', extractedFields)
 
       // 自动进行字段匹配
-      autoMatchFromScrapedData(extractedFields)
+      autoMatchFromScrapedData(keys)
     }
   }, [sampleRecords])
 
@@ -327,12 +446,36 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   // ---------- Progress helpers ----------
   function getByPath(obj: any, path: string): any {
     if (!obj || !path) return undefined
-    const parts = path.replace(/^\$\.?/, '').split('.').filter(Boolean)
-    let cur = obj
-    for (const p of parts) {
-      if (cur && typeof cur === 'object') cur = cur[p]
-      else return undefined
+
+    console.log(`🔍 getByPath 输入:`, { obj, path, arrayPath })
+
+    // 处理路径，去除 $ 前缀
+    let p = path.replace(/^\$\.?/, '')
+
+    // 如果路径以 arrayPath 开头，去掉 arrayPath 部分
+    const absArrayPath = ensureAbsolutePath(arrayPath).replace(/^\$\.?/, '')
+    if (absArrayPath && p.startsWith(absArrayPath)) {
+      p = p.slice(absArrayPath.length)
+      if (p.startsWith('.')) p = p.slice(1)
     }
+
+    console.log(`🔍 处理后的路径:`, p)
+
+    const parts = p.split('.').filter(Boolean)
+    let cur = obj
+
+    for (const part of parts) {
+      console.log(`🔍 访问路径部分: ${part}, 当前值:`, cur)
+      if (cur && typeof cur === 'object') {
+        cur = cur[part]
+        console.log(`🔍 获取到值:`, cur)
+      } else {
+        console.log(`🔍 路径中断，返回 undefined`)
+        return undefined
+      }
+    }
+
+    console.log(`🔍 最终结果:`, cur)
     return cur
   }
   function calcProgressAggregate(items: Array<{ value?: number; weight?: number }>, mode: 'weightedAverage' | 'max' | 'min' = 'weightedAverage'): number {
@@ -360,6 +503,119 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       case 'parseDate': return raw
       case 'splitTags': return typeof raw === 'string' ? raw.split(/[，,\s]+/).filter(Boolean) : Array.isArray(raw) ? raw : []
       default: return raw
+    }
+  }
+
+  // LOG: AI运营关键函数，提取字段并入库
+  async function onUpsert() {
+    try {
+      if (!dirId) {
+        toast({ description: t("缺少目录ID，无法入库", "Missing directory id"), variant: 'destructive' as any })
+        return
+      }
+      if (!sampleRecords || sampleRecords.length === 0) {
+        toast({ description: t('暂无样例，请先抓取或爬取。', 'No samples yet. Scrape/crawl first.'), variant: 'destructive' as any })
+        return
+      }
+
+      // 取数组数据：根据 arrayPath 从 sampleRecords 中提取目标数组
+      const list = (() => {
+        console.log('🔍 开始提取数组数据:', { arrayPath, sampleRecords })
+
+        let firstItem;
+        const list = [];
+        // 如果 arrayPath 是 $.items，说明要从 sampleRecords 中取第一个对象的某个数组字段
+        if (arrayPath === '$.items' && sampleRecords && sampleRecords.length > 0) {
+          firstItem = sampleRecords[0]
+          firstItem = firstItem;
+        }
+
+        let publicMappings = groupPathsByPrefix(mapping);
+        for (let mappingKey in mapping) {
+          if (mapping[mappingKey].indexOf('$.items.') > -1) {
+            mapping[mappingKey] = mapping[mappingKey].replace('$.items.', "")
+          }
+        }
+        Object.keys(publicMappings).map((key) => {
+          publicMappings[key.replace('$.items.', "")] = publicMappings[key]
+        })
+        for (let publicKey in publicMappings) {
+          if (publicKey.indexOf('$.items.') > -1) {
+            delete publicMappings[publicKey]
+          }
+        }
+
+        for (let publicKey in publicMappings) {
+          const currentPublicKey = publicMappings[publicKey];
+          currentPublicKey.forEach((mappingKey, index) => {
+            if (mapping[mappingKey]) {
+              publicMappings[publicKey][index] = {
+                [mappingKey]: mapping[mappingKey].replace(`${publicKey}.`, ""),
+              }
+            }
+          })
+        }
+
+        for (let publicKey in publicMappings) {
+          const currentMappings = publicMappings[publicKey];
+          const datas = getJsonDataByPath(publicKey, firstItem)
+          if (datas instanceof Array) {
+            datas.forEach(data => {
+              const listItem = {};
+              currentMappings.forEach(currentMapping => {
+                Object.keys(currentMapping).forEach(key => {
+                  listItem[key] = data[currentMapping[key]]
+                })
+              })
+              list.push(listItem);
+            })
+          } else {
+
+          }
+        }
+        return list;
+      })()
+
+      if (list.length === 0) {
+        toast({ description: t('未找到可入库的数据数组', 'No array data to upsert'), variant: 'destructive' as any })
+        return
+      }
+
+      // 认证
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) token = 'test-token'
+
+      setUpserting(true)
+      setUpsertProgress({ total: list.length, done: 0, ok: 0, fail: 0 })
+      setStatusMsg(t('正在入库…', 'Upserting…'))
+
+      const base = getApiBase()
+      let ok = 0, fail = 0, done = 0
+
+      // 顺序逐条入库，避免并发带来的速率与顺序问题
+      for (const rec of list) {
+        try {
+          const r = await fetch(`${base}/api/records/${encodeURIComponent(String(dirId))}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ props: rec })
+          })
+          if (!r.ok) throw new Error(await r.text().catch(() => 'create failed'))
+          ok += 1
+        } catch (e) {
+          console.error('Upsert failed:', e)
+          fail += 1
+        } finally {
+          done += 1
+          setUpsertProgress({ total: list.length, done, ok, fail })
+        }
+      }
+
+      const msg = t(`入库完成：成功 ${ok}，失败 ${fail}`, `Upsert done: ok ${ok}, fail ${fail}`)
+      toast({ description: msg })
+      setStatusMsg(msg)
+    } finally {
+      setUpserting(false)
     }
   }
 
@@ -1104,6 +1360,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       <div className="text-sm font-medium">{t("预览", "Preview")}</div>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onLocalPreview}>{t("本地预览", "Local preview")}</Button>
+                        <Button size="sm" onClick={onUpsert} disabled={upserting || !dirId}>
+                          {upserting ? <><Loader2 className="size-4 mr-1 animate-spin" />{t('入库中…', 'Upserting…')}</> : t('入库', 'Upsert')}
+                        </Button>
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-3 text-xs text-muted-foreground min-h-[120px]">
@@ -1118,9 +1377,17 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                 <div className="flex items-center gap-2">
                   <Button variant="outline" onClick={() => onOpenChange(false)}>{t("取消", "Cancel")}</Button>
                   <Button variant="secondary" onClick={onDryRun}>{t("Dry-run 预览", "Dry-run")}</Button>
-                  <Button onClick={onRunNow}>{t("立即运行", "Run now")}</Button>
+                  <Button variant="outline" onClick={onRunNow}>{t("立即运行", "Run now")}</Button>
+                  <Button onClick={onUpsert} disabled={upserting || !dirId}>
+                    {upserting ? <><Loader2 className="size-4 mr-1 animate-spin" />{t('入库中…', 'Upserting…')}</> : t('入库', 'Upsert')}
+                  </Button>
                 </div>
               </div>
+              {upserting && (
+                <div className="pt-2 text-xs text-muted-foreground">
+                  {t('进度', 'Progress')}: {upsertProgress.done}/{upsertProgress.total} {t('成功', 'OK')}: {upsertProgress.ok} {t('失败', 'Fail')}: {upsertProgress.fail}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1128,5 +1395,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     </Drawer>
   )
 }
+
 
 

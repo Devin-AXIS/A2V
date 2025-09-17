@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
@@ -50,6 +50,9 @@ export function DataTable({
 }: Props) {
   const { locale } = useLocale()
   const [currentPage, setCurrentPage] = useState(1)
+  const [serverRows, setServerRows] = useState<any[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [relationDirRecords, setRelationDirRecords] = useState<Record<string, any[]>>({})
@@ -88,33 +91,40 @@ export function DataTable({
     })
   }, [relationTargetDirIds, relationDirLoading, relationDirRecords])
 
-  const filteredRows = useMemo(() => {
-    const kw = filters.kw.trim().toLowerCase()
-    const st = filters.status
-    const cat = filters.category
-    return dir.records.filter((r) => {
-      let ok = true
-      if (kw) {
-        ok = Object.keys(r).some((k) =>
-          String((r as any)[k] ?? "")
-            .toLowerCase()
-            .includes(kw),
-        )
+  // 服务端分页：根据 currentPage 拉取数据
+  useEffect(() => {
+    let cancelled = false
+    const fetchPage = async () => {
+      setLoading(true)
+      try {
+        const res = await api.records.listRecords(dir.id, { page: currentPage, pageSize })
+        const rows = res && res.success ? (Array.isArray(res.data) ? res.data : (res.data?.records || res.data || [])) : []
+        const total = (res as any)?.pagination?.total ?? (Array.isArray(res.data) ? res.data.length : 0)
+        if (!cancelled) {
+          setServerRows(rows)
+          setTotalCount(Number(total) || 0)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setServerRows([])
+          setTotalCount(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      if (ok && st && st !== "all") ok = String((r as any).status || "") === st
-      if (ok && cat && cat !== "all") ok = String((r as any).category || "") === cat
-      return ok
-    })
-  }, [dir.records, filters])
+    }
+    fetchPage()
+    return () => { cancelled = true }
+  }, [dir.id, currentPage, pageSize])
 
-  const totalPages = Math.ceil(filteredRows.length / pageSize)
+  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / Math.max(1, pageSize)))
   const startIndex = (currentPage - 1) * pageSize
-  const endIndex = startIndex + pageSize
-  const rows = useMemo(() => filteredRows.slice(startIndex, endIndex), [filteredRows, startIndex, endIndex])
+  const endIndex = Math.min(startIndex + pageSize, Math.max(totalCount, startIndex))
+  const rows = serverRows
 
   useMemo(() => {
     setCurrentPage(1)
-  }, [filters.kw, filters.status, filters.category])
+  }, [filters.kw, filters.status, filters.category, dir.id])
 
   const visibleIds = useMemo(() => rows.map((r) => r.id), [rows])
   const allSelectedVisible = selectable && visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id))
@@ -219,10 +229,10 @@ export function DataTable({
 
   return (
     <div className="space-y-4">
-      {filteredRows.length > 0 && (
+      {totalCount > 0 && (
         <div className="flex items-center justify-between text-sm text-slate-600">
           <div>
-            {locale === "zh" ? `显示第 ${startIndex + 1}-${Math.min(endIndex, filteredRows.length)} 条，共 ${filteredRows.length} 条记录` : `Showing ${startIndex + 1}-${Math.min(endIndex, filteredRows.length)} of ${filteredRows.length} records`}
+            {locale === "zh" ? `显示第 ${startIndex + 1}-${endIndex} 条，共 ${totalCount} 条记录` : `Showing ${startIndex + 1}-${endIndex} of ${totalCount} records`}
           </div>
           <div>
             {locale === "zh" ? `第 ${currentPage} 页，共 ${totalPages} 页` : `Page ${currentPage} of ${totalPages}`}
@@ -259,7 +269,13 @@ export function DataTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
+            {loading ? (
+              <tr>
+                <td className="text-center text-muted-foreground py-10" colSpan={enabledFields.length + 1 + (selectable ? 1 : 0)}>
+                  {locale === "zh" ? "加载中..." : "Loading..."}
+                </td>
+              </tr>
+            ) : rows.map((row, index) => (
               <tr key={row.id || `row-${index}`} className="group">
                 {selectable && (
                   <td className="bg-white/60 backdrop-blur border border-white/60 py-2 px-2 rounded-xl align-top">
@@ -305,7 +321,7 @@ export function DataTable({
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && (
+            {!loading && rows.length === 0 && (
               <tr>
                 <td
                   className="text-center text-muted-foreground py-10"
@@ -544,18 +560,18 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
     const aggMode = cfg.aggregation || 'weightedAverage'
     if (Array.isArray(v)) {
       const items = v as Array<{ value?: number; weight?: number; label?: string }>
-      const vals = items.map(it => ({ v: Number(it.value||0), w: Number(it.weight||1) }))
-      const agg = (()=>{
-        if (aggMode === 'max') return Math.max(0, ...vals.map(x=>x.v))
-        if (aggMode === 'min') return Math.min(100, ...vals.map(x=>x.v))
-        const sw = vals.reduce((a,b)=>a+(Number.isFinite(b.w)?b.w:0),0) || 1
-        const sum = vals.reduce((a,b)=>a+((Number.isFinite(b.v)?b.v:0)*(Number.isFinite(b.w)?b.w:0)),0)
+      const vals = items.map(it => ({ v: Number(it.value || 0), w: Number(it.weight || 1) }))
+      const agg = (() => {
+        if (aggMode === 'max') return Math.max(0, ...vals.map(x => x.v))
+        if (aggMode === 'min') return Math.min(100, ...vals.map(x => x.v))
+        const sw = vals.reduce((a, b) => a + (Number.isFinite(b.w) ? b.w : 0), 0) || 1
+        const sum = vals.reduce((a, b) => a + ((Number.isFinite(b.v) ? b.v : 0) * (Number.isFinite(b.w) ? b.w : 0)), 0)
         return Math.round(sum / sw)
       })()
       const visible = items.slice(0, 3)
       const more = Math.max(0, items.length - visible.length)
       return (
-        <div className="flex items-center gap-2" title={(items||[]).map(it=>`${it.label||''}:${it.value||0}%`).join(' | ')}>
+        <div className="flex items-center gap-2" title={(items || []).map(it => `${it.label || ''}:${it.value || 0}%`).join(' | ')}>
           {cfg.showProgressBar && (
             <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[60px]">
               <div className="h-2 rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, agg))}%` }} />
@@ -567,7 +583,7 @@ function renderCell(app: AppModel, type: string, v: any, f?: any, locale?: strin
           <div className="hidden xl:flex items-center gap-1 ml-1">
             {visible.map((it, i) => (
               <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/70">
-                {(it.label || `Item ${i+1}`)} {Math.round(Number(it.value||0))}%
+                {(it.label || `Item ${i + 1}`)} {Math.round(Number(it.value || 0))}%
               </span>
             ))}
             {more > 0 && (

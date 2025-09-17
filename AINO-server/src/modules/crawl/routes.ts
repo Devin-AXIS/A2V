@@ -246,7 +246,7 @@ crawlRoute.post('/scrape', mockRequireAuthMiddleware, zValidator('json', scrapeR
       },
       body: JSON.stringify({
         website_url: url,
-        user_prompt: nlRule || "",
+        user_prompt: nlRule || "原始数据",
       })
     })
 
