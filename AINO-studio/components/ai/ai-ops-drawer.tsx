@@ -15,6 +15,10 @@ import { useToast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api"
 import { Loader2 } from "lucide-react"
 
+const isType = (obj) => {
+  return Object.prototype.toString.call(obj).split(' ')[1].split(']')[0]
+}
+
 /**
  * 将JSON路径按最长公共前缀进行分组
  * @param pathMapping 包含键值对的对象，值为JSON路径字符串
@@ -89,10 +93,13 @@ function groupPathsByPrefix(pathMapping: Record<string, string>): Record<string,
 const getJsonDataByPath = (path, data) => {
   const parts = path.split('.')
   let cur = data
-  for (const part of parts) {
-    cur = cur[part]
+  for (let i = 0; i < parts.length; i++) {
+    cur = cur[parts[i]]
+    if (isType(cur) === 'Array') {
+      return [cur, parts[i + 1]];
+    }
   }
-  return cur
+  return [cur]
 }
 
 type Props = {
@@ -164,7 +171,30 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   type MockField = { key: string; label: string; type: 'text' | 'number' | 'date' | 'tags' | 'url' | 'boolean' | 'select' | 'multiselect'; required?: boolean }
   const mockFields = useMemo<MockField[]>(() => {
     if (Array.isArray(dirFields) && dirFields.length > 0) {
-      return dirFields.map((f: any) => ({ key: f.key, label: f.label || f.key, type: (f.type || 'text') as any, required: !!f.required }))
+      const fields = [];
+      dirFields.map((f: any) => {
+        if (f.type === "meta_items") {
+          f.metaItemsConfig.fields.map((field: any) => {
+            fields.push({
+              parentKey: f.key,
+              key: `${f.key}::${field.id}`,
+              label: `${f.label || f.key}-${field.label}`,
+              originLabel: field.label,
+              type: field.type,
+              required: !!field.required,
+            });
+          });
+        } else {
+          const field = {
+            key: f.key,
+            label: f.label || f.key,
+            type: (f.type || 'text') as any,
+            required: !!f.required,
+          };
+          fields.push(field);
+        }
+      })
+      return fields;
     }
     // fallback demo
     return [
@@ -556,23 +586,60 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
           })
         }
 
+        // id: "81t57gtt0b9",
+        // images: [],
+        // label: "项 1",
+        // numbers: [],
+        // texts: [
+        //   {id: "jmulwhv648a", label: "工作年限", value: "a", fieldId: "jmulwhv648a"}
+        //   {id: "ojbhcxb0a2", label: "月度工资占比", value: "v", fieldId: "ojbhcxb0a2"}
+        //   {id: "igwku3x0k3q", label: "新增岗位数量", value: "c", fieldId: "igwku3x0k3q"}
+        // ]s
+
+        // console.log(publicMappings, 23232323)
+        // return;
+
         for (let publicKey in publicMappings) {
           const currentMappings = publicMappings[publicKey];
-          const datas = getJsonDataByPath(publicKey, firstItem)
+          const [datas, nextKey] = getJsonDataByPath(publicKey, firstItem)
           if (datas instanceof Array) {
-            datas.forEach(data => {
+            datas.forEach((data, dataIndex) => {
               const listItem = {};
               currentMappings.forEach(currentMapping => {
-                Object.keys(currentMapping).forEach(key => {
-                  listItem[key] = data[currentMapping[key]]
+                Object.keys(currentMapping).forEach((key, currentMappingIndex) => {
+                  const [parentKey, childKey] = key.split("::");
+                  if (childKey) {
+                    if (!listItem[parentKey]) {
+                      listItem[parentKey] = [{
+                        images: [],
+                        label: `项 1`,
+                        numbers: [],
+                        texts: [],
+                      }];
+                    }
+                    listItem[parentKey][0].texts.push({ id: childKey, value: data[nextKey || currentMapping[key]], fieldId: childKey })
+                  } else {
+                    listItem[key] = data[nextKey || currentMapping[key]];
+                  }
                 })
               })
-              list.push(listItem);
+              list[dataIndex] = { ...list[dataIndex], ...listItem };
             })
+          } else if (isType(datas) === 'Object') {
+            let listItem = {};
+            Object.keys(currentMapping).forEach(key => {
+              listItem[key] = datas[currentMapping[key]]
+            });
+            list.push(listItem);
           } else {
-
+            let listItem = {};
+            Object.keys(currentMapping).forEach(key => {
+              listItem[key] = datas;
+            });
+            list.push(listItem);
           }
         }
+        console.log(list, 23232323);
         return list;
       })()
 
