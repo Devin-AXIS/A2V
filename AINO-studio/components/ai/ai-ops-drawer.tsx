@@ -596,7 +596,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
         //   {id: "igwku3x0k3q", label: "新增岗位数量", value: "c", fieldId: "igwku3x0k3q"}
         // ]s
 
-        // console.log(publicMappings, 23232323)
         // return;
 
         for (let publicKey in publicMappings) {
@@ -639,7 +638,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
             list.push(listItem);
           }
         }
-        console.log(list, 23232323);
         return list;
       })()
 

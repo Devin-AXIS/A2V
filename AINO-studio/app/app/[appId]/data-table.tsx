@@ -34,6 +34,8 @@ type Props = {
   // Permission flags for controls in table
   canDelete?: boolean
   pageSize?: number
+  // 外部刷新令牌：变化时强制刷新当前页
+  refreshToken?: number
 }
 
 export function DataTable({
@@ -47,6 +49,7 @@ export function DataTable({
   onSelectedChange,
   canDelete = true,
   pageSize = 10,
+  refreshToken,
 }: Props) {
   const { locale } = useLocale()
   const [currentPage, setCurrentPage] = useState(1)
@@ -91,7 +94,7 @@ export function DataTable({
     })
   }, [relationTargetDirIds, relationDirLoading, relationDirRecords])
 
-  // 服务端分页：根据 currentPage 拉取数据
+  // 服务端分页：根据 currentPage 或 refreshToken 拉取数据
   useEffect(() => {
     let cancelled = false
     const fetchPage = async () => {
@@ -115,7 +118,7 @@ export function DataTable({
     }
     fetchPage()
     return () => { cancelled = true }
-  }, [dir.id, currentPage, pageSize])
+  }, [dir.id, currentPage, pageSize, refreshToken])
 
   const totalPages = Math.max(1, Math.ceil((totalCount || 0) / Math.max(1, pageSize)))
   const startIndex = (currentPage - 1) * pageSize

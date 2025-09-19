@@ -124,6 +124,10 @@ export function useApiBuilderController({
   const [recordsData, setRecordsData] = useState<Record<string, any[]>>({})
   const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
 
+  // 列表刷新信号：每次成功的增删改后自增，供表格监听触发重新拉取
+  const [listRefreshToken, setListRefreshToken] = useState<number>(0)
+  const bumpListRefresh = () => setListRefreshToken((x) => x + 1)
+
   // 获取目录数据的函数
   const fetchDirectories = async (moduleId: string) => {
     if (directoriesLoading[moduleId]) return
@@ -508,6 +512,9 @@ export function useApiBuilderController({
         // 重新获取记录列表以更新本地状态
         await fetchRecords(dirId)
 
+        // 通知列表刷新
+        bumpListRefresh()
+
         toast({
           description: locale === "zh" ? "记录保存成功" : "Record saved successfully",
         })
@@ -714,6 +721,9 @@ export function useApiBuilderController({
           ...prev,
           [currentDir.id]: [...(prev[currentDir.id] || []), newRecord]
         }))
+
+        // 通知列表刷新
+        bumpListRefresh()
 
         // 打开记录抽屉进行编辑
         const recordId = response.data.id
@@ -1069,6 +1079,9 @@ export function useApiBuilderController({
         // 重新获取记录数据
         await fetchRecords(currentDir.id)
 
+        // 通知列表刷新
+        bumpListRefresh()
+
         toast({
           description: locale === "zh" ? "记录删除成功" : "Record deleted successfully",
         })
@@ -1111,6 +1124,9 @@ export function useApiBuilderController({
 
         // 清空选择
         setSelectedIds([])
+
+        // 通知列表刷新
+        bumpListRefresh()
 
         // 显示结果消息
         if (failedCount === 0) {
@@ -1198,6 +1214,8 @@ export function useApiBuilderController({
 
     // 刷新方法
     refresh: fetchModules,
+    // 列表刷新令牌
+    listRefreshToken,
 
     // 添加缺失的方法
     persist,

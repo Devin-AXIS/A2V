@@ -356,6 +356,48 @@ export class ModuleRepository {
   async uninstall(applicationId: string, moduleKey: string) {
     console.log('🔍 卸载模块:', { applicationId, moduleKey })
 
+    // 如果传入的是UUID（模块安装记录ID或模块ID），优先按ID删除，避免同名误删
+    const looksLikeUuid = moduleKey && moduleKey.length === 36 && moduleKey.includes('-')
+    if (looksLikeUuid) {
+      try {
+        const [deletedByInstallId] = await db
+          .delete(moduleInstalls)
+          .where(
+            and(
+              eq(moduleInstalls.applicationId, applicationId),
+              eq(moduleInstalls.id, moduleKey)
+            )
+          )
+          .returning()
+
+        if (deletedByInstallId) {
+          console.log('✅ 按 module_installs.id 卸载成功')
+          return deletedByInstallId
+        }
+      } catch (error) {
+        console.log('⚠️ 按 module_installs.id 卸载失败:', error)
+      }
+
+      try {
+        const [deletedByModuleId] = await db
+          .delete(modules)
+          .where(
+            and(
+              eq(modules.applicationId, applicationId),
+              eq(modules.id, moduleKey)
+            )
+          )
+          .returning()
+
+        if (deletedByModuleId) {
+          console.log('✅ 按 modules.id 卸载成功')
+          return deletedByModuleId
+        }
+      } catch (error) {
+        console.log('⚠️ 按 modules.id 卸载失败:', error)
+      }
+    }
+
     // 先尝试从 module_installs 表卸载（按 moduleKey 字段）
     try {
       const [deletedModule] = await db

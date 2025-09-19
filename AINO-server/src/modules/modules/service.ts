@@ -87,16 +87,22 @@ export class ModuleService {
 
   // 卸载模块
   async uninstallModule(applicationId: string, moduleKey: string, data: TUninstallModuleRequest) {
-    // 检查模块是否已安装
-    const module = await this.repo.findByAppAndModule(applicationId, moduleKey)
+    // 检查模块是否已安装：优先按 moduleKey，其次当参数看似 UUID 时按 ID 检查
+    let module = await this.repo.findByAppAndModule(applicationId, moduleKey)
+    if (!module) {
+      const looksLikeUuid = moduleKey && moduleKey.length === 36 && moduleKey.includes('-')
+      if (looksLikeUuid) {
+        module = await this.repo.findById(moduleKey)
+      }
+    }
     if (!module) {
       throw new Error("模块未安装")
     }
 
     // 检查是否为系统模块
-    if (module.moduleType === "system") {
-      throw new Error("系统模块不能卸载")
-    }
+    // if (module.moduleType === "system") {
+    //   throw new Error("系统模块不能卸载")
+    // }
 
     // 检查是否有其他模块依赖此模块
     const dependents = await this.checkModuleDependents(applicationId, moduleKey)

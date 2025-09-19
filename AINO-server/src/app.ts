@@ -23,6 +23,7 @@ import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
 import crawlRoute from "./modules/crawl/routes"
 import pageConfigsRoute from "./modules/page-configs/routes"
+import moduleConfigsRoute from "./modules/module-configs/routes"
 import { databaseMiddleware } from "./middleware/database"
 
 const app = new Hono()
@@ -140,6 +141,9 @@ app.route("/api/crawl", crawlRoute)
 
 // 页面配置临时存储/读取
 app.route("/api/page-configs", pageConfigsRoute)
+
+// 模块配置CRUD（JSON文件存储）
+app.route("/api/module-configs", moduleConfigsRoute)
 
 // 静态文件：上传目录（基于运行时代码位置计算，dist/../uploads）
 const runtimeDir = path.dirname(fileURLToPath(import.meta.url))

@@ -22,6 +22,7 @@ export function DirectoryShell({
   fieldsSlot,
   actionsExtra,
   className,
+  handlePublicModule,
 }: {
   breadcrumb?: string
   onOpenCategories?: () => void
@@ -36,6 +37,7 @@ export function DirectoryShell({
   fieldsSlot?: React.ReactNode
   actionsExtra?: React.ReactNode
   className?: string
+  handlePublicModule?: () => void
 }) {
   const { t, locale } = useLocale()
 
@@ -61,6 +63,7 @@ export function DirectoryShell({
           </Button>
           {actionsExtra}
         </div> */}
+        <Button onClick={handlePublicModule}>发布模块</Button>
       </div>
 
       {filtersSlot}

@@ -46,8 +46,6 @@ export function MetaItemsInput({ items, onChange, schema = [], helpEnabled, help
     onChange(arr)
   }
 
-  console.log(items, 23232323);
-
   // 子项结构由 schema 决定，输入层不增删字段行
 
   return (
