@@ -122,7 +122,7 @@ export default function ClientConfigPage() {
   const router = useRouter()
   const { locale } = useLocale()
   const { toast } = useToast()
-  const isMobileDefault = useIsMobile()
+  const isMobileDefault = true //useIsMobile()
 
   const [device, setDevice] = useState<"pc" | "mobile">(isMobileDefault ? "mobile" : "pc")
   const [lang, setLang] = useState(locale === "zh" ? "zh" : "en")
@@ -1003,6 +1003,13 @@ export default function ClientConfigPage() {
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
       const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
+      // 设置预览ID到localStorage，供底部导航使用
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('PREVIEW_ID', id)
+          window.localStorage.setItem('APP_ID', String(params.appId))
+        }
+      } catch { }
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
     } catch (e: any) {
@@ -1072,14 +1079,14 @@ export default function ClientConfigPage() {
         const fallback = `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
-      
+
       // 同时保存到localStorage，确保PC导航配置能实时同步
       try {
         const key = `STUDIO_CLIENT_CFG_${params.appId}`
         const payload = { ...body, __ui: { activePageKey, pageTabIndex } }
         window.localStorage.setItem(key, JSON.stringify(payload))
       } catch { }
-      
+
       toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
@@ -1097,7 +1104,7 @@ export default function ClientConfigPage() {
       const data = event.data || {};
       // 仅处理 AINO 规范的消息
       if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
-      
+
       // 确保frame存在
       if (!frame) {
         console.warn("Frame element not found, skipping message handling");
@@ -1263,7 +1270,26 @@ export default function ClientConfigPage() {
         setViewTab("preview")
       } else if (previewSource === "home") {
         const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
-        setPreviewUrl(`http://localhost:3005/${baseLang}/home`)
+        try {
+          if (previewId) {
+            const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+            const url = `http://localhost:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+            setPreviewUrl(url)
+            // 设置预览ID到localStorage，供底部导航使用
+            try {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('PREVIEW_ID', previewId)
+                window.localStorage.setItem('APP_ID', String(params.appId))
+              }
+            } catch { }
+          } else {
+            // 若尚未创建预览，则创建后自动设置URL
+            openPreview()
+          }
+        } catch {
+          // 回退到自动创建预览
+          openPreview()
+        }
         setViewTab("preview")
       } else {
         openPreview()
@@ -1407,12 +1433,12 @@ export default function ClientConfigPage() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {!authUIOpen && !pageUIOpen ? (
                   <>
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">
-                        {device === "pc" 
+                        {device === "pc"
                           ? (lang === "zh" ? "PC配置/构建" : "PC Config/Build")
                           : (lang === "zh" ? "Mobile配置/构建" : "Mobile Config/Build")
                         }
@@ -1469,14 +1495,14 @@ export default function ClientConfigPage() {
                             >
                               <div className="flex items-center gap-2">
                                 <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
-                                <Input 
-                                  value={item.label} 
+                                <Input
+                                  value={item.label}
                                   onChange={(e) => {
                                     const newDraft = { ...draft, app: { ...draft.app, pcTopNav: (draft.app.pcTopNav || []).map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }
                                     setDraft(newDraft)
                                     setTimeout(() => { savePreview(newDraft, true) }, 0)
-                                  }} 
-                                  placeholder={lang === "zh" ? "导航名称" : "Nav Label"} 
+                                  }}
+                                  placeholder={lang === "zh" ? "导航名称" : "Nav Label"}
                                   className="flex-1"
                                 />
                               </div>
@@ -1514,91 +1540,91 @@ export default function ClientConfigPage() {
                       // Mobile模式：底部导航配置
                       <div className="space-y-2">
                         <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
-                      <div className="space-y-2">
-                        {draft.app.bottomNav.map((item: any, idx: number) => (
-                          <div
-                            key={item.key}
-                            className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("text/plain", String(idx))
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              const from = Number(e.dataTransfer.getData("text/plain"))
-                              const to = idx
-                              if (Number.isNaN(from) || from === to) return
-                              setDraft((s: any) => {
-                                const next = [...s.app.bottomNav]
-                                const [moved] = next.splice(from, 1)
-                                next.splice(to, 0, moved)
-                                return { ...s, app: { ...s.app, bottomNav: next } }
-                              })
-                            }}
-                          >
-                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
-                            <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
-                            {/* <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
-                              <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
-                            </Button> */}
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => {
-                                const pageKey = (item.route || '').replace(/^\//, '') || item.key
-                                if (pageKey) {
-                                  try {
-                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                    const u = new URL(`http://localhost:3005/${lang}${r}`)
-                                    setPreviewUrl(u.toString())
-                                  } catch {
-                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                    setPreviewUrl(`http://localhost:3005/${lang}${r}`)
-                                  }
-                                  setActivePageKey(pageKey)
-                                  setPageUIOpen(true)
-                                  setViewTab("preview")
-                                } else {
-                                  toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
-                                }
+                        <div className="space-y-2">
+                          {draft.app.bottomNav.map((item: any, idx: number) => (
+                            <div
+                              key={item.key}
+                              className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("text/plain", String(idx))
                               }}
-                            >
-                              <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault()
+                                const from = Number(e.dataTransfer.getData("text/plain"))
+                                const to = idx
+                                if (Number.isNaN(from) || from === to) return
                                 setDraft((s: any) => {
-                                  const next = { ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }
-                                  setTimeout(() => { savePreview(next, true) }, 0)
-                                  return next
+                                  const next = [...s.app.bottomNav]
+                                  const [moved] = next.splice(from, 1)
+                                  next.splice(to, 0, moved)
+                                  return { ...s, app: { ...s.app, bottomNav: next } }
                                 })
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                              <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
+                              {/* <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
+                                <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
+                              </Button> */}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  const pageKey = (item.route || '').replace(/^\//, '') || item.key
+                                  if (pageKey) {
+                                    try {
+                                      const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                      const u = new URL(`http://localhost:3005/${lang}${r}`)
+                                      setPreviewUrl(u.toString())
+                                    } catch {
+                                      const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                      setPreviewUrl(`http://localhost:3005/${lang}${r}`)
+                                    }
+                                    setActivePageKey(pageKey)
+                                    setPageUIOpen(true)
+                                    setViewTab("preview")
+                                  } else {
+                                    toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
+                                  }
+                                }}
+                              >
+                                <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDraft((s: any) => {
+                                    const next = { ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }
+                                    setTimeout(() => { savePreview(next, true) }, 0)
+                                    return next
+                                  })
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          {draft.app.bottomNav.length < 5 && (
+                            <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                              const key = `k${Date.now()}`
+                              const route = `/p-${key}`
+                              const next = { ...s }
+                              next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
+                              const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
+                              next.pages = next.pages || {}
+                              if (!next.pages[pageKey]) {
+                                next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+                              }
+                              return next
+                            })}>
+                              {lang === "zh" ? "添加项" : "Add Item"}
                             </Button>
-                          </div>
-                        ))}
-                        {draft.app.bottomNav.length < 5 && (
-                          <Button variant="secondary" onClick={() => setDraft((s: any) => {
-                            const key = `k${Date.now()}`
-                            const route = `/p-${key}`
-                            const next = { ...s }
-                            next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
-                            const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
-                            next.pages = next.pages || {}
-                            if (!next.pages[pageKey]) {
-                              next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
-                            }
-                            return next
-                          })}>
-                            {lang === "zh" ? "添加项" : "Add Item"}
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
                     )}
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">

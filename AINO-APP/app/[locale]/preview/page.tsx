@@ -54,11 +54,11 @@ function PreviewContent() {
     if (typeof window === 'undefined') return new URLSearchParams()
     return new URLSearchParams(window.location.search)
   }, [])
-  
+
   const applicationId = qs.get('appId')
   const parentOrigin = qs.get('origin') || qs.get('parentOrigin') || '*'
   const dataParam = qs.get('data')
-  
+
   // 安全地设置localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -83,7 +83,8 @@ function PreviewContent() {
   const device = qs.get('device') || "mobile"
   const locale = params.locale || "zh"
   const id = qs.get('previewId')// || params.id
-  
+  const cfgId = qs.get('cfgId') // 页面配置ID
+
 
   useEffect(() => {
     setDatas();
@@ -102,11 +103,45 @@ function PreviewContent() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`http://localhost:3007/api/preview-manifests/${id}`)
-        const data = await res.json()
-        if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+        let mf = {}
+
+        if (cfgId) {
+          // 如果有 cfgId，从页面配置 API 获取配置
+          const res = await fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
+          const data = await res.json()
+          if (!res.ok || !data?.success) throw new Error(data?.message || "failed to load page config")
+
+          // 将页面配置转换为 manifest 格式
+          const pageConfig = data.data || data
+          mf = {
+            app: {
+              appKey: applicationId || "default",
+              defaultLanguage: locale,
+              locale: locale,
+              theme: "default",
+              bottomNav: [
+                { key: "home", label: locale === "zh" ? "首页" : "Home", route: "/preview" },
+                { key: "me", label: locale === "zh" ? "我的" : "Me", route: "/profile" },
+              ]
+            },
+            pages: {
+              home: {
+                category: "workspace",
+                ...pageConfig
+              }
+            }
+          }
+        } else if (id) {
+          // 如果有 previewId，从预览 manifest API 获取
+          const res = await fetch(`http://localhost:3007/api/preview-manifests/${id}`)
+          const data = await res.json()
+          if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+          mf = data.data?.manifest || {}
+        } else {
+          throw new Error("No previewId or cfgId provided")
+        }
+
         if (!canceled) {
-          const mf = data.data?.manifest || {}
           try {
             if (typeof window !== 'undefined' && mf?.app?.appKey) {
               localStorage.setItem('CURRENT_APP_ID', String(mf.app.appKey))
@@ -124,7 +159,7 @@ function PreviewContent() {
     }
     run()
     return () => { canceled = true }
-  }, [id])
+  }, [id, cfgId, applicationId, locale])
 
   // Report error to parent
   useEffect(() => {

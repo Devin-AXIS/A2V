@@ -19,7 +19,11 @@ export type TUninstallModuleRequest = z.infer<typeof UninstallModuleRequest>
 // 模块配置更新请求
 export const UpdateModuleConfigRequest = z.object({
   moduleKey: z.string().min(1, "模块标识不能为空"),
-  config: z.record(z.string(), z.any()),
+  config: z.record(z.string(), z.any()).optional().default({}),
+  // 可选：同时更新模块显示名称
+  moduleName: z.string().optional(),
+  // 可选：图标（URL 或 Icon 名称），写入 installConfig.icon
+  icon: z.string().optional(),
 })
 
 export type TUpdateModuleConfigRequest = z.infer<typeof UpdateModuleConfigRequest>

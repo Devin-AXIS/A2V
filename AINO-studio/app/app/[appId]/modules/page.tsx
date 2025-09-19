@@ -79,7 +79,7 @@ export default function ModulesPage() {
   const { locale } = useLocale()
   const params = useParams()
   const appId = params.appId as string
-  
+
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("internal")
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
@@ -91,26 +91,26 @@ export default function ModulesPage() {
   const [successMessage, setSuccessMessage] = useState("")
   const [showSuccessToast, setShowSuccessToast] = useState(false)
 
-  const { 
-    getInstalledModules, 
-    installModule, 
-    uninstallModule, 
+  const {
+    getInstalledModules,
+    installModule,
+    uninstallModule,
     updateModuleConfig,
     getAvailableModules,
-    isLoading: isOperationLoading 
+    isLoading: isOperationLoading
   } = useModuleManagement({ applicationId: appId })
 
   // 加载数据
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
-      
+
       try {
         // 加载已安装的模块
         const installedData = await getInstalledModules()
         console.log('🔍 已安装模块数据:', installedData)
         setModules(installedData.modules || [])
-        
+
         // 加载可用模块
         const availableData = await getAvailableModules()
         console.log('🔍 可用模块数据:', availableData)
@@ -134,7 +134,7 @@ export default function ModulesPage() {
     const matchesSearch =
       module.moduleName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       module.moduleKey?.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     // 根据标签页过滤模块类型
     let matchesTab = true
     if (activeTab === "internal") {
@@ -144,7 +144,7 @@ export default function ModulesPage() {
     } else if (activeTab === "public") {
       matchesTab = false // 暂时没有公用模块
     }
-    
+
     return matchesSearch && matchesTab
   })
 
@@ -167,7 +167,7 @@ export default function ModulesPage() {
         moduleVersion: module.version,
         installConfig: {}
       })
-      
+
       // 重新加载模块列表
       const installedData = await getInstalledModules()
       setModules(installedData.modules || [])
@@ -179,29 +179,29 @@ export default function ModulesPage() {
   const handleConfirmUninstall = async () => {
     if (selectedModule) {
       console.log('🗑️ 开始卸载模块:', selectedModule.moduleName, '类型:', selectedModule.moduleType)
-      
+
       try {
         // 尝试调用API卸载
         await uninstallModule(selectedModule.moduleKey, false)
-        
+
         // 重新加载模块列表
         const installedData = await getInstalledModules()
         setModules(installedData.modules || [])
-        
+
         // 显示成功提示
         setSuccessMessage(
-          locale === "zh" 
+          locale === "zh"
             ? `模块 "${selectedModule.moduleName}" 已成功卸载`
             : `Module "${selectedModule.moduleName}" has been successfully uninstalled`
         )
         setShowSuccessToast(true)
-        
+
         console.log('✅ 模块卸载完成')
       } catch (apiError) {
         console.error('❌ 模块卸载失败:', apiError)
         // 卸载失败时不显示成功消息，错误消息由hook中的toast处理
       }
-      
+
       setUninstallDialogOpen(false)
       setSelectedModule(null)
     }
@@ -210,16 +210,26 @@ export default function ModulesPage() {
   const handleSaveConfig = async (config: any) => {
     if (selectedModule) {
       console.log('💾 开始保存配置:', selectedModule.moduleName, config)
-      
+
       try {
-        await updateModuleConfig(selectedModule.moduleKey, config)
+        // 从对话框透传的 __moduleName 与 __icon 拿到数据
+        const { __moduleName, __icon, ...rest } = config || {}
+        const payload: any = { ...rest }
+        if (typeof __moduleName === 'string' && __moduleName.trim()) {
+          payload.moduleName = __moduleName.trim()
+        }
+        if (typeof __icon === 'string' && __icon) {
+          // 写入 installConfig.icon
+          payload.icon = __icon
+        }
+        await updateModuleConfig(selectedModule.moduleKey, payload)
         setConfigDialogOpen(false)
         setSelectedModule(null)
         console.log('✅ 配置保存完成')
-        
+
         // 显示成功提示
         setSuccessMessage(
-          locale === "zh" 
+          locale === "zh"
             ? `模块 "${selectedModule.moduleName}" 的配置已保存`
             : `Configuration for module "${selectedModule.moduleName}" has been saved`
         )
@@ -238,7 +248,7 @@ export default function ModulesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{locale === "zh" ? "模块管理" : "Module Management"}</h1>
-                          <p className="text-sm text-gray-600 mt-1">{locale === "zh" ? "管理和浏览所有可用的模块" : "Manage and browse all available modules"}</p>
+            <p className="text-sm text-gray-600 mt-1">{locale === "zh" ? "管理和浏览所有可用的模块" : "Manage and browse all available modules"}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm">
@@ -277,7 +287,7 @@ export default function ModulesPage() {
           </div>
 
           <TabsContent value="internal" className="mt-0">
-            <ModuleGrid 
+            <ModuleGrid
               modules={filteredModules}
               onConfigure={handleConfigureModule}
               onUninstall={handleUninstallModule}
@@ -286,7 +296,7 @@ export default function ModulesPage() {
           </TabsContent>
 
           <TabsContent value="third-party" className="mt-0">
-            <ModuleGrid 
+            <ModuleGrid
               modules={filteredModules}
               onConfigure={handleConfigureModule}
               onUninstall={handleUninstallModule}
@@ -352,19 +362,19 @@ export default function ModulesPage() {
   )
 }
 
-function ModuleGrid({ 
-  modules, 
-  onConfigure, 
-  onUninstall, 
-  onInstall 
-}: { 
+function ModuleGrid({
+  modules,
+  onConfigure,
+  onUninstall,
+  onInstall
+}: {
   modules: any[]
   onConfigure: (module: any) => void
   onUninstall: (module: any) => void
   onInstall: (module: any) => void
 }) {
   const { locale } = useLocale()
-  
+
   if (modules.length === 0) {
     return (
       <div className="text-center py-12">
@@ -431,7 +441,7 @@ function ModuleGrid({
                         onUninstall(module)
                       }}>
                         <Trash2 className="size-4 mr-2" />
-                        {module.moduleType === 'system' 
+                        {module.moduleType === 'system'
                           ? (locale === "zh" ? "删除" : "Delete")
                           : (locale === "zh" ? "卸载" : "Uninstall")
                         }
@@ -474,9 +484,9 @@ function ModuleGrid({
             <div className="flex gap-2">
               {module.installStatus === 'active' ? (
                 <>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="flex-1"
                     onClick={(e) => {
                       e.preventDefault()
@@ -488,9 +498,9 @@ function ModuleGrid({
                     <Settings className="size-3 mr-1" />
                     {locale === "zh" ? "配置" : "Configure"}
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
+                  <Button
+                    size="sm"
+                    variant="destructive"
                     className="flex-1"
                     onClick={(e) => {
                       e.preventDefault()
@@ -500,15 +510,15 @@ function ModuleGrid({
                     }}
                   >
                     <Trash2 className="size-3 mr-1" />
-                    {module.moduleType === 'system' 
+                    {module.moduleType === 'system'
                       ? (locale === "zh" ? "删除" : "Delete")
                       : (locale === "zh" ? "卸载" : "Uninstall")
                     }
                   </Button>
                 </>
               ) : (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="flex-1"
                   onClick={() => onInstall(module)}
                 >

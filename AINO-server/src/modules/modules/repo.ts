@@ -296,21 +296,52 @@ export class ModuleRepository {
 
   // 更新模块配置
   async updateConfig(data: TUpdateModuleConfigRequest & { applicationId: string }) {
-    const [module] = await db
+    // 先尽力查到当前记录：优先 module_key，其次若像 UUID 则按 id，最后按 module_name
+    const looksLikeUuid = data.moduleKey && data.moduleKey.length === 36 && data.moduleKey.includes('-')
+    let [current] = await db
+      .select()
+      .from(moduleInstalls)
+      .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.moduleKey, data.moduleKey)))
+      .limit(1)
+    if (!current && looksLikeUuid) {
+      ;[current] = await db
+        .select()
+        .from(moduleInstalls)
+        .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.id, data.moduleKey)))
+        .limit(1)
+    }
+    if (!current) {
+      ;[current] = await db
+        .select()
+        .from(moduleInstalls)
+        .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.moduleName, data.moduleKey)))
+        .limit(1)
+    }
+    if (!current) return null as any
+
+    const nextConfig = {
+      ...(current.installConfig || {}),
+      ...(data.config || {}),
+    }
+    if (typeof (data as any).icon === "string") {
+      ; (nextConfig as any).icon = (data as any).icon
+    }
+
+    const updateSet: any = {
+      installConfig: nextConfig,
+      updatedAt: new Date(),
+    }
+    if (typeof (data as any).moduleName === "string" && (data as any).moduleName?.trim()) {
+      updateSet.moduleName = (data as any).moduleName.trim()
+    }
+
+    const [updated] = await db
       .update(moduleInstalls)
-      .set({
-        installConfig: data.config,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(moduleInstalls.applicationId, data.applicationId),
-          eq(moduleInstalls.moduleKey, data.moduleKey)
-        )
-      )
+      .set(updateSet)
+      .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.id, current.id)))
       .returning()
 
-    return module
+    return updated
   }
 
   // 更新模块状态

@@ -43,7 +43,7 @@ export default function BuilderPage() {
   const { role, setRole, can } = usePermissions()
 
   const c = useApiBuilderController({ appId: params.appId, can, toast })
-  const { uninstallModule } = useModuleManagement({ applicationId: params.appId })
+  const { uninstallModule, updateModuleConfig } = useModuleManagement({ applicationId: params.appId })
   const { configs: savedModules, loading: savedModulesLoading, deleteConfig, refetch: refetchSavedModules } = useModuleConfigs()
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>("team")
   const [showModuleManagement, setShowModuleManagement] = useState(false)
@@ -1099,9 +1099,25 @@ export default function BuilderPage() {
         onOpenChange={setConfigDialogOpen}
         module={selectedModule}
         type="config"
-        onConfirm={(config) => {
-          console.log('配置模块:', selectedModule?.name, config)
-          toast({ description: locale === "zh" ? "配置已保存" : "Configuration saved" })
+        onConfirm={async (config) => {
+          try {
+            const { __moduleName, __icon, ...rest } = config || {}
+            if (selectedModule) {
+              await updateModuleConfig(selectedModule.moduleKey || selectedModule.key || selectedModule.name, {
+                ...rest,
+                moduleName: typeof __moduleName === 'string' && __moduleName.trim() ? __moduleName.trim() : undefined,
+                icon: typeof __icon === 'string' && __icon ? __icon : undefined,
+              })
+            }
+            // 刷新模块列表展示最新名称与图标
+            try { // @ts-ignore: c.refresh 由页面控制器提供
+              await c.refresh?.()
+            } catch { }
+            toast({ description: locale === "zh" ? "配置已保存" : "Configuration saved" })
+          } catch (e) {
+            console.error('配置保存失败:', e)
+            toast({ description: locale === "zh" ? "配置保存失败" : "Save failed", variant: 'destructive' })
+          }
         }}
       />
 

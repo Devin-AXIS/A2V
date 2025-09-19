@@ -223,6 +223,11 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
             href={`/${locale}/help-center`}
           />
           <ToolbarItem
+            icon={<HelpCircle className="w-5 h-5" style={{ color: "var(--card-text-color)" }} />}
+            label={"示例"}
+            href={`/${locale}`}
+          />
+          <ToolbarItem
             icon={<Headphones className="w-5 h-5" style={{ color: "var(--card-text-color)" }} />}
             label={dict.customerService}
             href={`/${locale}/customer-service`}

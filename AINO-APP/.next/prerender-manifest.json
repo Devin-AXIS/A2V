@@ -1,11 +1,1 @@
-{
-  "version": 4,
-  "routes": {},
-  "dynamicRoutes": {},
-  "notFoundRoutes": [],
-  "preview": {
-    "previewModeId": "bf9a366bb0294e3e2ecfd24d94da39da",
-    "previewModeSigningKey": "0ce31b048f61bed99f11ee3f407d8eb1bed6be8da1bce08f22c477b88987ee3c",
-    "previewModeEncryptionKey": "994296fbe62ba5f746a142405a507d25c6d4d67cb203bcf9a945dbc28d32c4ab"
-  }
-}
+{"version":4,"routes":{"/zh/preview":{},"/en/preview":{},"/zh/auth/login":{},"/en/auth/login":{},"/zh":{},"/en":{},"/zh/auth/register":{},"/en/auth/register":{},"/zh/profile":{},"/en/profile":{},"/zh/help-center":{},"/en/help-center":{}},"dynamicRoutes":{"/[locale]/preview":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/preview","routeRegex":"^\\/([^/]+?)\\/preview(?:\\/)?$","allowHeader":[]},"/[locale]/auth/login":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/auth/login","routeRegex":"^\\/([^/]+?)\\/auth\\/login(?:\\/)?$","allowHeader":[]},"/[locale]":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]","routeRegex":"^\\/([^/]+?)(?:\\/)?$","allowHeader":[]},"/[locale]/auth/register":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/auth/register","routeRegex":"^\\/([^/]+?)\\/auth\\/register(?:\\/)?$","allowHeader":[]},"/[locale]/profile":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/profile","routeRegex":"^\\/([^/]+?)\\/profile(?:\\/)?$","allowHeader":[]},"/[locale]/help-center":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/help-center","routeRegex":"^\\/([^/]+?)\\/help\\-center(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"3c821a836546eff1630e1ddc1cf4708b","previewModeSigningKey":"88ef9242d00059b9b7b1e26368624866ee04e9996675cc53815c95db72b64194","previewModeEncryptionKey":"99a833041743c09ec100bfb899d233e3a3a4b87bf0e4cf1bc4986be2403493a5"}}

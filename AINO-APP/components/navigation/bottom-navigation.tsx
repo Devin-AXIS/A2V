@@ -136,7 +136,29 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
       <AppCard className="px-4 py-1">
         <div className="flex items-center space-x-2 md:space-x-3">
           {navItems.map(({ href, icon: Icon, iconName, label }, index) => {
-            const fullHref = `/${locale}${href === "/" ? "" : href}${hrefQs}`
+            // 特殊处理预览页面，确保包含必要的参数
+            let fullHref = `/${locale}${href === "/" ? "" : href}`
+            if (href === "/preview") {
+              // 对于预览页面，优先使用当前页面的参数
+              const currentUrl = typeof window !== 'undefined' ? window.location.search : ''
+              const currentParams = new URLSearchParams(currentUrl)
+              const cfgId = currentParams.get('cfgId')
+              const previewId = currentParams.get('previewId')
+              const appId = currentParams.get('appId')
+
+              if (cfgId) {
+                // 如果有 cfgId，使用 cfgId 参数
+                fullHref = `/${locale}/preview?cfgId=${cfgId}&device=mobile&isEdite=true`
+              } else if (previewId && appId) {
+                // 否则使用存储的预览参数
+                fullHref = `/${locale}/preview?previewId=${previewId}&device=mobile&appId=${appId}`
+              } else {
+                // 如果没有预览参数，回退到首页
+                fullHref = `/${locale}`
+              }
+            } else {
+              fullHref += hrefQs || ""
+            }
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
             const IconComp = Icon ?? (iconName ? iconMap[iconName] : undefined) ?? LayoutGrid
 
