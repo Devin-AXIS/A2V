@@ -41,7 +41,7 @@ export function EducationBottomNavigation({ locale }: EducationBottomNavigationP
   ]
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+    <div className="fixed bottom-6 left-4 right-4 z-[10000]">
       <AppCard className="px-4 py-1">
         <div className="flex items-center space-x-2 md:space-x-3">
           {navItems.map(({ href, icon: Icon, label }) => {

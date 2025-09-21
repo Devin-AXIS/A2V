@@ -48,5 +48,7 @@ export function PrimaryPillBottomNav({
   )
 
   // 使用Portal确保渲染在body层级，显示在所有内容之上
+  // 添加客户端检查避免SSR错误
+  if (typeof window === 'undefined') return null
   return createPortal(navigation, document.body)
 }

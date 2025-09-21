@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { createPortal } from "react-dom"
 import { PillButton } from "@/components/basic/pill-button"
 
 export interface SecondaryPillBottomNavAction {
@@ -34,8 +35,8 @@ export function SecondaryPillBottomNav({
     center: "left-4 right-4"
   }
 
-  return (
-    <div className={`fixed bottom-20 z-30 ${positionClasses[position]} ${className}`}>
+  const navigation = (
+    <div className={`fixed bottom-6 z-[10000] ${positionClasses[position]} ${className}`}>
       <div className="flex items-center gap-2">
         {actions.map((action, index) => (
           <div key={index} className="relative" style={{
@@ -94,4 +95,9 @@ export function SecondaryPillBottomNav({
       </div>
     </div>
   )
+
+  // 使用Portal确保渲染在body层级，显示在所有内容之上
+  // 添加客户端检查避免SSR错误
+  if (typeof window === 'undefined') return null
+  return createPortal(navigation, document.body)
 }
