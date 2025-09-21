@@ -828,6 +828,9 @@
   .h-48 {
     height: calc(var(--spacing) * 48);
   }
+  .h-64 {
+    height: calc(var(--spacing) * 64);
+  }
   .h-72 {
     height: calc(var(--spacing) * 72);
   }
@@ -1835,6 +1838,9 @@
       border-color: color-mix(in oklab, var(--border) 50%, transparent);
     }
   }
+  .border-current {
+    border-color: currentcolor;
+  }
   .border-destructive {
     border-color: var(--destructive);
   }
@@ -2720,6 +2726,9 @@
   }
   .text-green-400 {
     color: var(--color-green-400);
+  }
+  .text-green-500 {
+    color: var(--color-green-500);
   }
   .text-green-600 {
     color: var(--color-green-600);

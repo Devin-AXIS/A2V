@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-config-dialog"
+import { collectAllConfigs, exportConfigsToJson } from "@/lib/config-collector"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
@@ -161,7 +162,42 @@ export default function ClientConfigPage() {
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
+  const [collectingConfigs, setCollectingConfigs] = useState(false)
   const [authUIOpen, setAuthUIOpen] = useState(false)
+
+  // 配置采集函数
+  const handleCollectConfigs = async () => {
+    setCollectingConfigs(true)
+    try {
+      console.log('🔍 开始采集AINO系统配置...')
+      const configs = await collectAllConfigs()
+
+      // 显示成功消息
+      toast({
+        title: lang === "zh" ? "配置采集成功" : "Config Collection Success",
+        description: lang === "zh"
+          ? `成功采集了 ${configs.metadata.totalConfigs} 个配置项`
+          : `Successfully collected ${configs.metadata.totalConfigs} config items`,
+      })
+
+      // 自动导出配置
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `aino-configs-${timestamp}.json`
+      exportConfigsToJson(configs, filename)
+
+      console.log('✅ 配置采集完成:', configs)
+
+    } catch (error) {
+      console.error('❌ 配置采集失败:', error)
+      toast({
+        title: lang === "zh" ? "配置采集失败" : "Config Collection Failed",
+        description: error instanceof Error ? error.message : (lang === "zh" ? "未知错误" : "Unknown error"),
+        variant: "destructive"
+      })
+    } finally {
+      setCollectingConfigs(false)
+    }
+  }
   const [previewSource, setPreviewSource] = useState<"preview">("manifest")
   const [pageUIOpen, setPageUIOpen] = useState(false)
   const [activePageKey, setActivePageKey] = useState<string>("")
@@ -1626,6 +1662,27 @@ export default function ClientConfigPage() {
                         </div>
                       </div>
                     )}
+                    {/* 配置采集入口 */}
+                    <div className="pt-2">
+                      <Button
+                        className="w-full justify-center"
+                        variant="outline"
+                        onClick={handleCollectConfigs}
+                        disabled={collectingConfigs}
+                      >
+                        {collectingConfigs ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            {lang === "zh" ? "采集中..." : "Collecting..."}
+                          </>
+                        ) : (
+                          <>
+                            <Database className="w-4 h-4 mr-2" />
+                            {lang === "zh" ? "采集配置" : "Collect Configs"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -2465,6 +2522,19 @@ export default function ClientConfigPage() {
                   <div className="flex items-center gap-2">
                     <Button variant="default" onClick={saveAll} disabled={saving}>
                       {saving ? (lang === "zh" ? "保存中..." : "Saving...") : (lang === "zh" ? "保存" : "Save")}
+                    </Button>
+                    <Button variant="outline" onClick={handleCollectConfigs} disabled={collectingConfigs}>
+                      {collectingConfigs ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {lang === "zh" ? "采集中..." : "Collecting..."}
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4 mr-2" />
+                          {lang === "zh" ? "采集配置" : "Collect Configs"}
+                        </>
+                      )}
                     </Button>
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
