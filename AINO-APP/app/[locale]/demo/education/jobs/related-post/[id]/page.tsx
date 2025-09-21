@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useParams } from "next/navigation"
+import { usePageActions } from "@/hooks/use-page-actions"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppHeader } from "@/components/navigation/app-header"
 import { JobHeaderCard } from "@/components/card/jobs/job-header-card"
@@ -91,46 +92,27 @@ export default function RelatedJobDetailPage() {
   const locale = params.locale as string
 
   const job = jobData[jobId] || jobData["1"]
-
-  // 交互状态
-  const [isLiked, setIsLiked] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
 
-  // 辅助功能胶囊型底部导航配置
-  const secondaryPillActions: SecondaryPillBottomNavAction[] = [
-    {
-      label: "投递简历",
-      onClick: () => {
-        setIsApplying(true)
-        setTimeout(() => {
-          setIsApplying(false)
-          alert("简历投递成功！")
-        }, 2000)
-      },
-      icon: <Send className="w-4 h-4" />,
-      variant: "primary",
-      loading: isApplying
-    },
-    {
-      label: "",
-      onClick: () => setIsLiked(!isLiked),
-      icon: <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-red-500' : ''}`} />,
-      iconOnly: true
-    },
-    {
-      label: "",
-      onClick: () => setIsFavorited(!isFavorited),
-      icon: <Bookmark className={`w-4 h-4 transition-colors ${isFavorited ? 'text-yellow-500' : ''}`} />,
-      iconOnly: true
-    },
-    {
-      label: "",
-      onClick: () => alert("分享功能"),
-      icon: <Share className="w-4 h-4" />,
-      iconOnly: true
-    }
-  ]
+  // 使用通用页面操作Hook
+  const { actions } = usePageActions({
+    title: job.title,
+    customActions: [
+      {
+        label: "投递简历",
+        onClick: () => {
+          setIsApplying(true)
+          setTimeout(() => {
+            setIsApplying(false)
+            alert("简历投递成功！")
+          }, 2000)
+        },
+        icon: <Send className="w-4 h-4" />,
+        variant: "primary",
+        loading: isApplying
+      }
+    ]
+  })
 
   return (
     <>
@@ -162,7 +144,7 @@ export default function RelatedJobDetailPage() {
 
       {/* 辅助功能胶囊型底部导航 */}
       <SecondaryPillBottomNav
-        actions={secondaryPillActions}
+        actions={actions}
         position="center"
       />
     </>

@@ -2,8 +2,8 @@
 
 import { useState, use } from "react"
 import { SecondaryPillBottomNav, type SecondaryPillBottomNavAction } from "@/components/navigation/secondary-pill-bottom-nav"
-import { Bot, Heart, Bookmark, Share } from "lucide-react"
-import { useFavorites } from "@/hooks/use-favorites"
+import { Bot } from "lucide-react"
+import { usePageActions } from "@/hooks/use-page-actions"
 import { AppCard } from "@/components/layout/app-card"
 import { PercentageRankingCard } from "@/components/data-display/percentage-ranking-card"
 import { WorkExperienceDonut } from "@/components/data-display/work-experience-donut"
@@ -38,17 +38,27 @@ export default function JobDetailPage({
   const [activeTab, setActiveTab] = useState("职业数据")
   const tabs = ["职业数据", "具备能力", "相关岗位"]
 
-  // 获取全局收藏状态
-  const { isLiked, isFavorited, toggleLike, toggleFavorite } = useFavorites()
   const [isTesting, setIsTesting] = useState(false)
 
-  // 当前页面信息
-  const currentPageUrl = `/zh/demo/education/jobs/${id}`
-  const currentPageInfo = {
-    id: `job-${id}`,
+  // 使用通用页面操作Hook
+  const { actions } = usePageActions({
     title: "人工智能训练师",
-    url: currentPageUrl
-  }
+    customActions: [
+      {
+        label: "测试匹配度",
+        onClick: () => {
+          setIsTesting(true)
+          setTimeout(() => {
+            setIsTesting(false)
+            alert("AI匹配度分析完成！匹配度：85%")
+          }, 2000)
+        },
+        icon: <Bot className="w-4 h-4" />,
+        variant: "primary",
+        loading: isTesting
+      }
+    ]
+  })
 
   // 数据改由各卡片自行通过 useCardRegistryData 读取，保留局部默认在卡片内实现
 
@@ -82,40 +92,6 @@ export default function JobDetailPage({
     },
   ]
 
-  // 辅助功能胶囊型底部导航配置
-  const secondaryPillActions: SecondaryPillBottomNavAction[] = [
-    {
-      label: "测试匹配度",
-      onClick: () => {
-        setIsTesting(true)
-        setTimeout(() => {
-          setIsTesting(false)
-          alert("AI匹配度分析完成！匹配度：85%")
-        }, 2000)
-      },
-      icon: <Bot className="w-4 h-4" />,
-      variant: "primary",
-      loading: isTesting
-    },
-    {
-      label: "",
-      onClick: () => toggleLike(currentPageInfo),
-      icon: <Heart className={`w-4 h-4 transition-colors ${isLiked(currentPageUrl) ? 'text-red-500' : ''}`} />,
-      iconOnly: true
-    },
-    {
-      label: "",
-      onClick: () => toggleFavorite(currentPageInfo),
-      icon: <Bookmark className={`w-4 h-4 transition-colors ${isFavorited(currentPageUrl) ? 'text-yellow-500' : ''}`} />,
-      iconOnly: true
-    },
-    {
-      label: "",
-      onClick: () => alert("分享功能"),
-      icon: <Share className="w-4 h-4" />,
-      iconOnly: true
-    }
-  ]
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -172,7 +148,7 @@ export default function JobDetailPage({
 
       {/* 辅助功能胶囊型底部导航 */}
       <SecondaryPillBottomNav
-        actions={secondaryPillActions}
+        actions={actions}
         position="center"
       />
     </div>
