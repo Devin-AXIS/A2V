@@ -8,6 +8,7 @@ import { User, HelpCircle, Headphones, Settings, Gift, PlusCircle, LogIn, UserPl
 import { AppCard } from "@/components/layout/app-card"
 import { AuthAvatar } from "@/components/auth/auth-avatar"
 import { useAuth } from "@/hooks/use-auth"
+import { useFavorites } from "@/hooks/use-favorites"
 import { Button } from "@/components/ui/button"
 import { useEffect } from "react"
 
@@ -35,6 +36,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
   const { locale } = useParams()
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuth()
+  const { getLikedCount, getFavoritedCount } = useFavorites()
 
   const StatItem = ({ value, label }: { value: string; label: string }) => (
     <div className="text-center">
@@ -161,8 +163,8 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
       {/* Abstract Stats */}
       <AppCard>
         <div className="flex justify-around items-center py-4">
-          <StatItem value={user?.followers?.toString() || "0"} label={dict.followers} />
-          <StatItem value={user?.following?.toString() || "0"} label={dict.following} />
+          <StatItem value={getLikedCount().toString()} label={dict.followers} />
+          <StatItem value={getFavoritedCount().toString()} label={dict.following} />
           <StatItem value={user?.posts?.toString() || "0"} label={dict.posts} />
         </div>
       </AppCard>
@@ -235,7 +237,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
           <ToolbarItem
             icon={<Settings className="w-5 h-5" style={{ color: "var(--card-text-color)" }} />}
             label={dict.settings}
-            href={`/${locale}/profile/settings`}
+            href="#"
           />
         </div>
       </AppCard>
