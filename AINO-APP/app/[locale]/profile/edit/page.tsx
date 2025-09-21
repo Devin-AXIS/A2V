@@ -335,19 +335,9 @@ export default function EditProfilePage() {
         </AppCard>
       </div>
 
-      {/* 固定底部操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t p-4">
-        <div className="flex gap-3 max-w-md mx-auto">
-          <PillButton variant="default" onClick={() => router.back()} className="flex-1">
-            <X className="w-4 h-4 mr-2" />
-            取消
-          </PillButton>
-          <PillButton onClick={handleSaveProfile} className="flex-1">
-            <Check className="w-4 h-4 mr-2" />
-            保存简历
-          </PillButton>
-        </div>
-      </div>
+      {/* 底部安全距离 */}
+      <div className="h-20"></div>
+
 
       {/* 联系方式编辑弹窗 */}
       <BottomDrawer
