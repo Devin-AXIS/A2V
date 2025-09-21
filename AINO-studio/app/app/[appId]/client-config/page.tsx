@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X, Monitor, Smartphone } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X, Monitor, Smartphone, ExternalLink } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
@@ -1015,6 +1015,36 @@ export default function ClientConfigPage() {
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
       setViewTab("code")
+    }
+  }
+
+  async function openPreviewInNewTab() {
+    try {
+      const body = draft
+      const res = await fetch("http://localhost:3007/api/preview-manifests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manifest: body }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
+      const id = data.data.id
+      setPreviewId(id)
+      const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+      const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+      setPreviewUrl(url)
+      // 设置预览ID到localStorage，供底部导航使用
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('PREVIEW_ID', id)
+          window.localStorage.setItem('APP_ID', String(params.appId))
+        }
+      } catch { }
+      // 在新标签页中打开预览
+      window.open(url, '_blank', 'noopener,noreferrer')
+      toast({ description: lang === "zh" ? "预览已在新标签页打开" : "Preview opened in new tab" })
+    } catch (e: any) {
+      toast({ description: e?.message || (lang === "zh" ? "打开预览失败" : "Failed to open preview"), variant: "destructive" as any })
     }
   }
 
@@ -2468,6 +2498,10 @@ export default function ClientConfigPage() {
                     </Button>
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
+                    </Button>
+                    <Button variant="outline" onClick={openPreviewInNewTab}>
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      {lang === "zh" ? "新标签打开" : "Open in New Tab"}
                     </Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
                     {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
