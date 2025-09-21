@@ -15,6 +15,93 @@ import { useToast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api"
 import { Loader2 } from "lucide-react"
 
+const isType = (obj) => {
+  return Object.prototype.toString.call(obj).split(' ')[1].split(']')[0]
+}
+
+/**
+ * 将JSON路径按最长公共前缀进行分组
+ * @param pathMapping 包含键值对的对象，值为JSON路径字符串
+ * @returns 按最长公共前缀分组的对象，键为最长公共前缀路径，值为包含该前缀的键名数组
+ * 
+ * @example
+ * const input = {
+ *   a: "$.items.result.jobs.salary",
+ *   b: "$.items.result.jobs.job_title", 
+ *   c: "$.items.status.success"
+ * }
+ * 
+ * const result = groupPathsByPrefix(input)
+ * // 返回: {
+ * //   "$.items.result": ["a", "b"],
+ * //   "$.items.status": ["c"]
+ * // }
+ */
+function groupPathsByPrefix(pathMapping: Record<string, string>): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+
+  // 遍历所有键值对
+  for (const [key, path] of Object.entries(pathMapping)) {
+    // 将路径按点分割
+    const pathParts = path.split('.')
+
+    // 生成所有可能的前缀（从最短到最长）
+    for (let i = 1; i <= pathParts.length; i++) {
+      const prefix = pathParts.slice(0, i).join('.')
+
+      // 如果这个前缀还没有在结果中，创建空数组
+      if (!result[prefix]) {
+        result[prefix] = []
+      }
+
+      // 将当前键添加到这个前缀的数组中
+      result[prefix].push(key)
+    }
+  }
+
+  // 过滤掉只有一个键的前缀，只保留有多个键共享的前缀
+  const multiKeyPrefixes: Record<string, string[]> = {}
+  for (const [prefix, keys] of Object.entries(result)) {
+    if (keys.length > 1) {
+      multiKeyPrefixes[prefix] = keys
+    }
+  }
+
+  // 找到每个键的最长公共前缀
+  const finalResult: Record<string, string[]> = {}
+  const processedKeys = new Set<string>()
+
+  // 按前缀长度从长到短排序，优先处理更长的前缀
+  const sortedPrefixes = Object.keys(multiKeyPrefixes).sort((a, b) => b.length - a.length)
+
+  for (const prefix of sortedPrefixes) {
+    const keys = multiKeyPrefixes[prefix]
+
+    // 检查这些键是否已经被处理过
+    const unprocessedKeys = keys.filter(key => !processedKeys.has(key))
+
+    if (unprocessedKeys.length > 1) {
+      // 标记这些键为已处理
+      unprocessedKeys.forEach(key => processedKeys.add(key))
+      finalResult[prefix] = unprocessedKeys
+    }
+  }
+
+  return finalResult
+}
+
+const getJsonDataByPath = (path, data) => {
+  const parts = path.split('.')
+  let cur = data
+  for (let i = 0; i < parts.length; i++) {
+    cur = cur[parts[i]]
+    if (isType(cur) === 'Array') {
+      return [cur, parts[i + 1]];
+    }
+  }
+  return [cur]
+}
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -77,12 +164,37 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [batchId, setBatchId] = useState<string>("")
   const [busy, setBusy] = useState<{ scrape?: boolean; crawlStart?: boolean; crawlStatus?: boolean; batchStart?: boolean; batchStatus?: boolean; cancel?: boolean }>({})
   const [statusMsg, setStatusMsg] = useState<string>("")
+  const [upserting, setUpserting] = useState<boolean>(false)
+  const [upsertProgress, setUpsertProgress] = useState<{ total: number; done: number; ok: number; fail: number }>({ total: 0, done: 0, ok: 0, fail: 0 })
 
   // mock fields for mapping UI
   type MockField = { key: string; label: string; type: 'text' | 'number' | 'date' | 'tags' | 'url' | 'boolean' | 'select' | 'multiselect'; required?: boolean }
   const mockFields = useMemo<MockField[]>(() => {
     if (Array.isArray(dirFields) && dirFields.length > 0) {
-      return dirFields.map((f: any) => ({ key: f.key, label: f.label || f.key, type: (f.type || 'text') as any, required: !!f.required }))
+      const fields = [];
+      dirFields.map((f: any) => {
+        if (f.type === "meta_items") {
+          f.metaItemsConfig.fields.map((field: any) => {
+            fields.push({
+              parentKey: f.key,
+              key: `${f.key}::${field.id}`,
+              label: `${f.label || f.key}-${field.label}`,
+              originLabel: field.label,
+              type: field.type,
+              required: !!field.required,
+            });
+          });
+        } else {
+          const field = {
+            key: f.key,
+            label: f.label || f.key,
+            type: (f.type || 'text') as any,
+            required: !!f.required,
+          };
+          fields.push(field);
+        }
+      })
+      return fields;
     }
     // fallback demo
     return [
@@ -101,16 +213,191 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldKey -> sourceKey
   const [mappingTransform, setMappingTransform] = useState<Record<string, string>>({}) // fieldKey -> transform
   const [progressMap, setProgressMap] = useState<Record<string, { arrayPath: string; labelKey: string; valueKey: string; statusKey?: string; weightKey?: string; aggregation: 'weightedAverage' | 'max' | 'min' }>>({})
-  const sampleSourceKeys = ["title", "desc", "salary", "city", "company", "link", "posted_at"]
+  const [sampleSourceKeys, setSampleSourceKeys] = useState<string[]>([])
   const [keySearch, setKeySearch] = useState("")
   const [saveMsg, setSaveMsg] = useState("")
   const [previewJson, setPreviewJson] = useState<string>("")
+
+  // 分析采集回来的数据结构，提取可用字段
+  function analyzeScrapedData(data: any[]): string[] {
+    if (!data || data.length === 0) return []
+
+    const fields = new Set<string>()
+
+    // 分析第一个数据项的所有字段
+    const firstItem = data[0]
+    if (firstItem && typeof firstItem === 'object') {
+      // 递归提取所有字段路径
+      function extractFields(obj: any, prefix = ''): void {
+        for (const [key, value] of Object.entries(obj)) {
+          const fieldPath = prefix ? `${prefix}.${key}` : key
+
+          // 如果是基本类型，添加到字段列表
+          if (value !== null && value !== undefined &&
+            (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
+            fields.add(fieldPath)
+          }
+          // 如果是对象，递归处理
+          else if (value && typeof value === 'object' && !Array.isArray(value)) {
+            extractFields(value, fieldPath)
+          }
+          // 如果是数组，添加数组路径，并分析数组内对象的字段
+          else if (Array.isArray(value)) {
+            fields.add(fieldPath)
+            // 分析数组内第一个对象的字段
+            if (value.length > 0 && value[0] && typeof value[0] === 'object') {
+              extractFields(value[0], fieldPath)
+            }
+          }
+        }
+      }
+
+      extractFields(firstItem)
+    }
+
+    return Array.from(fields).sort()
+  }
+
+  // 规范化路径，确保以 $. 开头
+  function ensureAbsolutePath(p: string): string {
+    if (!p) return p
+    return p.startsWith('$.') || p === '$' ? p : (p.startsWith('$') ? `$.${p.slice(1)}` : `$.${p}`)
+  }
+
+  // 将相对路径与当前数组路径组合成完整候选，如 $.result.jobs.title
+  function addArrayPathPrefix(relativeKey: string, arrPath: string): string {
+    const base = ensureAbsolutePath(arrPath || '$')
+    const rel = relativeKey.replace(/^\$\.?/, '')
+    const sep = base.endsWith('.') || base === '$' ? '' : '.'
+    return `${base}${sep}${rel}`
+  }
+
+  // 当采集数据更新时，自动分析字段
+  useEffect(() => {
+    if (sampleRecords && sampleRecords.length > 0) {
+      const extractedFields = analyzeScrapedData(sampleRecords)
+      // 同时提供：
+      // 1) 相对键: title
+      // 2) 分层相对键: jobs.title / result.jobs.title（来自 arrayPath 的各层）
+      // 3) 绝对键: $.jobs.title / $.result.jobs.title
+      const absBase = (ensureAbsolutePath(arrayPath) || '').replace(/^\$\.?/, '')
+      const parts = absBase.split('.').filter(Boolean)
+      const layeredPrefixes: string[] = []
+      for (let i = 1; i <= parts.length; i++) {
+        layeredPrefixes.push(parts.slice(parts.length - i).join('.'))
+      }
+      const layeredRel = extractedFields.flatMap(k => layeredPrefixes.map(p => `${p}.${k}`))
+      const layeredAbs = layeredRel.map(k => ensureAbsolutePath(k))
+      const withAbsFull = extractedFields.map(k => addArrayPathPrefix(k, arrayPath))
+      const keys = Array.from(new Set([...
+        extractedFields,
+      ...layeredRel,
+      ...layeredAbs,
+      ...withAbsFull,
+      ])).sort()
+      setSampleSourceKeys(keys)
+      console.log('🔍 分析采集数据结构，发现字段:', extractedFields)
+
+      // 自动进行字段匹配
+      autoMatchFromScrapedData(keys)
+    }
+  }, [sampleRecords])
+
+  // 基于实际采集数据自动匹配字段
+  function autoMatchFromScrapedData(availableFields: string[]) {
+    const next: Record<string, string> = {}
+
+    // 智能匹配规则
+    const matchRules = {
+      'title': ['title', 'name', 'job_title', 'position', '职位', '岗位', '名称', 'jobName', 'positionName'],
+      'description': ['description', 'desc', 'content', 'detail', '描述', '内容', '详情', '介绍', 'jobDesc', 'jobDescription'],
+      'salary': ['salary', 'pay', 'wage', '薪资', '工资', '待遇', '报酬', 'money', 'compensation'],
+      'city': ['city', 'location', 'address', '城市', '地点', '地址', '位置', 'area', 'region'],
+      'company': ['company', 'employer', 'corp', '公司', '企业', '雇主', 'companyName', 'employerName'],
+      'url': ['url', 'link', 'href', '链接', '网址', 'jobUrl', 'detailUrl'],
+      'date': ['date', 'time', 'created', 'posted', '日期', '时间', '发布时间', 'publishTime', 'createTime'],
+      'experience': ['experience', 'exp', 'years', '经验', '年限', 'workExp', 'workExperience'],
+      'education': ['education', 'degree', '学历', '学位', 'edu', 'educationLevel'],
+      'type': ['type', 'category', 'kind', '类型', '分类', 'jobType', 'category'],
+      'level': ['level', 'grade', '级别', '等级', 'jobLevel', 'positionLevel'],
+      'skills': ['skills', 'requirements', '技能', '要求', '要求技能', 'jobSkills', 'requiredSkills'],
+      'benefits': ['benefits', 'perks', '福利', '待遇', 'jobBenefits', 'companyBenefits'],
+    }
+
+    for (const f of mockFields) {
+      // 首先尝试精确匹配
+      const exactMatch = availableFields.find(field =>
+        matchRules[f.key]?.some(rule =>
+          field.toLowerCase().includes(rule.toLowerCase()) ||
+          rule.toLowerCase().includes(field.toLowerCase())
+        )
+      )
+
+      if (exactMatch) {
+        next[f.key] = exactMatch
+        continue
+      }
+
+      // 然后尝试模糊匹配
+      const fuzzyMatch = availableFields.find(field =>
+        field.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
+        f.key.toLowerCase().includes(field.toLowerCase().slice(0, 4))
+      )
+
+      if (fuzzyMatch) {
+        next[f.key] = fuzzyMatch
+      }
+    }
+
+    setMapping(next)
+    if (Object.keys(next).length > 0) {
+      toast({ description: t("已自动匹配采集数据字段", "Auto matched scraped data fields") })
+    }
+  }
+
   function autoMatch() {
     const next: Record<string, string> = {}
-    for (const f of mockFields) {
-      const guess = sampleSourceKeys.find((s) => s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)))
-      if (guess) next[f.key] = guess
+
+    // 智能匹配规则
+    const matchRules = {
+      // 标题相关
+      'title': ['title', 'name', 'job_title', 'position', '职位', '岗位', '名称'],
+      'description': ['description', 'desc', 'content', 'detail', '描述', '内容', '详情', '介绍'],
+      'salary': ['salary', 'pay', 'wage', '薪资', '工资', '待遇', '报酬'],
+      'city': ['city', 'location', 'address', '城市', '地点', '地址', '位置'],
+      'company': ['company', 'employer', 'corp', '公司', '企业', '雇主'],
+      'url': ['url', 'link', 'href', '链接', '网址'],
+      'date': ['date', 'time', 'created', 'posted', '日期', '时间', '发布时间'],
+      'experience': ['experience', 'exp', 'years', '经验', '年限'],
+      'education': ['education', 'degree', '学历', '学位'],
+      'type': ['type', 'category', 'kind', '类型', '分类'],
+      'level': ['level', 'grade', '级别', '等级'],
+      'skills': ['skills', 'requirements', '技能', '要求', '要求技能'],
+      'benefits': ['benefits', 'perks', '福利', '待遇'],
     }
+
+    for (const f of mockFields) {
+      // 首先尝试精确匹配
+      const exactMatch = sampleSourceKeys.find(s =>
+        matchRules[f.key]?.some(rule => s.toLowerCase().includes(rule.toLowerCase()))
+      )
+
+      if (exactMatch) {
+        next[f.key] = exactMatch
+        continue
+      }
+
+      // 然后尝试模糊匹配
+      const fuzzyMatch = sampleSourceKeys.find(s =>
+        s.toLowerCase().includes(f.key.toLowerCase().slice(0, 4)) ||
+        f.key.toLowerCase().includes(s.toLowerCase().slice(0, 4))
+      )
+
+      if (fuzzyMatch) {
+        next[f.key] = fuzzyMatch
+      }
+    }
+
     setMapping(next)
     toast({ description: t("已自动匹配相近字段", "Auto matched similar fields") })
   }
@@ -175,23 +462,50 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     return s
   }
   function candidatesForField(f: MockField): string[] {
-    const list = sampleKeys
+    // 使用从采集数据中提取的字段，如果没有则使用默认字段
+    const availableFields = sampleSourceKeys.length > 0 ? sampleSourceKeys : sampleKeys
+
+    const list = availableFields
       .map((k) => ({ k, s: scoreKey(f.key, k) }))
       .sort((a, b) => b.s - a.s)
       .map((x) => x.k)
     const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
-    return filtered.slice(0, 6)
+    return filtered.slice(0, 8) // 显示更多候选字段
   }
 
   // ---------- Progress helpers ----------
   function getByPath(obj: any, path: string): any {
     if (!obj || !path) return undefined
-    const parts = path.replace(/^\$\.?/, '').split('.').filter(Boolean)
-    let cur = obj
-    for (const p of parts) {
-      if (cur && typeof cur === 'object') cur = cur[p]
-      else return undefined
+
+    console.log(`🔍 getByPath 输入:`, { obj, path, arrayPath })
+
+    // 处理路径，去除 $ 前缀
+    let p = path.replace(/^\$\.?/, '')
+
+    // 如果路径以 arrayPath 开头，去掉 arrayPath 部分
+    const absArrayPath = ensureAbsolutePath(arrayPath).replace(/^\$\.?/, '')
+    if (absArrayPath && p.startsWith(absArrayPath)) {
+      p = p.slice(absArrayPath.length)
+      if (p.startsWith('.')) p = p.slice(1)
     }
+
+    console.log(`🔍 处理后的路径:`, p)
+
+    const parts = p.split('.').filter(Boolean)
+    let cur = obj
+
+    for (const part of parts) {
+      console.log(`🔍 访问路径部分: ${part}, 当前值:`, cur)
+      if (cur && typeof cur === 'object') {
+        cur = cur[part]
+        console.log(`🔍 获取到值:`, cur)
+      } else {
+        console.log(`🔍 路径中断，返回 undefined`)
+        return undefined
+      }
+    }
+
+    console.log(`🔍 最终结果:`, cur)
     return cur
   }
   function calcProgressAggregate(items: Array<{ value?: number; weight?: number }>, mode: 'weightedAverage' | 'max' | 'min' = 'weightedAverage'): number {
@@ -219,6 +533,154 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       case 'parseDate': return raw
       case 'splitTags': return typeof raw === 'string' ? raw.split(/[，,\s]+/).filter(Boolean) : Array.isArray(raw) ? raw : []
       default: return raw
+    }
+  }
+
+  // LOG: AI运营关键函数，提取字段并入库
+  async function onUpsert() {
+    try {
+      if (!dirId) {
+        toast({ description: t("缺少目录ID，无法入库", "Missing directory id"), variant: 'destructive' as any })
+        return
+      }
+      if (!sampleRecords || sampleRecords.length === 0) {
+        toast({ description: t('暂无样例，请先抓取或爬取。', 'No samples yet. Scrape/crawl first.'), variant: 'destructive' as any })
+        return
+      }
+
+      // 取数组数据：根据 arrayPath 从 sampleRecords 中提取目标数组
+      const list = (() => {
+        console.log('🔍 开始提取数组数据:', { arrayPath, sampleRecords })
+
+        let firstItem;
+        const list = [];
+        // 如果 arrayPath 是 $.items，说明要从 sampleRecords 中取第一个对象的某个数组字段
+        if (arrayPath === '$.items' && sampleRecords && sampleRecords.length > 0) {
+          firstItem = sampleRecords[0]
+          firstItem = firstItem;
+        }
+
+        let publicMappings = groupPathsByPrefix(mapping);
+        for (let mappingKey in mapping) {
+          if (mapping[mappingKey].indexOf('$.items.') > -1) {
+            mapping[mappingKey] = mapping[mappingKey].replace('$.items.', "")
+          }
+        }
+        Object.keys(publicMappings).map((key) => {
+          publicMappings[key.replace('$.items.', "")] = publicMappings[key]
+        })
+        for (let publicKey in publicMappings) {
+          if (publicKey.indexOf('$.items.') > -1) {
+            delete publicMappings[publicKey]
+          }
+        }
+
+        for (let publicKey in publicMappings) {
+          const currentPublicKey = publicMappings[publicKey];
+          currentPublicKey.forEach((mappingKey, index) => {
+            if (mapping[mappingKey]) {
+              publicMappings[publicKey][index] = {
+                [mappingKey]: mapping[mappingKey].replace(`${publicKey}.`, ""),
+              }
+            }
+          })
+        }
+
+        // id: "81t57gtt0b9",
+        // images: [],
+        // label: "项 1",
+        // numbers: [],
+        // texts: [
+        //   {id: "jmulwhv648a", label: "工作年限", value: "a", fieldId: "jmulwhv648a"}
+        //   {id: "ojbhcxb0a2", label: "月度工资占比", value: "v", fieldId: "ojbhcxb0a2"}
+        //   {id: "igwku3x0k3q", label: "新增岗位数量", value: "c", fieldId: "igwku3x0k3q"}
+        // ]s
+
+        // return;
+
+        for (let publicKey in publicMappings) {
+          const currentMappings = publicMappings[publicKey];
+          const [datas, nextKey] = getJsonDataByPath(publicKey, firstItem)
+          if (datas instanceof Array) {
+            datas.forEach((data, dataIndex) => {
+              const listItem = {};
+              currentMappings.forEach(currentMapping => {
+                Object.keys(currentMapping).forEach((key, currentMappingIndex) => {
+                  const [parentKey, childKey] = key.split("::");
+                  if (childKey) {
+                    if (!listItem[parentKey]) {
+                      listItem[parentKey] = [{
+                        images: [],
+                        label: `项 1`,
+                        numbers: [],
+                        texts: [],
+                      }];
+                    }
+                    listItem[parentKey][0].texts.push({ id: childKey, value: data[nextKey || currentMapping[key]], fieldId: childKey })
+                  } else {
+                    listItem[key] = data[nextKey || currentMapping[key]];
+                  }
+                })
+              })
+              list[dataIndex] = { ...list[dataIndex], ...listItem };
+            })
+          } else if (isType(datas) === 'Object') {
+            let listItem = {};
+            Object.keys(currentMapping).forEach(key => {
+              listItem[key] = datas[currentMapping[key]]
+            });
+            list.push(listItem);
+          } else {
+            let listItem = {};
+            Object.keys(currentMapping).forEach(key => {
+              listItem[key] = datas;
+            });
+            list.push(listItem);
+          }
+        }
+        return list;
+      })()
+
+      if (list.length === 0) {
+        toast({ description: t('未找到可入库的数据数组', 'No array data to upsert'), variant: 'destructive' as any })
+        return
+      }
+
+      // 认证
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) token = 'test-token'
+
+      setUpserting(true)
+      setUpsertProgress({ total: list.length, done: 0, ok: 0, fail: 0 })
+      setStatusMsg(t('正在入库…', 'Upserting…'))
+
+      const base = getApiBase()
+      let ok = 0, fail = 0, done = 0
+
+      // 顺序逐条入库，避免并发带来的速率与顺序问题
+      for (const rec of list) {
+        try {
+          const r = await fetch(`${base}/api/records/${encodeURIComponent(String(dirId))}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ props: rec })
+          })
+          if (!r.ok) throw new Error(await r.text().catch(() => 'create failed'))
+          ok += 1
+        } catch (e) {
+          console.error('Upsert failed:', e)
+          fail += 1
+        } finally {
+          done += 1
+          setUpsertProgress({ total: list.length, done, ok, fail })
+        }
+      }
+
+      const msg = t(`入库完成：成功 ${ok}，失败 ${fail}`, `Upsert done: ok ${ok}, fail ${fail}`)
+      toast({ description: msg })
+      setStatusMsg(msg)
+    } finally {
+      setUpserting(false)
     }
   }
 
@@ -387,10 +849,28 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, scrape: true }))
       setStatusMsg(t("正在抓取样例…", "Scraping sample…"))
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
       const r = await fetch(`${getApiBase()}/api/crawl/scrape`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ url: firstUrl, options: { formats: ['markdown', 'html'] } })
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        },
+        body: JSON.stringify({
+          url: firstUrl,
+          domain: domain,
+          nlRule: nlRule,
+          options: { formats: ['markdown', 'html'] }
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'scrape failed')
@@ -420,10 +900,28 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStart: true }))
       setStatusMsg(t("正在启动爬取…", "Starting crawl…"))
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
       const r = await fetch(`${getApiBase()}/api/crawl/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ url: startUrl, options: { limit: 10 } })
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        },
+        body: JSON.stringify({
+          urls: [startUrl],
+          domain: domain,
+          nlRule: nlRule,
+          options: { limit: 10 }
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'start failed')
@@ -444,8 +942,20 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, crawlStatus: true }))
       setStatusMsg(t("正在获取状态…", "Fetching status…"))
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
       const r = await fetch(`${getApiBase()}/api/crawl/status/${encodeURIComponent(crawlId)}`, {
-        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        }
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'status failed')
@@ -476,10 +986,28 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     try {
       setBusy((b) => ({ ...b, batchStart: true }))
       setStatusMsg(t("正在启动批量抓取…", "Starting batch…"))
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
       const r = await fetch(`${getApiBase()}/api/crawl/batch/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': firecrawlKey },
-        body: JSON.stringify({ urls: list, options: { options: { formats: ['markdown'] } } })
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        },
+        body: JSON.stringify({
+          urls: list,
+          domain: domain,
+          nlRule: nlRule,
+          options: { options: { formats: ['markdown'] } }
+        })
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
@@ -499,8 +1027,20 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !batchId) return
     try {
       setBusy((b) => ({ ...b, batchStatus: true }))
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
       const r = await fetch(`${getApiBase()}/api/crawl/batch/status/${encodeURIComponent(batchId)}`, {
-        headers: { 'x-aino-firecrawl-key': firecrawlKey }
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        }
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch status failed')
@@ -522,7 +1062,22 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     if (!firecrawlKey || !crawlId) return
     try {
       setBusy((b) => ({ ...b, cancel: true }))
-      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, { method: 'POST', headers: { 'x-aino-firecrawl-key': firecrawlKey } })
+
+      // 获取认证token
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+
+      const r = await fetch(`${getApiBase()}/api/crawl/cancel/${encodeURIComponent(crawlId)}`, {
+        method: 'POST',
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-aino-firecrawl-key': firecrawlKey
+        }
+      })
       const ok = r.ok
       toast({ description: ok ? t("已取消", "Cancelled") : t("取消失败", "Cancel failed"), variant: ok ? undefined : ("destructive" as any) })
       setStatusMsg(ok ? t("爬取已取消", "Crawl cancelled") : t("取消失败", "Cancel failed"))
@@ -569,8 +1124,22 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     </div>
                     <div className="space-y-1">
                       <Label>{t("自然语言规则", "Natural language rule")}</Label>
-                      <Textarea value={nlRule} onChange={(e) => setNlRule(e.target.value)} placeholder={t("例如：BOSS直聘/智联，城市=北京，岗位=前端，薪资>20k", "e.g. Boss/Zhaopin, city=Beijing, role=frontend, salary>20k")} />
-                      <div className="text-xs text-muted-foreground">{t("右侧会解析为结构化条件，便于确认。", "Parsed structured conditions will be shown on the right for confirmation.")}</div>
+                      <Textarea
+                        value={nlRule}
+                        onChange={(e) => setNlRule(e.target.value)}
+                        placeholder={t("例如：我想要任何数据 / 只要海淀区的 / 城市=北京，岗位=前端，薪资>20k", "e.g. I want any data / Only Haidian district / city=Beijing, role=frontend, salary>20k")}
+                        className="min-h-[80px]"
+                      />
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>{t("支持多种表达方式：", "Supports various expressions:")}</div>
+                        <div className="grid grid-cols-1 gap-1 text-[10px]">
+                          <div>• {t("通用采集：我想要任何数据、全部都要、都可以", "General: I want any data, all data, anything")}</div>
+                          <div>• {t("城市筛选：只要海淀区、城市=北京、在海淀区", "City: Only Haidian, city=Beijing, in Haidian")}</div>
+                          <div>• {t("岗位筛选：只要前端开发、岗位=前端、需要前端工程师", "Role: Only frontend dev, role=frontend, need frontend engineer")}</div>
+                          <div>• {t("薪资筛选：10k以上、薪资>20k、最低15k", "Salary: Above 10k, salary>20k, minimum 15k")}</div>
+                          <div>• {t("公司筛选：只要腾讯的、公司=腾讯、在腾讯工作", "Company: Only Tencent, company=Tencent, work at Tencent")}</div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -700,8 +1269,48 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">{t("字段映射", "Field Mapping")}</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">{t("字段映射", "Field Mapping")}</div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配", "Auto match")}</Button>
+                          <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
+                        </div>
+                      </div>
+
+                      {/* 字段映射说明 */}
+                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="text-sm font-medium text-blue-900 mb-2">
+                          {t("字段映射说明", "Field Mapping Guide")}
+                        </div>
+                        <div className="text-xs text-blue-800 space-y-1">
+                          <div>• {t("采集数据 → 映射字段 → 格式化存储", "Scraped Data → Map Fields → Format & Store")}</div>
+                          <div>• {t("例如：采集到'职位名称' → 映射到'title'字段 → 存储为文本格式", "e.g. 'Job Title' → map to 'title' field → store as text")}</div>
+                          <div>• {t("例如：采集到'薪资15k' → 映射到'salary'字段 → 转换为数字15000", "e.g. 'Salary 15k' → map to 'salary' field → convert to number 15000")}</div>
+                        </div>
+                      </div>
+
+                      {/* 采集数据字段展示 */}
+                      {sampleSourceKeys.length > 0 && (
+                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                          <div className="text-sm font-medium text-green-900 mb-2">
+                            {t("采集数据字段", "Scraped Data Fields")} ({sampleSourceKeys.length})
+                          </div>
+                          <div className="text-xs text-green-800">
+                            <div className="flex flex-wrap gap-1">
+                              {sampleSourceKeys.map(field => (
+                                <span key={field} className="px-2 py-1 bg-green-100 rounded text-green-700">
+                                  {field}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="mt-2 text-green-600">
+                              {t("系统已自动分析采集数据结构，并尝试匹配到您的字段", "System has analyzed scraped data structure and attempted to match to your fields")}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onScrapeTest} disabled={!!busy.scrape}>
                           {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("试抓取", "Scrape test")}
@@ -721,7 +1330,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <Button variant="outline" size="sm" disabled={!batchId || !!busy.batchStatus} onClick={onBatchStatus}>
                           {busy.batchStatus ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("查询中", "Fetching")}</> : t("批量状态", "Batch status")}
                         </Button>
-                        <Button variant="secondary" size="sm" onClick={autoMatch}>{t("自动匹配", "Auto match")}</Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
                         <Button variant="outline" size="sm" onClick={saveTemplate}>{t("保存模板", "Save template")}</Button>
                         <Button variant="outline" size="sm" onClick={loadTemplate}>{t("加载模板", "Load template")}</Button>
@@ -817,6 +1425,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       <div className="text-sm font-medium">{t("预览", "Preview")}</div>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onLocalPreview}>{t("本地预览", "Local preview")}</Button>
+                        <Button size="sm" onClick={onUpsert} disabled={upserting || !dirId}>
+                          {upserting ? <><Loader2 className="size-4 mr-1 animate-spin" />{t('入库中…', 'Upserting…')}</> : t('入库', 'Upsert')}
+                        </Button>
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-3 text-xs text-muted-foreground min-h-[120px]">
@@ -831,9 +1442,17 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                 <div className="flex items-center gap-2">
                   <Button variant="outline" onClick={() => onOpenChange(false)}>{t("取消", "Cancel")}</Button>
                   <Button variant="secondary" onClick={onDryRun}>{t("Dry-run 预览", "Dry-run")}</Button>
-                  <Button onClick={onRunNow}>{t("立即运行", "Run now")}</Button>
+                  <Button variant="outline" onClick={onRunNow}>{t("立即运行", "Run now")}</Button>
+                  <Button onClick={onUpsert} disabled={upserting || !dirId}>
+                    {upserting ? <><Loader2 className="size-4 mr-1 animate-spin" />{t('入库中…', 'Upserting…')}</> : t('入库', 'Upsert')}
+                  </Button>
                 </div>
               </div>
+              {upserting && (
+                <div className="pt-2 text-xs text-muted-foreground">
+                  {t('进度', 'Progress')}: {upsertProgress.done}/{upsertProgress.total} {t('成功', 'OK')}: {upsertProgress.ok} {t('失败', 'Fail')}: {upsertProgress.fail}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -841,5 +1460,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     </Drawer>
   )
 }
+
 
 

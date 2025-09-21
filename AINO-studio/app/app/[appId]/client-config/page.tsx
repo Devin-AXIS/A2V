@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { useLocale } from "@/hooks/use-locale"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/components/ui/use-mobile"
-import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X } from "lucide-react"
+import { GripVertical, Trash2, Plus, Database, List as ListIcon, ChevronDown, ChevronRight, Search, Settings, Link2, ArrowLeft, PlusCircle, X, Monitor, Smartphone, ExternalLink } from "lucide-react"
 import dynamic from "next/dynamic"
 import type { editor } from "monaco-editor"
 import { manifestSchema } from "./manifest-schema"
@@ -113,6 +113,7 @@ type DraftManifest = {
     locale: string
     theme: string
     bottomNav: BottomNavItem[]
+    pcTopNav: BottomNavItem[]
   }
 }
 
@@ -121,7 +122,7 @@ export default function ClientConfigPage() {
   const router = useRouter()
   const { locale } = useLocale()
   const { toast } = useToast()
-  const isMobileDefault = useIsMobile()
+  const isMobileDefault = true //useIsMobile()
 
   const [device, setDevice] = useState<"pc" | "mobile">(isMobileDefault ? "mobile" : "pc")
   const [lang, setLang] = useState(locale === "zh" ? "zh" : "en")
@@ -148,6 +149,7 @@ export default function ClientConfigPage() {
       out.app.defaultLanguage = out.app.defaultLanguage || defaults.app.defaultLanguage
       out.app.locale = out.app.locale || defaults.app.locale
       if (!Array.isArray(out.app.bottomNav)) out.app.bottomNav = defaults.app.bottomNav
+      if (!Array.isArray(out.app.pcTopNav)) out.app.pcTopNav = defaults.app.pcTopNav
       if (saved.pages) out.pages = saved.pages
       if (saved.dataSources) out.dataSources = saved.dataSources
       return out
@@ -195,6 +197,7 @@ export default function ClientConfigPage() {
         { key: "home", label: lang === "zh" ? "首页" : "Home", route: "/preview" },
         { key: "me", label: lang === "zh" ? "我的" : "Me", route: "/profile" },
       ],
+      pcTopNav: [],
     },
     dataSources: {},
   })
@@ -582,7 +585,7 @@ export default function ClientConfigPage() {
   const [displayOpen, setDisplayOpen] = useState(false)
   const [displayCardName, setDisplayCardName] = useState("")
   const [displayCardType, setDisplayCardType] = useState("")
-  const [displayLimit, setDisplayLimit] = useState<string>("1")
+  const [displayLimit, setDisplayLimit] = useState<string>("1") // LOG: 显示数量
   const [displayUnlimited, setDisplayUnlimited] = useState(false)
   const [displayMode, setDisplayMode] = useState<'pick' | 'filter' | 'time' | 'hot'>("time")
   // 顶部标签管理/新增
@@ -611,6 +614,7 @@ export default function ClientConfigPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [filterFields, setFilterFields] = useState<any[]>([])
   const [filterSelected, setFilterSelected] = useState<Record<string, any>>({})
+  const pendingFiltersRef = useRef<any>(null)
 
   const tableDataSources = useMemo(() => {
     const entries = Object.entries(draft.dataSources || {})
@@ -621,58 +625,76 @@ export default function ClientConfigPage() {
 
   // 本地演示字段（无数据时兜底）
   function getMockFilterFields() {
-    return [
-      {
-        id: 'mock_category',
-        key: 'category',
-        label: lang === 'zh' ? '类别' : 'Category',
-        type: 'select',
-        options: [{ label: lang === 'zh' ? '全部' : 'All', value: 'all' }, { label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }],
-        optionsTree: [],
-      },
-      {
-        id: 'mock_region',
-        key: 'region',
-        label: lang === 'zh' ? '地区' : 'Region',
-        type: 'cascader',
-        options: [],
-        optionsTree: [
-          { id: 'cn', name: lang === 'zh' ? '中国' : 'China', children: [{ id: 'bj', name: lang === 'zh' ? '北京' : 'Beijing' }, { id: 'sh', name: lang === 'zh' ? '上海' : 'Shanghai' }] },
-          { id: 'us', name: 'USA', children: [{ id: 'ny', name: 'New York' }, { id: 'sf', name: 'San Francisco' }] },
-        ],
-      },
-    ]
+    return []
   }
 
   async function loadFilterFields(dsKey: string) {
     try {
       setFilterLoading(true)
+      // 解析数据源，优先使用 draft.dataSources[dsKey]，否则支持 'table:{id}' 直连表ID
       const ds = (draft.dataSources || {})[dsKey]
-      if (!ds?.tableId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s) => { const next = { ...s }; mock.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
+      let tableId: string | undefined = ds?.tableId
+      if (!tableId && typeof dsKey === 'string' && dsKey.startsWith('table:')) {
+        tableId = dsKey.replace(/^table:/, '')
+      }
+      if (!tableId) { setFilterFields([]); return }
       const appId = String(params.appId)
-      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(ds.tableId, appId)
+      const defRes = await api.directoryDefs.getOrCreateDirectoryDefByDirectoryId(tableId, appId)
       const defId = defRes?.data?.id
-      if (!defId) { const mock = getMockFilterFields(); setFilterFields(mock); setFilterSelected((s) => { const next = { ...s }; mock.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } }); return next }); return }
-      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 200 })
-      const list = Array.isArray(fieldsRes?.data) ? fieldsRes.data : []
-      const candidates = list
-        .map((f: any) => ({
-          id: f.id,
-          key: f.key,
-          label: f.schema?.label || f.key,
-          type: f.type,
-          options: f.schema?.options || [],
-          optionsTree: f.schema?.cascaderOptions || [],
-        }))
-        .filter((f: any) => f.type === 'select' || f.type === 'cascader')
-      const toUse = candidates.length > 0 ? candidates : getMockFilterFields()
+      if (!defId) { setFilterFields([]); return }
+      const fieldsRes = await api.fields.getFields({ directoryId: defId, page: 1, limit: 100 })
+      const raw = (fieldsRes && (fieldsRes as any).data != null) ? (fieldsRes as any).data : fieldsRes
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.records)
+            ? raw.records
+            : []
+      // Include all fields so that when the data source is a full table, users can choose any field
+      const candidatesAll = list
+        .map((f: any) => {
+          const schema = f.schema || {}
+          const mappedType = f.type || schema.type || 'text'
+          const label = schema.label || f.label || f.key
+          return {
+            id: f.id,
+            key: f.key,
+            label,
+            type: mappedType,
+            options: Array.isArray(schema.options) ? schema.options : [],
+            optionsTree: Array.isArray(schema.cascaderOptions) ? schema.cascaderOptions : [],
+          }
+        })
+        // optional: sort to show select/cascader first for better UX
+        .sort((a: any, b: any) => {
+          const rank = (t: string) => (t === 'select' || t === 'cascader') ? 0 : 1
+          return rank(a.type) - rank(b.type)
+        })
+      const toUse = candidatesAll
       setFilterFields(toUse)
-      // 初始化选中项保留
-      setFilterSelected((s) => {
-        const next: Record<string, any> = { ...s }
-        toUse.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } })
-        return next
-      })
+      // 如果有待应用的覆盖筛选，并且数据源匹配，则根据覆盖勾选字段；否则初始化占位条目
+      if (pendingFiltersRef.current && pendingFiltersRef.current.dataSourceKey === dsKey) {
+        const ov = pendingFiltersRef.current
+        const chosen = new Set<string>((ov.fields || []).map((f: any) => String(f.fieldId)))
+        setFilterSelected(() => {
+          const next: Record<string, any> = {}
+          toUse.forEach((f) => {
+            const checked = chosen.has(String(f.key))
+            next[f.key] = { fieldId: f.key, type: f.type, label: f.label, __checked: checked }
+          })
+          return next
+        })
+        pendingFiltersRef.current = null
+      } else {
+        setFilterSelected((s) => {
+          const next: Record<string, any> = { ...s }
+          toUse.forEach((f) => { if (!next[f.key]) next[f.key] = { fieldId: f.key, type: f.type, label: f.label } })
+          return next
+        })
+      }
+    } catch (err) {
+      setFilterFields([])
     } finally {
       setFilterLoading(false)
     }
@@ -686,7 +708,7 @@ export default function ClientConfigPage() {
         setWorkspaceCardsByCategory((s) => ({ ...s, [d.category]: d.cards }))
         setActiveWorkspaceCategory(d.category || "")
       } else if (d && d.type === 'OVERRIDE') {
-        const { pageId: pid, sectionKey, cardType, props, jsx } = d
+        const { pageId: pid, sectionKey, cardType, props, jsx, filters } = d
         try {
           // 根据返回类型写入对应扩展名
           // JSX 模式暂时隐藏，不自动切换或写入编辑器
@@ -699,6 +721,14 @@ export default function ClientConfigPage() {
               setJsonText(content)
               setMonacoLanguage('json')
               setViewTab('code')
+            }
+          }
+          // 同步已存在的筛选覆盖：优先采用覆盖里的数据源与字段
+          if (filters && typeof filters === 'object') {
+            pendingFiltersRef.current = filters
+            if (filters.dataSourceKey) {
+              setFilterDsKey(String(filters.dataSourceKey))
+              loadFilterFields(String(filters.dataSourceKey))
             }
           }
         } catch { }
@@ -973,11 +1003,48 @@ export default function ClientConfigPage() {
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
       const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
+      // 设置预览ID到localStorage，供底部导航使用
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('PREVIEW_ID', id)
+          window.localStorage.setItem('APP_ID', String(params.appId))
+        }
+      } catch { }
       setViewTab("preview")
       toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
       setViewTab("code")
+    }
+  }
+
+  async function openPreviewInNewTab() {
+    try {
+      const body = draft
+      const res = await fetch("http://localhost:3007/api/preview-manifests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manifest: body }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data?.success || !data?.data?.id) throw new Error(data?.message || "create failed")
+      const id = data.data.id
+      setPreviewId(id)
+      const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+      const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+      setPreviewUrl(url)
+      // 设置预览ID到localStorage，供底部导航使用
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('PREVIEW_ID', id)
+          window.localStorage.setItem('APP_ID', String(params.appId))
+        }
+      } catch { }
+      // 在新标签页中打开预览
+      window.open(url, '_blank', 'noopener,noreferrer')
+      toast({ description: lang === "zh" ? "预览已在新标签页打开" : "Preview opened in new tab" })
+    } catch (e: any) {
+      toast({ description: e?.message || (lang === "zh" ? "打开预览失败" : "Failed to open preview"), variant: "destructive" as any })
     }
   }
 
@@ -1042,6 +1109,14 @@ export default function ClientConfigPage() {
         const fallback = `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
+
+      // 同时保存到localStorage，确保PC导航配置能实时同步
+      try {
+        const key = `STUDIO_CLIENT_CFG_${params.appId}`
+        const payload = { ...body, __ui: { activePageKey, pageTabIndex } }
+        window.localStorage.setItem(key, JSON.stringify(payload))
+      } catch { }
+
       toast({ description: lang === "zh" ? "已保存并刷新预览" : "Saved and refreshed preview" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "保存失败" : "Save failed"), variant: "destructive" as any })
@@ -1059,6 +1134,12 @@ export default function ClientConfigPage() {
       const data = event.data || {};
       // 仅处理 AINO 规范的消息
       if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
+
+      // 确保frame存在
+      if (!frame) {
+        console.warn("Frame element not found, skipping message handling");
+        return;
+      }
 
       switch (data.type) {
         case "aino:ready":
@@ -1219,7 +1300,26 @@ export default function ClientConfigPage() {
         setViewTab("preview")
       } else if (previewSource === "home") {
         const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
-        setPreviewUrl(`http://localhost:3005/${baseLang}/home`)
+        try {
+          if (previewId) {
+            const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
+            const url = `http://localhost:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+            setPreviewUrl(url)
+            // 设置预览ID到localStorage，供底部导航使用
+            try {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('PREVIEW_ID', previewId)
+                window.localStorage.setItem('APP_ID', String(params.appId))
+              }
+            } catch { }
+          } else {
+            // 若尚未创建预览，则创建后自动设置URL
+            openPreview()
+          }
+        } catch {
+          // 回退到自动创建预览
+          openPreview()
+        }
         setViewTab("preview")
       } else {
         openPreview()
@@ -1339,10 +1439,40 @@ export default function ClientConfigPage() {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={22} minSize={18} className="bg-white">
               <div className="h-full overflow-y-auto p-3 space-y-3">
+                {/* 设备切换按钮 - 固定在顶部 */}
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="text-xs font-medium text-muted-foreground">{lang === "zh" ? "设备类型" : "Device"}</div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant={device === "pc" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDevice("pc")}
+                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
+                    >
+                      <Monitor className="w-3 h-3" />
+                      PC
+                    </Button>
+                    <Button
+                      variant={device === "mobile" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDevice("mobile")}
+                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      Mobile
+                    </Button>
+                  </div>
+                </div>
+
                 {!authUIOpen && !pageUIOpen ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-semibold">{lang === "zh" ? "配置/构建" : "Config/Build"}</div>
+                      <div className="text-sm font-semibold">
+                        {device === "pc"
+                          ? (lang === "zh" ? "PC配置/构建" : "PC Config/Build")
+                          : (lang === "zh" ? "Mobile配置/构建" : "Mobile Config/Build")
+                        }
+                      </div>
                       <Tabs value="config" className="-mr-2">
                         <TabsList>
                           <TabsTrigger value="config">{lang === "zh" ? "配置" : "Config"}</TabsTrigger>
@@ -1365,93 +1495,167 @@ export default function ClientConfigPage() {
                         <Input value={draft.app.theme} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, theme: e.target.value } }))} />
                       </div>
                     )}
-                    <div className="space-y-2">
-                      <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
+                    {/* 根据设备类型显示不同的导航配置 */}
+                    {device === "pc" ? (
+                      // PC模式：顶部导航配置
                       <div className="space-y-2">
-                        {draft.app.bottomNav.map((item: any, idx: number) => (
-                          <div
-                            key={item.key}
-                            className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("text/plain", String(idx))
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              const from = Number(e.dataTransfer.getData("text/plain"))
-                              const to = idx
-                              if (Number.isNaN(from) || from === to) return
-                              setDraft((s: any) => {
-                                const next = [...s.app.bottomNav]
-                                const [moved] = next.splice(from, 1)
-                                next.splice(to, 0, moved)
-                                return { ...s, app: { ...s.app, bottomNav: next } }
-                              })
-                            }}
-                          >
-                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
-                            <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
-                            {/* <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
-                              <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
-                            </Button> */}
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => {
-                                const pageKey = (item.route || '').replace(/^\//, '') || item.key
-                                if (pageKey) {
-                                  try {
-                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                    const u = new URL(`http://localhost:3005/${lang}${r}`)
-                                    setPreviewUrl(u.toString())
-                                  } catch {
-                                    const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                    setPreviewUrl(`http://localhost:3005/${lang}${r}`)
-                                  }
-                                  setActivePageKey(pageKey)
-                                  setPageUIOpen(true)
-                                  setViewTab("preview")
-                                } else {
-                                  toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
-                                }
+                        <Label>{lang === "zh" ? "PC顶部导航（最多8项）" : "PC Top Nav (max 8)"}</Label>
+                        <div className="space-y-2">
+                          {(draft.app.pcTopNav || []).map((item: any, idx: number) => (
+                            <div
+                              key={item.key}
+                              className="space-y-2 p-3 border rounded-lg bg-gray-50"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("text/plain", String(idx))
                               }}
-                            >
-                              <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault()
+                                const from = Number(e.dataTransfer.getData("text/plain"))
+                                const to = idx
+                                if (Number.isNaN(from) || from === to) return
                                 setDraft((s: any) => {
-                                  const next = { ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }
-                                  setTimeout(() => { savePreview(next, true) }, 0)
-                                  return next
+                                  const next = [...(s.app.pcTopNav || [])]
+                                  const [moved] = next.splice(from, 1)
+                                  next.splice(to, 0, moved)
+                                  return { ...s, app: { ...s.app, pcTopNav: next } }
                                 })
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <div className="flex items-center gap-2">
+                                <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                                <Input
+                                  value={item.label}
+                                  onChange={(e) => {
+                                    const newDraft = { ...draft, app: { ...draft.app, pcTopNav: (draft.app.pcTopNav || []).map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }
+                                    setDraft(newDraft)
+                                    setTimeout(() => { savePreview(newDraft, true) }, 0)
+                                  }}
+                                  placeholder={lang === "zh" ? "导航名称" : "Nav Label"}
+                                  className="flex-1"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setDraft((s: any) => {
+                                      const next = { ...s, app: { ...s.app, pcTopNav: (s.app.pcTopNav || []).filter((_: any, i: number) => i !== idx) } }
+                                      setTimeout(() => { savePreview(next, true) }, 0)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />{lang === "zh" ? "删除" : "Delete"}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          {(draft.app.pcTopNav || []).length < 8 && (
+                            <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                              const key = `pc-${Date.now()}`
+                              const next = { ...s }
+                              next.app = { ...next.app, pcTopNav: [...(next.app.pcTopNav || []), { key, label: lang === "zh" ? "新导航" : "New Nav" }] }
+                              setTimeout(() => { savePreview(next, true) }, 0)
+                              return next
+                            })}>
+                              {lang === "zh" ? "添加导航项" : "Add Nav Item"}
                             </Button>
-                          </div>
-                        ))}
-                        {draft.app.bottomNav.length < 5 && (
-                          <Button variant="secondary" onClick={() => setDraft((s: any) => {
-                            const key = `k${Date.now()}`
-                            const route = `/p-${key}`
-                            const next = { ...s }
-                            next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
-                            const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
-                            next.pages = next.pages || {}
-                            if (!next.pages[pageKey]) {
-                              next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
-                            }
-                            return next
-                          })}>
-                            {lang === "zh" ? "添加项" : "Add Item"}
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      // Mobile模式：底部导航配置
+                      <div className="space-y-2">
+                        <Label>{lang === "zh" ? "底部导航（最多5项）" : "Bottom Nav (max 5)"}</Label>
+                        <div className="space-y-2">
+                          {draft.app.bottomNav.map((item: any, idx: number) => (
+                            <div
+                              key={item.key}
+                              className="grid grid-cols-[20px_1fr_auto_auto_auto] items-center gap-2"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("text/plain", String(idx))
+                              }}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault()
+                                const from = Number(e.dataTransfer.getData("text/plain"))
+                                const to = idx
+                                if (Number.isNaN(from) || from === to) return
+                                setDraft((s: any) => {
+                                  const next = [...s.app.bottomNav]
+                                  const [moved] = next.splice(from, 1)
+                                  next.splice(to, 0, moved)
+                                  return { ...s, app: { ...s.app, bottomNav: next } }
+                                })
+                              }}
+                            >
+                              <div className="cursor-grab active:cursor-grabbing text-muted-foreground flex items-center justify-center"><GripVertical className="w-4 h-4" /></div>
+                              <Input value={item.label} onChange={(e) => setDraft((s: any) => ({ ...s, app: { ...s.app, bottomNav: s.app.bottomNav.map((it: any, i: number) => i === idx ? { ...it, label: e.target.value } : it) } }))} placeholder={lang === "zh" ? "名称" : "Label"} />
+                              {/* <Button variant="outline" size="sm" onClick={() => openRouteDialog(idx)} title={item.route || "/route"}>
+                                <Link2 className="w-4 h-4 mr-1" />{lang === "zh" ? "路由" : "Route"}
+                              </Button> */}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  const pageKey = (item.route || '').replace(/^\//, '') || item.key
+                                  if (pageKey) {
+                                    try {
+                                      const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                      const u = new URL(`http://localhost:3005/${lang}${r}`)
+                                      setPreviewUrl(u.toString())
+                                    } catch {
+                                      const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
+                                      setPreviewUrl(`http://localhost:3005/${lang}${r}`)
+                                    }
+                                    setActivePageKey(pageKey)
+                                    setPageUIOpen(true)
+                                    setViewTab("preview")
+                                  } else {
+                                    toast({ description: lang === "zh" ? "请先设置路由" : "Set route first" })
+                                  }
+                                }}
+                              >
+                                <Settings className="w-4 h-4 mr-1" />{lang === "zh" ? "配置" : "Config"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDraft((s: any) => {
+                                    const next = { ...s, app: { ...s.app, bottomNav: s.app.bottomNav.filter((_: any, i: number) => i !== idx) } }
+                                    setTimeout(() => { savePreview(next, true) }, 0)
+                                    return next
+                                  })
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          {draft.app.bottomNav.length < 5 && (
+                            <Button variant="secondary" onClick={() => setDraft((s: any) => {
+                              const key = `k${Date.now()}`
+                              const route = `/p-${key}`
+                              const next = { ...s }
+                              next.app = { ...next.app, bottomNav: [...next.app.bottomNav, { key, label: lang === "zh" ? "新项" : "Item", route }] }
+                              const pageKey = (route || '').replace(/^\//, '') || `p-${key}`
+                              next.pages = next.pages || {}
+                              if (!next.pages[pageKey]) {
+                                next.pages[pageKey] = { title: { zh: "新页面", en: "New Page" }, layout: "mobile", route, cards: [] }
+                              }
+                              return next
+                            })}>
+                              {lang === "zh" ? "添加项" : "Add Item"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -1874,13 +2078,32 @@ export default function ClientConfigPage() {
                                   const sectionKey = tbb?.enabled ? `tab-${pageTabIndex}` : `icon-${pageTabIndex}`
                                   setFilterCardName(it.displayName || it.type)
                                   setFilterCardType(it.type)
-                                  // 默认选择第一个表数据源
-                                  const first = tableDataSources[0]?.key || ''
-                                  const nextKey = filterDsKey || first
-                                  setFilterDsKey(nextKey)
-                                  // 无数据源也加载本地演示字段
-                                  loadFilterFields(nextKey)
-                                  // 触发预览拉取现有覆盖，备用
+                                  // 优先级：已有 filters.dataSourceKey -> incomingMappings 的 dsKey/tableId -> 第一个表数据源
+                                  let preferredKey = ''
+                                  // 1) 从 overrides 中读取（若存在）
+                                  try {
+                                    const raw = localStorage.getItem(`APP_PAGE_${k.replace(/^p-/, '')}`)
+                                    const cfg = raw ? JSON.parse(raw) : {}
+                                    const ov = cfg?.overrides?.[sectionKey]?.[it.type]
+                                    const ovKey = ov?.filters?.dataSourceKey
+                                    if (ovKey) preferredKey = String(ovKey)
+                                  } catch { }
+                                  // 2) 从 incomingMappings 匹配当前卡片，取其 dsKey 或 tableId
+                                  if (!preferredKey) {
+                                    try {
+                                      const entries = Object.entries(incomingMappings || {})
+                                      const hit = entries.find(([mKey, ctx]: any) => String(ctx?.cardType) === String(it.type))?.[1] as any
+                                      if (hit) {
+                                        if (hit.dataSourceKey) preferredKey = String(hit.dataSourceKey)
+                                        else if (hit.tableId) preferredKey = `table:${String(hit.tableId)}`
+                                      }
+                                    } catch { }
+                                  }
+                                  // 3) 回退到第一个“表”数据源
+                                  if (!preferredKey) preferredKey = tableDataSources[0]?.key || ''
+                                  setFilterDsKey(preferredKey)
+                                  loadFilterFields(preferredKey)
+                                  // 请求预览回传覆盖（用于回填字段勾选）
                                   window.frames[0]?.postMessage({ type: 'GET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType: it.type }, '*')
                                   setFilterOpen(true)
                                 } catch { }
@@ -2276,8 +2499,10 @@ export default function ClientConfigPage() {
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
                     </Button>
-                    <Button variant="outline" disabled title={lang === "zh" ? "PC 预览稍后提供" : "PC preview later"}>PC</Button>
-                    <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
+                    <Button variant="outline" onClick={openPreviewInNewTab}>
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      {lang === "zh" ? "新标签打开" : "Open in New Tab"}
+                    </Button>
                     <Button variant="outline" onClick={() => setLang(lang === "zh" ? "en" : "zh")}>{lang === "zh" ? "中/EN" : "EN/中"}</Button>
                     {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
                       {lang === "zh" ? "AI运营" : "AI Ops"}
@@ -2518,12 +2743,12 @@ export default function ClientConfigPage() {
 
             {/* 字段选择 */}
             <div className="space-y-2">
-              <div className="text-xs text-muted-foreground">{lang === 'zh' ? '可作为筛选的字段（单选/级联）' : 'Filterable fields (select/cascader)'}</div>
+              <div className="text-xs text-muted-foreground">{lang === 'zh' ? '可作为筛选的字段（来自所选数据源）' : 'Fields from selected data source'}</div>
               <ScrollArea className="max-h-[40vh] border rounded-md">
                 <div className="p-3 space-y-2">
                   {filterLoading && (<div className="text-xs text-muted-foreground">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>)}
                   {!filterLoading && filterFields.length === 0 && (
-                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '无可用字段（请在字段管理中配置 select/cascader）。' : 'No fields available (configure select/cascader in Fields).'}</div>
+                    <div className="text-xs text-muted-foreground">{lang === 'zh' ? '当前数据源无可用字段或数据源未选择。' : 'No fields for current data source or none selected.'}</div>
                   )}
                   {filterFields.map((f: any) => {
                     const checked = !!filterSelected[f.key]?.__checked
@@ -2544,7 +2769,7 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFilterOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               try {
                 const k = activePageKey as string
                 const tba = (draft.pages as any)?.[k]?.topBar
@@ -2560,8 +2785,9 @@ export default function ClientConfigPage() {
                 }))
                 const filtersCfg: any = { enabled, dataSourceKey: filterDsKey || undefined, fields: fieldsCfg }
                 const cardType = filterCardType || ''
+                // 1) 通知预览即时生效
                 window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, filters: filtersCfg }, '*')
-                // 同步写回到对应 JSON 文件（若已打开/存在）
+                // 2) 同步写回到对应 JSON 文件（若已打开/存在）
                 const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
                 const existing = virtualFiles[path]
                 if (existing) {
@@ -2576,8 +2802,36 @@ export default function ClientConfigPage() {
                     }
                   } catch { }
                 }
-                setFilterOpen(false)
+                // 3) 写入到草稿 manifest：pages[k].overrides[sectionKey][cardType].filters
+                let updatedDraft: any
+                setDraft((s: any) => {
+                  const next = { ...(s || {}) }
+                  next.pages = next.pages || {}
+                  const p = { ...(next.pages[k] || {}) }
+                  const ov = { ...(p.overrides || {}) }
+                  const sec = { ...(ov[sectionKey] || {}) }
+                  const card = { ...(sec[cardType] || {}) }
+                  card.filters = filtersCfg
+                  sec[cardType] = card
+                  ov[sectionKey] = sec
+                  p.overrides = ov
+                  next.pages[k] = p
+                  updatedDraft = next
+                  return next
+                })
+                // 4) 持久化到 /api/applications/[id]
+                try {
+                  const appId = String(params.appId)
+                  let existingConfig: Record<string, any> = {}
+                  try {
+                    const getRes = await api.applications.getApplication(appId)
+                    existingConfig = (getRes.success && getRes.data ? (getRes.data as any).config : {}) || {}
+                  } catch { existingConfig = {} }
+                  const nextConfig = { ...existingConfig, clientManifest: updatedDraft }
+                  await api.applications.updateApplication(appId, { config: nextConfig })
+                } catch { }
               } catch { }
+              setFilterOpen(false)
             }}>{lang === 'zh' ? '保存' : 'Save'}</Button>
           </DialogFooter>
         </DialogContent>
@@ -2634,7 +2888,7 @@ export default function ClientConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDisplayOpen(false)}>{lang === 'zh' ? '取消' : 'Cancel'}</Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               try {
                 const k = activePageKey as string
                 const tba = (draft.pages as any)?.[k]?.topBar
@@ -2642,8 +2896,9 @@ export default function ClientConfigPage() {
                 const limitNum = displayUnlimited ? undefined : Math.max(1, parseInt(displayLimit || '1', 10))
                 const displayCfg: any = { mode: displayMode, limit: limitNum, unlimited: !!displayUnlimited }
                 const cardType = displayCardType || ''
+                // 1) 通知右侧预览即时生效
                 window.frames[0]?.postMessage({ type: 'SET_OVERRIDE', pageId: k.replace(/^p-/, ''), sectionKey, cardType, display: displayCfg }, '*')
-                // 同步写回到对应 JSON 文件（若已打开/存在）
+                // 2) 同步写回到对应 JSON 文件（若已打开/存在）
                 const path = `pages/${k}/cards/${sectionKey}/${cardType}.json`
                 const existing = virtualFiles[path]
                 if (existing) {
@@ -2658,6 +2913,34 @@ export default function ClientConfigPage() {
                     }
                   } catch { }
                 }
+                // 3) 写入到草稿 manifest：pages[k].overrides[sectionKey][cardType].display
+                let updatedDraft: any
+                setDraft((s: any) => {
+                  const next = { ...(s || {}) }
+                  next.pages = next.pages || {}
+                  const p = { ...(next.pages[k] || {}) }
+                  const ov = { ...(p.overrides || {}) }
+                  const sec = { ...(ov[sectionKey] || {}) }
+                  const card = { ...(sec[cardType] || {}) }
+                  card.display = displayCfg
+                  sec[cardType] = card
+                  ov[sectionKey] = sec
+                  p.overrides = ov
+                  next.pages[k] = p
+                  updatedDraft = next
+                  return next
+                })
+                // 4) 持久化到 /api/applications/[id]：挂载到 applications.config.clientManifest
+                try {
+                  const appId = String(params.appId)
+                  let existingConfig: Record<string, any> = {}
+                  try {
+                    const getRes = await api.applications.getApplication(appId)
+                    existingConfig = (getRes.success && getRes.data ? (getRes.data as any).config : {}) || {}
+                  } catch { existingConfig = {} }
+                  const nextConfig = { ...existingConfig, clientManifest: updatedDraft }
+                  await api.applications.updateApplication(appId, { config: nextConfig })
+                } catch { }
               } catch { }
               setDisplayOpen(false)
             }}>{lang === 'zh' ? '保存' : 'Save'}</Button>

@@ -21,18 +21,61 @@ import relationRecordsRoute from "./modules/relation-records/routes"
 import { docsRoute } from "./docs/routes"
 import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
+import crawlRoute from "./modules/crawl/routes"
 import pageConfigsRoute from "./modules/page-configs/routes"
+import moduleConfigsRoute from "./modules/module-configs/routes"
 import { databaseMiddleware } from "./middleware/database"
 
 const app = new Hono()
 
+// Allowed origins for CORS (Studio / App dev servers)
+const allowedOrigins = new Set<string>([
+  'http://localhost:3006',
+  'http://localhost:3007',
+  'http://localhost:3003',
+  'http://127.0.0.1:3006',
+  'http://127.0.0.1:3007',
+  'http://127.0.0.1:3003',
+  process.env.STUDIO_ORIGIN || '',
+  process.env.APP_ORIGIN || '',
+].filter(Boolean))
+
 app.use("*", cors({
-  origin: (origin) => origin ?? "*",
+  origin: (origin) => {
+    if (origin && allowedOrigins.has(origin)) return origin
+    // Fallback: echo back origin if provided to support local testing
+    return origin || "http://localhost:3006"
+  },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization"],
+  allowHeaders: [
+    "*",
+    "Content-Type",
+    "content-type",
+    "Authorization",
+    "authorization",
+    "x-aino-firecrawl-key",
+    "x-aino-openai-endpoint",
+    "x-aino-openai-key",
+    "X-Requested-With"
+  ],
+  exposeHeaders: ["Content-Type", "Authorization", "x-aino-firecrawl-key"],
   credentials: true,
   maxAge: 86400,
 }))
+
+// 显式处理所有预检请求，确保 CORS 预检稳定通过
+app.options("*", (c) => {
+  const reqOrigin = c.req.header("Origin") || ""
+  const origin = (reqOrigin && allowedOrigins.has(reqOrigin)) ? reqOrigin : (reqOrigin || "http://localhost:3006")
+  const reqHeaders = c.req.header("Access-Control-Request-Headers") || "Content-Type, Authorization, x-aino-firecrawl-key"
+  c.header("Access-Control-Allow-Origin", origin)
+  c.header("Vary", "Origin")
+  c.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+  c.header("Access-Control-Allow-Headers", reqHeaders)
+  c.header("Access-Control-Allow-Credentials", "true")
+  c.header("Access-Control-Max-Age", "86400")
+  return c.body(null, 204)
+})
 
 // 添加数据库中间件
 app.use("*", databaseMiddleware)
@@ -93,8 +136,14 @@ app.route("/api/preview-manifests", previewManifestsRoute)
 // AI 网关路由（OpenAI 兼容）
 app.route("/api/ai", aiRoute)
 
+// 爬取服务路由（Firecrawl 集成）
+app.route("/api/crawl", crawlRoute)
+
 // 页面配置临时存储/读取
 app.route("/api/page-configs", pageConfigsRoute)
+
+// 模块配置CRUD（JSON文件存储）
+app.route("/api/module-configs", moduleConfigsRoute)
 
 // 静态文件：上传目录（基于运行时代码位置计算，dist/../uploads）
 const runtimeDir = path.dirname(fileURLToPath(import.meta.url))

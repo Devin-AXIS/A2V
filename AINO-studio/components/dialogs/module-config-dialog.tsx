@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Save, RotateCcw } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
+import { AvatarInput } from "@/components/form-inputs/avatar-input"
 
 interface ModuleConfigDialogProps {
   open: boolean
@@ -50,17 +51,24 @@ export function ModuleConfigDialog({
     maxConnections: 10,
     timeout: 30,
   })
+  const [moduleName, setModuleName] = useState(module?.name || "")
+  const [icon, setIcon] = useState<string>("")
 
   useEffect(() => {
     if (module) {
       setConfig(module.settings)
+      setModuleName(module.name)
     }
   }, [module])
 
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      await onSave(config)
+      await onSave({
+        ...config,
+        __moduleName: moduleName?.trim(),
+        __icon: icon,
+      })
       onOpenChange(false)
     } catch (error) {
       console.error('保存配置失败:', error)
@@ -86,8 +94,28 @@ export function ModuleConfigDialog({
             {locale === "zh" ? "配置模块" : "Configure Module"}: {module.name}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{locale === "zh" ? "模块名称" : "Module Name"}</Label>
+              <Input
+                value={moduleName}
+                onChange={(e) => setModuleName(e.target.value)}
+                placeholder={locale === "zh" ? "请输入模块名称" : "Enter module name"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{locale === "zh" ? "模块图标" : "Module Icon"}</Label>
+              <AvatarInput
+                value={icon}
+                onChange={(v) => setIcon(typeof v === 'string' ? v : (v[0] || ''))}
+                multiple={false}
+                size="md"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{locale === "zh" ? "启用模块" : "Enable Module"}</Label>
@@ -101,7 +129,7 @@ export function ModuleConfigDialog({
                 </span>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label>{locale === "zh" ? "缓存" : "Cache"}</Label>
               <div className="flex items-center space-x-2">
@@ -192,15 +220,15 @@ export function ModuleConfigDialog({
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleReset}
             disabled={isLoading}
           >
             <RotateCcw className="size-4 mr-2" />
             {locale === "zh" ? "重置" : "Reset"}
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={isLoading}
           >
@@ -209,7 +237,7 @@ export function ModuleConfigDialog({
             ) : (
               <Save className="size-4 mr-2" />
             )}
-            {isLoading 
+            {isLoading
               ? (locale === "zh" ? "保存中..." : "Saving...")
               : (locale === "zh" ? "保存" : "Save")
             }

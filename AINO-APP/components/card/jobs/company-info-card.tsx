@@ -3,6 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import Image from "next/image"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 export interface CompanyInfoData {
     name: string
@@ -22,7 +23,8 @@ const defaultCompanyInfoData: CompanyInfoData = {
 }
 
 export function CompanyInfoCard({ data, className }: CompanyInfoCardProps) {
-    const merged = useCardRegistryData('company-info', defaultCompanyInfoData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultCompanyInfoData)
     return (
         <AppCard className={className}>
             <div className="p-4 flex items-center gap-4">

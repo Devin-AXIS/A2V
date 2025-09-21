@@ -7,6 +7,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
 import { CardRegistry } from "../registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface Job {
   id: number
@@ -69,8 +70,12 @@ export function RelatedJobsListCard({
 }: RelatedJobsListCardProps) {
   const router = useRouter()
   const { locale } = useParams()
+  const { key: providedKey } = useLocalThemeKey()
 
-  const relatedJobs = useCardRegistryData("related-jobs-list", defaultJobs)
+  const { realData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobs)
+
+  let renderData = realData;
+  if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
 
   const handleJobClick = (jobId: number) => {
     router.push(`/${locale}/demo/education/jobs/related-post/${jobId}`)
@@ -82,7 +87,7 @@ export function RelatedJobsListCard({
         {title}
       </h3>
       <div className="space-y-3 flex-1 min-h-0 overflow-auto">
-        {relatedJobs.map((job) => (
+        {renderData.map((job) => (
           <AppCard key={job.id}>
             <div
               className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"

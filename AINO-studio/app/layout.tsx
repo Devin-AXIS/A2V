@@ -6,6 +6,7 @@ import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 import { NotificationProvider } from "@/components/notifications/notification-provider"
 import { LocaleProvider } from "@/hooks/use-locale"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -35,6 +36,7 @@ html {
             <NotificationProvider>{children}</NotificationProvider>
           </LocaleProvider>
         </AuthProvider>
+        <Toaster />
       </body>
     </html>
   )

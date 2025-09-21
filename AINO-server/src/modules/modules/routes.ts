@@ -32,7 +32,7 @@ const moduleService = new ModuleService()
 app.get("/system", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const systemModules = moduleRegistry.getLocalModules()
-  
+
   return c.json({
     success: true,
     data: {
@@ -55,9 +55,9 @@ app.get("/installed", mockRequireAuthMiddleware, zValidator("query", GetModulesQ
   const user = c.get("user")
   const query = c.req.valid("query")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   console.log('🔍 路由参数:', { query, applicationId })
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -86,7 +86,7 @@ app.get("/installed/:moduleKey", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const moduleKey = c.req.param("moduleKey")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -112,7 +112,7 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", InstallModule
   const user = c.get("user")
   const data = c.req.valid("json")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -139,7 +139,7 @@ app.delete("/uninstall/:moduleKey", mockRequireAuthMiddleware, zValidator("json"
   const moduleKey = c.req.param("moduleKey")
   const data = c.req.valid("json")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -166,7 +166,7 @@ app.put("/config/:moduleKey", mockRequireAuthMiddleware, zValidator("json", Upda
   const moduleKey = c.req.param("moduleKey")
   const data = c.req.valid("json")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -175,7 +175,13 @@ app.put("/config/:moduleKey", mockRequireAuthMiddleware, zValidator("json", Upda
   }
 
   try {
-    const result = await moduleService.updateModuleConfig(applicationId, { moduleKey, config: data.config })
+    const result = await moduleService.updateModuleConfig(applicationId, {
+      moduleKey,
+      config: data.config,
+      // 透传可选字段
+      moduleName: (data as any).moduleName,
+      icon: (data as any).icon,
+    })
     return c.json({
       success: true,
       data: result,
@@ -193,7 +199,7 @@ app.patch("/status/:moduleKey", mockRequireAuthMiddleware, zValidator("json", Up
   const moduleKey = c.req.param("moduleKey")
   const data = c.req.valid("json")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -219,7 +225,7 @@ app.get("/dependencies/:moduleKey", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const moduleKey = c.req.param("moduleKey")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -244,7 +250,7 @@ app.get("/dependencies/:moduleKey", mockRequireAuthMiddleware, async (c) => {
 app.get("/stats", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -286,7 +292,7 @@ app.get("/available", mockRequireAuthMiddleware, async (c) => {
 app.post("/initialize-system", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -312,7 +318,7 @@ app.post("/initialize-system", mockRequireAuthMiddleware, async (c) => {
 app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
   const moduleKey = c.req.param("moduleKey")
   const user = c.get("user")
-  
+
   // 检查模块是否在注册表中
   if (!moduleRegistry.has(moduleKey)) {
     return c.json({
@@ -326,7 +332,7 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
     // 远程模块通过代理处理
     return remoteProxy.fetch(c.req, { user })
   }
-  
+
   // 本地系统模块处理 - 只支持用户模块
   const validModules = ["user"]
   if (!validModules.includes(moduleKey)) {
@@ -335,7 +341,7 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
       error: "系统模块不存在",
     }, 404)
   }
-  
+
   // 根据模块类型路由到对应的处理器
   switch (moduleKey) {
     case "user":
@@ -352,29 +358,29 @@ app.all("/system/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
 async function handleUserModule(c: any, user: any) {
   const originalPath = c.req.path
   const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
       error: "缺少应用ID参数",
     }, 400)
   }
-  
+
   // 设置应用ID到请求头，供子路由使用
   c.req.header("x-application-id", applicationId)
-  
+
   // 创建新的请求对象，调整路径
   const newPath = originalPath.replace("/api/modules/system/user", "")
   const newUrl = new URL(c.req.url)
   newUrl.pathname = newPath
-  
+
   // 创建新的请求
   const newReq = new Request(newUrl.toString(), {
     method: c.req.method,
     headers: c.req.header(),
     body: c.req.method !== 'GET' ? await c.req.text() : undefined,
   })
-  
+
   // 路由到应用用户模块
   return applicationUsersRoute.fetch(newReq, {
     applicationId,
@@ -490,7 +496,7 @@ async function handleUserModule(c: any, user: any) {
 app.get("/", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const allModules = moduleRegistry.getAll()
-  
+
   return c.json({
     success: true,
     data: {
@@ -516,7 +522,7 @@ app.get("/", mockRequireAuthMiddleware, async (c) => {
 app.get("/list", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const allModules = moduleRegistry.getAll()
-  
+
   return c.json({
     success: true,
     data: {
@@ -542,7 +548,7 @@ app.get("/list", mockRequireAuthMiddleware, async (c) => {
 app.get("/remote", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const remoteModules = moduleRegistry.getRemoteModules()
-  
+
   return c.json({
     success: true,
     data: {

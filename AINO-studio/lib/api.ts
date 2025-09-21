@@ -978,11 +978,24 @@ export const modulesApi = {
     })
   },
 
-  // 更新模块配置
-  async updateModuleConfig(applicationId: string, moduleKey: string, config: any): Promise<ApiResponse<any>> {
+  // 更新模块配置（支持同时更新 moduleName 与 icon）
+  async updateModuleConfig(
+    applicationId: string,
+    moduleKey: string,
+    data: { config?: any; moduleName?: string; icon?: string } | any,
+  ): Promise<ApiResponse<any>> {
+    const payload: any = {}
+    if (data && typeof data === 'object') {
+      if (data.config !== undefined) payload.config = data.config
+      else payload.config = { ...data }
+      if (typeof data.moduleName === 'string') payload.moduleName = data.moduleName
+      if (typeof data.icon === 'string') payload.icon = data.icon
+      // 为后端 zod 校验补齐 moduleKey 字段
+      payload.moduleKey = moduleKey
+    }
     return apiRequest<any>(`/api/modules/config/${encodeURIComponent(moduleKey)}?applicationId=${applicationId}`, {
       method: 'PUT',
-      body: JSON.stringify({ config }),
+      body: JSON.stringify(payload),
     })
   },
 

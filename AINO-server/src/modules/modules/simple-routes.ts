@@ -23,9 +23,9 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
   const user = c.get("user")
   const data = c.req.valid("json")
   const applicationId = c.req.query("applicationId")
-  
+
   console.log('🔍 模块安装请求:', { applicationId, data, userId: user.id })
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -35,7 +35,7 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
 
   try {
     const result = await moduleService.installModule(applicationId, data.moduleKey, data.installConfig)
-    
+
     return c.json({
       success: true,
       data: result,
@@ -43,7 +43,7 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
     })
   } catch (error) {
     console.error('❌ 模块安装失败:', error)
-    
+
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : "模块安装失败",
@@ -58,7 +58,7 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
 app.get("/installed", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   const applicationId = c.req.query("applicationId")
-  
+
   if (!applicationId) {
     return c.json({
       success: false,
@@ -68,7 +68,7 @@ app.get("/installed", mockRequireAuthMiddleware, async (c) => {
 
   try {
     const modules = await moduleService.getInstalledModules(applicationId)
-    
+
     return c.json({
       success: true,
       data: {
@@ -78,7 +78,7 @@ app.get("/installed", mockRequireAuthMiddleware, async (c) => {
     })
   } catch (error) {
     console.error('❌ 获取模块列表失败:', error)
-    
+
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : "获取模块列表失败",

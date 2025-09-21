@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLocale } from "@/hooks/use-locale"
+import { AvatarInput } from "@/components/form-inputs/avatar-input"
 
 interface SimpleModuleDialogProps {
   open: boolean
@@ -41,9 +42,12 @@ export function SimpleModuleDialog({
       requireSpecialChars: false,
     }
   })
+  const [moduleName, setModuleName] = useState<string>(module?.name || "")
+  const [icon, setIcon] = useState<string>("")
 
   useEffect(() => {
     if (module && type === "config") {
+      setModuleName(module.name || "")
       // 根据模块类型设置不同的默认配置
       if (module.name === "用户管理" || module.name === "User Management") {
         setConfig({
@@ -66,7 +70,11 @@ export function SimpleModuleDialog({
     setIsLoading(true)
     try {
       if (type === "config") {
-        await onConfirm(config)
+        await onConfirm({
+          ...config,
+          __moduleName: moduleName?.trim(),
+          __icon: icon,
+        })
       } else {
         await onConfirm()
       }
@@ -106,14 +114,21 @@ export function SimpleModuleDialog({
 
         {type === "config" ? (
           <div className="space-y-4">
+            {/* 通用：模块名与图标 */}
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label>{locale === "zh" ? "模块名称" : "Module Name"}</Label>
+                <Input value={moduleName} onChange={(e) => setModuleName(e.target.value)} placeholder={locale === "zh" ? "请输入模块名称" : "Enter module name"} />
+              </div>
+              <div className="space-y-2">
+                <Label>{locale === "zh" ? "模块图标" : "Module Icon"}</Label>
+                <AvatarInput value={icon} onChange={(v) => setIcon(typeof v === 'string' ? v : (v[0] || ''))} multiple={false} size="md" />
+              </div>
+            </div>
+
             {isUserModule ? (
               // 用户模块配置
               <>
-                <div className="space-y-2">
-                  <Label>{locale === "zh" ? "模块名称" : "Module Name"}</Label>
-                  <Input value={module.name} disabled className="bg-gray-50" />
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>{locale === "zh" ? "允许用户注册" : "Allow Registration"}</Label>
@@ -222,10 +237,6 @@ export function SimpleModuleDialog({
             ) : (
               // 其他模块的通用配置
               <>
-                <div className="space-y-2">
-                  <Label>{locale === "zh" ? "模块名称" : "Module Name"}</Label>
-                  <Input value={module.name} disabled className="bg-gray-50" />
-                </div>
                 <div className="text-center py-8 text-gray-500">
                   {locale === "zh" ? "该模块暂无特殊配置项" : "No special configuration options for this module"}
                 </div>

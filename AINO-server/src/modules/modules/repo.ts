@@ -296,21 +296,52 @@ export class ModuleRepository {
 
   // 更新模块配置
   async updateConfig(data: TUpdateModuleConfigRequest & { applicationId: string }) {
-    const [module] = await db
+    // 先尽力查到当前记录：优先 module_key，其次若像 UUID 则按 id，最后按 module_name
+    const looksLikeUuid = data.moduleKey && data.moduleKey.length === 36 && data.moduleKey.includes('-')
+    let [current] = await db
+      .select()
+      .from(moduleInstalls)
+      .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.moduleKey, data.moduleKey)))
+      .limit(1)
+    if (!current && looksLikeUuid) {
+      ;[current] = await db
+        .select()
+        .from(moduleInstalls)
+        .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.id, data.moduleKey)))
+        .limit(1)
+    }
+    if (!current) {
+      ;[current] = await db
+        .select()
+        .from(moduleInstalls)
+        .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.moduleName, data.moduleKey)))
+        .limit(1)
+    }
+    if (!current) return null as any
+
+    const nextConfig = {
+      ...(current.installConfig || {}),
+      ...(data.config || {}),
+    }
+    if (typeof (data as any).icon === "string") {
+      ; (nextConfig as any).icon = (data as any).icon
+    }
+
+    const updateSet: any = {
+      installConfig: nextConfig,
+      updatedAt: new Date(),
+    }
+    if (typeof (data as any).moduleName === "string" && (data as any).moduleName?.trim()) {
+      updateSet.moduleName = (data as any).moduleName.trim()
+    }
+
+    const [updated] = await db
       .update(moduleInstalls)
-      .set({
-        installConfig: data.config,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(moduleInstalls.applicationId, data.applicationId),
-          eq(moduleInstalls.moduleKey, data.moduleKey)
-        )
-      )
+      .set(updateSet)
+      .where(and(eq(moduleInstalls.applicationId, data.applicationId), eq(moduleInstalls.id, current.id)))
       .returning()
 
-    return module
+    return updated
   }
 
   // 更新模块状态
@@ -355,6 +386,48 @@ export class ModuleRepository {
   // 卸载模块
   async uninstall(applicationId: string, moduleKey: string) {
     console.log('🔍 卸载模块:', { applicationId, moduleKey })
+
+    // 如果传入的是UUID（模块安装记录ID或模块ID），优先按ID删除，避免同名误删
+    const looksLikeUuid = moduleKey && moduleKey.length === 36 && moduleKey.includes('-')
+    if (looksLikeUuid) {
+      try {
+        const [deletedByInstallId] = await db
+          .delete(moduleInstalls)
+          .where(
+            and(
+              eq(moduleInstalls.applicationId, applicationId),
+              eq(moduleInstalls.id, moduleKey)
+            )
+          )
+          .returning()
+
+        if (deletedByInstallId) {
+          console.log('✅ 按 module_installs.id 卸载成功')
+          return deletedByInstallId
+        }
+      } catch (error) {
+        console.log('⚠️ 按 module_installs.id 卸载失败:', error)
+      }
+
+      try {
+        const [deletedByModuleId] = await db
+          .delete(modules)
+          .where(
+            and(
+              eq(modules.applicationId, applicationId),
+              eq(modules.id, moduleKey)
+            )
+          )
+          .returning()
+
+        if (deletedByModuleId) {
+          console.log('✅ 按 modules.id 卸载成功')
+          return deletedByModuleId
+        }
+      } catch (error) {
+        console.log('⚠️ 按 modules.id 卸载失败:', error)
+      }
+    }
 
     // 先尝试从 module_installs 表卸载（按 moduleKey 字段）
     try {

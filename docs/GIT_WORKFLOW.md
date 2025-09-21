@@ -66,6 +66,14 @@ chore: update dependencies
 - **History preservation**: All commit history is preserved during merges
 - **No content overwriting**: Existing content is never overwritten
 
+### CRITICAL: Code Safety Rules
+- **NEVER delete existing code without explicit instruction**
+- **NEVER reinitialize git repository in existing project**
+- **NEVER use `rm -rf` on project directories**
+- **ALWAYS work on existing repository base, never start from scratch**
+- **ALWAYS use `git clone` to get clean repository, never `git init`**
+- **ALWAYS backup before major operations**
+
 ## Current Status
 
 ### Repository Setup
@@ -113,3 +121,24 @@ git checkout develop
 3. **Test before merge**: Always test thoroughly before merging to main
 4. **Review changes**: Review all changes before committing
 5. **Follow standards**: Strictly follow English-only policy for all code and documentation
+
+## CRITICAL ERROR PREVENTION
+
+### What NEVER to Do
+1. **NEVER** delete user's existing code or project files
+2. **NEVER** reinitialize git repository (`git init`) in existing project
+3. **NEVER** use destructive commands like `rm -rf` on project directories
+4. **NEVER** start from scratch when working with existing codebase
+
+### Correct Workflow for Existing Projects
+1. **ALWAYS** use `git clone` to get existing repository
+2. **ALWAYS** work incrementally on existing codebase
+3. **ALWAYS** preserve all existing functionality
+4. **ALWAYS** add new features without removing existing ones
+5. **ALWAYS** verify changes don't break existing code
+
+### Emergency Recovery
+- If code is accidentally deleted, immediately restore from git history
+- Use `git checkout HEAD -- <file>` to restore specific files
+- Use `git reset --hard HEAD~1` to undo last commit if needed
+- Contact team lead immediately if major code loss occurs

@@ -418,7 +418,6 @@ export class ApplicationUserService {
         // )
         .limit(1)
 
-      console.log(23232323, phoneToFind)
       if (rec && rec.length > 0) {
         rec.forEach(item => {
           if (item.props.phone_number.indexOf(phoneToFind) > -1) {

@@ -1,9 +1,10 @@
 "use client"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronDown, Check } from "lucide-react"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
+import { CardRegistry } from "@/components/card/registry"
 
 export interface DropdownFilterOption {
   label: string
@@ -21,9 +22,10 @@ interface DropdownFilterTabsProps {
   values: Record<string, string>
   onValueChange: (category: string, value: string) => void
   className?: string
+  cardId?: string
 }
 
-export function DropdownFilterTabs({ items, values, onValueChange, className }: DropdownFilterTabsProps) {
+export function DropdownFilterTabs({ cardId, items, values, onValueChange, className }: DropdownFilterTabsProps) {
   const { theme } = useCardTheme()
   const [isOpen, setIsOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -33,7 +35,8 @@ export function DropdownFilterTabs({ items, values, onValueChange, className }: 
     setIsOpen(true)
   }
 
-  const handleSelectOption = (category: string, value: string) => {
+  const handleSelectOption = (category: string, value: string, option: any) => {
+    CardRegistry.selectFilter(cardId, option)
     onValueChange(category, value)
     setIsOpen(false)
     setActiveCategory(null)
@@ -77,9 +80,9 @@ export function DropdownFilterTabs({ items, values, onValueChange, className }: 
       </div>
 
       {/* 使用底部抽屉组件 */}
-      <BottomDrawer 
-        isOpen={isOpen} 
-        onClose={handleClose} 
+      <BottomDrawer
+        isOpen={isOpen}
+        onClose={handleClose}
         title={activeCategory ? `选择${activeCategory}` : "选择筛选条件"}
       >
         <div className="space-y-2">
@@ -96,7 +99,7 @@ export function DropdownFilterTabs({ items, values, onValueChange, className }: 
                 return (
                   <button
                     key={option.value}
-                    onClick={() => handleSelectOption(activeCategory, option.value)}
+                    onClick={() => handleSelectOption(activeCategory, option.value, option)}
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-4 text-left text-sm transition-all duration-200 rounded-xl",
                       "hover:bg-gray-50 active:scale-98",

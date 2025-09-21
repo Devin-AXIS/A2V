@@ -26,7 +26,7 @@ const colors = ["#10b981", "#06b6d4"]
 export default function JobExperienceRatioCard({ disableLocalTheme }: any) {
   const { key: providedKey } = useLocalThemeKey()
 
-  const data = useCardRegistryData(providedKey, defaultData)
+  const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
 
   const hasColorList = data.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || getRandomHexColor() }));
   return (

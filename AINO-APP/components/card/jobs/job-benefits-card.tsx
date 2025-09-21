@@ -4,6 +4,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
 import { CheckCircle } from "lucide-react"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 export interface JobBenefitsData {
     title: string
@@ -21,7 +22,8 @@ const defaultJobBenefitsData: JobBenefitsData = {
 }
 
 export function JobBenefitsCard({ data, className }: JobBenefitsCardProps) {
-    const merged = useCardRegistryData('job-benefits', defaultJobBenefitsData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobBenefitsData)
     return (
         <AppCard className={className}>
             <div className="p-5 space-y-4">

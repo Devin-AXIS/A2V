@@ -2,6 +2,7 @@
 
 import { AppCard } from "@/components/layout/app-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 export interface JobRequirementsData {
     title: string
@@ -24,7 +25,8 @@ const defaultJobRequirementsData: JobRequirementsData = {
 }
 
 export function JobRequirementsCard({ data, className }: JobRequirementsCardProps) {
-    const merged = useCardRegistryData('job-requirements', defaultJobRequirementsData)
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobRequirementsData)
     return (
         <AppCard className={className}>
             <div className="p-5 space-y-4">
