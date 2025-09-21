@@ -12,6 +12,10 @@ import { Checkbox } from "@/components/input/checkbox"
 import { Cascader } from "@/components/input/cascader"
 import { CitySelectMobile } from "@/components/input/city-select-mobile"
 import { DateTimePicker } from "@/components/input/date-time-picker"
+import { YearMonthPicker } from "@/components/input/year-month-picker"
+import { DateRangePicker } from "@/components/input/date-range-picker"
+import { TagInput } from "@/components/input/tag-input"
+import { ImageUpload } from "@/components/input/image-upload"
 import { ColorPicker } from "@/components/input/color-picker"
 import { FileUploader } from "@/components/input/file-uploader"
 import { RadioGroup } from "@/components/input/radio-group"
@@ -60,6 +64,11 @@ export function InputClientView({ pageDict }: InputClientViewProps) {
   const [rateValue, setRateValue] = useState(3)
   const [stepperValue, setStepperValue] = useState(10)
   const [cityValue, setCityValue] = useState("")
+  const [yearMonthValue, setYearMonthValue] = useState("")
+  const [dateRangeValue, setDateRangeValue] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null })
+  const [tagValue, setTagValue] = useState<string[]>(["React", "TypeScript", "前端开发"])
+  const [tagMode, setTagMode] = useState<'view' | 'edit'>('view')
+  const [imageValue, setImageValue] = useState<string>("")
 
   const sampleSuggestions = ["React", "Vue", "Angular", "Svelte", "Next.js", "Nuxt.js", "SolidJS", "Qwik"]
   const radioOptions = [
@@ -172,6 +181,127 @@ export function InputClientView({ pageDict }: InputClientViewProps) {
       id: "dateTimePicker",
       title: pageDict.DateTimePicker,
       content: <DateTimePicker placeholder={pageDict.dateTimePickerPlaceholder} />,
+    },
+    {
+      id: "yearMonthPicker",
+      title: "年月选择器",
+      content: (
+        <div className="w-full max-w-sm space-y-2">
+          <YearMonthPicker 
+            placeholder="请选择年月" 
+            value={yearMonthValue}
+            onChange={setYearMonthValue}
+          />
+          {yearMonthValue && (
+            <p className="text-xs text-center" style={{ color: "var(--card-text-color)" }}>
+              已选择: {yearMonthValue}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "dateRangePicker",
+      title: "日期区间选择器",
+      content: (
+        <div className="w-full max-w-sm space-y-2">
+          <DateRangePicker 
+            placeholder="请选择日期区间" 
+            value={dateRangeValue}
+            onChange={setDateRangeValue}
+          />
+          {(dateRangeValue.start || dateRangeValue.end) && (
+            <div className="text-xs text-center space-y-1" style={{ color: "var(--card-text-color)" }}>
+              {dateRangeValue.start && (
+                <p>开始: {dateRangeValue.start.toLocaleDateString()}</p>
+              )}
+              {dateRangeValue.end && (
+                <p>结束: {dateRangeValue.end.toLocaleDateString()}</p>
+              )}
+              {dateRangeValue.start && dateRangeValue.end && (
+                <p>
+                  天数: {Math.ceil((dateRangeValue.end.getTime() - dateRangeValue.start.getTime()) / (1000 * 60 * 60 * 24)) + 1} 天
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "tagInput",
+      title: "标签输入器",
+      content: (
+        <div className="w-full space-y-3">
+          <TagInput 
+            value={tagValue}
+            onChange={setTagValue}
+            mode={tagMode}
+            onModeChange={setTagMode}
+            placeholder="输入技能标签后按回车"
+            maxTags={10}
+            emptyText="暂无技能标签"
+          />
+          <div className="text-xs space-y-1" style={{ color: "var(--card-text-color)" }}>
+            <p>当前模式: {tagMode === 'view' ? '查看模式' : '编辑模式'}</p>
+            <p>标签数量: {tagValue.length}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "imageUpload",
+      title: "图片上传器",
+      content: (
+        <div className="w-full space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-xs mb-2" style={{ color: "var(--card-text-color)" }}>圆形头像 (裁剪)</p>
+              <ImageUpload
+                value={imageValue}
+                onChange={setImageValue}
+                placeholder="上传头像"
+                shape="circle"
+                size="md"
+                maxSize={2}
+                enableCrop={true}
+                cropAspectRatio={1}
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-xs mb-2" style={{ color: "var(--card-text-color)" }}>方形图片 (裁剪)</p>
+              <ImageUpload
+                value=""
+                onChange={() => {}}
+                placeholder="上传图片"
+                shape="square"
+                size="md"
+                maxSize={5}
+                enableCrop={true}
+                cropAspectRatio={1}
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-xs mb-2" style={{ color: "var(--card-text-color)" }}>矩形封面 (裁剪)</p>
+              <ImageUpload
+                value=""
+                onChange={() => {}}
+                placeholder="上传封面"
+                shape="rectangle"
+                size="md"
+                maxSize={10}
+                enableCrop={true}
+                cropAspectRatio={4/3}
+              />
+            </div>
+          </div>
+          <div className="text-xs space-y-1" style={{ color: "var(--card-text-color)" }}>
+            <p>✨ 支持拖拽上传、点击上传、图片裁剪</p>
+            <p>🎨 裁剪功能：旋转、缩放、比例调整</p>
+            <p>📁 已上传: {imageValue ? '是' : '否'}</p>
+          </div>
+        </div>
+      ),
     },
     {
       id: "colorPicker",

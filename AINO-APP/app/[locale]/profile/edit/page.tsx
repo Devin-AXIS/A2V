@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
-import Link from "next/link"
 import { AppHeader } from "@/components/navigation/app-header"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppCard } from "@/components/layout/app-card"
@@ -11,592 +10,391 @@ import { PillButton } from "@/components/basic/pill-button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
-import { User, Camera, Check, X, ChevronRight, Shield, Smartphone, Mail } from "lucide-react"
+import { 
+  BasicInfoCard,
+  GenericFormCard,
+  jobExpectationFields,
+  jobExpectationDisplay,
+  educationFields,
+  educationDisplay,
+  workExperienceFields,
+  workExperienceDisplay,
+  projectFields,
+  projectDisplay,
+  certificateFields,
+  certificateDisplay,
+  type BasicInfo,
+  type DataItem
+} from "@/components/card/profile-cards"
+import { TagInput } from "@/components/input/tag-input"
+import { 
+  User, 
+  Camera, 
+  Check, 
+  X, 
+  ChevronRight, 
+  Shield, 
+  Smartphone, 
+  Mail,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Calendar,
+  Star,
+  Plus,
+  Edit,
+  Eye
+} from "lucide-react"
+
 
 export default function EditProfilePage() {
   const router = useRouter()
   const { locale } = useParams()
 
-  const [userProfile, setUserProfile] = useState({
-    name: "张小明",
-    id: "2024001",
-    level: "Lv.5",
-    role: "AI学习者",
+  // 基础资料
+  const [basicInfo, setBasicInfo] = useState<BasicInfo>({
+    name: "王宇",
     avatar: "/generic-user-avatar.png",
-    gender: "male",
-    phone: "138****8888",
-    email: "zhangxiaoming@example.com",
-    birthDate: "1995-06-15",
-    phoneVerified: true,
-    emailVerified: false,
+    gender: "男",
+    country: "CN",
+    city: "北京 - 朝阳区",
+    birthday: "1990-05-15",
+    bio: "热爱技术，专注于前端开发",
+    profession: "前端工程师"
   })
 
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  // 其他档案数据
+  const [userProfile, setUserProfile] = useState({
+    // 联系信息
+    phone: "176******38",
+    phoneVerified: true,
+    email: "wangyu@example.com",
+    emailVerified: false,
+    
+    
+    // 个人优势
+    personalAdvantages: "很傻",
+    
+    // 求职期望
+    jobExpectations: [] as DataItem[],
+    
+    // 工作经历
+    workExperience: [] as DataItem[],
+    
+    // 项目经历
+    projectExperience: [] as DataItem[],
+    
+    // 教育经历
+    educationHistory: [] as DataItem[],
+    
+    // 证书资质
+    certificates: [] as DataItem[],
+    
+    // 个人技能
+    skills: ["JavaScript", "TypeScript", "React", "Node.js", "前端开发"] as string[],
+    
+  })
 
-  const [showPhoneVerify, setShowPhoneVerify] = useState(false)
-  const [showEmailVerify, setShowEmailVerify] = useState(false)
-  const [showPhoneChange, setShowPhoneChange] = useState(false)
-  const [showEmailChange, setShowEmailChange] = useState(false)
-  const [verificationCode, setVerificationCode] = useState("")
-  const [newPhone, setNewPhone] = useState("")
-  const [newEmail, setNewEmail] = useState("")
-  const [countdown, setCountdown] = useState(0)
-  const [isVerifying, setIsVerifying] = useState(false)
+  const [showContactEdit, setShowContactEdit] = useState(false)
+  const [editingSection, setEditingSection] = useState<string | null>(null)
+  const [skillsMode, setSkillsMode] = useState<'view' | 'edit'>('view')
 
-  const sendVerificationCode = (type: "phone" | "email") => {
-    setCountdown(60)
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    console.log(`[v0] 发送${type === "phone" ? "手机" : "邮箱"}验证码`)
-  }
-
-  const verifyCode = async (type: "phone" | "email") => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      alert("请输入6位验证码")
-      return
-    }
-
-    setIsVerifying(true)
-
-    // 模拟验证过程
-    setTimeout(() => {
-      if (verificationCode === "123456") {
-        if (type === "phone") {
-          setUserProfile((prev) => ({ ...prev, phoneVerified: true }))
-          setShowPhoneVerify(false)
-        } else {
-          setUserProfile((prev) => ({ ...prev, emailVerified: true }))
-          setShowEmailVerify(false)
-        }
-        alert("验证成功！")
-      } else {
-        alert("验证码错误，请重新输入")
-      }
-      setIsVerifying(false)
-      setVerificationCode("")
-    }, 1500)
-  }
-
-  const changeContact = async (type: "phone" | "email") => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      alert("请输入6位验证码")
-      return
-    }
-
-    const newValue = type === "phone" ? newPhone : newEmail
-    if (!newValue) {
-      alert(`请输入新的${type === "phone" ? "手机号" : "邮箱地址"}`)
-      return
-    }
-
-    setIsVerifying(true)
-
-    // 模拟更换过程
-    setTimeout(() => {
-      if (verificationCode === "123456") {
-        if (type === "phone") {
-          setUserProfile((prev) => ({
-            ...prev,
-            phone: newValue.replace(/(\d{3})\d{4}(\d{4})/, "$1****$2"),
-            phoneVerified: true,
-          }))
-          setShowPhoneChange(false)
-          setNewPhone("")
-        } else {
-          setUserProfile((prev) => ({
-            ...prev,
-            email: newValue,
-            emailVerified: true,
-          }))
-          setShowEmailChange(false)
-          setNewEmail("")
-        }
-        alert("更换成功！")
-      } else {
-        alert("验证码错误，请重新输入")
-      }
-      setIsVerifying(false)
-      setVerificationCode("")
-    }, 1500)
-  }
-
-  const handlePhoneAction = () => {
-    if (userProfile.phoneVerified) {
-      setShowPhoneChange(true)
-    } else {
-      setShowPhoneVerify(true)
-    }
-  }
-
-  const handleEmailAction = () => {
-    if (userProfile.emailVerified) {
-      setShowEmailChange(true)
-    } else {
-      setShowEmailVerify(true)
-    }
-  }
-
-  const handleAvatarClick = () => {
-    setIsUploadingAvatar(true)
-    setTimeout(() => {
-      const avatars = [
-        "/generic-user-avatar.png",
-        "/person-avatar-1.png",
-        "/person-avatar-2.png",
-        "/professor-avatar.png",
-      ]
-      const currentIndex = avatars.indexOf(userProfile.avatar)
-      const nextIndex = (currentIndex + 1) % avatars.length
-      setUserProfile((prev) => ({ ...prev, avatar: avatars[nextIndex] }))
-      setIsUploadingAvatar(false)
-    }, 1000)
-  }
-
+  // 保存档案
   const handleSaveProfile = () => {
-    console.log("保存资料:", userProfile)
+    console.log("保存档案:", userProfile)
     router.back()
   }
 
-  return (
-    <div className="min-h-screen">
-      <DynamicBackground />
-      <AppHeader title="编辑资料" showBackButton />
 
-      <div className="px-4 py-6 space-y-4 pt-20 pb-24">
-        {/* Avatar Section */}
+  // 编辑项组件
+  const EditableItem = ({ 
+    icon, 
+    title, 
+    content, 
+    action = "编辑",
+    onClick,
+    showArrow = true,
+    status,
+    isOptimizable = false
+  }: {
+    icon: React.ReactNode
+    title: string
+    content: string | React.ReactNode
+    action?: string
+    onClick: () => void
+    showArrow?: boolean
+    status?: 'verified' | 'unverified' | 'incomplete'
+    isOptimizable?: boolean
+  }) => (
+    <div 
+      onClick={onClick}
+      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl"
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <div className="w-6 h-6 flex items-center justify-center">
+          {icon}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium" style={{ color: "var(--card-title-color)" }}>{title}</p>
+            {isOptimizable && (
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full">
+                待优化
+              </span>
+            )}
+          </div>
+          <div className="text-sm mt-1" style={{ color: "var(--card-text-color)" }}>
+            {content}
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        {status === 'verified' && (
+          <Shield className="w-4 h-4" style={{ color: "var(--card-success-color, #22c55e)" }} />
+        )}
+        {status === 'incomplete' && (
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }} />
+        )}
+        
+        <PillButton variant="default">
+          {action}
+        </PillButton>
+        
+        {showArrow && (
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
+        )}
+      </div>
+    </div>
+  )
+
+  // 添加项组件
+  const AddSection = ({ title, onClick }: { title: string; onClick: () => void }) => (
+    <div 
+      onClick={onClick}
+      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl border-2 border-dashed"
+      style={{ borderColor: "var(--card-border-color, #e2e8f0)" }}
+    >
+      <span className="text-sm font-medium" style={{ color: "var(--card-title-color)" }}>{title}</span>
+      <Plus className="w-5 h-5" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen pb-32">
+      <DynamicBackground />
+      <AppHeader title="我的在线简历" showBackButton />
+
+      <div className="px-4 py-6 space-y-4 pt-20">
+        
+        {/* 简历专业评分卡片 */}
         <AppCard>
           <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div
-                  className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={handleAvatarClick}
-                >
-                  {isUploadingAvatar ? (
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : userProfile.avatar ? (
-                    <Image
-                      src={userProfile.avatar || "/placeholder.svg"}
-                      alt="头像"
-                      width={56}
-                      height={56}
-                      className="rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-7 h-7 text-white" />
-                  )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--card-accent-color, #3b82f6)" }}>
+                  <Star className="w-5 h-5 text-white" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600">
-                  <Camera className="w-2.5 h-2.5 text-white" />
+                <div>
+                  <p className="text-lg font-bold" style={{ color: "var(--card-title-color)" }}>
+                    简历专业评分 <span className="text-2xl" style={{ color: "var(--card-accent-color, #3b82f6)" }}>76</span>分
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--card-text-color)" }}>
+                    简历完整度良好
+                  </p>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">点击更换头像</p>
-                <p className="text-xs text-muted-foreground">建议尺寸 140x140</p>
-              </div>
+              <PillButton variant="default">
+                去查看
+              </PillButton>
             </div>
           </div>
         </AppCard>
 
-        {/* Basic Information */}
+        {/* 基础资料 */}
+        <BasicInfoCard
+          basicInfo={basicInfo}
+          onUpdate={setBasicInfo}
+        />
+
+
+        {/* 个人优势 */}
         <AppCard>
-          <div className="p-4 space-y-4">
-            <h3 className="text-base font-semibold">基本信息</h3>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">姓名</label>
-              <Input
-                value={userProfile.name}
-                onChange={(e) => setUserProfile((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="请输入真实姓名"
-                className="rounded-xl"
-              />
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold" style={{ color: "var(--card-title-color)" }}>个人优势</h3>
+              <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">性别</label>
-              <Select
-                value={userProfile.gender}
-                onValueChange={(value) => setUserProfile((prev) => ({ ...prev, gender: value }))}
-              >
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="请选择性别" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">男</SelectItem>
-                  <SelectItem value="female">女</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }}>
+                <span className="text-xs text-white">!</span>
+              </div>
+              <span className="text-sm" style={{ color: "var(--card-warning-color, #f59e0b)" }}>补充你的优势信息</span>
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">出生日期</label>
-              <Input
-                type="date"
-                value={userProfile.birthDate}
-                onChange={(e) => setUserProfile((prev) => ({ ...prev, birthDate: e.target.value }))}
-                className="rounded-xl"
-              />
-            </div>
+            
+            <p className="text-sm" style={{ color: "var(--card-text-color)" }}>
+              {userProfile.personalAdvantages}
+            </p>
           </div>
         </AppCard>
 
+        {/* 求职期望 */}
+        <GenericFormCard
+          title="求职期望"
+          data={userProfile.jobExpectations}
+          onUpdate={(jobExpectations) => setUserProfile(prev => ({ ...prev, jobExpectations }))}
+          fields={jobExpectationFields}
+          displayConfig={jobExpectationDisplay}
+          allowMultiple={false}
+          emptyText="暂未设置求职期望"
+          addButtonText="设置期望"
+        />
+
+        {/* 工作经历 */}
+        <GenericFormCard
+          title="工作经历"
+          data={userProfile.workExperience}
+          onUpdate={(workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))}
+          fields={workExperienceFields}
+          displayConfig={workExperienceDisplay}
+          allowMultiple={true}
+          emptyText="暂无工作经历"
+          addButtonText="添加工作经历"
+        />
+
+        {/* 项目经历 */}
+        <GenericFormCard
+          title="项目经历"
+          data={userProfile.projectExperience}
+          onUpdate={(projectExperience) => setUserProfile(prev => ({ ...prev, projectExperience }))}
+          fields={projectFields}
+          displayConfig={projectDisplay}
+          allowMultiple={true}
+          emptyText="暂无项目经历"
+          addButtonText="添加项目经历"
+        />
+
+        {/* 教育经历 */}
+        <GenericFormCard
+          title="教育经历"
+          data={userProfile.educationHistory}
+          onUpdate={(educationHistory) => setUserProfile(prev => ({ ...prev, educationHistory }))}
+          fields={educationFields}
+          displayConfig={educationDisplay}
+          allowMultiple={true}
+          emptyText="暂无教育经历"
+          addButtonText="添加教育经历"
+        />
+
+        {/* 证书资质 */}
+        <GenericFormCard
+          title="证书资质"
+          data={userProfile.certificates}
+          onUpdate={(certificates) => setUserProfile(prev => ({ ...prev, certificates }))}
+          fields={certificateFields}
+          displayConfig={certificateDisplay}
+          allowMultiple={true}
+          emptyText="暂无证书资质"
+          addButtonText="添加证书"
+        />
+
+        {/* 个人技能 */}
         <AppCard>
-          <div className="p-4 space-y-4">
-            <h3 className="text-base font-semibold">账号安全</h3>
-
-            {/* Phone Section */}
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <Smartphone className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">手机号码</p>
-                  <p className="text-xs text-muted-foreground">{userProfile.phone}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {userProfile.phoneVerified && (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Shield className="w-3 h-3" />
-                    <span className="text-xs">已验证</span>
-                  </div>
-                )}
-                <PillButton size="sm" variant="outline" onClick={handlePhoneAction}>
-                  {userProfile.phoneVerified ? "更换" : "验证"}
-                </PillButton>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold" style={{ color: "var(--card-title-color)" }}>个人技能</h3>
+              <div className="text-xs" style={{ color: "var(--card-text-color)" }}>
+                {userProfile.skills.length} 个技能
               </div>
             </div>
-
-            {/* Email Section */}
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Mail className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">邮箱地址</p>
-                  <p className="text-xs text-muted-foreground">{userProfile.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {userProfile.emailVerified && (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Shield className="w-3 h-3" />
-                    <span className="text-xs">已验证</span>
-                  </div>
-                )}
-                <PillButton size="sm" variant="outline" onClick={handleEmailAction}>
-                  {userProfile.emailVerified ? "更换" : "验证"}
-                </PillButton>
-              </div>
-            </div>
+            
+            <TagInput 
+              value={userProfile.skills}
+              onChange={(skills) => setUserProfile(prev => ({ ...prev, skills }))}
+              placeholder="输入技能后按回车添加"
+              maxTags={20}
+              emptyText="暂未添加技能标签"
+              mode={skillsMode}
+              onModeChange={setSkillsMode}
+            />
           </div>
         </AppCard>
 
+        {/* 预览按钮 */}
         <AppCard>
-          <Link href={`/${locale}/profile/third-party`}>
-            <div className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">第三方账号绑定</p>
-                  <p className="text-xs text-muted-foreground">管理社交账号绑定</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </Link>
+          <div className="p-4">
+            <PillButton 
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => console.log("预览简历")}
+            >
+              <Eye className="w-4 h-4" />
+              生成附件简历
+            </PillButton>
+          </div>
         </AppCard>
       </div>
 
-      {/* Fixed Bottom Actions */}
+      {/* 固定底部操作栏 */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t p-4">
         <div className="flex gap-3 max-w-md mx-auto">
-          <PillButton variant="outline" onClick={() => router.back()} className="flex-1">
+          <PillButton variant="default" onClick={() => router.back()} className="flex-1">
             <X className="w-4 h-4 mr-2" />
             取消
           </PillButton>
           <PillButton onClick={handleSaveProfile} className="flex-1">
             <Check className="w-4 h-4 mr-2" />
-            保存修改
+            保存简历
           </PillButton>
         </div>
       </div>
 
+      {/* 联系方式编辑弹窗 */}
       <BottomDrawer
-        isOpen={showPhoneVerify}
-        onClose={() => {
-          setShowPhoneVerify(false)
-          setVerificationCode("")
-          setCountdown(0)
-        }}
-        title="验证手机号"
+        isOpen={showContactEdit}
+        onClose={() => setShowContactEdit(false)}
+        title="编辑联系方式"
       >
         <div className="p-4 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">验证码将发送至 {userProfile.phone}</p>
+          <div>
+            <label className="text-sm font-medium mb-2 block">手机号</label>
+            <Input
+              value={userProfile.phone}
+              onChange={(e) => setUserProfile(prev => ({ ...prev, phone: e.target.value }))}
+              placeholder="请输入手机号"
+              className="rounded-xl"
+            />
           </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-2 block">验证码</label>
-              <div className="flex gap-2">
-                <Input
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="请输入6位验证码"
-                  className="rounded-xl flex-1"
-                  maxLength={6}
-                />
-                <PillButton
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendVerificationCode("phone")}
-                  disabled={countdown > 0}
-                  className="whitespace-nowrap"
-                >
-                  {countdown > 0 ? `${countdown}s` : "发送验证码"}
-                </PillButton>
-              </div>
-            </div>
+          
+          <div>
+            <label className="text-sm font-medium mb-2 block">邮箱</label>
+            <Input
+              value={userProfile.email}
+              onChange={(e) => setUserProfile(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="请输入邮箱地址"
+              className="rounded-xl"
+              type="email"
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
             <PillButton
-              variant="outline"
-              onClick={() => {
-                setShowPhoneVerify(false)
-                setVerificationCode("")
-                setCountdown(0)
-              }}
+              variant="default"
+              onClick={() => setShowContactEdit(false)}
               className="flex-1"
             >
               取消
             </PillButton>
             <PillButton
-              onClick={() => verifyCode("phone")}
-              disabled={isVerifying || verificationCode.length !== 6}
+              onClick={() => setShowContactEdit(false)}
               className="flex-1"
             >
-              {isVerifying ? "验证中..." : "确认验证"}
+              确认
             </PillButton>
           </div>
         </div>
       </BottomDrawer>
 
-      <BottomDrawer
-        isOpen={showEmailVerify}
-        onClose={() => {
-          setShowEmailVerify(false)
-          setVerificationCode("")
-          setCountdown(0)
-        }}
-        title="验证邮箱"
-      >
-        <div className="p-4 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">验证码将发送至 {userProfile.email}</p>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-2 block">验证码</label>
-              <div className="flex gap-2">
-                <Input
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="请输入6位验证码"
-                  className="rounded-xl flex-1"
-                  maxLength={6}
-                />
-                <PillButton
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendVerificationCode("email")}
-                  disabled={countdown > 0}
-                  className="whitespace-nowrap"
-                >
-                  {countdown > 0 ? `${countdown}s` : "发送验证码"}
-                </PillButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <PillButton
-              variant="outline"
-              onClick={() => {
-                setShowEmailVerify(false)
-                setVerificationCode("")
-                setCountdown(0)
-              }}
-              className="flex-1"
-            >
-              取消
-            </PillButton>
-            <PillButton
-              onClick={() => verifyCode("email")}
-              disabled={isVerifying || verificationCode.length !== 6}
-              className="flex-1"
-            >
-              {isVerifying ? "验证中..." : "确认验证"}
-            </PillButton>
-          </div>
-        </div>
-      </BottomDrawer>
-
-      <BottomDrawer
-        isOpen={showPhoneChange}
-        onClose={() => {
-          setShowPhoneChange(false)
-          setVerificationCode("")
-          setNewPhone("")
-          setCountdown(0)
-        }}
-        title="更换手机号"
-      >
-        <div className="p-4 space-y-4">
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-2 block">新手机号</label>
-              <Input
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                placeholder="请输入新的手机号码"
-                className="rounded-xl"
-                maxLength={11}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">验证码</label>
-              <div className="flex gap-2">
-                <Input
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="请输入6位验证码"
-                  className="rounded-xl flex-1"
-                  maxLength={6}
-                />
-                <PillButton
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendVerificationCode("phone")}
-                  disabled={countdown > 0 || !newPhone || newPhone.length !== 11}
-                  className="whitespace-nowrap"
-                >
-                  {countdown > 0 ? `${countdown}s` : "发送验证码"}
-                </PillButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <PillButton
-              variant="outline"
-              onClick={() => {
-                setShowPhoneChange(false)
-                setVerificationCode("")
-                setNewPhone("")
-                setCountdown(0)
-              }}
-              className="flex-1"
-            >
-              取消
-            </PillButton>
-            <PillButton
-              onClick={() => changeContact("phone")}
-              disabled={isVerifying || verificationCode.length !== 6 || !newPhone}
-              className="flex-1"
-            >
-              {isVerifying ? "更换中..." : "确认更换"}
-            </PillButton>
-          </div>
-        </div>
-      </BottomDrawer>
-
-      <BottomDrawer
-        isOpen={showEmailChange}
-        onClose={() => {
-          setShowEmailChange(false)
-          setVerificationCode("")
-          setNewEmail("")
-          setCountdown(0)
-        }}
-        title="更换邮箱"
-      >
-        <div className="p-4 space-y-4">
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-2 block">新邮箱地址</label>
-              <Input
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="请输入新的邮箱地址"
-                className="rounded-xl"
-                type="email"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">验证码</label>
-              <div className="flex gap-2">
-                <Input
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="请输入6位验证码"
-                  className="rounded-xl flex-1"
-                  maxLength={6}
-                />
-                <PillButton
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendVerificationCode("email")}
-                  disabled={countdown > 0 || !newEmail || !newEmail.includes("@")}
-                  className="whitespace-nowrap"
-                >
-                  {countdown > 0 ? `${countdown}s` : "发送验证码"}
-                </PillButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <PillButton
-              variant="outline"
-              onClick={() => {
-                setShowEmailChange(false)
-                setVerificationCode("")
-                setNewEmail("")
-                setCountdown(0)
-              }}
-              className="flex-1"
-            >
-              取消
-            </PillButton>
-            <PillButton
-              onClick={() => changeContact("email")}
-              disabled={isVerifying || verificationCode.length !== 6 || !newEmail}
-              className="flex-1"
-            >
-              {isVerifying ? "更换中..." : "确认更换"}
-            </PillButton>
-          </div>
-        </div>
-      </BottomDrawer>
     </div>
   )
 }
