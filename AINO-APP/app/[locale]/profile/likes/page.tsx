@@ -25,7 +25,7 @@ export default function LikesPage() {
     if (item.url.includes('/jobs/')) {
       // 职位页面 -> 显示职位列表卡片形式
       return (
-        <AppCard className="hover:shadow-md transition-shadow cursor-pointer">
+        <AppCard key={item.id} className="hover:shadow-md transition-shadow cursor-pointer">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -76,7 +76,7 @@ export default function LikesPage() {
     
     // 其他类型页面的通用列表卡片形式
     return (
-      <AppCard className="hover:shadow-md transition-shadow cursor-pointer">
+      <AppCard key={item.id} className="hover:shadow-md transition-shadow cursor-pointer">
         <div className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -148,7 +148,11 @@ export default function LikesPage() {
             </AppCard>
           ) : (
             <div className="space-y-4">
-              {likedItems.map((item) => renderLikeCard(item))}
+              {likedItems.map((item) => (
+                <div key={item.id}>
+                  {renderLikeCard(item)}
+                </div>
+              ))}
             </div>
           )}
         </div>
