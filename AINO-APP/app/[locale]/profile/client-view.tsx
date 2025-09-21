@@ -38,8 +38,11 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
   const { user, isAuthenticated, logout } = useAuth()
   const { getLikedCount, getFavoritedCount } = useFavorites()
 
-  const StatItem = ({ value, label }: { value: string; label: string }) => (
-    <div className="text-center">
+  const StatItem = ({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) => (
+    <div 
+      className={`text-center ${onClick ? 'cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors' : ''}`}
+      onClick={onClick}
+    >
       <p className="text-xl font-bold" style={{ color: "var(--card-title-color)" }}>
         {value}
       </p>
@@ -163,8 +166,16 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
       {/* Abstract Stats */}
       <AppCard>
         <div className="flex justify-around items-center py-4">
-          <StatItem value={getLikedCount().toString()} label={dict.followers} />
-          <StatItem value={getFavoritedCount().toString()} label={dict.following} />
+          <StatItem 
+            value={getLikedCount().toString()} 
+            label={dict.followers} 
+            onClick={() => router.push(`/${locale}/profile/likes`)}
+          />
+          <StatItem 
+            value={getFavoritedCount().toString()} 
+            label={dict.following} 
+            onClick={() => router.push(`/${locale}/profile/favorites`)}
+          />
           <StatItem value={user?.posts?.toString() || "0"} label={dict.posts} />
         </div>
       </AppCard>
