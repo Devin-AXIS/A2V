@@ -36,18 +36,18 @@ export function SecondaryPillBottomNav({
 
   return (
     <div className={`fixed bottom-20 z-30 ${positionClasses[position]} ${className}`}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {actions.map((action, index) => (
           <div key={index} className="relative" style={{
             // 主胶囊按钮占满大部分空间，图标按钮固定宽度
-            flex: action.iconOnly ? '0 0 48px' : '1'
+            flex: action.iconOnly ? '0 0 40px' : '1'
           }}>
             {action.iconOnly ? (
               // 圆形图标按钮
               <button
                 onClick={action.onClick}
                 disabled={action.disabled || action.loading}
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
                 style={{
                   backgroundColor: "var(--card-background, #ffffff)",
                   color: "var(--card-text-color, #64748b)",
@@ -66,7 +66,7 @@ export function SecondaryPillBottomNav({
                 onClick={action.onClick}
                 disabled={action.disabled || action.loading}
                 variant={action.variant || "default"}
-                className="w-full min-h-[48px] flex items-center justify-center gap-2 px-6"
+                className="w-full h-10 flex items-center justify-center gap-2 px-4 text-sm"
               >
                 {action.loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

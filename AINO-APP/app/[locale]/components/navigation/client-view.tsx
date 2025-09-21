@@ -9,7 +9,7 @@ import { FilterTabs, type FilterTabItem } from "@/components/navigation/filter-t
 import { DropdownFilterTabs, type DropdownFilterItem } from "@/components/navigation/dropdown-filter-tabs"
 import { CategoryTabNavigation } from "@/components/navigation/category-tab-navigation"
 import { FilterPillNavigation } from "@/components/navigation/filter-pill-navigation"
-import { Home, Settings, User, Star, Zap, Heart, Check, Bookmark, Share, Download, MessageCircle, Copy, Users } from "lucide-react"
+import { Home, Settings, User, Star, Zap, Heart, Check, Bookmark, Share, Download, MessageCircle, Copy, Users, ShoppingCart, CreditCard, Trash2, Edit, Filter, Search, Bell, Mail } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { PillNavigation } from "@/components/navigation/pill-navigation"
 import { PillButton } from "@/components/basic/pill-button"
@@ -17,8 +17,15 @@ import ContentNavigation, { type ContentNavConfig } from "@/components/navigatio
 import { 
   PrimaryPillBottomNav, 
   SecondaryPillBottomNav,
+  SinglePillBottomNav,
+  PillNavigationBar,
+  TextActionBottomNav,
   type PrimaryPillBottomNavAction,
-  type SecondaryPillBottomNavAction 
+  type SecondaryPillBottomNavAction,
+  type SinglePillBottomNavAction,
+  type PillNavigationBarItem,
+  type TextActionBottomNavAction,
+  type TextActionBottomNavInfo
 } from "@/components/navigation"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
 
@@ -146,6 +153,104 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
       onClick: () => setShowShareDrawer(true),
       icon: <Share className="w-4 h-4" />,
       iconOnly: true
+    }
+  ]
+
+  // 单个胶囊底部导航配置
+  const singlePillAction: SinglePillBottomNavAction = {
+    label: "立即购买",
+    onClick: () => alert("立即购买"),
+    icon: <ShoppingCart className="w-4 h-4" />,
+    variant: "primary"
+  }
+
+  // 底部胶囊导航栏配置
+  const pillNavBarItems: PillNavigationBarItem[] = [
+    {
+      id: "home",
+      label: "首页",
+      icon: <Home className="w-4 h-4" />,
+      onClick: () => alert("首页")
+    },
+    {
+      id: "search",
+      label: "搜索",
+      icon: <Search className="w-4 h-4" />,
+      onClick: () => alert("搜索")
+    },
+    {
+      id: "filter",
+      label: "筛选",
+      icon: <Filter className="w-4 h-4" />,
+      onClick: () => alert("筛选"),
+      badge: 2
+    },
+    {
+      id: "favorites",
+      label: "收藏",
+      icon: <Heart className="w-4 h-4" />,
+      onClick: () => alert("收藏")
+    },
+    {
+      id: "notifications",
+      label: "通知",
+      icon: <Bell className="w-4 h-4" />,
+      onClick: () => alert("通知"),
+      badge: 5
+    },
+    {
+      id: "settings",
+      label: "设置",
+      icon: <Settings className="w-4 h-4" />,
+      onClick: () => alert("设置")
+    }
+  ]
+
+  // 左文字右按钮导航配置
+  const textActionInfo: TextActionBottomNavInfo = {
+    title: "总计: ¥299.00",
+    subtitle: "已选择 3 个商品",
+    icon: <ShoppingCart className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
+  }
+
+  const textActionButtons: TextActionBottomNavAction[] = [
+    {
+      id: "addToCart",
+      label: "加购物车",
+      icon: <ShoppingCart className="w-4 h-4" />,
+      onClick: () => alert("已加入购物车"),
+      variant: "default"
+    },
+    {
+      id: "buyNow",
+      label: "立即购买",
+      icon: <CreditCard className="w-4 h-4" />,
+      onClick: () => alert("立即购买"),
+      variant: "primary"
+    }
+  ]
+
+  // 其他场景的左文字右按钮配置
+  const managementInfo: TextActionBottomNavInfo = {
+    title: "已选择 5 项",
+    subtitle: "管理模式",
+    icon: <Edit className="w-5 h-5" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
+  }
+
+  const managementActions: TextActionBottomNavAction[] = [
+    {
+      id: "delete",
+      label: "删除",
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: () => alert("删除选中项"),
+      variant: "default"
+    },
+    {
+      id: "share",
+      label: "分享",
+      icon: <Share className="w-4 h-4" />,
+      onClick: () => alert("分享选中项"),
+      variant: "primary"
     }
   ]
 
@@ -350,14 +455,14 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
         <section>
           <h3 className="text-xl font-semibold text-gray-800 mb-4">主功能胶囊型底部导航</h3>
           <AppCard className="p-6">
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {primaryPillActions.map((action, index) => (
                 <PillButton
                   key={index}
                   onClick={action.onClick}
                   disabled={action.disabled || action.loading}
                   variant={action.variant || (index === 0 ? "primary" : "default")}
-                  className="flex-1 min-h-[48px] flex items-center justify-center gap-2"
+                  className="flex-1 h-10 flex items-center justify-center gap-2 text-sm"
                 >
                   {action.loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -375,18 +480,18 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
         <section>
           <h3 className="text-xl font-semibold text-gray-800 mb-4">辅助功能胶囊型底部导航</h3>
           <AppCard className="p-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {secondaryPillActions.map((action, index) => (
                 <div key={index} className="relative" style={{
                   // 主胶囊按钮占满大部分空间，图标按钮固定宽度
-                  flex: action.iconOnly ? '0 0 48px' : '1'
+                  flex: action.iconOnly ? '0 0 40px' : '1'
                 }}>
                   {action.iconOnly ? (
                     // 圆形图标按钮
                     <button
                       onClick={action.onClick}
                       disabled={action.disabled || action.loading}
-                      className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
                       style={{
                         backgroundColor: "var(--card-background, #ffffff)",
                         color: "var(--card-text-color, #64748b)",
@@ -405,7 +510,7 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
                       onClick={action.onClick}
                       disabled={action.disabled || action.loading}
                       variant={action.variant || "default"}
-                      className="w-full min-h-[48px] flex items-center justify-center gap-2 px-6"
+                      className="w-full h-10 flex items-center justify-center gap-2 px-4 text-sm"
                     >
                       {action.loading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -431,6 +536,48 @@ export function NavigationComponentsClientView({ dict }: NavigationComponentsCli
                 </div>
               ))}
             </div>
+          </AppCard>
+        </section>
+
+        {/* 单个胶囊底部导航 */}
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">单个胶囊底部导航</h3>
+          <AppCard className="p-6">
+            <PillButton
+              onClick={singlePillAction.onClick}
+              disabled={singlePillAction.disabled || singlePillAction.loading}
+              variant={singlePillAction.variant || "primary"}
+              className="w-full h-10 flex items-center justify-center gap-2 px-6 text-sm"
+            >
+              {singlePillAction.loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                singlePillAction.icon
+              )}
+              {singlePillAction.loading ? "处理中..." : singlePillAction.label}
+            </PillButton>
+          </AppCard>
+        </section>
+
+        {/* 胶囊导航底部 */}
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">胶囊导航底部</h3>
+          <AppCard>
+            <PillNavigationBar
+              items={pillNavBarItems.slice(0, 4)}
+              activeId="home"
+            />
+          </AppCard>
+        </section>
+
+        {/* 文字+胶囊导航底部 */}
+        <section>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">文字+胶囊导航底部</h3>
+          <AppCard>
+            <TextActionBottomNav
+              info={textActionInfo}
+              actions={textActionButtons}
+            />
           </AppCard>
         </section>
       </div>

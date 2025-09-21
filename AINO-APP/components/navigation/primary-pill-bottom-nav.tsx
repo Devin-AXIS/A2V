@@ -32,7 +32,7 @@ export function PrimaryPillBottomNav({
             onClick={action.onClick}
             disabled={action.disabled || action.loading}
             variant={action.variant || (index === 0 ? "primary" : "default")}
-            className="flex-1 min-h-[48px] flex items-center justify-center gap-2"
+            className="flex-1 h-10 flex items-center justify-center gap-2 text-sm"
           >
             {action.loading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
