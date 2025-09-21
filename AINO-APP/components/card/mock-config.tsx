@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Home, Search, User, Settings, Save, Undo, Redo, Copy, Paste, Cut, Filter, Download, Upload } from "lucide-react"
+import { Home, Search, User, Settings, Save, Undo, Redo, Copy, Filter, Download, Upload } from "lucide-react"
 
 // 集中管理：为各业务卡片提供默认入参（mock）
 // 仅提供业务所需数据，不包含类名、主题等视图类属性
@@ -16,40 +16,6 @@ const createId = () => Math.random().toString(36).slice(2, 10)
 
 export const CardMockConfig: Record<string, CardMockProvider> = {
     // 教育类
-<<<<<<< HEAD
-=======
-    "learning-plan-summary": () => ({
-        planDuration: "4-8周",
-        weeklyStudy: "4.8周",
-        targetGoal: "掌握中级知识",
-    }),
-
-    "course-module": () => ({
-        title: "基础课程",
-        moduleCount: 4,
-        courses: [
-            { id: 1, title: "AI基础概念介绍", duration: "40分钟" },
-            { id: 2, title: "AI发展历程回顾", duration: "45分钟" },
-            { id: 3, title: "机器学习入门", duration: "60分钟" },
-            { id: 4, title: "深度学习基础", duration: "55分钟" },
-        ],
-    }),
-
-    "learning-outcome": () => ({
-        stats: [
-            { value: "85%", label: "技能掌握" },
-            { value: "92%", label: "就业成功" },
-            { value: "3+", label: "专业认证" },
-            { value: "2.8K", label: "成功学员" },
-        ],
-        skillProgress: [
-            { skill: "机器学习基础", percentage: 90 },
-            { skill: "深度学习应用", percentage: 85 },
-            { skill: "项目实战能力", percentage: 80 },
-            { skill: "行业应用理解", percentage: 75 },
-        ],
-    }),
->>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
 
     // 电商/内容类
     "ecommerce-product": () => ({
@@ -220,22 +186,6 @@ export const CardMockConfig: Record<string, CardMockProvider> = {
         salaryGrowth: "+6%",
         locale: ctx?.locale || "zh",
     }),
-<<<<<<< HEAD
-=======
-    // AI 卡片容器默认演示步骤
-    "ai-card-container": () => ({
-        title: "学习路径助手",
-        avatar: "",
-        steps: [
-            { id: "t0", type: "text", content: "你好，我是你的AI学习助手。" },
-            { id: "c1", type: "card", cardName: "learning-plan-summary", cardProps: {} },
-            { id: "t1", type: "text", content: "我们为你推荐了以下课程模块：" },
-            { id: "c2", type: "card", cardName: "course-module", cardProps: {} },
-        ],
-        autoStart: true,
-        useStreamingMode: false,
-    }),
->>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
 }
 
 export function getMockProps(cardName: string, ctx?: CardMockContext): Record<string, any> {
