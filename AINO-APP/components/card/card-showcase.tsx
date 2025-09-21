@@ -32,46 +32,6 @@ export function CardShowcase() {
     comments: 23,
   }
 
-  const learningPlanData = {
-    planDuration: "4-8周",
-    weeklyStudy: "4.8周",
-    targetGoal: "掌握中级知识",
-    assessmentTime: "1分钟评估定制",
-  }
-
-  const courseModuleData = {
-    title: "基础课程",
-    totalModules: 4,
-    courses: [
-      { id: 1, name: "AI基础概念介绍", duration: "40分钟", status: "available" },
-      { id: 2, name: "AI发展历程回顾", duration: "45分钟", status: "available" },
-      { id: 3, name: "机器学习入门", duration: "60分钟", status: "available" },
-      { id: 4, name: "深度学习基础", duration: "55分钟", status: "available" },
-    ],
-  }
-
-  const learningOutcomeData = {
-    stats: {
-      skillMastery: 85,
-      employmentSuccess: 92,
-      certifications: "3+",
-      successfulStudents: "2.8K",
-    },
-    skillProgress: [
-      { skill: "机器学习基础", progress: 90 },
-      { skill: "深度学习应用", progress: 85 },
-      { skill: "项目实战能力", progress: 80 },
-      { skill: "行业应用理解", progress: 75 },
-    ],
-  }
-
-  const [basicCardOrder, setBasicCardOrder] = useState(["user-info", "sales-data", "quick-actions"])
-  const [themeCardOrder, setThemeCardOrder] = useState(["theme-card-1", "theme-card-3", "theme-card-2"])
-  const [educationCardOrder, setEducationCardOrder] = useState([
-    "learning-plan-summary",
-    "course-module",
-    "learning-outcome",
-  ])
   const [registeredCardOrder, setRegisteredCardOrder] = useState(CardRegistry.getAll().map((card) => card.name))
 
   const handleAction = (action: string, data: any) => {
@@ -279,20 +239,6 @@ export function CardShowcase() {
     },
   ]
 
-  const educationCards = [
-    {
-      id: "learning-plan-summary",
-      content: <BusinessCardWrapper cardName="learning-plan-summary" data={learningPlanData} onAction={handleAction} />,
-    },
-    {
-      id: "course-module",
-      content: <BusinessCardWrapper cardName="course-module" data={courseModuleData} onAction={handleAction} />,
-    },
-    {
-      id: "learning-outcome",
-      content: <BusinessCardWrapper cardName="learning-outcome" data={learningOutcomeData} onAction={handleAction} />,
-    },
-  ]
 
   const registeredCards = CardRegistry.getAll().map((card) => ({
     id: card.name,
@@ -375,9 +321,8 @@ export function CardShowcase() {
       <div>
         <h3 className="text-lg font-bold mb-4 text-foreground">教育卡片 (支持主题编辑 + 可拖拽排序)</h3>
         <EnhancedDraggableCardContainer
-          items={educationCards}
+          items={[]}
           onReorder={(newOrder) => {
-            setEducationCardOrder(newOrder)
             console.log("教育卡片新排序:", newOrder)
           }}
           layout="grid"

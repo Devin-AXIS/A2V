@@ -1,4 +1,4 @@
-// File: /Users/wemo/new-flow/ai/AINO/AINO-APP/app/[locale]/help-center/page.tsx
+// File: /Users/devin/Documents/AINO-develop/AINO-APP/app/[locale]/help-center/page.tsx
 import * as entry from '../../../../../app/[locale]/help-center/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

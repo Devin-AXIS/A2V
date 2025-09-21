@@ -1,8 +1,5 @@
 import type { CardConfig, CardAction } from "@/types"
 import axios from 'axios';
-import LearningPlanSummaryCard from "./business-cards/learning-plan-summary-card"
-import CourseModuleCard from "./business-cards/course-module-card"
-import LearningOutcomeCard from "./business-cards/learning-outcome-card"
 import MediaEditorCard from "./business-cards/media-editor-card"
 import JobExperienceRatioCard from "./business-cards/job-experience-ratio-card"
 import JobProspectTrendCard from "./business-cards/job-prospect-trend-card"
@@ -105,7 +102,7 @@ class CardRegistry {
   static setData(name, data, realData) {
     datas[name] = data;
     realDatas[name] = realData;
-    listens[name](name, data);
+      listens[name]?.(name, data);
     // this.listens.forEach(cb => cb(name, data));
   }
 
@@ -127,7 +124,7 @@ class CardRegistry {
 
   static selectFilter(name, filter) {
     if (filter.value === 'none') {
-      listens[name](name, datas[name]);
+        listens[name]?.(name, datas[name]);
       return;
     }
     filters[name] = filter;
@@ -139,7 +136,7 @@ class CardRegistry {
         filtedDatas[name].push(currentData[index]);
       }
     });
-    listens[name](name, filtedDatas[name]);
+      listens[name]?.(name, filtedDatas[name]);
   }
 
   static getFilter(name) {
@@ -154,47 +151,6 @@ class CardRegistry {
 }
 
 // 教育类卡片
-CardRegistry.register({
-  name: "learning-plan-summary",
-  displayName: "学习计划摘要",
-  category: "教育",
-  type: "summary", // 添加卡片类型
-  component: LearningPlanSummaryCard,
-  businessFlow: "个性定制学习计划摘要，显示学习时长、目标和评估功能",
-  developer: {
-    name: "AI Education System",
-    version: "1.0.0",
-    description: "个性定制学习计划摘要卡片，显示学习时长、目标和评估功能",
-  },
-})
-
-CardRegistry.register({
-  name: "course-module",
-  displayName: "课程模块",
-  category: "教育",
-  type: "list", // 添加卡片类型
-  component: CourseModuleCard,
-  businessFlow: "课程模块展示，包含可展开的课程列表和学习进度",
-  developer: {
-    name: "AI Education System",
-    version: "1.0.0",
-    description: "课程模块卡片，展示可展开的课程列表和学习进度",
-  },
-})
-
-CardRegistry.register({
-  name: "learning-outcome",
-  displayName: "学习成果",
-  category: "教育",
-  type: "chart", // 添加卡片类型
-  component: LearningOutcomeCard,
-  businessFlow: "学习成果预期展示，包含统计数据和技能进度条",
-  developer: {
-    name: "AI Education System",
-    version: "1.0.0",
-    description: "学习成果预期卡片，显示统计数据和技能进度条",
-  },
-})
 
 CardRegistry.register({
   name: "instructor-courses-list",
@@ -443,7 +399,6 @@ CardRegistry.register({
 
 CardRegistry.register({
   name: "job-posting",
-  data: { a: 'aaa' },
   displayName: "职位发布",
   category: "招聘",
   type: "form", // 添加卡片类型

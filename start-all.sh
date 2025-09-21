@@ -14,6 +14,33 @@ fi
 # 创建日志目录
 mkdir -p logs
 
+# 检查并安装依赖
+echo "📦 检查项目依赖..."
+
+# 检查后端依赖
+if [ ! -d "AINO-server/node_modules" ]; then
+    echo "📡 安装后端依赖..."
+    cd AINO-server
+    pnpm install
+    cd ..
+fi
+
+# 检查前端依赖 (AINO-studio)
+if [ ! -d "AINO-studio/node_modules" ]; then
+    echo "🎨 安装前端依赖 (AINO-studio)..."
+    cd AINO-studio
+    pnpm install
+    cd ..
+fi
+
+# 检查 aino-app 依赖
+if [ ! -d "AINO-APP/node_modules" ]; then
+    echo "📱 安装 aino-app 依赖..."
+    cd AINO-APP
+    pnpm install
+    cd ..
+fi
+
 # 启动后端服务
 echo "📡 启动后端服务 (AINO-server)..."
 cd AINO-server
