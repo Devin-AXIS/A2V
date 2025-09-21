@@ -10,7 +10,8 @@ import { CitySelectMobile } from "@/components/input/city-select-mobile"
 import { DatePickerWithValue } from "@/components/input/date-picker-with-value"
 import { BottomDrawerSelect } from "@/components/input/bottom-drawer-select"
 import { ImageUpload } from "@/components/input/image-upload"
-import { User, Camera, Edit, MapPin, Globe } from "lucide-react"
+import { PrimaryPillBottomNav, type PrimaryPillBottomNavAction } from "@/components/navigation/primary-pill-bottom-nav"
+import { User, Camera, Edit, MapPin, Globe, X } from "lucide-react"
 
 // 基础资料类型定义
 export interface BasicInfo {
@@ -267,27 +268,32 @@ export function BasicInfoCard({
             />
           </div>
 
-          {/* 操作按钮 */}
-          <div className="flex gap-3 pt-4">
-            <PillButton
-              variant="default"
-              onClick={() => {
-                setShowEditForm(false)
-                setFormData(basicInfo)
-              }}
-              className="flex-1"
-            >
-              取消
-            </PillButton>
-            <PillButton
-              onClick={handleSave}
-              className="flex-1"
-            >
-              保存
-            </PillButton>
-          </div>
+          {/* 底部留空间给固定的主功能胶囊型底部导航 */}
+          <div className="h-16"></div>
         </div>
       </BottomDrawer>
+
+      {/* 主功能胶囊型底部导航 - 永远固定在底部 */}
+      {showEditForm && (
+        <PrimaryPillBottomNav
+          actions={[
+            {
+              label: "保存",
+              onClick: handleSave,
+              variant: "primary"
+            },
+            {
+              label: "取消",
+              onClick: () => {
+                setShowEditForm(false)
+                setFormData(basicInfo)
+              },
+              variant: "default",
+              icon: <X className="w-4 h-4" />
+            }
+          ]}
+        />
+      )}
     </>
   )
 }

@@ -11,6 +11,7 @@ import { CitySelectMobile } from "@/components/input/city-select-mobile"
 import { BottomDrawerSelect } from "@/components/input/bottom-drawer-select"
 import { ImageUpload } from "@/components/input/image-upload"
 import { SwitchControl } from "@/components/input/switch-control"
+import { PrimaryPillBottomNav, type PrimaryPillBottomNavAction } from "@/components/navigation/primary-pill-bottom-nav"
 import { Plus, Edit, X } from "lucide-react"
 
 // 字段类型定义
@@ -20,7 +21,6 @@ export interface FieldConfig {
   type: 'text' | 'textarea' | 'select' | 'yearMonth' | 'date' | 'city' | 'switch' | 'tags' | 'image'
   placeholder?: string
   required?: boolean
-  readonly?: boolean
   options?: { value: string; label: string }[]
   rows?: number
   gridColumn?: 1 | 2 // 1=全宽, 2=半宽
@@ -30,22 +30,6 @@ export interface FieldConfig {
   showWhen?: any // 当依赖字段为此值时显示
   disableWhen?: any // 当依赖字段为此值时禁用
   replaceWith?: string // 当隐藏时显示的替代文本
-  // 验证规则
-  validation?: {
-    minLength?: number
-    maxLength?: number
-    pattern?: RegExp
-    message?: string
-  }
-  // 图片配置
-  imageConfig?: {
-    shape?: 'circle' | 'square' | 'rectangle'
-    size?: 'sm' | 'md' | 'lg'
-    enableCrop?: boolean
-    cropAspectRatio?: number
-    maxSize?: number
-    accept?: string
-  }
 }
 
 // 数据项类型
@@ -60,14 +44,8 @@ export interface DisplayConfig {
   titleField: string
   subtitleField?: string
   descriptionField?: string
-  layout: 'timeline' | 'grid' | 'simple' | 'detailed'
+  layout: 'timeline' | 'grid' | 'simple'
   showActions?: boolean
-  emptyTitle?: string
-  emptySubtitle?: string
-  addButtonText?: string
-  editButtonText?: string
-  deleteButtonText?: string
-  confirmDeleteMessage?: string
 }
 
 // 通用表单卡片组件属性
@@ -224,8 +202,6 @@ export function GenericFormCard({
             onChange={(e) => updateField(field.key, e.target.value)}
             placeholder={field.placeholder}
             className="rounded-xl"
-            readOnly={field.readonly}
-            disabled={field.readonly}
           />
         )
 
@@ -238,8 +214,6 @@ export function GenericFormCard({
             className="w-full px-3.5 py-2.5 bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 resize-none"
             rows={field.rows || 3}
             style={{ color: "var(--card-text-color)" }}
-            readOnly={field.readonly}
-            disabled={field.readonly}
           />
         )
 
@@ -305,18 +279,13 @@ export function GenericFormCard({
         )
 
       case 'image':
-        const imageConfig = field.imageConfig || {}
         return (
           <ImageUpload
             value={value}
             onChange={(val) => updateField(field.key, val)}
             placeholder={field.placeholder || "点击上传图片"}
-            shape={imageConfig.shape || "rectangle"}
-            size={imageConfig.size || "md"}
-            enableCrop={imageConfig.enableCrop !== false}
-            cropAspectRatio={imageConfig.cropAspectRatio}
-            maxSize={imageConfig.maxSize || 5}
-            accept={imageConfig.accept || "image/*"}
+            shape="circle"
+            size="md"
           />
         )
 
@@ -575,28 +544,33 @@ export function GenericFormCard({
             </div>
           )}
 
-          {/* 操作按钮 */}
-          <div className="flex gap-3 pt-4">
-            <PillButton
-              variant="default"
-              onClick={() => {
+          {/* 底部留空间给固定的主功能胶囊型底部导航 */}
+          <div className="h-16"></div>
+        </div>
+      </BottomDrawer>
+
+      {/* 主功能胶囊型底部导航 - 永远固定在底部 */}
+      {showForm && (
+        <PrimaryPillBottomNav
+          actions={[
+            {
+              label: editingId ? "保存修改" : "添加",
+              onClick: handleSave,
+              variant: "primary"
+            },
+            {
+              label: "取消",
+              onClick: () => {
                 setShowForm(false)
                 setFormData(initFormData())
                 setEditingId(null)
-              }}
-              className="flex-1"
-            >
-              取消
-            </PillButton>
-            <PillButton
-              onClick={handleSave}
-              className="flex-1"
-            >
-              {editingId ? "保存修改" : "添加"}
-            </PillButton>
-          </div>
-        </div>
-      </BottomDrawer>
+              },
+              variant: "default",
+              icon: <X className="w-4 h-4" />
+            }
+          ]}
+        />
+      )}
     </>
   )
 }
