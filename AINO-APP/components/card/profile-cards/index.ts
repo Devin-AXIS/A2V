@@ -21,14 +21,12 @@ export {
   type IdentityVerificationData,
   defaultIdentityVerificationData
 } from './identity-verification-config'
-
 export { 
   passwordChangeFields, 
   passwordChangeDisplay,
   type PasswordChangeData,
   defaultPasswordChangeData
 } from './password-change-config'
-
 export { 
   phoneBindingFields, 
   phoneBindingDisplay,
