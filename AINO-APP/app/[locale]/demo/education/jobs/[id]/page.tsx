@@ -8,7 +8,6 @@ import { JobProspectLineChart } from "@/components/data-display/job-prospect-lin
 import { MonthlyJobAreaChart } from "@/components/data-display/monthly-job-area-chart"
 import { CompanyRankingList } from "@/components/data-display/company-ranking-list"
 import { SalaryExperienceDonut } from "@/components/data-display/salary-experience-donut"
-import { EducationBottomNavigation } from "@/components/navigation/education-bottom-navigation"
 import { PillNavigation } from "@/components/navigation/pill-navigation"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppHeader } from "@/components/navigation/app-header"
@@ -123,8 +122,6 @@ export default function JobDetailPage({
 
         {renderTabContent()}
       </div>
-
-      <EducationBottomNavigation locale={locale} />
     </div>
   )
 }
