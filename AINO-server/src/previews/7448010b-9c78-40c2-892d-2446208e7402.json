@@ -1,0 +1,49 @@
+{
+  "id": "7448010b-9c78-40c2-892d-2446208e7402",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c226bcaf-2593-41dc-8164-713b7e7e28ff",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        },
+        {
+          "key": "k1757155584803",
+          "label": "新项",
+          "route": "/p-k1757155584803"
+        }
+      ]
+    },
+    "dataSources": {
+      "table_a892370c-f965-44e8-923e-e319c659a62e": {
+        "type": "table",
+        "tableId": "a892370c-f965-44e8-923e-e319c659a62e",
+        "tableName": "岗位数据",
+        "moduleName": "智能招聘",
+        "label": "智能招聘/岗位数据"
+      }
+    },
+    "pages": {
+      "p-k1757155584803": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757155584803",
+        "cards": []
+      }
+    }
+  },
+  "createdAt": "2025-09-06T10:48:54.824Z"
+}

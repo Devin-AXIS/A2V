@@ -1,0 +1,25 @@
+{
+  "id": "dc4a7ba6-0a35-4717-8b6e-19e7c01725e2",
+  "manifest": {
+    "app": {
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/me"
+        }
+      ]
+    },
+    "pages": {
+      "home": {
+        "category": "workspace"
+      }
+    }
+  },
+  "createdAt": "2025-09-05T03:48:41.059Z"
+}

@@ -1,0 +1,70 @@
+{
+  "id": "28ed46e3-db1a-49a0-9699-04044b77115f",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c3242be9-ad51-418e-86bf-01ef913e1fa8",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        }
+      ]
+    },
+    "dataSources": {
+      "records": {
+        "type": "rest",
+        "method": "GET",
+        "url": "/api/records/{dirId}",
+        "auth": "server"
+      }
+    },
+    "pages": {
+      "home": {
+        "title": {
+          "zh": "首页",
+          "en": "Home"
+        },
+        "layout": "mobile",
+        "route": "/home",
+        "data": {
+          "users": {
+            "source": "records",
+            "params": {
+              "dirId": "users"
+            },
+            "select": "$.data.records"
+          }
+        },
+        "cards": [
+          {
+            "id": "listA",
+            "type": "list",
+            "bind": {
+              "context": "users",
+              "select": "$"
+            }
+          }
+        ]
+      },
+      "profile": {
+        "title": {
+          "zh": "我的",
+          "en": "Profile"
+        },
+        "layout": "mobile",
+        "route": "/profile",
+        "cards": []
+      }
+    }
+  },
+  "createdAt": "2025-09-05T09:38:06.202Z"
+}

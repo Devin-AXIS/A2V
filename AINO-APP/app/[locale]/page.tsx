@@ -7,6 +7,11 @@ import {
   MessageSquare,
   Monitor,
   Layers,
+<<<<<<< HEAD
+=======
+  Bot,
+  Sparkles,
+>>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
 } from "lucide-react"
 import { MaybeHeader } from "@/components/layout/maybe-header"
 import { CategoryCard } from "@/components/browser/category-card"
@@ -60,6 +65,40 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
           </div>
         </AppCard>
 
+<<<<<<< HEAD
+=======
+        {/* AI卡片浏览入口 */}
+        <AppCard className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 mb-6 border border-purple-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                <Bot className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold text-gray-800">
+                    {locale === "en" ? "AI Smart Cards" : "AI智能卡片"}
+                  </h3>
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                </div>
+                <p className="text-sm text-gray-600">
+                  {locale === "en" ? "Experience streaming display and intelligent interaction AI cards" : "体验流式显示和智能交互的AI卡片"}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-purple-200 text-purple-600 hover:bg-purple-50 bg-transparent"
+              asChild
+            >
+              <Link href={`/${locale}/ai-cards`}>
+                {locale === "en" ? "Browse AI Cards" : "浏览AI卡片"}
+              </Link>
+            </Button>
+          </div>
+        </AppCard>
+>>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
 
         {/* 实例demo入口区域 */}
         <div className="mb-6">
@@ -96,6 +135,37 @@ export default async function ComponentsBrowserPage({ params }: { params: Promis
               </div>
             </AppCard>
 
+<<<<<<< HEAD
+=======
+            {/* 内容应用demo入口 */}
+            <AppCard className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">
+                      {locale === "en" ? "Content Application" : "内容应用"}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {locale === "en" ? "Content management and publishing platform system" : "内容管理和发布平台系统"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-orange-200 text-orange-600 hover:bg-orange-50 bg-transparent"
+                  asChild
+                >
+                  <Link href={`/${locale}/demo/content`}>
+                    {locale === "en" ? "View Demo" : "查看Demo"}
+                  </Link>
+                </Button>
+              </div>
+            </AppCard>
+>>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
           </div>
         </div>
       </div>

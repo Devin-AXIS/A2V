@@ -1,8 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/[locale]/page": "app/[locale]/page.js",
-  "/[locale]/preview/page": "app/[locale]/preview/page.js",
-  "/[locale]/profile/page": "app/[locale]/profile/page.js",
-  "/[locale]/components/basic/page": "app/[locale]/components/basic/page.js",
-  "/[locale]/pc/page": "app/[locale]/pc/page.js"
-}

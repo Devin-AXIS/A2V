@@ -14,6 +14,7 @@ fi
 # 创建日志目录
 mkdir -p logs
 
+<<<<<<< HEAD
 # 检查并安装依赖
 echo "📦 检查项目依赖..."
 
@@ -41,6 +42,8 @@ if [ ! -d "AINO-APP/node_modules" ]; then
     cd ..
 fi
 
+=======
+>>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
 # 启动后端服务
 echo "📡 启动后端服务 (AINO-server)..."
 cd AINO-server

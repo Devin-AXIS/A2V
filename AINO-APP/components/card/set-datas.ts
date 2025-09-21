@@ -185,6 +185,12 @@ export const setDatas = async () => {
 
     await Promise.all(promises);
 
+<<<<<<< HEAD
+=======
+    // CardRegistry.setData("learning-plan-summary", {});
+    // CardRegistry.setData("course-module", {});
+    // CardRegistry.setData("learning-outcome", {});
+>>>>>>> 17191d65f9bd796a277d77a3f93a21d3245a77eb
     // CardRegistry.setData("instructor-courses-list", {});
     // CardRegistry.setData("notification-center", {});
     // CardRegistry.setData("search-widget", {});

@@ -1,0 +1,65 @@
+{
+  "id": "fe3a69d7-9978-4904-a886-f3db9f0a467e",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c226bcaf-2593-41dc-8164-713b7e7e28ff",
+      "locale": "zh-CN",
+      "defaultLanguage": "zh",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        },
+        {
+          "key": "me",
+          "label": "我的",
+          "route": "/profile"
+        },
+        {
+          "key": "k1757172795817",
+          "label": "新项",
+          "route": "/p-k1757172795817"
+        },
+        {
+          "key": "k1757172862749",
+          "label": "新项",
+          "route": "/p-k1757172862749"
+        }
+      ]
+    },
+    "dataSources": {},
+    "pages": {
+      "p-k1757172795817": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757172795817",
+        "cards": []
+      },
+      "p-k1757172862749": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757172862749",
+        "cards": []
+      },
+      "p-k1757172862750": {
+        "title": {
+          "zh": "新页面",
+          "en": "New Page"
+        },
+        "layout": "mobile",
+        "route": "/p-k1757172862750",
+        "cards": []
+      }
+    }
+  },
+  "updatedAt": "2025-09-06T15:34:32.674Z"
+}

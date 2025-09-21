@@ -1,0 +1,19 @@
+{
+  "id": "12e8fa07-1715-4097-be3f-beb223681157",
+  "manifest": {
+    "schemaVersion": "1.0",
+    "app": {
+      "appKey": "c3242be9-ad51-418e-86bf-01ef913e1fa8",
+      "locale": "zh-CN",
+      "theme": "default",
+      "bottomNav": [
+        {
+          "key": "home",
+          "label": "首页",
+          "route": "/home"
+        }
+      ]
+    }
+  },
+  "updatedAt": "2025-09-05T08:59:55.556Z"
+}
