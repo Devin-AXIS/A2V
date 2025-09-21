@@ -15,3 +15,23 @@ export { educationFields, educationDisplay } from './education-config'
 export { workExperienceFields, workExperienceDisplay } from './work-experience-config'
 export { projectFields, projectDisplay } from './project-config'
 export { certificateFields, certificateDisplay } from './certificate-config'
+export { 
+  identityVerificationFields, 
+  identityVerificationDisplay,
+  type IdentityVerificationData,
+  defaultIdentityVerificationData
+} from './identity-verification-config'
+
+export { 
+  passwordChangeFields, 
+  passwordChangeDisplay,
+  type PasswordChangeData,
+  defaultPasswordChangeData
+} from './password-change-config'
+
+export { 
+  phoneBindingFields, 
+  phoneBindingDisplay,
+  type PhoneBindingData,
+  defaultPhoneBindingData
+} from './phone-binding-config'

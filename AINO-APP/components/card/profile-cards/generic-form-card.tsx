@@ -20,6 +20,7 @@ export interface FieldConfig {
   type: 'text' | 'textarea' | 'select' | 'yearMonth' | 'date' | 'city' | 'switch' | 'tags' | 'image'
   placeholder?: string
   required?: boolean
+  readonly?: boolean
   options?: { value: string; label: string }[]
   rows?: number
   gridColumn?: 1 | 2 // 1=全宽, 2=半宽
@@ -29,6 +30,22 @@ export interface FieldConfig {
   showWhen?: any // 当依赖字段为此值时显示
   disableWhen?: any // 当依赖字段为此值时禁用
   replaceWith?: string // 当隐藏时显示的替代文本
+  // 验证规则
+  validation?: {
+    minLength?: number
+    maxLength?: number
+    pattern?: RegExp
+    message?: string
+  }
+  // 图片配置
+  imageConfig?: {
+    shape?: 'circle' | 'square' | 'rectangle'
+    size?: 'sm' | 'md' | 'lg'
+    enableCrop?: boolean
+    cropAspectRatio?: number
+    maxSize?: number
+    accept?: string
+  }
 }
 
 // 数据项类型
@@ -43,8 +60,14 @@ export interface DisplayConfig {
   titleField: string
   subtitleField?: string
   descriptionField?: string
-  layout: 'timeline' | 'grid' | 'simple'
+  layout: 'timeline' | 'grid' | 'simple' | 'detailed'
   showActions?: boolean
+  emptyTitle?: string
+  emptySubtitle?: string
+  addButtonText?: string
+  editButtonText?: string
+  deleteButtonText?: string
+  confirmDeleteMessage?: string
 }
 
 // 通用表单卡片组件属性
@@ -201,6 +224,8 @@ export function GenericFormCard({
             onChange={(e) => updateField(field.key, e.target.value)}
             placeholder={field.placeholder}
             className="rounded-xl"
+            readOnly={field.readonly}
+            disabled={field.readonly}
           />
         )
 
@@ -213,6 +238,8 @@ export function GenericFormCard({
             className="w-full px-3.5 py-2.5 bg-white/70 backdrop-blur-lg rounded-xl shadow-sm border border-white/80 resize-none"
             rows={field.rows || 3}
             style={{ color: "var(--card-text-color)" }}
+            readOnly={field.readonly}
+            disabled={field.readonly}
           />
         )
 
@@ -278,13 +305,18 @@ export function GenericFormCard({
         )
 
       case 'image':
+        const imageConfig = field.imageConfig || {}
         return (
           <ImageUpload
             value={value}
             onChange={(val) => updateField(field.key, val)}
             placeholder={field.placeholder || "点击上传图片"}
-            shape="circle"
-            size="md"
+            shape={imageConfig.shape || "rectangle"}
+            size={imageConfig.size || "md"}
+            enableCrop={imageConfig.enableCrop !== false}
+            cropAspectRatio={imageConfig.cropAspectRatio}
+            maxSize={imageConfig.maxSize || 5}
+            accept={imageConfig.accept || "image/*"}
           />
         )
 

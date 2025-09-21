@@ -235,7 +235,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
           <ToolbarItem
             icon={<Settings className="w-5 h-5" style={{ color: "var(--card-text-color)" }} />}
             label={dict.settings}
-            href="#"
+            href={`/${locale}/profile/settings`}
           />
         </div>
       </AppCard>
