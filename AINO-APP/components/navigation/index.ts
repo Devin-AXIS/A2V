@@ -15,6 +15,8 @@ export { CategoryTabNavigation } from "./category-tab-navigation"
 export { ActionToolbar } from "./action-toolbar"
 export { DropdownFilterTabs } from "./dropdown-filter-tabs"
 export { EducationBottomNavigation } from "./education-bottom-navigation"
+export { PrimaryPillBottomNav, type PrimaryPillBottomNavAction } from "./primary-pill-bottom-nav"
+export { SecondaryPillBottomNav, type SecondaryPillBottomNavAction } from "./secondary-pill-bottom-nav"
 
 // 新创建的导航组件
 export { Pagination } from "./pagination"
