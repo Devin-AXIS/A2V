@@ -149,6 +149,7 @@ export class ApplicationUserService {
       throw new Error('用户已注册')
     } else {
       console.log('🔍 创建新用户')
+
       // 创建新用户（只创建账号）
       const hashedPassword = await bcrypt.hash(data.password, 10)
       const userData = {
@@ -158,7 +159,8 @@ export class ApplicationUserService {
         status: 'active',
         metadata: {
           source: 'register',
-          registeredAt: new Date().toISOString()
+          registeredAt: new Date().toISOString(),
+          // existingId: existing.id,
         }
       }
 
@@ -174,7 +176,7 @@ export class ApplicationUserService {
           .where(
             and(
               eq(dirUsers.tenantId, applicationId),
-              sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+              sql`${dirUsers.props}->>'phone_number' = ${`+86${data.phone_number}`} OR ${dirUsers.props}->>'phone' = ${`+86${data.phone_number}`}`
             )
           )
           .limit(1)
@@ -188,14 +190,32 @@ export class ApplicationUserService {
             .where(
               and(
                 eq(dirUsers.tenantId, userListDirId),
-                sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+                sql`${dirUsers.props}->>'phone_number' = ${`+86${data.phone_number}`} OR ${dirUsers.props}->>'phone' = ${`+86${data.phone_number}`}`
               )
             )
             .limit(1)
           existing = existingByDir[0]
         }
 
+        // console.log(data.phone_number, existing, 23232323)
+        // return;
         if (existing) {
+
+          // // 创建新用户（只创建账号）
+          // const hashedPassword = await bcrypt.hash(data.password, 10)
+          // const userData = {
+          //   phone_number: data.phone_number,
+          //   password: hashedPassword,
+          //   role: 'user',
+          //   status: 'active',
+          //   metadata: {
+          //     source: 'register',
+          //     registeredAt: new Date().toISOString(),
+          //     existingId: existing.id,
+          //   }
+          // }
+
+          // const user = await repo.createApplicationUser(applicationId, userData)
           const updatedProps = {
             ...existing.props,
             userId: user.id,
@@ -212,6 +232,21 @@ export class ApplicationUserService {
           await db.update(dirUsers).set({ props: updatedProps }).where(eq(dirUsers.id, existing.id))
         } else {
           // 在用户模块中创建对应的业务数据记录
+          // // 创建新用户（只创建账号）
+          // const hashedPassword = await bcrypt.hash(data.password, 10)
+          // const userData = {
+          //   phone_number: data.phone_number,
+          //   password: hashedPassword,
+          //   role: 'user',
+          //   status: 'active',
+          //   metadata: {
+          //     source: 'register',
+          //     registeredAt: new Date().toISOString(),
+          //     existingId: existing.id,
+          //   }
+          // }
+
+          // const user = await repo.createApplicationUser(applicationId, userData)
           await this.createUserBusinessRecord(applicationId, user.id, user.phone, data)
         }
       } catch (err) {
@@ -410,6 +445,12 @@ export class ApplicationUserService {
       let rec = await db
         .select({ props: dirUsers.props })
         .from(dirUsers)
+        .where(
+          and(
+            eq(dirUsers.tenantId, applicationId),
+            sql`${dirUsers.props}->>'userId' = ${user.id}`
+          )
+        )
         .limit(1)
 
       if (rec && rec.length > 0) {
