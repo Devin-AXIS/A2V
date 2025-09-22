@@ -129,13 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user = {
         id: Date.now().toString(),
         phone: data.phone,
-        name: data.profile.name,
-        avatar: data.profile.avatar,
+        name: data.name,
+        avatar: data.avatar,
         points: grades.points || 0,
         followers: grades.followers || 0,
         following: grades.following || 0,
         posts: grades.posts || 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        extends: { ...data },
       }
       MOCK_USERS.push(user)
 

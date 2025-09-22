@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import { AppHeader } from "@/components/navigation/app-header"
@@ -53,19 +53,19 @@ export default function EditProfilePage() {
   const { locale } = useParams()
 
   const { user, isAuthenticated, isLoading } = useAuth()
-  console.log(user, 23232323)
+  // console.log(user, 23232323)
 
   // 基础资料
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
-    name: "王宇",
-    avatar: "/generic-user-avatar.png",
-    gender: "男",
+    name: user?.name || "",
+    avatar: user?.avatar || "/generic-user-avatar.png",
+    gender: user?.extends?.gender || "男",
     country: "CN",
-    city: "北京 - 朝阳区",
-    birthday: "1990-05-15",
-    bio: "热爱技术，专注于前端开发",
-    profession: "前端工程师"
-  })
+    city: user?.extends?.city || "北京 - 朝阳区",
+    birthday: user?.extends?.birthday || "1990-05-15",
+    bio: user?.extends?.bio || "热爱技术，专注于前端开发",
+    profession: user?.extends?.profession || "前端工程师"
+  });
 
   // 其他档案数据
   const [userProfile, setUserProfile] = useState({
@@ -83,21 +83,48 @@ export default function EditProfilePage() {
     jobExpectations: [] as DataItem[],
 
     // 工作经历
-    workExperience: [] as DataItem[],
+    workExperience: user?.extends?.work_exp || [] as DataItem[],
 
     // 项目经历
-    projectExperience: [] as DataItem[],
+    projectExperience: user?.extends?.proj_exp || [] as DataItem[],
 
     // 教育经历
-    educationHistory: [] as DataItem[],
+    educationHistory: user?.extends?.edu_exp || [] as DataItem[],
 
     // 证书资质
-    certificates: [] as DataItem[],
+    certificates: user?.extends?.honors || [] as DataItem[],
 
     // 个人技能
-    skills: ["JavaScript", "TypeScript", "React", "Node.js", "前端开发"] as string[],
+    skills: user?.extends?.skills || [] as string[],
 
   })
+
+  useEffect(() => {
+    setBasicInfo({
+      name: user?.name || "",
+      avatar: user?.avatar || "/generic-user-avatar.png",
+      gender: user?.extends?.gender || "男",
+      country: "CN",
+      city: user?.extends?.city || "北京 - 朝阳区",
+      birthday: user?.extends?.birthday || "1990-05-15",
+      bio: user?.extends?.bio || "热爱技术，专注于前端开发",
+      profession: user?.extends?.profession || "前端工程师"
+    })
+
+    // work_exp
+    // proj_exp
+    // edu_exp
+    // honors
+
+    setUserProfile({
+      ...userProfile,
+      workExperience: user?.extends?.work_exp || [] as DataItem[],
+      projectExperience: user?.extends?.proj_exp || [] as DataItem[],
+      educationHistory: user?.extends?.edu_exp || [] as DataItem[],
+      certificates: user?.extends?.honors || [] as DataItem[],
+      skills: user?.extends?.skills || [] as string[],
+    })
+  }, [user])
 
   const [showContactEdit, setShowContactEdit] = useState(false)
   const [editingSection, setEditingSection] = useState<string | null>(null)
@@ -192,7 +219,7 @@ export default function EditProfilePage() {
       <div className="px-4 py-6 space-y-4 pt-20">
 
         {/* 简历专业评分卡片 */}
-        <AppCard>
+        {/* <AppCard>
           <div className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -213,7 +240,7 @@ export default function EditProfilePage() {
               </PillButton>
             </div>
           </div>
-        </AppCard>
+        </AppCard> */}
 
         {/* 基础资料 */}
         <BasicInfoCard
@@ -244,7 +271,7 @@ export default function EditProfilePage() {
         </AppCard>
 
         {/* 求职期望 */}
-        <GenericFormCard
+        {/* <GenericFormCard
           title="求职期望"
           data={userProfile.jobExpectations}
           onUpdate={(jobExpectations) => setUserProfile(prev => ({ ...prev, jobExpectations }))}
@@ -253,7 +280,7 @@ export default function EditProfilePage() {
           allowMultiple={false}
           emptyText="暂未设置求职期望"
           addButtonText="设置期望"
-        />
+        /> */}
 
         {/* 工作经历 */}
         <GenericFormCard

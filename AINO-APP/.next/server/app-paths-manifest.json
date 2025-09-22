@@ -1,4 +1,6 @@
 {
   "/[locale]/profile/edit/page": "app/[locale]/profile/edit/page.js",
+  "/[locale]/profile/page": "app/[locale]/profile/page.js",
+  "/[locale]/auth/login/page": "app/[locale]/auth/login/page.js",
   "/[locale]/page": "app/[locale]/page.js"
 }

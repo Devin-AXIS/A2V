@@ -4,7 +4,7 @@ import { FieldConfig, DisplayConfig } from "./generic-form-card"
 // 教育经历字段配置
 export const educationFields: FieldConfig[] = [
   {
-    key: "school",
+    key: "title",
     label: "学校名称",
     type: "text",
     placeholder: "请输入学校名称",
@@ -12,7 +12,7 @@ export const educationFields: FieldConfig[] = [
     gridColumn: 2
   },
   {
-    key: "major",
+    key: "organization",
     label: "专业",
     type: "text",
     placeholder: "请输入专业名称",
@@ -69,9 +69,9 @@ export const educationFields: FieldConfig[] = [
 // 教育经历展示配置
 export const educationDisplay: DisplayConfig = {
   icon: <GraduationCap className="w-5 h-5 mt-1" style={{ color: "var(--card-accent-color, #3b82f6)" }} />,
-  titleField: "school",
-  subtitleField: "degree",
-  descriptionField: "description",
+  titleField: "title",
+  subtitleField: "organization",
+  descriptionField: "degree",
   layout: "timeline",
   showActions: true
 }

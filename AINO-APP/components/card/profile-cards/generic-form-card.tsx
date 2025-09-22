@@ -125,7 +125,7 @@ export function GenericFormCard({
 
     if (editingId) {
       // 编辑现有数据
-      const updatedData = data.map(item => 
+      const updatedData = data.map(item =>
         item.id === editingId ? { ...item, ...formData } : item
       )
       onUpdate(updatedData)
@@ -157,7 +157,7 @@ export function GenericFormCard({
   const isFieldHidden = (field: FieldConfig) => {
     if (!field.dependsOn) return false
     const dependentValue = formData[field.dependsOn]
-    
+
     if (field.hideWhen !== undefined) {
       return dependentValue === field.hideWhen
     }
@@ -320,14 +320,14 @@ export function GenericFormCard({
             </div>
             {finalDisplayConfig.showActions && (
               <div className="flex items-center gap-2 ml-2">
-                <button 
+                <button
                   onClick={() => handleEdit(item)}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
                   <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
                 </button>
                 {allowMultiple && (
-                  <button 
+                  <button
                     onClick={() => handleDelete(item.id)}
                     className="p-1 hover:bg-gray-100 rounded"
                   >
@@ -343,10 +343,10 @@ export function GenericFormCard({
 
     if (finalDisplayConfig.layout === 'grid') {
       return (
-        <div 
-          key={item.id} 
+        <div
+          key={item.id}
           className="p-3 rounded-lg border-l-4"
-          style={{ 
+          style={{
             backgroundColor: "var(--card-background-secondary, #f8fafc)",
             borderLeftColor: "var(--card-accent-color, #3b82f6)"
           }}
@@ -384,14 +384,14 @@ export function GenericFormCard({
             </div>
             {finalDisplayConfig.showActions && (
               <div className="flex items-center gap-2 ml-2">
-                <button 
+                <button
                   onClick={() => handleEdit(item)}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
                   <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
                 </button>
                 {allowMultiple && (
-                  <button 
+                  <button
                     onClick={() => handleDelete(item.id)}
                     className="p-1 hover:bg-gray-100 rounded"
                   >
@@ -424,14 +424,14 @@ export function GenericFormCard({
           </div>
           {finalDisplayConfig.showActions && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => handleEdit(item)}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
               </button>
               {allowMultiple && (
-                <button 
+                <button
                   onClick={() => handleDelete(item.id)}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
@@ -457,12 +457,12 @@ export function GenericFormCard({
               </button>
             )}
           </div>
-          
+
           {data.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm" style={{ color: "var(--card-text-color)" }}>{emptyText}</p>
-              <PillButton 
-                variant="default" 
+              <PillButton
+                variant="default"
                 onClick={handleAdd}
                 className="mt-3"
               >
@@ -492,7 +492,7 @@ export function GenericFormCard({
           {fields.filter(f => !f.gridColumn || f.gridColumn === 1).map((field) => {
             const fieldElement = renderField(field)
             if (!fieldElement) return null // 隐藏的字段
-            
+
             return (
               <div key={field.key}>
                 {field.type === 'switch' ? (
@@ -520,7 +520,7 @@ export function GenericFormCard({
               {fields.filter(f => f.gridColumn === 2).map((field) => {
                 const fieldElement = renderField(field)
                 if (!fieldElement) return null // 隐藏的字段
-                
+
                 return (
                   <div key={field.key}>
                     {field.type === 'switch' ? (

@@ -39,7 +39,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
   const { getLikedCount, getFavoritedCount } = useFavorites()
 
   const StatItem = ({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) => (
-    <div 
+    <div
       className={`text-center ${onClick ? 'cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors' : ''}`}
       onClick={onClick}
     >
@@ -147,9 +147,9 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
             <h3 className="text-lg font-bold text-gray-900" style={{ color: "var(--card-title-color)" }}>
               {user?.name || dict.name}
             </h3>
-            {user?.points && user.points > 1000 && (
+            {/* {user?.points && user.points > 1000 && (
               <Crown className="w-5 h-5 text-yellow-500" />
-            )}
+            )} */}
           </div>
           <p className="text-xs text-gray-500" style={{ color: "var(--card-text-color)" }}>
             {user?.phone || dict.id}
@@ -164,24 +164,24 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
       </div>
 
       {/* Abstract Stats */}
-      <AppCard>
+      {/* <AppCard>
         <div className="flex justify-around items-center py-4">
-          <StatItem 
-            value={getLikedCount().toString()} 
-            label={dict.followers} 
+          <StatItem
+            value={getLikedCount().toString()}
+            label={dict.followers}
             onClick={() => router.push(`/${locale}/profile/likes`)}
           />
-          <StatItem 
-            value={getFavoritedCount().toString()} 
-            label={dict.following} 
+          <StatItem
+            value={getFavoritedCount().toString()}
+            label={dict.following}
             onClick={() => router.push(`/${locale}/profile/favorites`)}
           />
           <StatItem value={user?.posts?.toString() || "0"} label={dict.posts} />
         </div>
-      </AppCard>
+      </AppCard> */}
 
       {/* My Points Card */}
-      <AppCard className="p-5">
+      {/* <AppCard className="p-5">
         <div className="flex justify-between items-start">
           <div>
             <h4 className="text-sm font-medium" style={{ color: "var(--card-text-color)" }}>
@@ -217,7 +217,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
             <span>{dict.getPoints}</span>
           </Link>
         </div>
-      </AppCard>
+      </AppCard> */}
 
       {/* Toolbar Card */}
       <AppCard className="p-5">

@@ -4,7 +4,7 @@ import { FieldConfig, DisplayConfig } from "./generic-form-card"
 // 证书资质字段配置
 export const certificateFields: FieldConfig[] = [
   {
-    key: "name",
+    key: "title",
     label: "证书名称",
     type: "text",
     placeholder: "请输入证书名称",
@@ -12,7 +12,7 @@ export const certificateFields: FieldConfig[] = [
     gridColumn: 2
   },
   {
-    key: "issuer",
+    key: "organization",
     label: "颁发机构",
     type: "text",
     placeholder: "请输入颁发机构",
@@ -60,8 +60,8 @@ export const certificateFields: FieldConfig[] = [
 // 证书资质展示配置
 export const certificateDisplay: DisplayConfig = {
   icon: <Award className="w-5 h-5 mt-1" style={{ color: "var(--card-accent-color, #3b82f6)" }} />,
-  titleField: "name",
-  subtitleField: "issuer",
+  titleField: "title",
+  subtitleField: "organization",
   descriptionField: "description",
   layout: "grid",
   showActions: true

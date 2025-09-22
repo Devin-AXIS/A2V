@@ -16,11 +16,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/error.js"
     ],
-    "/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
-    ],
     "/app/[appId]/error": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

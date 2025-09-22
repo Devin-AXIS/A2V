@@ -4,7 +4,7 @@ import { FieldConfig, DisplayConfig } from "./generic-form-card"
 // 项目经历字段配置
 export const projectFields: FieldConfig[] = [
   {
-    key: "name",
+    key: "title",
     label: "项目名称",
     type: "text",
     placeholder: "请输入项目名称",
@@ -67,7 +67,7 @@ export const projectFields: FieldConfig[] = [
 // 项目经历展示配置
 export const projectDisplay: DisplayConfig = {
   icon: <FolderOpen className="w-5 h-5 mt-1" style={{ color: "var(--card-accent-color, #3b82f6)" }} />,
-  titleField: "name",
+  titleField: "title",
   subtitleField: "organization",
   descriptionField: "description",
   layout: "grid",

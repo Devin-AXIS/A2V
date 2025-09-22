@@ -462,11 +462,12 @@ export class ApplicationUserService {
       }
     } catch { }
 
+    if (businessData) delete businessData.realname_status;
     return {
       ...user,
       ...businessData,
       phone_number: businessData.phone_number || businessData.phone || user.phone,
-      profile: businessData,
+      // profile: businessData,
     }
   }
 

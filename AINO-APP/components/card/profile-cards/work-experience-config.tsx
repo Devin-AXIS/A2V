@@ -4,7 +4,7 @@ import { FieldConfig, DisplayConfig } from "./generic-form-card"
 // 工作经历字段配置
 export const workExperienceFields: FieldConfig[] = [
   {
-    key: "company",
+    key: "title",
     label: "公司名称",
     type: "text",
     placeholder: "请输入公司名称",
@@ -12,7 +12,7 @@ export const workExperienceFields: FieldConfig[] = [
     gridColumn: 2
   },
   {
-    key: "position",
+    key: "organization",
     label: "职位",
     type: "text",
     placeholder: "请输入职位名称",
@@ -68,8 +68,8 @@ export const workExperienceFields: FieldConfig[] = [
 // 工作经历展示配置
 export const workExperienceDisplay: DisplayConfig = {
   icon: <Briefcase className="w-5 h-5 mt-1" style={{ color: "var(--card-accent-color, #3b82f6)" }} />,
-  titleField: "company",
-  subtitleField: "position",
+  titleField: "title",
+  subtitleField: "organization",
   descriptionField: "description",
   layout: "timeline",
   showActions: true
