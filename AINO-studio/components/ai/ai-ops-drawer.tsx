@@ -470,7 +470,14 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       .sort((a, b) => b.s - a.s)
       .map((x) => x.k)
     const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
-    return filtered.slice(0, 8) // 显示更多候选字段
+    const resultList = [];
+
+    (filtered || []).forEach(key => {
+      if (key.startsWith(arrayPath)) {
+        resultList.push(key)
+      }
+    })
+    return resultList.slice(0, 8) // 显示更多候选字段
   }
 
   // ---------- Progress helpers ----------
@@ -1102,7 +1109,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <section className="space-y-3">
                     <div className="text-sm font-medium">{t("数据源", "Source")}</div>
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label>{t("Provider", "Provider")}</Label>
                         <Select value={provider} onValueChange={(v: any) => setProvider(v)}>
@@ -1117,7 +1124,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <Label>{t("域名(可选)", "Domain (optional)")}</Label>
                         <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="https://example.com" />
                       </div>
-                    </div>
+                    </div> */}
                     <div className="space-y-1">
                       <Label>{t("URL 列表(每行一个)", "URL list (one per line)")}</Label>
                       <Textarea value={urls} onChange={(e) => setUrls(e.target.value)} placeholder={t("https://...", "https://...")} className="min-h-[110px]" />
@@ -1250,7 +1257,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     {/* Extracted sample + array path selection */}
                     <div className="space-y-2">
                       <div className="text-sm font-medium">{t("抽取样例", "Extracted Samples")}</div>
-                      <div className="flex items-center gap-2">
+                      {/* <div className="flex items-center gap-2">
                         <Label className="text-xs">{t("数据数组路径", "Array path")}</Label>
                         <Select value={arrayPath} onValueChange={(v: any) => setArrayPath(v)}>
                           <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
@@ -1259,7 +1266,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                           </SelectContent>
                         </Select>
                         <div className="text-xs text-muted-foreground">{t("将基于此路径读取记录数组", "We will read records from this path")}</div>
-                      </div>
+                      </div> */}
                       <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-2 max-h-[160px] overflow-auto text-xs">
                         {sampleRecords.length === 0 ? (
                           <div className="text-muted-foreground">{t("暂无样例，请先抓取或爬取。", "No samples yet. Scrape/crawl first.")}</div>

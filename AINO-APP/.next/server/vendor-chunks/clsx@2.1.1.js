@@ -11,8 +11,6 @@ exports.id = "vendor-chunks/clsx@2.1.1";
 exports.ids = ["vendor-chunks/clsx@2.1.1"];
 exports.modules = {
 
-<<<<<<< HEAD
-=======
 /***/ "(rsc)/./node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs":
 /*!***********************************************************************!*\
   !*** ./node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs ***!
@@ -23,7 +21,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 /***/ }),
 
->>>>>>> develop
 /***/ "(ssr)/./node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs":
 /*!***********************************************************************!*\
   !*** ./node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs ***!

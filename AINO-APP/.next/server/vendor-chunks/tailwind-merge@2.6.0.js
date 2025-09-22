@@ -11,8 +11,6 @@ exports.id = "vendor-chunks/tailwind-merge@2.6.0";
 exports.ids = ["vendor-chunks/tailwind-merge@2.6.0"];
 exports.modules = {
 
-<<<<<<< HEAD
-=======
 /***/ "(rsc)/./node_modules/.pnpm/tailwind-merge@2.6.0/node_modules/tailwind-merge/dist/bundle-mjs.mjs":
 /*!*************************************************************************************************!*\
   !*** ./node_modules/.pnpm/tailwind-merge@2.6.0/node_modules/tailwind-merge/dist/bundle-mjs.mjs ***!
@@ -23,7 +21,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 /***/ }),
 
->>>>>>> develop
 /***/ "(ssr)/./node_modules/.pnpm/tailwind-merge@2.6.0/node_modules/tailwind-merge/dist/bundle-mjs.mjs":
 /*!*************************************************************************************************!*\
   !*** ./node_modules/.pnpm/tailwind-merge@2.6.0/node_modules/tailwind-merge/dist/bundle-mjs.mjs ***!

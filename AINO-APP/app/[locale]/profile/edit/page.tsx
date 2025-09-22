@@ -10,7 +10,7 @@ import { PillButton } from "@/components/basic/pill-button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
-import { 
+import {
   BasicInfoCard,
   GenericFormCard,
   jobExpectationFields,
@@ -27,14 +27,14 @@ import {
   type DataItem
 } from "@/components/card/profile-cards"
 import { TagInput } from "@/components/input/tag-input"
-import { 
-  User, 
-  Camera, 
-  Check, 
-  X, 
-  ChevronRight, 
-  Shield, 
-  Smartphone, 
+import {
+  User,
+  Camera,
+  Check,
+  X,
+  ChevronRight,
+  Shield,
+  Smartphone,
   Mail,
   MapPin,
   Briefcase,
@@ -45,11 +45,15 @@ import {
   Edit,
   Eye
 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 
 export default function EditProfilePage() {
   const router = useRouter()
   const { locale } = useParams()
+
+  const { user, isAuthenticated, isLoading } = useAuth()
+  console.log(user, 23232323)
 
   // 基础资料
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
@@ -70,29 +74,29 @@ export default function EditProfilePage() {
     phoneVerified: true,
     email: "wangyu@example.com",
     emailVerified: false,
-    
-    
+
+
     // 个人优势
     personalAdvantages: "很傻",
-    
+
     // 求职期望
     jobExpectations: [] as DataItem[],
-    
+
     // 工作经历
     workExperience: [] as DataItem[],
-    
+
     // 项目经历
     projectExperience: [] as DataItem[],
-    
+
     // 教育经历
     educationHistory: [] as DataItem[],
-    
+
     // 证书资质
     certificates: [] as DataItem[],
-    
+
     // 个人技能
     skills: ["JavaScript", "TypeScript", "React", "Node.js", "前端开发"] as string[],
-    
+
   })
 
   const [showContactEdit, setShowContactEdit] = useState(false)
@@ -107,10 +111,10 @@ export default function EditProfilePage() {
 
 
   // 编辑项组件
-  const EditableItem = ({ 
-    icon, 
-    title, 
-    content, 
+  const EditableItem = ({
+    icon,
+    title,
+    content,
     action = "编辑",
     onClick,
     showArrow = true,
@@ -126,7 +130,7 @@ export default function EditProfilePage() {
     status?: 'verified' | 'unverified' | 'incomplete'
     isOptimizable?: boolean
   }) => (
-    <div 
+    <div
       onClick={onClick}
       className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl"
     >
@@ -148,7 +152,7 @@ export default function EditProfilePage() {
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-2">
         {status === 'verified' && (
           <Shield className="w-4 h-4" style={{ color: "var(--card-success-color, #22c55e)" }} />
@@ -156,11 +160,11 @@ export default function EditProfilePage() {
         {status === 'incomplete' && (
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }} />
         )}
-        
+
         <PillButton variant="default">
           {action}
         </PillButton>
-        
+
         {showArrow && (
           <ChevronRight className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
         )}
@@ -170,7 +174,7 @@ export default function EditProfilePage() {
 
   // 添加项组件
   const AddSection = ({ title, onClick }: { title: string; onClick: () => void }) => (
-    <div 
+    <div
       onClick={onClick}
       className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl border-2 border-dashed"
       style={{ borderColor: "var(--card-border-color, #e2e8f0)" }}
@@ -186,7 +190,7 @@ export default function EditProfilePage() {
       <AppHeader title="我的在线简历" showBackButton />
 
       <div className="px-4 py-6 space-y-4 pt-20">
-        
+
         {/* 简历专业评分卡片 */}
         <AppCard>
           <div className="p-4">
@@ -225,14 +229,14 @@ export default function EditProfilePage() {
               <h3 className="text-base font-semibold" style={{ color: "var(--card-title-color)" }}>个人优势</h3>
               <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
             </div>
-            
+
             <div className="flex items-center gap-2 mb-2">
               <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }}>
                 <span className="text-xs text-white">!</span>
               </div>
               <span className="text-sm" style={{ color: "var(--card-warning-color, #f59e0b)" }}>补充你的优势信息</span>
             </div>
-            
+
             <p className="text-sm" style={{ color: "var(--card-text-color)" }}>
               {userProfile.personalAdvantages}
             </p>
@@ -308,8 +312,8 @@ export default function EditProfilePage() {
                 {userProfile.skills.length} 个技能
               </div>
             </div>
-            
-            <TagInput 
+
+            <TagInput
               value={userProfile.skills}
               onChange={(skills) => setUserProfile(prev => ({ ...prev, skills }))}
               placeholder="输入技能后按回车添加"
@@ -324,7 +328,7 @@ export default function EditProfilePage() {
         {/* 预览按钮 */}
         <AppCard>
           <div className="p-4">
-            <PillButton 
+            <PillButton
               className="w-full flex items-center justify-center gap-2"
               onClick={() => console.log("预览简历")}
             >
@@ -355,7 +359,7 @@ export default function EditProfilePage() {
               className="rounded-xl"
             />
           </div>
-          
+
           <div>
             <label className="text-sm font-medium mb-2 block">邮箱</label>
             <Input

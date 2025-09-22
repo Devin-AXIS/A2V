@@ -11,8 +11,6 @@ exports.id = "vendor-chunks/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_reac
 exports.ids = ["vendor-chunks/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_react@19.1.1"];
 exports.modules = {
 
-<<<<<<< HEAD
-=======
 /***/ "(rsc)/./node_modules/.pnpm/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_react@19.1.1/node_modules/@radix-ui/react-slot/dist/index.mjs":
 /*!******************************************************************************************************************************************!*\
   !*** ./node_modules/.pnpm/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_react@19.1.1/node_modules/@radix-ui/react-slot/dist/index.mjs ***!
@@ -23,7 +21,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 /***/ }),
 
->>>>>>> develop
 /***/ "(ssr)/./node_modules/.pnpm/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_react@19.1.1/node_modules/@radix-ui/react-slot/dist/index.mjs":
 /*!******************************************************************************************************************************************!*\
   !*** ./node_modules/.pnpm/@radix-ui+react-slot@1.1.1_@types+react@18.3.24_react@19.1.1/node_modules/@radix-ui/react-slot/dist/index.mjs ***!
