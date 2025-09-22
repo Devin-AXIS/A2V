@@ -410,12 +410,6 @@ export class ApplicationUserService {
       let rec = await db
         .select({ props: dirUsers.props })
         .from(dirUsers)
-        // .where(
-        //   and(
-        //     eq(dirUsers.tenantId, applicationId),
-        //     sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
-        //   )
-        // )
         .limit(1)
 
       if (rec && rec.length > 0) {
@@ -425,48 +419,6 @@ export class ApplicationUserService {
           }
         })
       }
-
-      // if ((!rec || rec.length === 0) && userListDirId) {
-      //   rec = await db
-      //     .select({ props: dirUsers.props })
-      //     .from(dirUsers)
-      //     .where(
-      //       and(
-      //         eq(dirUsers.tenantId, userListDirId),
-      //         sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
-      //       )
-      //     )
-      //     .limit(1)
-      // }
-
-      // // 备选：若手机号未找到，再按 userId
-      // if (!rec || rec.length === 0) {
-      //   rec = await db
-      //     .select({ props: dirUsers.props })
-      //     .from(dirUsers)
-      //     .where(
-      //       and(
-      //         eq(dirUsers.tenantId, applicationId),
-      //         sql`${dirUsers.props}->>'userId' = ${user.id}`
-      //       )
-      //     )
-      //     .limit(1)
-
-      //   if ((!rec || rec.length === 0) && userListDirId) {
-      //     rec = await db
-      //       .select({ props: dirUsers.props })
-      //       .from(dirUsers)
-      //       .where(
-      //         and(
-      //           eq(dirUsers.tenantId, userListDirId),
-      //           sql`${dirUsers.props}->>'userId' = ${user.id}`
-      //         )
-      //       )
-      //       .limit(1)
-      //   }
-      // }
-
-      // businessData = rec && rec[0] ? (rec[0].props || {}) : {}
     } catch { }
 
     return {
