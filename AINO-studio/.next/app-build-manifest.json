@@ -26,6 +26,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/app/[appId]/client-config/page.js"
     ],
+    "/app/[appId]/auth-test/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/app/[appId]/auth-test/page.js"
+    ],
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

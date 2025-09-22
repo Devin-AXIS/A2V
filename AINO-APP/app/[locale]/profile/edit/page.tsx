@@ -211,6 +211,26 @@ export default function EditProfilePage() {
     </div>
   )
 
+  const handleWorkUpdate = (workExperience: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    workExperience.forEach((item, index) => {
+      const { id, title, organization, description, department, salary, startDate, endDate, isCurrent, isCurrently } = item;
+      const currentWorkExp = user?.extends?.work_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.department = department;
+        currentWorkExp.salary = salary;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isCurrently = isCurrently;
+      }
+    })
+    console.log(user, 23232323)
+  }
+
   return (
     <div className="min-h-screen pb-32">
       <DynamicBackground />
@@ -286,7 +306,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="工作经历"
           data={userProfile.workExperience}
-          onUpdate={(workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))}
+          onUpdate={handleWorkUpdate}
           fields={workExperienceFields}
           displayConfig={workExperienceDisplay}
           allowMultiple={true}

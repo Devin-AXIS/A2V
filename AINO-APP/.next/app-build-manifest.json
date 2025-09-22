@@ -27,60 +27,35 @@
       "static/css/app/[locale]/layout.css",
       "static/chunks/app/[locale]/layout.js"
     ],
+    "/[locale]/preview/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/preview/page.js"
+    ],
     "/[locale]/profile/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/profile/page.js"
-    ],
-    "/[locale]/auth/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/auth/login/page.js"
     ],
     "/[locale]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/page.js"
     ],
-    "/[locale]/profile/settings/page": [
+    "/[locale]/auth/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/profile/settings/page.js"
+      "static/chunks/app/[locale]/auth/login/page.js"
     ],
     "/[locale]/profile/edit/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/profile/edit/page.js"
     ],
-    "/[locale]/profile/settings/identity-verification/page": [
+    "/[locale]/profile/settings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/profile/settings/identity-verification/page.js"
-    ],
-    "/[locale]/profile/settings/password/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/profile/settings/password/page.js"
-    ],
-    "/[locale]/profile/settings/phone/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/profile/settings/phone/page.js"
-    ],
-    "/[locale]/customer-service/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/customer-service/page.js"
-    ],
-    "/[locale]/help-center/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/help-center/page.js"
-    ],
-    "/[locale]/preview/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/preview/page.js"
+      "static/chunks/app/[locale]/profile/settings/page.js"
     ]
   }
 }

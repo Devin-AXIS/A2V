@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useState } from "react"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Shield, User, Lock, Smartphone, Globe } from "lucide-react"
@@ -8,14 +8,32 @@ import { AppCard } from "@/components/layout/app-card"
 import { Badge } from "@/components/basic/badge"
 import { AppHeader } from "@/components/navigation/app-header"
 import i18nConfig from "@/config/i18n.config"
+import { Button } from "@/components/ui/button"
+import { LogOut } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function SettingsPage() {
   const { locale } = useParams()
   const pathname = usePathname()
   const router = useRouter()
+  const { logout, isAuthenticated } = useAuth()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const locales = useMemo(() => i18nConfig.locales, [])
   const localeLabels = useMemo(() => (i18nConfig as any).localeLabels || { zh: "中文", en: "English" }, [])
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    try {
+      logout()
+      router.replace(`/${locale}`)
+    } catch (e) {
+      console.error("退出登录失败", e)
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   const SettingsItem = ({
     icon,
@@ -192,6 +210,23 @@ export default function SettingsPage() {
             href={`/${locale}/profile/third-party`}
           /> */}
         </AppCard>
+
+        {/* 账户操作 */}
+        {isAuthenticated && (
+          <AppCard>
+            <div className="p-4">
+              <Button
+                variant="outline"
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                {isLoggingOut ? "退出中..." : "退出登录"}
+              </Button>
+            </div>
+          </AppCard>
+        )}
       </div>
     </main>
   )
