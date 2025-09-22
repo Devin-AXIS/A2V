@@ -6,7 +6,7 @@ import { Smartphone, Shield, AlertCircle, CheckCircle, Clock } from "lucide-reac
 import { AppCard } from "@/components/layout/app-card"
 import { AppHeader } from "@/components/navigation/app-header"
 import { PillButton } from "@/components/basic/pill-button"
-import { 
+import {
   GenericFormCard,
   phoneBindingFields,
   phoneBindingDisplay,
@@ -25,11 +25,11 @@ export default function PhoneBindingPage() {
   // 发送验证码
   const handleSendCode = () => {
     if (countdown > 0) return
-    
+
     // 模拟发送验证码
     alert("验证码已发送到您的手机")
     setCountdown(60)
-    
+
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -48,13 +48,13 @@ export default function PhoneBindingPage() {
         alert("请填写完整信息")
         return null
       }
-      
+
       // 模拟验证码验证
       if (item.verificationCode !== "123456") {
         alert("验证码错误")
         return null
       }
-      
+
       return {
         ...item,
         currentPhone: currentPhone,
@@ -62,7 +62,7 @@ export default function PhoneBindingPage() {
         bindingStatus: "bound" as const
       }
     }).filter(Boolean)
-    
+
     if (processedData.length > 0) {
       setPhoneData(processedData)
       setCurrentPhone(processedData[0].newPhone)
@@ -82,7 +82,7 @@ export default function PhoneBindingPage() {
         textColor: 'text-gray-600'
       }
     }
-    
+
     return {
       status: 'bound',
       title: '已绑定手机',
@@ -96,12 +96,12 @@ export default function PhoneBindingPage() {
   const statusInfo = getBindingStatusInfo()
 
   return (
-    <main 
+    <main
       className="min-h-screen"
       style={{ backgroundColor: "var(--background-secondary, #f8fafc)" }}
     >
       {/* 统一Header组件 */}
-      <AppHeader 
+      <AppHeader
         title="手机绑定"
         showBackButton={true}
       />
@@ -201,16 +201,16 @@ export default function PhoneBindingPage() {
           title="手机绑定管理"
           data={phoneData}
           onUpdate={handlePhoneUpdate}
-          fields={phoneBindingFields.map(field => 
-            field.key === 'currentPhone' 
+          fields={phoneBindingFields.map(field =>
+            field.key === 'currentPhone'
               ? { ...field, placeholder: currentPhone || "暂无绑定手机" }
               : field
           )}
           displayConfig={{
             ...phoneBindingDisplay,
             emptyTitle: statusInfo.status === 'bound' ? '更换手机号' : '绑定手机号',
-            emptySubtitle: statusInfo.status === 'bound' 
-              ? '更换绑定的手机号码' 
+            emptySubtitle: statusInfo.status === 'bound'
+              ? '更换绑定的手机号码'
               : '绑定手机号码，提升账号安全性',
             addButtonText: statusInfo.status === 'bound' ? '更换手机' : '绑定手机'
           }}

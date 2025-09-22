@@ -1,141 +1,167 @@
 "use client"
 
-import React, { useState } from "react"
-import { useParams } from "next/navigation"
-import { Lock, AlertTriangle, CheckCircle, Info } from "lucide-react"
+import React, { useMemo, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import axios from "axios"
 import { AppCard } from "@/components/layout/app-card"
 import { AppHeader } from "@/components/navigation/app-header"
-import { 
-  GenericFormCard,
-  passwordChangeFields,
-  passwordChangeDisplay,
-  type PasswordChangeData,
-  defaultPasswordChangeData
-} from "@/components/card/profile-cards"
 
 export default function PasswordChangePage() {
   const { locale } = useParams()
+  const router = useRouter()
 
-  // 模拟用户密码数据
-  const [passwordData, setPasswordData] = useState<PasswordChangeData[]>([])
+  const [oldPassword, setOldPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const handlePasswordUpdate = (newData: any[]) => {
-    // 验证确认密码
-    const processedData = newData.map(item => {
-      if (item.newPassword !== item.confirmPassword) {
-        alert("新密码和确认密码不一致")
-        return null
+  const applicationId = useMemo(() => {
+    try {
+      const appConfigStr = typeof window !== 'undefined' ? window.localStorage.getItem('APPLICATION_CONFIG') : null
+      const appConfig = appConfigStr ? JSON.parse(appConfigStr) : null
+      return appConfig?.id || ""
+    } catch {
+      return ""
+    }
+  }, [])
+
+  const phoneNumber = useMemo(() => {
+    try {
+      const userStr = typeof window !== 'undefined' ? window.localStorage.getItem('aino_user') : null
+      const user = userStr ? JSON.parse(userStr) : null
+      return user?.phone || ""
+    } catch {
+      return ""
+    }
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setError("请完整填写所有字段")
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setError("新密码与确认密码不一致")
+      return
+    }
+    if (!phoneNumber) {
+      setError("未获取到当前用户手机号，请重新登录后再试")
+      return
+    }
+    if (!applicationId) {
+      setError("未获取到应用ID，请检查应用配置")
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      // 优先读取标准键名，其次读取带 appId 的作用域键，最后兜底旧键名
+      const scopedKey = applicationId ? `aino_auth_token:${applicationId}` : null
+      const token =
+        (scopedKey ? window.localStorage.getItem(scopedKey) : null)
+        || window.localStorage.getItem('aino_auth_token')
+        || window.localStorage.getItem('aino_token')
+        || ''
+
+      const res = await axios.post(`http://localhost:3007/api/application-users/change-password?applicationId=${applicationId}`,
+        {
+          phone_number: phoneNumber,
+          old_password: oldPassword,
+          new_password: newPassword,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        }
+      )
+      const ok = res?.data?.success
+      if (ok) {
+        setSuccess("密码修改成功")
+        setOldPassword("")
+        setNewPassword("")
+        setConfirmPassword("")
+        // 返回设置页
+        setTimeout(() => {
+          router.push(`/${locale}/profile/settings`)
+        }, 800)
+      } else {
+        setError(res?.data?.error || "修改密码失败")
       }
-      
-      // 处理密码更新逻辑
-      return {
-        ...item,
-        lastChangeTime: new Date().toLocaleString('zh-CN'),
-        // 实际应用中这里会调用API更新密码
-      }
-    }).filter(Boolean)
-    
-    if (processedData.length > 0) {
-      setPasswordData(processedData)
-      alert("密码修改成功！")
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || "修改密码失败")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <main 
+    <main
       className="min-h-screen"
       style={{ backgroundColor: "var(--background-secondary, #f8fafc)" }}
     >
-      {/* 统一Header组件 */}
-      <AppHeader 
+      <AppHeader
         title="修改密码"
         showBackButton={true}
       />
 
       <div className="p-4 space-y-4 pt-20">
-        {/* 密码安全提示 */}
         <AppCard>
-          <div className="p-4">
-            <div className="flex items-start space-x-3">
-              <Info className="w-5 h-5 text-blue-500 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--card-title-color)" }}>
-                  密码安全提示
-                </h3>
-                <ul className="space-y-1 text-xs" style={{ color: "var(--card-text-color)" }}>
-                  <li>• 新密码长度应为8-20位</li>
-                  <li>• 必须包含大写字母、小写字母和数字</li>
-                  <li>• 不要使用生日、手机号等个人信息作为密码</li>
-                  <li>• 建议定期更换密码，提升账号安全性</li>
-                  <li>• 请妥善保管新密码，避免泄露</li>
-                </ul>
-              </div>
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--card-title-color)" }}>原密码</label>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-sm bg-white/70"
+                placeholder="请输入原密码"
+              />
             </div>
-          </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--card-title-color)" }}>新密码</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-sm bg-white/70"
+                placeholder="请输入新密码（至少6位）"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--card-title-color)" }}>确认新密码</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-sm bg-white/70"
+                placeholder="请再次输入新密码"
+              />
+            </div>
+
+            {error ? (
+              <p className="text-xs text-red-500">{error}</p>
+            ) : null}
+            {success ? (
+              <p className="text-xs text-green-600">{success}</p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full h-11 rounded-full bg-black text-white text-sm disabled:opacity-60"
+            >
+              {submitting ? "提交中..." : "确认修改"}
+            </button>
+          </form>
         </AppCard>
-
-        {/* 最近密码修改记录 */}
-        {passwordData.length > 0 && (
-          <AppCard>
-            <div className="p-4">
-              <div className="flex items-start space-x-3">
-                <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--card-title-color)" }}>
-                    密码修改成功
-                  </h3>
-                  <p className="text-xs" style={{ color: "var(--card-text-color)" }}>
-                    上次修改时间：{passwordData[0]?.lastChangeTime}
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: "var(--card-text-color)" }}>
-                    修改原因：{passwordData[0]?.changeReason === 'security' ? '安全考虑' : 
-                             passwordData[0]?.changeReason === 'regular' ? '定期更换' : 
-                             passwordData[0]?.changeReason || '未指定'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </AppCard>
-        )}
-
-        {/* 密码安全等级提示 */}
-        <AppCard>
-          <div className="p-4">
-            <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--card-title-color)" }}>
-                  密码强度要求
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                    <span className="text-xs" style={{ color: "var(--card-text-color)" }}>弱：仅数字或字母</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                    <span className="text-xs" style={{ color: "var(--card-text-color)" }}>中：数字+字母</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                    <span className="text-xs" style={{ color: "var(--card-text-color)" }}>强：大小写字母+数字+特殊字符</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </AppCard>
-
-        {/* 修改密码表单 */}
-        <GenericFormCard
-          title="修改密码"
-          data={passwordData}
-          onUpdate={handlePasswordUpdate}
-          fields={passwordChangeFields}
-          displayConfig={passwordChangeDisplay}
-          allowMultiple={false}
-          emptyText="点击下方按钮开始修改密码"
-        />
       </div>
     </main>
   )

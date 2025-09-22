@@ -1,6 +1,9 @@
 {
-  "/[locale]/profile/edit/page": "app/[locale]/profile/edit/page.js",
+  "/[locale]/profile/settings/password/page": "app/[locale]/profile/settings/password/page.js",
+  "/[locale]/help-center/page": "app/[locale]/help-center/page.js",
   "/[locale]/profile/page": "app/[locale]/profile/page.js",
-  "/[locale]/auth/login/page": "app/[locale]/auth/login/page.js",
-  "/[locale]/page": "app/[locale]/page.js"
+  "/[locale]/preview/page": "app/[locale]/preview/page.js",
+  "/[locale]/page": "app/[locale]/page.js",
+  "/[locale]/profile/settings/phone/page": "app/[locale]/profile/settings/phone/page.js",
+  "/[locale]/customer-service/page": "app/[locale]/customer-service/page.js"
 }
