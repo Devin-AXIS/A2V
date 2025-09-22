@@ -27,16 +27,6 @@
       "static/css/app/[locale]/layout.css",
       "static/chunks/app/[locale]/layout.js"
     ],
-    "/[locale]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/page.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
-    ],
     "/[locale]/preview/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -47,10 +37,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/profile/page.js"
     ],
-    "/[locale]/p/[id]/page": [
+    "/[locale]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/p/[id]/page.js"
+      "static/chunks/app/[locale]/page.js"
     ]
   }
 }
