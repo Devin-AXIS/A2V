@@ -24,7 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-config-dialog"
-import { collectAllConfigs, exportConfigsToJson } from "@/lib/config-collector"
+import { collectAllConfigs } from "@/lib/config-collector"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
@@ -163,6 +163,8 @@ export default function ClientConfigPage() {
   const [saving, setSaving] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [collectingConfigs, setCollectingConfigs] = useState(false)
+  const [viewingConfigs, setViewingConfigs] = useState(false)
+  const [savedConfigs, setSavedConfigs] = useState<any>(null)
   const [authUIOpen, setAuthUIOpen] = useState(false)
 
   // 配置采集函数
@@ -172,20 +174,44 @@ export default function ClientConfigPage() {
       console.log('🔍 开始采集AINO系统配置...')
       const configs = await collectAllConfigs()
 
+      // 保存配置到数据库
+      const appId = String(params.appId)
+      const timestamp = new Date().toISOString()
+
+      // 获取现有应用配置
+      const appRes = await api.applications.getApplication(appId)
+      if (!appRes.success) {
+        throw new Error(appRes.error || (lang === "zh" ? "获取应用配置失败" : "Failed to get application config"))
+      }
+
+      const existingConfig = appRes.data?.config || {}
+
+      // 将配置采集结果保存到 applications.config.collectedConfigs
+      const updatedConfig = {
+        ...existingConfig,
+        collectedConfigs: {
+          ...configs,
+          collectedAt: timestamp,
+          appId: appId,
+          version: "1.0.0"
+        }
+      }
+
+      // 更新应用配置
+      const updateRes = await api.applications.updateApplication(appId, { config: updatedConfig })
+      if (!updateRes.success) {
+        throw new Error(updateRes.error || (lang === "zh" ? "保存配置到数据库失败" : "Failed to save config to database"))
+      }
+
       // 显示成功消息
       toast({
         title: lang === "zh" ? "配置采集成功" : "Config Collection Success",
         description: lang === "zh"
-          ? `成功采集了 ${configs.metadata.totalConfigs} 个配置项`
-          : `Successfully collected ${configs.metadata.totalConfigs} config items`,
+          ? `成功采集了 ${configs.metadata.totalConfigs} 个配置项并保存到数据库`
+          : `Successfully collected ${configs.metadata.totalConfigs} config items and saved to database`,
       })
 
-      // 自动导出配置
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const filename = `aino-configs-${timestamp}.json`
-      exportConfigsToJson(configs, filename)
-
-      console.log('✅ 配置采集完成:', configs)
+      console.log('✅ 配置采集完成并保存到数据库:', configs)
 
     } catch (error) {
       console.error('❌ 配置采集失败:', error)
@@ -198,6 +224,53 @@ export default function ClientConfigPage() {
       setCollectingConfigs(false)
     }
   }
+
+  // 查看已保存的配置采集结果
+  const handleViewSavedConfigs = async () => {
+    setViewingConfigs(true)
+    try {
+      const appId = String(params.appId)
+      const appRes = await api.applications.getApplication(appId)
+
+      if (!appRes.success) {
+        throw new Error(appRes.error || (lang === "zh" ? "获取应用配置失败" : "Failed to get application config"))
+      }
+
+      const collectedConfigs = appRes.data?.config?.collectedConfigs
+
+      if (!collectedConfigs) {
+        toast({
+          title: lang === "zh" ? "未找到配置" : "No Config Found",
+          description: lang === "zh" ? `还没有采集过配置，请先点击"采集配置"按钮` : "No configs collected yet, please click 'Collect Configs' first",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setSavedConfigs(collectedConfigs)
+
+      // 在控制台显示配置详情
+      console.log('📋 已保存的配置采集结果:', collectedConfigs)
+
+      toast({
+        title: lang === "zh" ? "配置加载成功" : "Config Loaded Successfully",
+        description: lang === "zh"
+          ? `加载了 ${collectedConfigs.metadata?.totalConfigs || 0} 个配置项，采集时间：${new Date(collectedConfigs.collectedAt).toLocaleString()}`
+          : `Loaded ${collectedConfigs.metadata?.totalConfigs || 0} config items, collected at: ${new Date(collectedConfigs.collectedAt).toLocaleString()}`,
+      })
+
+    } catch (error) {
+      console.error('❌ 查看配置失败:', error)
+      toast({
+        title: lang === "zh" ? "查看配置失败" : "Failed to View Configs",
+        description: error instanceof Error ? error.message : (lang === "zh" ? "未知错误" : "Unknown error"),
+        variant: "destructive"
+      })
+    } finally {
+      setViewingConfigs(false)
+    }
+  }
+
   const [previewSource, setPreviewSource] = useState<"preview">("manifest")
   const [pageUIOpen, setPageUIOpen] = useState(false)
   const [activePageKey, setActivePageKey] = useState<string>("")
@@ -1693,7 +1766,7 @@ export default function ClientConfigPage() {
                       </div>
                     )}
                     {/* 配置采集入口 */}
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       <Button
                         className="w-full justify-center"
                         variant="outline"
@@ -1709,6 +1782,24 @@ export default function ClientConfigPage() {
                           <>
                             <Database className="w-4 h-4 mr-2" />
                             {lang === "zh" ? "采集配置" : "Collect Configs"}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        className="w-full justify-center"
+                        variant="secondary"
+                        onClick={handleViewSavedConfigs}
+                        disabled={viewingConfigs}
+                      >
+                        {viewingConfigs ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            {lang === "zh" ? "加载中..." : "Loading..."}
+                          </>
+                        ) : (
+                          <>
+                            <ListIcon className="w-4 h-4 mr-2" />
+                            {lang === "zh" ? "查看已保存配置" : "View Saved Configs"}
                           </>
                         )}
                       </Button>
@@ -2563,6 +2654,19 @@ export default function ClientConfigPage() {
                         <>
                           <Database className="w-4 h-4 mr-2" />
                           {lang === "zh" ? "采集配置" : "Collect Configs"}
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="secondary" onClick={handleViewSavedConfigs} disabled={viewingConfigs}>
+                      {viewingConfigs ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {lang === "zh" ? "加载中..." : "Loading..."}
+                        </>
+                      ) : (
+                        <>
+                          <ListIcon className="w-4 h-4 mr-2" />
+                          {lang === "zh" ? "查看配置" : "View Configs"}
                         </>
                       )}
                     </Button>
