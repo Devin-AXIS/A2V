@@ -1320,9 +1320,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
 
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onScrapeTest} disabled={!!busy.scrape}>
-                          {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("试抓取", "Scrape test")}
+                          {busy.scrape ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("开始抓取", "Start scrape")}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={onCrawlStart} disabled={!!busy.crawlStart}>
+                        {/* <Button variant="outline" size="sm" onClick={onCrawlStart} disabled={!!busy.crawlStart}>
                           {busy.crawlStart ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("启动中", "Starting")}</> : t("开始爬取", "Start crawl")}
                         </Button>
                         <Button variant="outline" size="sm" disabled={!crawlId || !!busy.crawlStatus} onClick={onCrawlStatus}>
@@ -1339,7 +1339,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         </Button>
                         <Button variant="outline" size="sm" onClick={clearMapping}>{t("清空", "Clear")}</Button>
                         <Button variant="outline" size="sm" onClick={saveTemplate}>{t("保存模板", "Save template")}</Button>
-                        <Button variant="outline" size="sm" onClick={loadTemplate}>{t("加载模板", "Load template")}</Button>
+                        <Button variant="outline" size="sm" onClick={loadTemplate}>{t("加载模板", "Load template")}</Button> */}
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-0">

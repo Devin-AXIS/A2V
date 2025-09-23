@@ -1,1 +1,11 @@
-{"version":4,"routes":{"/zh/preview":{},"/en/preview":{},"/zh/profile":{},"/en/profile":{},"/zh/profile/edit":{},"/en/profile/edit":{}},"dynamicRoutes":{"/[locale]/preview":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/preview","routeRegex":"^\\/([^/]+?)\\/preview(?:\\/)?$","allowHeader":[]},"/[locale]/profile":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/profile","routeRegex":"^\\/([^/]+?)\\/profile(?:\\/)?$","allowHeader":[]},"/[locale]/profile/edit":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/profile/edit","routeRegex":"^\\/([^/]+?)\\/profile\\/edit(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"93e05a84330f4e187ae18fe87c061154","previewModeSigningKey":"2bafe00a7786f1e29746b9a7d9e3cfeeb927c30bcc252103f0ea95dacf5516f7","previewModeEncryptionKey":"2f0b10ba6c7b66609b092b75569958d22a08d9d600c1547e5c6115fb71960c55"}}
+{
+  "version": 4,
+  "routes": {},
+  "dynamicRoutes": {},
+  "notFoundRoutes": [],
+  "preview": {
+    "previewModeId": "ebc33dcd5e7fd3f86d91e5da02e42d47",
+    "previewModeSigningKey": "a296b4264b4c698ce454c34252c7f6e2d8df3430f6f563ce4adde9d6152fa439",
+    "previewModeEncryptionKey": "142eb6715d874974a19e66ea94c11ea4f01b24a58e69c2f38e0d5e7e0b064ef1"
+  }
+}
