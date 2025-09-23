@@ -1766,7 +1766,7 @@ export default function ClientConfigPage() {
                       </div>
                     )}
                     {/* 配置采集入口 */}
-                    <div className="pt-2 space-y-2">
+                    {/* <div className="pt-2 space-y-2">
                       <Button
                         className="w-full justify-center"
                         variant="outline"
@@ -1803,7 +1803,7 @@ export default function ClientConfigPage() {
                           </>
                         )}
                       </Button>
-                    </div>
+                    </div> */}
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -2644,7 +2644,7 @@ export default function ClientConfigPage() {
                     <Button variant="default" onClick={saveAll} disabled={saving}>
                       {saving ? (lang === "zh" ? "保存中..." : "Saving...") : (lang === "zh" ? "保存" : "Save")}
                     </Button>
-                    <Button variant="outline" onClick={handleCollectConfigs} disabled={collectingConfigs}>
+                    {/* <Button variant="outline" onClick={handleCollectConfigs} disabled={collectingConfigs}>
                       {collectingConfigs ? (
                         <>
                           <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -2669,7 +2669,7 @@ export default function ClientConfigPage() {
                           {lang === "zh" ? "查看配置" : "View Configs"}
                         </>
                       )}
-                    </Button>
+                    </Button> */}
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
                     </Button>

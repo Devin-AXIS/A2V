@@ -48,6 +48,7 @@ const zh: Dict = {
   addModule: "添加模块",
   module_ecom: "电商类通用模块",
   module_edu: "教育类通用模块",
+  module_rec: "招聘类通用模块",
   module_content: "通用内容模块",
   module_project: "通用项目展示模块",
   module_custom: "通用自定义模块",
