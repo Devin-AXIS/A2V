@@ -27,7 +27,7 @@ export default function SettingsPage() {
     setIsLoggingOut(true)
     try {
       logout()
-      router.replace(`/${locale}`)
+      router.replace(`/${locale}/profile`)
     } catch (e) {
       console.error("退出登录失败", e)
     } finally {

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
+import axios from "axios"
 import { AppHeader } from "@/components/navigation/app-header"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
 import {
@@ -51,9 +53,9 @@ import { useAuth } from "@/hooks/use-auth"
 export default function EditProfilePage() {
   const router = useRouter()
   const { locale } = useParams()
+  const { toast } = useToast()
 
   const { user, isAuthenticated, isLoading } = useAuth()
-  // console.log(user, 23232323)
 
   // 基础资料
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
@@ -228,7 +230,104 @@ export default function EditProfilePage() {
         currentWorkExp.isCurrently = isCurrently;
       }
     })
-    console.log(user, 23232323)
+    handleSaveUserData("work_exp");
+  }
+
+  const handleProjectUpdate = (projectExperience: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    projectExperience.forEach((item, index) => {
+      const { id, title, organization, description, department, technologies, startDate, endDate, isCurrent, isOngoing } = item;
+      const currentWorkExp = user?.extends?.proj_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.department = department;
+        currentWorkExp.technologies = technologies;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isOngoing = isOngoing;
+      }
+    })
+    handleSaveUserData("proj_exp");
+  }
+
+  const handleEducationUpdate = (educationHistory: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    educationHistory.forEach((item, index) => {
+      const { id, title, organization, description, degree, startDate, endDate, isCurrent, isCurrently } = item;
+      const currentWorkExp = user?.extends?.edu_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.degree = degree;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isCurrently = isCurrently;
+      }
+    })
+    handleSaveUserData("edu_exp");
+  }
+
+  const handleCertificateUpdate = (certificates: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    certificates.forEach((item, index) => {
+      const { id, title, organization, description, credentialId, issueDate, expiryDate, isCurrent, isNeverExpires } = item;
+      const currentWorkExp = user?.extends?.honors?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.credentialId = credentialId;
+        currentWorkExp.issueDate = issueDate;
+        currentWorkExp.expiryDate = expiryDate;
+        currentWorkExp.isNeverExpires = isNeverExpires;
+        currentWorkExp.isCurrent = isCurrent;
+      }
+    })
+    handleSaveUserData("honors");
+  }
+
+  const handleSkillsUpdate = (skills: string[]) => {
+    console.log(skills, 23232323)
+    handleSaveUserData("skills");
+    // (skills) => setUserProfile(prev => ({ ...prev, skills }))
+  }
+
+  const handleSaveUserData = async (type: string) => {
+    const scopedKey = user?.extends?.applicationId ? `aino_auth_token:${user?.extends?.applicationId}` : null
+    const token =
+      (scopedKey ? window.localStorage.getItem(scopedKey) : null)
+      || window.localStorage.getItem('aino_auth_token')
+      || window.localStorage.getItem('aino_token')
+      || ''
+
+    const body = { props: { [type]: user.extends[type] } };
+    // const body = { [type]: user.extends[type] };
+    const res = await axios.patch(
+      `http://localhost:3007/api/records/${user.extends.__dirId}/${user.extends.recordId}`,
+      body,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+      })
+    const data = await res.json()
+    if (!res.ok || !data?.success || !data?.url) {
+      toast({
+        title: "更新失败",
+        description: data?.message || "更新失败,请重试.",
+        variant: "destructive"
+      })
+    } else {
+      toast({
+        title: "更新成功",
+        description: "用户信息已更新"
+      })
+    }
   }
 
   return (
@@ -318,7 +417,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="项目经历"
           data={userProfile.projectExperience}
-          onUpdate={(projectExperience) => setUserProfile(prev => ({ ...prev, projectExperience }))}
+          onUpdate={handleProjectUpdate}
           fields={projectFields}
           displayConfig={projectDisplay}
           allowMultiple={true}
@@ -330,7 +429,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="教育经历"
           data={userProfile.educationHistory}
-          onUpdate={(educationHistory) => setUserProfile(prev => ({ ...prev, educationHistory }))}
+          onUpdate={handleEducationUpdate}
           fields={educationFields}
           displayConfig={educationDisplay}
           allowMultiple={true}
@@ -342,7 +441,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="证书资质"
           data={userProfile.certificates}
-          onUpdate={(certificates) => setUserProfile(prev => ({ ...prev, certificates }))}
+          onUpdate={handleCertificateUpdate}
           fields={certificateFields}
           displayConfig={certificateDisplay}
           allowMultiple={true}
@@ -362,7 +461,7 @@ export default function EditProfilePage() {
 
             <TagInput
               value={userProfile.skills}
-              onChange={(skills) => setUserProfile(prev => ({ ...prev, skills }))}
+              onChange={handleSkillsUpdate}
               placeholder="输入技能后按回车添加"
               maxTags={20}
               emptyText="暂未添加技能标签"

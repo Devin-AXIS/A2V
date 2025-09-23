@@ -403,13 +403,14 @@ export class ApplicationUserService {
 
     // 读取业务数据：优先按手机号在 dir_users.props 中查找，兼容 tenantId 两种存法（applicationId 或 用户列表目录ID）
     let businessData: any = {}
+    let recordId = "";
     try {
       const userListDirId = await this.getUserListDirectoryId(applicationId)
       const phoneToFind = user.phone
 
       // 优先：按手机号（兼容 phone/phone_number）
       let rec = await db
-        .select({ props: dirUsers.props })
+        .select({ props: dirUsers.props, id: dirUsers.id })
         .from(dirUsers)
         .where(
           and(
@@ -423,6 +424,7 @@ export class ApplicationUserService {
         rec.forEach(item => {
           if (item.props.phone_number.indexOf(phoneToFind) > -1) {
             businessData = item.props
+            recordId = item.id
           }
         })
       }
@@ -432,6 +434,7 @@ export class ApplicationUserService {
     return {
       ...user,
       ...businessData,
+      recordId,
       phone_number: businessData.phone_number || businessData.phone || user.phone,
       // profile: businessData,
     }

@@ -1,5 +1,5 @@
 import { db } from '../../db'
-import { users } from '../../db/schema'
+import { users, applicationUsers } from '../../db/schema'
 import { eq, and } from 'drizzle-orm'
 import { TUser, TLoginRequest, TRegisterRequest } from './dto'
 import bcrypt from 'bcryptjs'
@@ -31,6 +31,21 @@ export async function findUserByEmail(email: string): Promise<TUser | null> {
 
 export async function findUserById(id: string): Promise<TUser | null> {
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (result.length === 0) return null
+
+  const user = result[0]
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar || undefined,
+    roles: user.roles || ['user'],
+    createdAt: user.createdAt,
+  }
+}
+
+export async function findUserByCId(id: string): Promise<TUser | null> {
+  const result = await db.select().from(applicationUsers).where(eq(applicationUsers.id, id)).limit(1)
   if (result.length === 0) return null
 
   const user = result[0]

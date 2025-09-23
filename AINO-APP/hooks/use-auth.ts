@@ -139,9 +139,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extends: { ...data },
       }
       MOCK_USERS.push(user)
+      console.log(user, 23232323)
 
       // 生成模拟token
-      const token = `mock_token_${Date.now()}`
+      const token = user?.extends?.token//`mock_token_${Date.now()}`
+      delete user?.extends?.token;
 
       // 保存到本地存储（绑定到当前 appId 以便多租户区分）
       if (typeof window !== 'undefined') {
