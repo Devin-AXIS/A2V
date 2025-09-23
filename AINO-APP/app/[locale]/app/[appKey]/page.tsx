@@ -6,7 +6,7 @@ import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-com
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { PageDataProvider } from "@/components/providers/page-data-context"
 import { AppContextProvider } from "@/components/providers/app-context"
-import { setDatas } from "@/components/card/set-datas"
+import { setDatas } from "@/components/card/config/set-datas"
 
 export default function AppRuntimePage() {
     const params = useParams<{ locale: string; appKey: string }>()

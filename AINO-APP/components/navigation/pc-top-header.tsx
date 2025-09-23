@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Bell, Settings, User, Home, Layout } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { CardRegistry } from "@/components/card/registry"
+import { CardRegistry } from "@/components/card/core/registry"
 
 interface PCTopHeaderProps {
   dict: any
@@ -33,7 +33,7 @@ export function PCTopHeader({ dict, locale }: PCTopHeaderProps) {
   const loadPcTopNavConfig = () => {
     try {
       if (typeof window === 'undefined') return
-      
+
       // 尝试从多个可能的localStorage key读取配置
       const possibleKeys = [
         'CURRENT_APP_CONFIG',
@@ -45,7 +45,7 @@ export function PCTopHeader({ dict, locale }: PCTopHeaderProps) {
           return appId ? `STUDIO_CLIENT_CFG_${appId}` : null
         }] : [])
       ]
-      
+
       let config = null
       for (const key of possibleKeys) {
         const keyValue = typeof key === 'function' ? key() : key
@@ -57,7 +57,7 @@ export function PCTopHeader({ dict, locale }: PCTopHeaderProps) {
           }
         }
       }
-      
+
       if (config) {
         setPcTopNav(config.app?.pcTopNav || [])
       }
@@ -68,19 +68,19 @@ export function PCTopHeader({ dict, locale }: PCTopHeaderProps) {
 
   useEffect(() => {
     loadPcTopNavConfig()
-    
+
     // 监听localStorage变化
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key && (e.key.includes('STUDIO_CLIENT_CFG_') || e.key === 'CURRENT_APP_CONFIG' || e.key === 'APPLICATION_CONFIG')) {
         loadPcTopNavConfig()
       }
     }
-    
+
     window.addEventListener('storage', handleStorageChange)
-    
+
     // 定期检查配置变化（用于同窗口内的变化）
     const interval = setInterval(loadPcTopNavConfig, 1000)
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       clearInterval(interval)

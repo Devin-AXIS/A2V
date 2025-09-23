@@ -27,7 +27,7 @@ import {
   certificateDisplay,
   type BasicInfo,
   type DataItem
-} from "@/components/card/profile-cards"
+} from "@/components/card/cards/user/profile-cards"
 import { TagInput } from "@/components/input/tag-input"
 import {
   User,

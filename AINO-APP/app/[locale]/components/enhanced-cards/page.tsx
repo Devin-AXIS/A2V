@@ -1,5 +1,5 @@
 import { BrowserHeader } from "@/components/layout/browser-header"
-import { CardShowcase } from "@/components/card/card-showcase"
+import { CardShowcase } from "@/components/card/package/runtime/card-showcase"
 import { getDictionary } from "@/lib/dictionaries"
 import type { Locale } from "@/lib/dictionaries"
 import { Suspense } from "react"

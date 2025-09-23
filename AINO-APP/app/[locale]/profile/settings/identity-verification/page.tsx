@@ -5,13 +5,13 @@ import { useParams } from "next/navigation"
 import { Shield, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { AppHeader } from "@/components/navigation/app-header"
-import { 
+import {
   GenericFormCard,
   identityVerificationFields,
   identityVerificationDisplay,
   type IdentityVerificationData,
   defaultIdentityVerificationData
-} from "@/components/card/profile-cards"
+} from "@/components/card/cards/user/profile-cards"
 
 export default function IdentityVerificationPage() {
   const { locale } = useParams()
@@ -97,12 +97,12 @@ export default function IdentityVerificationPage() {
   const statusInfo = getVerificationStatusInfo()
 
   return (
-    <main 
+    <main
       className="min-h-screen"
       style={{ backgroundColor: "var(--background-secondary, #f8fafc)" }}
     >
       {/* 统一Header组件 */}
-      <AppHeader 
+      <AppHeader
         title="实名认证"
         showBackButton={true}
       />
@@ -165,8 +165,8 @@ export default function IdentityVerificationPage() {
           displayConfig={{
             ...identityVerificationDisplay,
             emptyTitle: statusInfo.status === 'rejected' ? '重新提交认证' : '开始认证',
-            emptySubtitle: statusInfo.status === 'rejected' 
-              ? '请根据拒绝原因重新提交认证信息' 
+            emptySubtitle: statusInfo.status === 'rejected'
+              ? '请根据拒绝原因重新提交认证信息'
               : '请填写真实有效的身份信息',
             addButtonText: statusInfo.status === 'rejected' ? '重新提交' : '开始认证',
             editButtonText: statusInfo.status === 'pending' ? '查看详情' : '修改信息'

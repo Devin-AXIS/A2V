@@ -8,9 +8,10 @@ import { AppHeader } from "@/components/navigation/app-header"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CardRegistry } from "@/components/card/registry"
+import { CardRegistry } from "@/components/card/core/registry"
+import { CardPackageManager } from "@/components/card/package/runtime/card-package-manager"
 import { AppCard } from "@/components/layout/app-card"
-import { EnhancedDraggableCardContainer } from "@/components/card/enhanced-draggable-card-container"
+import { EnhancedDraggableCardContainer } from "@/components/card/system/enhanced-draggable-card-container"
 import { FilterTabs } from "@/components/navigation/filter-tabs"
 import { cn } from "@/lib/utils"
 import {
@@ -47,7 +48,7 @@ import { InlineSandbox } from "./inline-sandbox"
 import ContentNavigation, { type ContentNavConfig } from "@/components/navigation/content-navigation"
 import { DropdownFilterTabs } from "@/components/navigation/dropdown-filter-tabs"
 import { getIframeBridge } from "@/lib/iframe-bridge"
-import { dataInputs } from "@/components/card/set-datas"
+import { dataInputs } from "@/components/card/config/set-datas"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 
 // 页面类别配置
@@ -120,128 +121,6 @@ export const PAGE_CATEGORIES: Record<string, PageCategory> = {
 
 // 基础卡片配置
 const BASIC_CARDS = [
-  {
-    id: "user-info",
-    name: "用户信息",
-    category: "基础",
-    component: (
-      <AppCard className="p-6 hover:shadow-lg transition-all duration-300">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <Users className="w-5 h-5 text-accent" />
-            <h4 className="text-lg font-bold">用户信息</h4>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">查看和编辑用户基本信息</p>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <img
-                src="/generic-user-avatar.png"
-                alt="用户头像"
-                className="w-12 h-12 rounded-full object-cover border-2 border-accent/20"
-              />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">张三</p>
-              <p className="text-sm text-muted-foreground">zhang.san@example.com</p>
-              <Badge variant="secondary" className="mt-1 text-xs">
-                活跃用户
-              </Badge>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full hover:bg-accent hover:text-accent-foreground transition-colors mt-4 bg-transparent"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            编辑资料
-          </Button>
-        </div>
-      </AppCard>
-    ),
-  },
-  {
-    id: "sales-data",
-    name: "销售数据",
-    category: "基础",
-    component: (
-      <AppCard className="p-6 hover:shadow-lg transition-all duration-300">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <TrendingUp className="w-5 h-5 text-green-600" />
-            <h4 className="text-lg font-bold">今日销售</h4>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">实时销售数据统计</p>
-          <div className="space-y-3">
-            <div className="text-3xl font-bold">¥12,345</div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm text-green-600">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-medium">+15.2%</span>
-                <span className="text-muted-foreground">较昨日</span>
-              </div>
-              <Badge variant="outline" className="text-green-600 border-green-600/30">
-                增长中
-              </Badge>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div className="bg-green-600 h-2 rounded-full transition-all duration-500" style={{ width: "75%" }}></div>
-            </div>
-          </div>
-        </div>
-      </AppCard>
-    ),
-  },
-  {
-    id: "quick-actions",
-    name: "快速操作",
-    category: "基础",
-    component: (
-      <AppCard className="p-6 hover:shadow-lg transition-all duration-300">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <Star className="w-5 h-5 text-accent" />
-            <h4 className="text-lg font-bold">快速操作</h4>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">常用功能快捷入口</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-12 flex-col space-y-1 hover:bg-accent hover:text-accent-foreground transition-colors bg-transparent"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-xs">订单</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-12 flex-col space-y-1 hover:bg-red-500 hover:text-white transition-colors bg-transparent"
-            >
-              <Heart className="w-4 h-4" />
-              <span className="text-xs">收藏</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-12 flex-col space-y-1 hover:bg-accent hover:text-accent-foreground transition-colors bg-transparent"
-            >
-              <Share2 className="w-4 h-4" />
-              <span className="text-xs">分享</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-12 flex-col space-y-1 hover:bg-yellow-500 hover:text-white transition-colors bg-transparent"
-            >
-              <Star className="w-4 h-4" />
-              <span className="text-xs">评价</span>
-            </Button>
-          </div>
-        </div>
-      </AppCard>
-    ),
-  },
 ]
 
 interface WorkspaceCard {
@@ -291,6 +170,9 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const [activeContentIndex, setActiveContentIndex] = useState<number>(0)
   const [overrideTick, setOverrideTick] = useState<number>(0)
   const [activeFiltersByCardId, setActiveFiltersByCardId] = useState<Record<string, Record<string, string>>>({})
+  // 子卡片选择器状态
+  const [showSubCardSelector, setShowSubCardSelector] = useState(false)
+  const [currentMainCardId, setCurrentMainCardId] = useState<string | null>(null)
 
   const setCardsForKey = (key: string, list: WorkspaceCard[]) => {
     try { cardsCacheRef.current[key] = list } catch { }
@@ -814,9 +696,9 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     // 添加基础卡片
     allCards.push(...BASIC_CARDS)
 
-    // 添加注册的业务卡片
-    const registeredCards = CardRegistry.getAll()
-    registeredCards.forEach((card) => {
+    // 只显示主卡片（卡片包的入口）
+    const mainCards = CardPackageManager.getMainCards()
+    mainCards.forEach((card) => {
       if (card.component) {
         const CardComponent = card.component
 
@@ -863,23 +745,25 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           }
         }
 
-        const defaultData = getDefaultData(card.name)
+        const defaultData = getDefaultData(card.id)
 
         allCards.push({
-          id: card.name,
-          name: card.displayName || card.name,
+          id: card.id,
+          name: card.name,
           category: card.category,
-          width: card.width,
+          width: 'full',
           component: React.createElement(CardComponent as any, {
             data: defaultData,
             onAction: (action: string, data: any) => console.log("Card action:", action, data)
           }),
+          businessFlow: card.businessFlow,
+          packageId: card.packageId
         })
       } else {
         // 如果没有组件实现，显示开发中的占位符
         allCards.push({
-          id: card.name,
-          name: card.displayName || card.name,
+          id: card.id,
+          name: card.name,
           category: card.category,
           width: 'full',
           component: (
@@ -887,7 +771,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
               <div className="space-y-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <Grid3X3 className="w-5 h-5 text-accent" />
-                  <h4 className="text-lg font-bold">{card.displayName || card.name}</h4>
+                  <h4 className="text-lg font-bold">{card.name}</h4>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{typeof card.businessFlow === 'string' ? card.businessFlow : (card.businessFlow?.description || '')}</p>
 
@@ -1402,14 +1286,154 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                               </div>
                               <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent rounded-xl flex items-end justify-center pb-2">
                                 <div className="text-xs text-gray-600 font-medium bg-white/90 px-2 py-1 rounded-full">
-                                  点击添加
+                                  主卡片效果
                                 </div>
+                              </div>
+                            </div>
+
+                            {/* 卡片包功能按钮 */}
+                            <div className="mt-3 flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-500">名称</span>
+                                <span className="text-xs text-gray-500">类别</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {/* 子卡片按钮 - 未来显示子卡片列表 */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-3 text-xs rounded-full border-gray-300 hover:border-accent hover:bg-accent/5"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // 显示子卡片选择器
+                                    setCurrentMainCardId(cardConfig.id)
+                                    setShowSubCardSelector(true)
+                                  }}
+                                >
+                                  子卡片
+                                </Button>
+
+                                {/* 内页按钮 - 根据卡片配置决定是否显示 */}
+                                {cardConfig.businessFlow &&
+                                  (typeof cardConfig.businessFlow === 'object' &&
+                                    (cardConfig.businessFlow.hasDetailPage || cardConfig.businessFlow.hasModal)) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 px-3 text-xs rounded-full border-gray-300 hover:border-accent hover:bg-accent/5"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        // TODO: 根据配置显示弹窗或跳转
+                                        if (typeof cardConfig.businessFlow === 'object') {
+                                          if (cardConfig.businessFlow.hasModal) {
+                                            console.log('显示弹窗:', cardConfig.name)
+                                            // 显示弹窗
+                                          } else if (cardConfig.businessFlow.hasDetailPage) {
+                                            console.log('跳转内页:', cardConfig.name)
+                                            // 跳转页面
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      内页
+                                    </Button>
+                                  )}
                               </div>
                             </div>
                           </div>
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              </div>
+            </>
+          )
+        }
+
+        {/* 子卡片选择器 */}
+        {
+          showSubCardSelector && currentMainCardId && (
+            <>
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={() => setShowSubCardSelector(false)} />
+              <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl rounded-t-3xl shadow-2xl max-h-[75vh] overflow-hidden border-t border-white/20">
+                <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-4"></div>
+
+                <div className="px-6 pb-4 border-b border-gray-100/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                        选择子卡片
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">选择要添加的子卡片组件</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full w-8 h-8 p-0 hover:bg-gray-100"
+                      onClick={() => setShowSubCardSelector(false)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 overflow-y-auto max-h-[calc(75vh-120px)]">
+                  <div className="space-y-4">
+                    {CardPackageManager.getSubCardsByMainCard(currentMainCardId).map((subCard) => (
+                      <div
+                        key={subCard.id}
+                        className="transition-all duration-300 border rounded-2xl overflow-hidden bg-white/90 backdrop-blur-sm border-gray-200 hover:shadow-xl hover:scale-[1.02] hover:border-accent cursor-pointer"
+                        onClick={() => {
+                          // 添加子卡片
+                          const newCard = {
+                            id: `${subCard.id}-${Date.now()}`,
+                            type: subCard.id,
+                            name: subCard.name,
+                            category: "子卡片",
+                            component: subCard.component,
+                            width: "full"
+                          }
+                          const next = [...cards, newCard]
+                          setCards(next)
+                          try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cards: serializeCards(next) })) } catch { }
+                          setShowSubCardSelector(false)
+                        }}
+                      >
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h5 className="font-semibold text-base text-gray-900 mb-1">{subCard.name}</h5>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  {subCard.type || "子卡片"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="relative">
+                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-2 border border-gray-200/50 overflow-hidden">
+                              <div className="transform scale-[0.7] origin-top-left w-[143%] pointer-events-none">
+                                <div className="max-h-48 overflow-hidden">
+                                  {subCard.component && React.createElement(subCard.component)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent rounded-xl flex items-end justify-center pb-2">
+                              <div className="text-xs text-gray-600 font-medium bg-white/90 px-2 py-1 rounded-full">
+                                点击添加
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {CardPackageManager.getSubCardsByMainCard(currentMainCardId).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>该卡片包暂无子卡片</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

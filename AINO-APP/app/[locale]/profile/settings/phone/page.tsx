@@ -12,7 +12,7 @@ import {
   phoneBindingDisplay,
   type PhoneBindingData,
   defaultPhoneBindingData
-} from "@/components/card/profile-cards"
+} from "@/components/card/cards/user/profile-cards"
 
 export default function PhoneBindingPage() {
   const { locale } = useParams()

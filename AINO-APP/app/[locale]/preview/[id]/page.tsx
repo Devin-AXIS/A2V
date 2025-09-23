@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
-import { setDatas } from "@/components/card/set-datas"
+import { setDatas } from "@/components/card/config/set-datas"
 import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
 
 export default function PreviewPage() {

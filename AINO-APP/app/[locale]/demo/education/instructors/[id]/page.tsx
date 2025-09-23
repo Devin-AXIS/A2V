@@ -12,7 +12,7 @@ import { Tabs } from "@/components/navigation/tabs"
 import { PillButton } from "@/components/basic/pill-button"
 import { Tag } from "@/components/basic/tag"
 import { EducationBottomNavigation } from "@/components/navigation/education-bottom-navigation"
-import InstructorCoursesListCard from "@/components/card/business-cards/instructor-courses-list-card"
+import InstructorCoursesListCard from "@/components/card/cards/education/instructor-courses-list-card"
 import type { Locale } from "@/lib/dictionaries"
 
 export default function InstructorDetailPage({ params }: { params: Promise<{ id: string; locale: Locale }> }) {
@@ -73,77 +73,77 @@ export default function InstructorDetailPage({ params }: { params: Promise<{ id:
     education:
       id === "1"
         ? [
-            {
-              degree: "博士",
-              major: "计算机科学",
-              school: "清华大学",
-              year: "2012-2016",
-            },
-            {
-              degree: "硕士",
-              major: "人工智能",
-              school: "北京大学",
-              year: "2010-2012",
-            },
-          ]
+          {
+            degree: "博士",
+            major: "计算机科学",
+            school: "清华大学",
+            year: "2012-2016",
+          },
+          {
+            degree: "硕士",
+            major: "人工智能",
+            school: "北京大学",
+            year: "2010-2012",
+          },
+        ]
         : [
-            {
-              degree: "博士",
-              major: "计算机科学",
-              school: "斯坦福大学",
-              year: "2011-2015",
-            },
-            {
-              degree: "硕士",
-              major: "机器学习",
-              school: "麻省理工学院",
-              year: "2009-2011",
-            },
-          ],
+          {
+            degree: "博士",
+            major: "计算机科学",
+            school: "斯坦福大学",
+            year: "2011-2015",
+          },
+          {
+            degree: "硕士",
+            major: "机器学习",
+            school: "麻省理工学院",
+            year: "2009-2011",
+          },
+        ],
     workExperience:
       id === "1"
         ? [
-            {
-              position: "资深算法工程师",
-              company: "百度",
-              period: "2016-2024",
-              description: "负责百度大脑自然语言处理模块的研发，主导智能对话系统的设计与优化。",
-            },
-            {
-              position: "算法实习生",
-              company: "微软亚洲研究院",
-              period: "2015-2016",
-              description: "参与机器学习算法的研究与开发，专注于深度学习模型的优化。",
-            },
-          ]
+          {
+            position: "资深算法工程师",
+            company: "百度",
+            period: "2016-2024",
+            description: "负责百度大脑自然语言处理模块的研发，主导智能对话系统的设计与优化。",
+          },
+          {
+            position: "算法实习生",
+            company: "微软亚洲研究院",
+            period: "2015-2016",
+            description: "参与机器学习算法的研究与开发，专注于深度学习模型的优化。",
+          },
+        ]
         : [
-            {
-              position: "资深研究员",
-              company: "腾讯AI Lab",
-              period: "2015-2024",
-              description: "负责机器学习算法的研究与产业化应用，主导多个AI产品的核心算法开发。",
-            },
-            {
-              position: "研究实习生",
-              company: "Google Research",
-              period: "2014-2015",
-              description: "参与深度学习和机器学习算法的前沿研究，发表多篇顶级会议论文。",
-            },
-          ],
+          {
+            position: "资深研究员",
+            company: "腾讯AI Lab",
+            period: "2015-2024",
+            description: "负责机器学习算法的研究与产业化应用，主导多个AI产品的核心算法开发。",
+          },
+          {
+            position: "研究实习生",
+            company: "Google Research",
+            period: "2014-2015",
+            description: "参与深度学习和机器学习算法的前沿研究，发表多篇顶级会议论文。",
+          },
+        ],
     publications:
       id === "1"
         ? [
-            "Deep Learning for Natural Language Processing: A Comprehensive Survey (IJCAI 2023)",
-            "Attention Mechanisms in Neural Machine Translation (ACL 2022)",
-            "Transformer-based Models for Text Generation (EMNLP 2021)",
-            "Multi-modal Learning for AI Applications (ICCV 2020)",
-          ]
+          "Deep Learning for Natural Language Processing: A Comprehensive Survey (IJCAI 2023)",
+          "Attention Mechanisms in Neural Machine Translation (ACL 2022)",
+          "Transformer-based Models for Text Generation (EMNLP 2021)",
+          "Multi-modal Learning for AI Applications (ICCV 2020)",
+        ]
         : [
-            "Advanced Machine Learning Algorithms for Big Data (ICML 2023)",
-            "Optimization Techniques in Deep Learning (NeurIPS 2022)",
-            "Scalable Data Mining for Industrial Applications (KDD 2021)",
-            "Reinforcement Learning in Real-world Systems (AAAI 2020)",
-          ],
+          "Advanced Machine Learning Algorithms for Big Data (ICML 2023)",
+          "Optimization Techniques in Deep Learning (NeurIPS 2022)",
+          "Scalable Data Mining for Industrial Applications (KDD 2021)",
+          "Reinforcement Learning in Real-world Systems (AAAI 2020)",
+        ],
     rating: 4.9,
     totalStudents: id === "1" ? 1200 : 800,
   }

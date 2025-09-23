@@ -20,8 +20,8 @@ import {
   Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { CardRegistry } from "@/components/card/registry"
-import { BusinessCardWrapper } from "@/components/card/business-cards/business-card-wrapper"
+import { CardRegistry } from "@/components/card/core/registry"
+import { BusinessCardWrapper } from "@/components/card/system/business-card-wrapper"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { Button } from "@/components/ui/button"

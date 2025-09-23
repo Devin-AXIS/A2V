@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CardRegistry } from "@/components/card/registry"
+import { CardRegistry } from "@/components/card/core/registry"
 
 type RegistryHookResult<T> = {
     realData: T

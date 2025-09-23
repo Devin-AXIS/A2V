@@ -2,8 +2,8 @@
 
 import { useState, use } from "react"
 import { DropdownFilterTabs } from "@/components/navigation/dropdown-filter-tabs"
-import { JobPositionCard } from "@/components/card/job-position-card"
-import { JobOverviewCard } from "@/components/card/job-overview-card"
+import { JobPositionCard } from "@/components/card/cards/recruitment/job-position-card"
+import { JobOverviewCard } from "@/components/card/cards/recruitment/job-overview-card"
 import { EducationBottomNavigation } from "@/components/navigation/education-bottom-navigation"
 import type { Locale } from "@/lib/dictionaries"
 

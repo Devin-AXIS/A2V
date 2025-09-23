@@ -6,7 +6,7 @@ import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-com
 import { PCDynamicPageComponent } from "@/components/dynamic-page/pc-dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
-import { setDatas } from "@/components/card/set-datas"
+import { setDatas } from "@/components/card/config/set-datas"
 import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
 
 function PreviewContent() {

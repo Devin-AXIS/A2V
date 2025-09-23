@@ -4,12 +4,12 @@ import React, { useState, useMemo } from 'react'
 import { BrowserHeader } from '@/components/layout/browser-header'
 import { AppCard } from '@/components/layout/app-card'
 import { FilterTabs, type FilterTabItem } from '@/components/navigation/filter-tabs'
-import { CardRegistry } from '@/components/card/registry'
+import { CardRegistry } from '@/components/card/core/registry'
 import { useCardTheme } from '@/components/providers/card-theme-provider'
-import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Users, 
+import {
+  LayoutDashboard,
+  BarChart3,
+  Users,
   ShoppingCart,
   BookOpen,
   Briefcase,
@@ -28,7 +28,7 @@ export default function CardsPage({ params }: CardsPageProps) {
 
   // 获取所有注册的卡片
   const allCards = CardRegistry.getAll()
-  
+
   // 定义分类导航，使用您现有的FilterTabs格式
   const categoryItems: FilterTabItem[] = [
     { label: '全部卡片', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -48,7 +48,7 @@ export default function CardsPage({ params }: CardsPageProps) {
   // 过滤卡片 - 修复分类匹配问题
   const filteredCards = useMemo(() => {
     if (activeCategory === '全部卡片') return allCards
-    
+
     const categoryMap: Record<string, string> = {
       '教育卡片': '教育',
       '功能卡片': '功能',
@@ -62,10 +62,10 @@ export default function CardsPage({ params }: CardsPageProps) {
       '旅行卡片': '旅行',
       '基础卡片': '基础'
     }
-    
+
     const targetCategory = categoryMap[activeCategory]
     if (!targetCategory) return allCards
-    
+
     return allCards.filter(card => card.category === targetCategory)
   }, [allCards, activeCategory])
 
@@ -75,7 +75,7 @@ export default function CardsPage({ params }: CardsPageProps) {
 
       <div className="px-4 pt-4">
         {/* 页面标题和描述 */}
-        <AppCard 
+        <AppCard
           className="mb-8 p-6"
           localThemeKey="cards-page-header"
         >
@@ -85,7 +85,7 @@ export default function CardsPage({ params }: CardsPageProps) {
           <p className="mb-6 opacity-80" style={{ color: theme.textColor }}>
             探索和使用我们丰富的卡片组件库，快速构建现代化的用户界面
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="p-3 rounded-lg opacity-80" style={{ backgroundColor: `${theme.background}40` }}>
               <h3 className="font-semibold mb-1" style={{ color: theme.titleColor }}>丰富的组件</h3>
@@ -129,14 +129,14 @@ export default function CardsPage({ params }: CardsPageProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCards.map((card) => (
-                <div 
-                  key={card.name} 
+                <div
+                  key={card.name}
                   className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                   style={{ border: `1px solid ${theme.titleColor}15` }}
                 >
                   {/* 卡片内容 - 显示占位符，避免渲染问题 */}
                   <div className="p-4">
-                    <div 
+                    <div
                       className="h-40 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: `${theme.background}20` }}
                     >

@@ -1297,6 +1297,9 @@ video {
 .max-h-\[85vh\] {
   max-height: 85vh;
 }
+.max-h-\[calc\(75vh-120px\)\] {
+  max-height: calc(75vh - 120px);
+}
 .max-h-\[calc\(75vh-180px\)\] {
   max-height: calc(75vh - 180px);
 }
@@ -3885,6 +3888,10 @@ video {
 
 .hover\:bg-accent:hover {
   background-color: hsl(var(--accent));
+}
+
+.hover\:bg-accent\/5:hover {
+  background-color: hsl(var(--accent) / 0.05);
 }
 
 .hover\:bg-accent\/90:hover {

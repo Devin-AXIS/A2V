@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { ChevronDown, Check } from "lucide-react"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
 import { useCardTheme } from "@/components/providers/card-theme-provider"
-import { CardRegistry } from "@/components/card/registry"
+import { CardRegistry } from "@/components/card/core/registry"
 
 export interface DropdownFilterOption {
   label: string

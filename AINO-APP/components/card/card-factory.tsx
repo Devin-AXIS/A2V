@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { EnhancedBaseCard } from "./enhanced-base-card"
-import { BusinessCardWrapper } from "./business-cards/business-card-wrapper"
+import { BusinessCardWrapper } from "./system/business-card-wrapper"
 
 export interface CardFactoryProps {
   id: string
