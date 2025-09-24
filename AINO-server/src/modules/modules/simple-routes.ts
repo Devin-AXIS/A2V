@@ -3,8 +3,14 @@ import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
 import { SimpleModuleService } from "./simple-service"
+import { DirectoryService } from "../directories/service";
+import { CardsConfig } from '../../lib/cards-config'
+import { EducationMainCard } from "../../lib/cards-config/education/main";
+import { DirectoryDefsService } from "../directory-defs/service"
+import { FieldDefsService } from '../field-defs/service'
 
 const app = new Hono()
+const dirService = new DirectoryService()
 
 // 简化的模块安装请求DTO
 const SimpleInstallRequest = z.object({
@@ -34,11 +40,47 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
   }
 
   try {
-    const result = await moduleService.installModule(applicationId, data.moduleKey, data.installConfig)
+    const moduleResult = await moduleService.installModule(applicationId, data.moduleKey, data.installConfig)
+
+    const dirCreateData = {
+      config: {},
+      name: data.installConfig.defaultTableName,
+      order: 0,
+      supportsCategory: false,
+      type: "table",
+    }
+    const dirResult = await dirService.create(dirCreateData, applicationId, moduleResult.id, user.id);
+    const defService = new DirectoryDefsService();
+    const defResult = await defService.getOrCreateDirectoryDefByDirectoryId(dirResult.id, applicationId)
+    const fieldService = new FieldDefsService();
+    const currentCardConfig = CardsConfig[data.moduleKey]
+    for (let i = 0; i < currentCardConfig.length; i++) {
+      try {
+        const current = currentCardConfig[i];
+        const params = {
+          directoryId: defResult.id,
+          key: crypto.randomUUID(),
+          kind: "primitive",
+          required: false,
+          schema: {
+            description: "",
+            label: current.label,
+            placeholder: "",
+            showInDetail: true,
+            showInForm: true,
+            showInList: true,
+          },
+          type: current.type,
+        }
+        const fieldDef = await fieldService.createFieldDef(params)
+      } catch (e) {
+        console.log(e)
+      }
+    }
 
     return c.json({
       success: true,
-      data: result,
+      data: moduleResult,
       message: "模块安装成功",
     })
   } catch (error) {

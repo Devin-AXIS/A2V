@@ -441,7 +441,7 @@ export function useApiBuilderController({
     }
   }
 
-  async function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string }) {
+  async function handleCreateModuleFromDialog(payload: { name: string; templateKey: string; icon?: string; defaultTableName?: string }) {
     if (!application) return
     if (!can("edit")) return
 
@@ -449,12 +449,17 @@ export function useApiBuilderController({
 
     try {
       // 使用简化的模块安装API
+      const installConfig: any = {
+        name: payload.name.trim(),
+        icon: payload.icon
+      }
+      if (payload.templateKey !== "blank-template" && payload.defaultTableName && payload.defaultTableName.trim()) {
+        installConfig.defaultTableName = payload.defaultTableName.trim()
+      }
+
       const response = await api.modules.installModuleSimple(appId, {
         moduleKey: payload.templateKey,
-        installConfig: {
-          name: payload.name.trim(),
-          icon: payload.icon
-        }
+        installConfig
       })
 
       console.log('🔍 API响应:', response)
