@@ -357,13 +357,39 @@ export default function ClientConfigPage() {
     mappings.forEach(({ mapConfig, table }) => {
       const { card, inputs, dataSource } = mapConfig;
       const { fields } = table.config;
-      const cardConfig = cardConfigsRes[card.packageId];
-      cardConfig.forEach(({ key, label, type }) => {
-        const mappingKey = `${card.id}::table_${table.id}`;
-        const inputKey = key;
-        const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
-        setMappingValue(mappingKey, inputKey, fieldKey);
-      })
+      let cardConfig = cardConfigsRes[card.packageId];
+      if (card.packageId.indexOf("Sub") !== -1) {
+        cardConfig = cardConfig.find(c => c.cardId === card.type);
+        if (cardConfig) {
+          cardConfig.dataConfig.forEach(({ key, label, type, child }, index) => {
+            if (child) {
+              const currentFields = fields[index];
+              if (currentFields) {
+                const currentFieldId = currentFields.key;
+                child.forEach((item, childIndex) => {
+                  const mappingKey = `${card.id}::table_${table.id}`;
+                  const inputKey = `${key}[].${item.key}`;
+                  const fieldKey = `${currentFieldId}.${currentFields.metaItemsConfig.fields[childIndex].id}`;
+                  console.log(mappingKey, inputKey, fieldKey, 23232323)
+                  setMappingValue(mappingKey, inputKey, fieldKey);
+                })
+              }
+            } else {
+              const mappingKey = `${card.id}::table_${table.id}`;
+              const inputKey = key;
+              const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
+              setMappingValue(mappingKey, inputKey, fieldKey);
+            }
+          })
+        }
+      } else {
+        cardConfig.forEach(({ key, label, type }) => {
+          const mappingKey = `${card.id}::table_${table.id}`;
+          const inputKey = key;
+          const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
+          setMappingValue(mappingKey, inputKey, fieldKey);
+        })
+      }
     })
   }
 
