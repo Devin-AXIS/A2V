@@ -16,12 +16,12 @@ const salaryDistribution = [
   { range: ">30k", percentage: 0, color: "bg-gray-300" },
 ]
 
-export function SalaryOverviewCard() {
+export function SalaryOverviewCard({ data }) {
   const { primaryColor } = useDataChartTheme()
 
   return (
     <div className="space-y-6">
-      
+
 
       <div className="grid grid-cols-2 gap-8">
         {/* 左侧：平均月薪和排名 */}
@@ -35,7 +35,7 @@ export function SalaryOverviewCard() {
           {/* 排名趋势图 */}
           <div className="h-16 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={rankingData}>
+              <LineChart data={data.rankingData || []}>
                 <Line
                   type="monotone"
                   dataKey="rank"
@@ -60,7 +60,7 @@ export function SalaryOverviewCard() {
           <div className="text-sm text-muted-foreground">月薪分布</div>
 
           <div className="space-y-3">
-            {salaryDistribution.map((item, index) => (
+            {(data.salaryDistribution || []).map((item, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="text-sm font-medium w-16">{item.range}</div>
                 <div className="flex-1 mx-4">

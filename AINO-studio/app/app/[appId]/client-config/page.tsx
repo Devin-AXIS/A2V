@@ -325,7 +325,6 @@ export default function ClientConfigPage() {
   const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
   const [recordsByDir, setRecordsByDir] = useState<Record<string, RecordItem[]>>({})
   const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
-  const [moduleConfigs, setModuleConfigs] = useState<any[]>([])
 
   // 接收自子页面的 aino:data 数据缓存与字段映射状态
   const INCOMING_KEY = `AINO_CARD_DATA_${params.appId}`
@@ -363,7 +362,6 @@ export default function ClientConfigPage() {
         const mappingKey = `${card.id}::table_${table.id}`;
         const inputKey = key;
         const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
-        // console.log(mappingKey, inputKey, fieldKey, 23232323)
         setMappingValue(mappingKey, inputKey, fieldKey);
       })
     })
@@ -597,7 +595,6 @@ export default function ClientConfigPage() {
   // 读取/保存映射改为随 manifest 一起持久化到数据库
 
   function setMappingValue(mappingKey: string, inputKey: string, fieldKey: string) {
-    console.log(mappingKey, inputKey, fieldKey, 23232323)
     setMappingSelections((s) => {
       const prev = s[mappingKey] || {}
       const nextMap = { ...prev, [inputKey]: fieldKey }

@@ -10,27 +10,61 @@ const moduleService = new SimpleModuleService()
 const defService = new DirectoryDefsService();
 const fieldService = new FieldDefsService();
 
-export const initBaseField = async (data: any, defId) => {
-    const currentCardConfig = CardsConfig[data.moduleKey]
-    for (let i = 0; i < currentCardConfig.length; i++) {
+export const initBaseField = async (config: any[], defId: string) => {
+    for (let i = 0; i < config.length; i++) {
         try {
-            const current = currentCardConfig[i];
-            const params = {
-                directoryId: defId,
-                key: crypto.randomUUID(),
-                kind: "primitive",
-                required: false,
-                schema: {
-                    description: "",
-                    label: current.label,
-                    placeholder: "",
-                    showInDetail: true,
-                    showInForm: true,
-                    showInList: true,
-                },
-                type: current.type,
+            const current = config[i];
+            if (current.type === 'meta_items') {
+                const subfields = [];
+                current.child?.forEach(item => {
+                    subfields.push({
+                        id: crypto.randomUUID(),
+                        type: item.type,
+                        label: item.label,
+                    })
+                })
+                const params = {
+                    directoryId: defId,
+                    key: crypto.randomUUID(),
+                    kind: "primitive",
+                    required: false,
+                    schema: {
+                        description: "",
+                        label: current.label,
+                        metaItemsConfig: {
+                            aggregationMode: "avg",
+                            allowAddInForm: true,
+                            defaultItemLabels: [],
+                            fields: subfields,
+                            showHelp: false,
+                            helpText: "",
+                        },
+                        placeholder: "",
+                        showInDetail: true,
+                        showInForm: true,
+                        showInList: true,
+                    },
+                    type: current.type,
+                }
+                await fieldService.createFieldDef(params)
+            } else {
+                const params = {
+                    directoryId: defId,
+                    key: crypto.randomUUID(),
+                    kind: "primitive",
+                    required: false,
+                    schema: {
+                        description: "",
+                        label: current.label,
+                        placeholder: "",
+                        showInDetail: true,
+                        showInForm: true,
+                        showInList: true,
+                    },
+                    type: current.type,
+                }
+                await fieldService.createFieldDef(params)
             }
-            const fieldDef = await fieldService.createFieldDef(params)
         } catch (e) {
             console.log(e)
             throw new Error(e);
@@ -39,6 +73,8 @@ export const initBaseField = async (data: any, defId) => {
 }
 
 export const initModule = async (applicationId: string, data: any, moduleId: string, userId: string) => {
+    const mainCardConfig = CardsConfig[data.installConfig.moduleKey]
+    const subCardConfig = CardsConfig[data.installConfig.moduleKey + "Sub"]
     const dirCreateData = {
         config: {
             moduleKey: data.installConfig.moduleKey,
@@ -48,7 +84,31 @@ export const initModule = async (applicationId: string, data: any, moduleId: str
         supportsCategory: false,
         type: "table",
     }
+    // 目录
     const dirResult = await dirService.create(dirCreateData, applicationId, moduleId, userId);
+    // 表定义
     const defResult = await defService.getOrCreateDirectoryDefByDirectoryId(dirResult.id, applicationId)
-    await initBaseField(data, defResult.id)
+    const currentCardConfig = CardsConfig[data.installConfig.moduleKey]
+    await initBaseField(currentCardConfig, defResult.id)
+
+    if (subCardConfig && subCardConfig.length) {
+        const subModuleKey = `${data.installConfig.moduleKey}Sub`;
+        for (let i = 0; i < subCardConfig.length; i++) {
+            const current = subCardConfig[i]
+            const dirCreateData = {
+                config: {
+                    moduleKey: subModuleKey,
+                },
+                name: `${data.installConfig.name}_${current.displayName}`,
+                order: 0,
+                supportsCategory: false,
+                type: "table",
+            }
+            // 目录
+            const dirResult = await dirService.create(dirCreateData, applicationId, moduleId, userId);
+            // 表定义
+            const defResult = await defService.getOrCreateDirectoryDefByDirectoryId(dirResult.id, applicationId)
+            await initBaseField(current.dataConfig, defResult.id)
+        }
+    }
 }

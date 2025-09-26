@@ -1,6 +1,8 @@
+import axios from "axios"
 import { CardRegistry } from "../../core/registry"
 import type { CardPackageConfig } from "./card-package-config"
 import { CARD_PACKAGES } from "./card-package-config"
+import { packageIdMap } from "@/components/dynamic-page/dynamic-page-component"
 
 export class CardPackageManager {
   private static packages = new Map<string, CardPackageConfig>()
@@ -144,16 +146,35 @@ export class CardPackageManager {
   /**
    * 初始化所有卡片包
    */
-  static initializePackages() {
+  static async initializePackages() {
     // 注册所有预定义的卡片包
-    Object.values(CARD_PACKAGES).forEach(packageConfig => {
-      // 从 CardRegistry 获取主卡片组件
-      const mainCardRegistration = CardRegistry.get(packageConfig.mainCard.cardId)
-      if (mainCardRegistration) {
-        packageConfig.mainCard.component = mainCardRegistration.component
-      }
+    const qs = new URLSearchParams(window.location.search)
+    const appId = qs.get('appId') || window.localStorage.getItem('APP_ID');
+    const { data } = await axios.get(`http://localhost:3007/api/applications/${appId}/modules`, {
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${window.localStorage.getItem('aino_auth_token')}`
+      },
+    })
 
-      this.registerPackage(packageConfig)
+    const { modules } = data.data
+    window.localStorage.setItem('MAIN_PATH', `${window.location.pathname}${window.location.search}`);
+    const hasModules = {};
+    modules.forEach(md => {
+      if (md.config?.moduleKey) {
+        hasModules[md.config?.moduleKey] = true;
+      }
+    })
+    Object.values(CARD_PACKAGES).forEach(packageConfig => {
+      if (hasModules[packageIdMap[packageConfig.packageId]]) {
+        // 从 CardRegistry 获取主卡片组件
+        const mainCardRegistration = CardRegistry.get(packageConfig.mainCard.cardId)
+        if (mainCardRegistration) {
+          packageConfig.mainCard.component = mainCardRegistration.component
+        }
+
+        this.registerPackage(packageConfig)
+      }
     })
 
   }

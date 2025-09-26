@@ -120,9 +120,11 @@ export const PAGE_CATEGORIES: Record<string, PageCategory> = {
   },
 }
 
-const packageIdMap = {
+export const packageIdMap = {
   "recruitment-package": "rec",
+  "recruitment-package-sub": "recSub",
   "education-package": "edu",
+  "education-package-sub": "eduSub",
 };
 
 // 基础卡片配置

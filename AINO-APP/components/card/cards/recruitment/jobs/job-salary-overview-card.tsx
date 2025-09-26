@@ -2,19 +2,37 @@
 
 import { AppCard } from "@/components/layout/app-card"
 import { SalaryOverviewCard } from "@/components/data-display/salary-overview-card"
+import { useCardRegistryData } from "@/hooks/use-card-registry-data"
+import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 interface JobSalaryOverviewCardProps {
     disableLocalTheme?: boolean
     className?: string
 }
 
+const defaultJobSalaryOverviewData: JobSalaryOverviewData = {
+    rankingData: [
+        { name: "互联网专家", rank: 340 },
+        { name: "人工智能开发", rank: 351 },
+        { name: "售前解决方案", rank: 360 },
+    ],
+    salaryDistribution: [
+        { range: "0-8k", percentage: 10, color: "bg-teal-400" },
+        { range: "8-15k", percentage: 40, color: "bg-teal-500" },
+        { range: "15-30k", percentage: 50, color: "bg-teal-600" },
+        { range: ">30k", percentage: 0, color: "bg-gray-300" },
+    ],
+}
+
 export function JobSalaryOverviewCard({ disableLocalTheme, className }: JobSalaryOverviewCardProps) {
+    const { key: providedKey } = useLocalThemeKey()
+    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobSalaryOverviewData)
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">
                 人工智能训练师收入分布怎么样？
             </h2>
-            <SalaryOverviewCard />
+            <SalaryOverviewCard data={merged} />
         </AppCard>
     )
 }

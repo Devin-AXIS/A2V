@@ -12,6 +12,18 @@ export const dataInputs = {
         salaryGrowth: "String",
         locale: "String",
     },
+    "job-salary-overview": {
+        rankingData: [
+            {
+                name: "String",
+                ranl: "Number",
+            }
+        ],
+        salaryDistribution: [{
+            range: "String",
+            percentage: "Number",
+        }],
+    },
     // 职位发布
     "job-posting": {
         title: "String",
