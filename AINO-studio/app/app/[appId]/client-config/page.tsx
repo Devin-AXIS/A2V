@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -325,15 +325,15 @@ export default function ClientConfigPage() {
   const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
   const [recordsByDir, setRecordsByDir] = useState<Record<string, RecordItem[]>>({})
   const [recordsLoading, setRecordsLoading] = useState<Record<string, boolean>>({})
+  const [moduleConfigs, setModuleConfigs] = useState<any[]>([])
 
   // 接收自子页面的 aino:data 数据缓存与字段映射状态
   const INCOMING_KEY = `AINO_CARD_DATA_${params.appId}`
   const [incomingMappings, setIncomingMappings] = useState<Record<string, { cardType: string; cardName?: string; dataSourceKey?: string; dataSourceLabel?: string; tableId?: string; tableName?: string; inputs: Record<string, any>; timestamp: number }>>({})
+  const [waitCreateMappings, setWaitCreateMappings] = useState<any[]>([])
   const [tableFieldsByDsKey, setTableFieldsByDsKey] = useState<Record<string, Array<{ key: string; label: string }>>>({})
   const [mappingSelections, setMappingSelections] = useState<Record<string, Record<string, string>>>({})
   const [bindingByMappingKey, setBindingByMappingKey] = useState<Record<string, string>>({})
-
-
 
   function saveIncomingData(payload: any) {
     try {
@@ -352,6 +352,66 @@ export default function ClientConfigPage() {
         return next
       })
     } catch { }
+  }
+
+  const handleCreateMaps = async (mappings: any[], cardConfigsRes: any) => {
+    mappings.forEach(({ mapConfig, table }) => {
+      const { card, inputs, dataSource } = mapConfig;
+      const { fields } = table.config;
+      const cardConfig = cardConfigsRes[card.packageId];
+      cardConfig.forEach(({ key, label, type }) => {
+        const mappingKey = `${card.id}::table_${table.id}`;
+        const inputKey = key;
+        const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
+        // console.log(mappingKey, inputKey, fieldKey, 23232323)
+        setMappingValue(mappingKey, inputKey, fieldKey);
+      })
+    })
+  }
+
+  const saveEditeCard = async (payload: any) => {
+    const appId = String(params.appId)
+    const modsRes = await api.applications.getApplicationModules(appId)
+    const mods = modsRes.success && modsRes.data ? modsRes.data.modules : []
+    const tables = await loadTables()
+    const { data: cardConfigsRes } = await api.modules.getCardConfigs()
+    const creatingMappings = [];
+    for (let i = 0; i < payload.length; i++) {
+      const card = payload[i];
+      const hasCardMod = mods.find(mod => mod?.config?.moduleKey === card.packageId);
+      if (hasCardMod) {
+        const { moduleKey } = hasCardMod.config;
+        const hasTable = tables.find(table => table?.config?.moduleKey === moduleKey);
+        if (hasTable) {
+          addTableDataSource({
+            id: hasTable.id,
+            moduleName: hasTable.moduleName,
+            name: hasTable.name,
+          })
+          const dataSource = {
+            key: `table_${hasTable.id}`,
+            label: `${hasTable.moduleName}/${hasTable.name}`
+          };
+          const creatingMapping = {
+            card: {
+              id: card.id,
+              name: card.displayName,
+              type: card.type,
+              packageId: card.packageId,
+              moduleKey,
+            },
+            dataSource: dataSource,
+            inputs: card.inputFields,
+          }
+          creatingMappings.push({
+            mapConfig: creatingMapping,
+            table: hasTable,
+          })
+          saveIncomingData(creatingMapping)
+        }
+      }
+    }
+    handleCreateMaps(creatingMappings, cardConfigsRes)
   }
 
   async function loadTableFields(dsKey: string) {
@@ -537,6 +597,7 @@ export default function ClientConfigPage() {
   // 读取/保存映射改为随 manifest 一起持久化到数据库
 
   function setMappingValue(mappingKey: string, inputKey: string, fieldKey: string) {
+    console.log(mappingKey, inputKey, fieldKey, 23232323)
     setMappingSelections((s) => {
       const prev = s[mappingKey] || {}
       const nextMap = { ...prev, [inputKey]: fieldKey }
@@ -611,11 +672,13 @@ export default function ClientConfigPage() {
       const appId = String(params.appId)
       const modsRes = await api.applications.getApplicationModules(appId)
       const mods = modsRes.success && modsRes.data ? modsRes.data.modules : []
+      const tables = [];
       const dirLists = await Promise.all(
         mods.map(async (m: any) => {
           try {
             const dres = await api.directories.getDirectories({ applicationId: appId, moduleId: m.id })
             const list = dres.success && dres.data ? dres.data.directories || [] : []
+            tables.push(list.map(item => ({ ...item, moduleName: m.name })));
             return list
               .filter((d: any) => d.type === "table")
               .map((d: any) => ({ id: d.id, name: d.name, moduleName: m.name })) as TableItem[]
@@ -624,7 +687,8 @@ export default function ClientConfigPage() {
           }
         }),
       )
-      setTables(dirLists.flat())
+      setTables(dirLists.flat());
+      return tables.flat();
     } finally {
       setTablesLoading(false)
     }
@@ -1120,7 +1184,6 @@ export default function ClientConfigPage() {
         }
       } catch { }
       setViewTab("preview")
-      toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
       setViewTab("code")
@@ -1242,6 +1305,8 @@ export default function ClientConfigPage() {
 
       const data = event.data || {};
       // 仅处理 AINO 规范的消息
+      if (data.cards && data.type === "DYN_CARDS") saveEditeCard(data.cards)
+      if (data.type === 'aino:data') saveIncomingData(data.payload)
       if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
 
       // 确保frame存在

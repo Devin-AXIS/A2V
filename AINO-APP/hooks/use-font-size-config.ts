@@ -23,7 +23,7 @@ const BASE_FONT_SIZES = {
 // 字体大小配置 Hook
 export function useFontSizeConfig() {
   const { getToken, setToken } = useDesignTokens()
-  
+
   // 使用本地状态来管理字体大小配置
   const [localFontSizeConfig, setLocalFontSizeConfig] = useState<FontSizeConfig>(() => {
     const config = getToken("fontSizeConfig") as FontSizeConfig | undefined
@@ -38,14 +38,14 @@ export function useFontSizeConfig() {
   const scaledFontSizes = useMemo(() => {
     const { scale } = localFontSizeConfig
     const sizes: Record<string, string> = {}
-    
+
     Object.entries(BASE_FONT_SIZES).forEach(([key, value]) => {
       const numericValue = parseFloat(value)
       const unit = value.replace(/[\d.]/g, "")
       const scaledValue = numericValue * scale
       sizes[key] = `${scaledValue}${unit}`
     })
-    
+
     return sizes
   }, [localFontSizeConfig])
 
@@ -53,22 +53,21 @@ export function useFontSizeConfig() {
   const applyFontSizesToDOM = useCallback((fontSizes: Record<string, string>) => {
     if (typeof document !== "undefined") {
       const root = document.documentElement
-      
+
       // 应用字体大小CSS变量
       Object.entries(fontSizes).forEach(([key, value]) => {
         root.style.setProperty(`--font-size-${key}`, value)
       })
-      
-      console.log("Applied font sizes to DOM:", fontSizes)
+
     }
   }, [])
 
   // 设置字体大小预设
   const setFontSizePreset = useCallback((preset: FontSizePreset) => {
     console.log("Setting font size preset:", preset)
-    
+
     const scale = FONT_SIZE_PRESETS[preset].scale
-    
+
     // 直接计算新的字体大小
     const newSizes: Record<string, string> = {}
     Object.entries(BASE_FONT_SIZES).forEach(([key, value]) => {
@@ -77,23 +76,23 @@ export function useFontSizeConfig() {
       const scaledValue = numericValue * scale
       newSizes[key] = `${scaledValue}${unit}`
     })
-    
+
     const config: FontSizeConfig = {
       preset,
       scale,
       sizes: newSizes as unknown as FontSize
     }
-    
+
     // 更新本地状态
     setLocalFontSizeConfig(config)
-    
+
     // 同时更新设计令牌
     setToken("fontSizeConfig", config)
     setToken("typography.fontSize", config.sizes)
-    
+
     // 应用CSS变量到DOM
     applyFontSizesToDOM(newSizes)
-    
+
     console.log("Font size preset changed:", { preset, scale, newSizes })
   }, [setToken, applyFontSizesToDOM])
 
@@ -103,11 +102,11 @@ export function useFontSizeConfig() {
     const { scale } = localFontSizeConfig
     const baseSize = BASE_FONT_SIZES[size]
     if (!baseSize) return BASE_FONT_SIZES.base
-    
+
     const numericValue = parseFloat(baseSize)
     const unit = baseSize.replace(/[\d.]/g, "")
     const scaledValue = numericValue * scale
-    
+
     return `${scaledValue}${unit}`
   }, [localFontSizeConfig])
 

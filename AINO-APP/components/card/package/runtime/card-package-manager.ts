@@ -11,7 +11,7 @@ export class CardPackageManager {
    */
   static registerPackage(packageConfig: CardPackageConfig) {
     this.packages.set(packageConfig.packageId, packageConfig)
-    
+
     // 建立子卡片到包的映射关系
     packageConfig.subCards.forEach(subCard => {
       this.subCardToPackage.set(subCard.cardId, packageConfig.packageId)
@@ -32,7 +32,6 @@ export class CardPackageManager {
     const mainCards = Array.from(this.packages.values()).map(pkg => {
       // 从注册表获取实际的组件
       const registeredCard = CardRegistry.get(pkg.mainCard.cardId)
-      console.log(`获取主卡片: ${pkg.mainCard.cardId}, 注册状态:`, !!registeredCard)
       return {
         id: pkg.mainCard.cardId,
         name: pkg.packageName,
@@ -46,7 +45,6 @@ export class CardPackageManager {
         hasModal: pkg.modal?.enabled || false
       }
     })
-    console.log('主卡片列表:', mainCards)
     return mainCards
   }
 
@@ -63,12 +61,13 @@ export class CardPackageManager {
     const pkg = Array.from(this.packages.values()).find(
       p => p.mainCard.cardId === mainCardId
     )
-    
+
     if (!pkg) return []
 
     return pkg.subCards.map(subCard => {
       const registeredCard = CardRegistry.get(subCard.cardId)
       return {
+        packageId: subCard.packageId,
         id: subCard.cardId,
         name: subCard.displayName,
         component: registeredCard?.component || null,
@@ -157,7 +156,6 @@ export class CardPackageManager {
       this.registerPackage(packageConfig)
     })
 
-    console.log(`已初始化 ${this.packages.size} 个卡片包`)
   }
 }
 

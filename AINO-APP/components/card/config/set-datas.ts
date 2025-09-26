@@ -129,6 +129,15 @@ export const dataInputs = {
         logo: "String",
         description: "String",
     },
+
+    'instructor-courses-list': {
+        id: "String",
+        name: "String",
+        duration: "String",
+        students: "Number",
+        certificate: "String",
+        tags: "String[]",
+    }
 }
 
 export const setDatas = async () => {

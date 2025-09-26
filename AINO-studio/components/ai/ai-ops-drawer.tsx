@@ -296,7 +296,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       ...withAbsFull,
       ])).sort()
       setSampleSourceKeys(keys)
-      console.log('🔍 分析采集数据结构，发现字段:', extractedFields)
 
       // 自动进行字段匹配
       autoMatchFromScrapedData(keys)
@@ -727,7 +726,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
     out['progress'] = { items, aggregated: calcProgressAggregate(items, pcfg.aggregation) }
     setPreviewJson(JSON.stringify({ original: rec, mapped: out }, null, 2))
-    toast({ description: t('本地预览已生成', 'Local preview generated') })
+    // toast({ description: t('本地预览已生成', 'Local preview generated') })
   }
 
   // ---------- Mapping template (local) ----------

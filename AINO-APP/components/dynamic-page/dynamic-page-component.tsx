@@ -3,6 +3,7 @@
 import React from "react"
 
 import type { ReactNode } from "react"
+import axios from 'axios';
 import { useState, useEffect, cloneElement, isValidElement, useMemo, useRef } from "react"
 import { AppHeader } from "@/components/navigation/app-header"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
@@ -119,6 +120,11 @@ export const PAGE_CATEGORIES: Record<string, PageCategory> = {
   },
 }
 
+const packageIdMap = {
+  "recruitment-package": "rec",
+  "education-package": "edu",
+};
+
 // 基础卡片配置
 const BASIC_CARDS = [
 ]
@@ -173,6 +179,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   // 子卡片选择器状态
   const [showSubCardSelector, setShowSubCardSelector] = useState(false)
   const [currentMainCardId, setCurrentMainCardId] = useState<string | null>(null)
+  // 模块信息
+  const [moduleConfigs, setModuleConfigs] = useState<any[]>([])
 
   const setCardsForKey = (key: string, list: WorkspaceCard[]) => {
     try { cardsCacheRef.current[key] = list } catch { }
@@ -219,16 +227,21 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     } catch { return null }
   }, [pageId, activeTopIndex, overrideTick])
 
+  const getAllModulesConfig = async () => {
+    const appId = window.localStorage.getItem('APP_ID');
+    const { data } = await axios.get(`http://localhost:3007/api/applications/${appId}/modules`, {
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${window.localStorage.getItem('aino_auth_token')}`
+      },
+    })
+    const { modules } = data.data
+    setModuleConfigs(modules)
+  }
 
-  // const cardDisplayData = useMemo(() => {
-  //   if (pageConfig?.overrides?.['icon-0']) {
-  //     if (typeof window !== "undefined") {
-  //       localStorage.setItem('CARD_DISPLAY_DATA', JSON.stringify(pageConfig.overrides['icon-0']))
-  //     } else {
-  //       localStorage.removeItem('CARD_DISPLAY_DATA');
-  //     }
-  //   }
-  // }, [pageConfig])
+  useEffect(() => {
+    getAllModulesConfig()
+  }, [])
 
   const getCardDisplayData = async () => {
     if (window !== undefined) {
@@ -328,6 +341,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
           name: tpl.name,
           category: tpl.category,
           component: tpl.component,
+          packageId: tpl.packageId,
           width: (tpl as any).width as any,
         }
         return restored
@@ -470,8 +484,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
-        const items = (typeof window !== 'undefined' ? cards : []).map((c) => ({ type: c.type, displayName: c.name }))
-        window.parent?.postMessage({ type: 'DYN_CARDS', category: workspaceCategory, cards: items }, '*')
+        window.parent?.postMessage({ type: 'DYN_CARDS', category: workspaceCategory, cards: cards.map((c) => ({ id: c.id, type: c.type, displayName: c.name, packageId: c.packageId, inputFields: dataInputs[c.type] })) }, '*')
       }
     } catch { }
   }, [cards, workspaceCategory])
@@ -757,7 +770,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
             onAction: (action: string, data: any) => console.log("Card action:", action, data)
           }),
           businessFlow: card.businessFlow,
-          packageId: card.packageId
+          packageId: packageIdMap[card.packageId] || card.packageId,
+          inputFields: dataInputs[card.id] || {},
         })
       } else {
         // 如果没有组件实现，显示开发中的占位符
@@ -839,6 +853,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       category: cardConfig.category,
       component: cardConfig.component,
       width: cardConfig.width,
+      packageId: packageIdMap[cardConfig.packageId] || cardConfig.packageId,
+      inputFields: dataInputs[cardConfig.id] || {},
     }
     const next = [...cards, newCard]
     setCards(next)
@@ -847,7 +863,8 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   }
 
   const removeCard = (cardId: string) => {
-    setCards(cards.filter((card) => card.id !== cardId))
+    const next = cards.filter((card) => card.id !== cardId);
+    setCards(next)
   }
 
   const handleReorder = (newOrder: string[]) => {
@@ -1385,18 +1402,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                         key={subCard.id}
                         className="transition-all duration-300 border rounded-2xl overflow-hidden bg-white/90 backdrop-blur-sm border-gray-200 hover:shadow-xl hover:scale-[1.02] hover:border-accent cursor-pointer"
                         onClick={() => {
-                          // 添加子卡片
-                          const newCard = {
-                            id: `${subCard.id}-${Date.now()}`,
-                            type: subCard.id,
-                            name: subCard.name,
-                            category: "子卡片",
-                            component: subCard.component,
-                            width: "full"
-                          }
-                          const next = [...cards, newCard]
-                          setCards(next)
-                          try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cards: serializeCards(next) })) } catch { }
+                          addCard(subCard)
                           setShowSubCardSelector(false)
                         }}
                       >

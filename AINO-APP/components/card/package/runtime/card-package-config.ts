@@ -22,14 +22,14 @@ export interface CardPackageConfig {
     actions?: string[]
     dataSource?: "static" | "api" | "user-input"
   }
-  
+
   // 内页配置
   detailPage?: {
     enabled: boolean
     route: string // 如: "/cards/[cardName]/detail/[id]"
     component?: React.ComponentType<any>
   }
-  
+
   // 弹窗配置
   modal?: {
     enabled: boolean
@@ -56,116 +56,135 @@ export const RECRUITMENT_PACKAGE: CardPackageConfig = {
     // 职业数据类子卡片
     {
       cardId: "job-salary-overview",
+      packageId: "recruitment-package",
       displayName: "薪资概览",
       type: "chart",
       category: "data"
     },
     {
       cardId: "education-salary-requirements",
+      packageId: "recruitment-package",
       displayName: "学历收入要求",
       type: "list",
       category: "data"
     },
     {
       cardId: "job-experience-ratio",
+      packageId: "recruitment-package",
       displayName: "工作年限占比分析",
       type: "chart",
       category: "data"
     },
     {
       cardId: "job-prospect-trend",
+      packageId: "recruitment-package",
       displayName: "就业前景趋势",
       type: "chart",
       category: "data"
     },
     {
       cardId: "monthly-job-growth",
+      packageId: "recruitment-package",
       displayName: "月度职位增长",
       type: "chart",
       category: "data"
     },
     {
       cardId: "job-city-ranking",
+      packageId: "recruitment-package",
       displayName: "城市排名",
       type: "chart",
       category: "data"
     },
     {
       cardId: "company-ranking",
+      packageId: "recruitment-package",
       displayName: "公司排名",
       type: "chart",
       category: "data"
     },
-    
+
     // 具备能力类子卡片
     {
       cardId: "ability-requirements-radar",
+      packageId: "recruitment-package",
       displayName: "能力要求雷达图",
       type: "chart",
       category: "ability"
     },
     {
       cardId: "core-skills-mastery",
+      packageId: "recruitment-package",
       displayName: "核心技能掌握",
       type: "chart",
       category: "ability"
     },
     {
       cardId: "basic-ability-requirements",
+      packageId: "recruitment-package",
       displayName: "基础能力要求",
       type: "list",
       category: "ability"
     },
     {
       cardId: "education-background",
+      packageId: "recruitment-package",
       displayName: "教育背景分布",
       type: "chart",
       category: "ability"
     },
-    
+
     // 相关岗位类子卡片
     {
       cardId: "related-jobs-list",
-      displayName: "相关岗位列表", 
+      packageId: "recruitment-package",
+      displayName: "相关岗位列表",
       type: "list",
       category: "related"
     },
-    
+
     // 其他功能子卡片
     {
       cardId: "job-detail-intro",
+      packageId: "recruitment-package",
       displayName: "职位详情介绍",
       type: "display",
       category: "info"
     },
     {
-      cardId: "job-posting", 
+      cardId: "job-posting",
+      packageId: "recruitment-package",
       displayName: "职位发布",
       type: "form",
       category: "action"
     },
     {
       cardId: "job-header",
+      packageId: "recruitment-package",
       displayName: "职位头部",
       type: "display"
     },
     {
       cardId: "job-requirements",
+      packageId: "recruitment-package",
       displayName: "职位要求",
       type: "display"
     },
     {
       cardId: "job-benefits",
+      packageId: "recruitment-package",
       displayName: "职位福利",
       type: "display"
     },
     {
       cardId: "company-info",
+      packageId: "recruitment-package",
       displayName: "公司信息",
       type: "display"
     },
     {
       cardId: "apply-resume",
+      packageId: "recruitment-package",
       displayName: "投递简历",
       type: "form"
     }
@@ -177,18 +196,18 @@ export const RECRUITMENT_PACKAGE: CardPackageConfig = {
     actions: ["publish", "analyze", "manage"],
     dataSource: "api"
   },
-  
+
   detailPage: {
     enabled: true,
     route: "/cards/[cardName]/detail/[id]"
   },
-  
+
   modal: {
     enabled: true
   },
   developer: {
     name: "HR Management System",
-    version: "2.0.0", 
+    version: "2.0.0",
     description: "集成化招聘管理卡片包，提供完整的人力资源解决方案"
   }
 }
@@ -202,6 +221,7 @@ export const EDUCATION_PACKAGE: CardPackageConfig = {
     cardId: "instructor-courses-list",
     displayName: "导师课程列表",
     component: null, // 将在注册时设置
+    belongs: "edu",
   },
   subCards: [
     // 目前只有一个教育卡片，未来可以扩展
@@ -223,12 +243,12 @@ export const EDUCATION_PACKAGE: CardPackageConfig = {
     actions: ["manage", "track"],
     dataSource: "api"
   },
-  
+
   detailPage: {
     enabled: true,
     route: "/cards/[cardName]/detail/[id]"
   },
-  
+
   modal: {
     enabled: false
   },
