@@ -713,7 +713,12 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
     // 只显示主卡片（卡片包的入口）
     const mainCards = CardPackageManager.getMainCards()
+    const subCards = [];
     mainCards.forEach((card) => {
+      subCards.push(...CardPackageManager.getSubCardsByMainCard(card.id))
+    })
+    const forCards = [...mainCards, ...subCards];
+    forCards.forEach((card) => {
       if (card.component) {
         const CardComponent = card.component
 

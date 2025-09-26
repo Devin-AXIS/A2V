@@ -6,6 +6,7 @@ import { PillButton } from "@/components/basic/pill-button"
 import { SalaryTrendMiniChart } from "@/components/data-display/salary-trend-mini-chart"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { isType } from "@/components/card/utils"
 
 interface JobPositionCardProps {
   disableLocalTheme?: boolean
@@ -24,7 +25,10 @@ export function JobPositionCard({
   disableLocalTheme,
 }: JobPositionCardProps) {
   const { key: providedKey } = useLocalThemeKey()
-  const { realData: jobData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+  let { realData: jobData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+  if (isType(jobData) === 'Array') {
+    jobData = jobData[0] || defaultData;
+  }
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-4">
       <div className="flex items-center justify-between">

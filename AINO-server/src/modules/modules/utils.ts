@@ -97,7 +97,7 @@ export const initModule = async (applicationId: string, data: any, moduleId: str
             const current = subCardConfig[i]
             const dirCreateData = {
                 config: {
-                    moduleKey: subModuleKey,
+                    moduleKey: `${subModuleKey}-${current.cardId}`,
                 },
                 name: `${data.installConfig.name}_${current.displayName}`,
                 order: 0,

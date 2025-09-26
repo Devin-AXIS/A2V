@@ -376,10 +376,12 @@ export default function ClientConfigPage() {
     const creatingMappings = [];
     for (let i = 0; i < payload.length; i++) {
       const card = payload[i];
-      const hasCardMod = mods.find(mod => mod?.config?.moduleKey === card.packageId);
+      const hasCardMod = mods.find(mod => card.packageId.startsWith(mod?.config?.moduleKey));
       if (hasCardMod) {
         const { moduleKey } = hasCardMod.config;
-        const hasTable = tables.find(table => table?.config?.moduleKey === moduleKey);
+        const tableKey = card.packageId === `${moduleKey}Sub` ? `${card.packageId}-${card.type}` : moduleKey
+        const hasTable = tables.find(table => table?.config?.moduleKey === tableKey);
+        // LOG: 未完成：子卡片自动绑定数据字段。还差一点
         if (hasTable) {
           addTableDataSource({
             id: hasTable.id,
