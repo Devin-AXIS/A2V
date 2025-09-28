@@ -26,7 +26,6 @@ export function CompanyInfoCard({ data, className }: CompanyInfoCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultCompanyInfoData)
     merged = isType(merged) === "Array" ? merged[0] : merged;
-    console.log(merged, 23232323)
     return (
         <AppCard className={className}>
             <div className="p-4 flex items-center gap-4">

@@ -7,6 +7,7 @@ import { useLocalThemeKey } from "@/components/providers/local-theme-key"
 
 export interface ApplyResumeData {
     buttonText: string
+    href: string
 }
 
 export interface ApplyResumeCardProps {
@@ -17,21 +18,21 @@ export interface ApplyResumeCardProps {
 
 const defaultApplyResumeData: ApplyResumeData = {
     buttonText: "投递简历",
+    href: "#"
 }
 
 export function ApplyResumeCard({ data, onApply, className }: ApplyResumeCardProps) {
-    const handleClick = () => {
-        if (onApply) {
-            onApply()
-        } else {
-            alert("简历投递功能开发中...")
-        }
-    }
-
     const { key: providedKey } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultApplyResumeData)
     merged = isType(merged) === "Array" ? merged[0] : merged;
 
+    const handleClick = () => {
+        if (merged.href) {
+            window.location.href = merged.href;
+        } else {
+            alert("简历投递功能开发中...")
+        }
+    }
     return (
         <AppCard className={className}>
             <div className="p-3">

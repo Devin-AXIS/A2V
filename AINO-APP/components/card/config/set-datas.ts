@@ -75,6 +75,7 @@ export const dataInputs = {
     },
     'apply-resume': {
         buttonText: "String",
+        href: "String",
     },
     'job-detail-intro': {
         title: "String",

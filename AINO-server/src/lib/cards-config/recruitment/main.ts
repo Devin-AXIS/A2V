@@ -244,6 +244,7 @@ export const RecruitmentSubCards = [
         cardId: "apply-resume",
         dataConfig: [
             { key: "buttonText", type: "text", label: "按钮文本" },
+            { key: "href", type: "text", label: "链接" },
         ],
         displayName: "投递简历",
         type: "form"
