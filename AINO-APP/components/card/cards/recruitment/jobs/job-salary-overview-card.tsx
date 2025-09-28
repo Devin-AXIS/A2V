@@ -4,6 +4,8 @@ import { AppCard } from "@/components/layout/app-card"
 import { SalaryOverviewCard } from "@/components/data-display/salary-overview-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { getRandomHexColor } from '@/lib/utils'
+import { isType } from "@/components/card/utils"
 
 interface JobSalaryOverviewCardProps {
     disableLocalTheme?: boolean
@@ -27,12 +29,31 @@ const defaultJobSalaryOverviewData: JobSalaryOverviewData = {
 export function JobSalaryOverviewCard({ disableLocalTheme, className }: JobSalaryOverviewCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobSalaryOverviewData)
+    const data = {
+        rankingData: [],
+        salaryDistribution: [],
+    };
+    if (isType(merged) === 'Array') {
+        merged.forEach(item => {
+            Object.keys(item).map(key => {
+                data.rankingData.push({
+                    name: item[key].name,
+                    rank: item[key].rank,
+                })
+                data.salaryDistribution.push({
+                    range: item[key].range,
+                    percentage: item[key].percentage,
+                    color: getRandomHexColor(),
+                })
+            })
+        })
+    }
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">
                 人工智能训练师收入分布怎么样？
             </h2>
-            <SalaryOverviewCard data={merged} />
+            <SalaryOverviewCard data={data} />
         </AppCard>
     )
 }

@@ -370,7 +370,6 @@ export default function ClientConfigPage() {
                   const mappingKey = `${card.id}::table_${table.id}`;
                   const inputKey = `${key}[].${item.key}`;
                   const fieldKey = `${currentFieldId}.${currentFields.metaItemsConfig.fields[childIndex].id}`;
-                  console.log(mappingKey, inputKey, fieldKey, 23232323)
                   setMappingValue(mappingKey, inputKey, fieldKey);
                 })
               }

@@ -173,7 +173,21 @@ export const setDatas = async () => {
                 realData.forEach(item => {
                     const currentRealData = {};
                     Object.keys(dataMapping).forEach(key => {
-                        currentRealData[key] = item[dataMapping[key]]
+                        if (key.indexOf('[].') > -1) {
+                            const path = key.split('[].');
+                            if (!currentRealData) currentRealData = [];
+                            const mappingPath = dataMapping[key].split('.');
+                            item[mappingPath[0]].forEach((item, index) => {
+                                const aggregationData = {};
+                                item.images.concat(item.numbers).concat(item.texts).forEach(item2 => {
+                                    aggregationData[item2.id] = item2;
+                                })
+                                if (!currentRealData[index]) currentRealData[index] = {};
+                                currentRealData[index][path[1]] = aggregationData[mappingPath[1]].value;
+                            })
+                        } else {
+                            currentRealData[key] = item[dataMapping[key]]
+                        }
                     })
                     resultData.push(currentRealData)
                 })

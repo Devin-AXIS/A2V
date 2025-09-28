@@ -106,7 +106,7 @@ class CardRegistry {
   static setData(name, data, realData) {
     datas[name] = data;
     realDatas[name] = realData;
-      listens[name]?.(name, data);
+    listens[name]?.(name, data);
     // this.listens.forEach(cb => cb(name, data));
   }
 
@@ -128,7 +128,7 @@ class CardRegistry {
 
   static selectFilter(name, filter) {
     if (filter.value === 'none') {
-        listens[name]?.(name, datas[name]);
+      listens[name]?.(name, datas[name]);
       return;
     }
     filters[name] = filter;
@@ -140,7 +140,7 @@ class CardRegistry {
         filtedDatas[name].push(currentData[index]);
       }
     });
-      listens[name]?.(name, filtedDatas[name]);
+    listens[name]?.(name, filtedDatas[name]);
   }
 
   static getFilter(name) {
