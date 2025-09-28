@@ -1,5 +1,3 @@
 {
-  "/[locale]/preview/page": "app/[locale]/preview/page.js",
-  "/[locale]/profile/page": "app/[locale]/profile/page.js",
-  "/[locale]/profile/edit/page": "app/[locale]/profile/edit/page.js"
+  "/[locale]/preview/page": "app/[locale]/preview/page.js"
 }

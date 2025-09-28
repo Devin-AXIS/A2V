@@ -22,12 +22,12 @@ export function VideoInput({
   disabled = false,
 }: VideoInputProps) {
   const { locale } = useLocale()
-  
+
   // 处理值的统一格式
-  const videos = multiple 
+  const videos = multiple
     ? (Array.isArray(value) ? value : (value ? [value] : []))
     : (Array.isArray(value) ? (value[0] || "") : value || "")
-  
+
   const hasVideos = multiple ? (videos as string[]).length > 0 : Boolean(videos)
   const canUploadMore = multiple || !hasVideos
 
@@ -36,31 +36,42 @@ export function VideoInput({
     input.type = "file"
     input.accept = "video/*"
     input.multiple = multiple
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files
       if (files && files.length > 0) {
-        const newVideos: string[] = []
-        
-        Array.from(files).forEach((file) => {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const result = e.target?.result as string
-            newVideos.push(result)
-            
-            // 当所有视频都读取完成时更新数据
-            if (newVideos.length === files.length) {
-              if (multiple) {
-                // 多视频模式：追加到现有视频
-                const currentVideos = (videos as string[]) || []
-                onChange?.([...currentVideos, ...newVideos])
-              } else {
-                // 单视频模式：替换现有视频
-                onChange?.(newVideos[0])
-              }
-            }
+        const uploadOne = async (file: File) => {
+          const form = new FormData()
+          form.append("file", file)
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/upload`, {
+            method: "POST",
+            body: form,
+          })
+          const data = await res.json()
+          if (!res.ok || !data?.success || !data?.url) {
+            throw new Error(data?.message || "上传失败")
           }
-          reader.readAsDataURL(file)
-        })
+          return data.url as string
+        }
+
+        try {
+          const urls = [] as string[]
+          for (const file of Array.from(files)) {
+            const url = await uploadOne(file)
+            urls.push(url)
+          }
+
+          if (multiple) {
+            // 多视频模式：追加到现有视频
+            const currentVideos = (videos as string[]) || []
+            onChange?.([...currentVideos, ...urls])
+          } else {
+            // 单视频模式：替换现有视频
+            onChange?.(urls[0])
+          }
+        } catch (err) {
+          console.error("视频上传失败", err)
+          // 可以在此处集成全局 toast
+        }
       }
     }
     input.click()
@@ -78,8 +89,8 @@ export function VideoInput({
 
   // 如果没有视频且有默认视频，显示默认视频
   const showDefaultVideo = !hasVideos && defaultVideo
-  const displayVideos = showDefaultVideo 
-    ? [defaultVideo] 
+  const displayVideos = showDefaultVideo
+    ? [defaultVideo]
     : (multiple ? videos as string[] : [videos as string])
 
   return (
@@ -132,7 +143,7 @@ export function VideoInput({
             className="gap-1"
           >
             <Upload className="h-4 w-4" />
-            {locale === "zh" 
+            {locale === "zh"
               ? `上传视频${multiple && hasVideos ? "（追加）" : ""}`
               : `Upload Video${multiple && hasVideos ? " (Add)" : ""}`
             }
@@ -143,8 +154,8 @@ export function VideoInput({
       {/* 提示信息 */}
       {multiple && (
         <div className="text-xs text-gray-500">
-          {locale === "zh" 
-            ? "支持选择多个视频文件进行批量上传" 
+          {locale === "zh"
+            ? "支持选择多个视频文件进行批量上传"
             : "Select multiple video files for batch upload"
           }
         </div>

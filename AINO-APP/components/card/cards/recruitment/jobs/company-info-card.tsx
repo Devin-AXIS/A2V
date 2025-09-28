@@ -30,7 +30,7 @@ export function CompanyInfoCard({ data, className }: CompanyInfoCardProps) {
     return (
         <AppCard className={className}>
             <div className="p-4 flex items-center gap-4">
-                <Image src={`http://localhost:3007/${merged.logo}` || "/placeholder.svg"} alt={`${merged.name} logo`} width={48} height={48} className="rounded-lg bg-white p-1" />
+                <Image src={merged.logo || "/placeholder.svg"} alt={`${merged.name} logo`} width={48} height={48} className="rounded-lg bg-white p-1" />
                 <div>
                     <p className="font-bold text-gray-800">{merged.name}</p>
                     <p className="text-xs text-gray-500">{merged.description}</p>

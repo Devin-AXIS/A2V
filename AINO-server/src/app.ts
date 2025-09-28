@@ -28,6 +28,38 @@ import { databaseMiddleware } from "./middleware/database"
 
 const app = new Hono()
 
+const fileTypes = {
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".mp4": "video/mp4",
+  ".avi": "video/avi",
+  ".mov": "video/quicktime",
+  ".wmv": "video/x-ms-wmv",
+  ".flv": "video/x-flv",
+  ".webm": "video/webm",
+  ".mkv": "video/x-matroska",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".pdf": "application/pdf",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xls": "application/vnd.ms-excel",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".ppt": "application/vnd.ms-powerpoint",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".txt": "text/plain",
+  ".csv": "text/csv",
+  ".zip": "application/zip",
+  ".rar": "application/x-rar-compressed",
+  ".7z": "application/x-7z-compressed",
+  ".json": "application/json",
+  ".xml": "application/xml",
+}
+
 // Allowed origins for CORS (Studio / App dev servers)
 const allowedOrigins = new Set<string>([
   'http://localhost:3006',
@@ -167,10 +199,8 @@ app.get("/uploads/*", async (c) => {
     const ext = path.extname(filePath).toLowerCase()
     const type = ext === ".png" ? "image/png"
       : (ext === ".jpg" || ext === ".jpeg") ? "image/jpeg"
-        : ext === ".webp" ? "image/webp"
-          : ext === ".gif" ? "image/gif"
-            : ext === ".svg" ? "image/svg+xml"
-              : "application/octet-stream"
+        : fileTypes[ext] ? fileTypes[ext]
+          : "application/octet-stream"
     c.header("Content-Type", type)
     return c.body(buf)
   } catch (e) {
@@ -193,14 +223,30 @@ app.post("/api/upload", async (c) => {
       return c.json({ success: false, message: "file is required" }, 400)
     }
 
-    // 文件类型与大小简单校验（最大 10MB）
-    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"]
+    // 文件类型与大小校验（最大 50MB）
+    const allowed = [
+      // 图片类型
+      "image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif", "image/svg+xml",
+      // 视频类型
+      "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv",
+      // 音频类型
+      "audio/mp3", "audio/wav", "audio/ogg", "audio/m4a", "audio/aac",
+      // 文档类型
+      "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain", "text/csv",
+      // 压缩文件
+      "application/zip", "application/x-rar-compressed", "application/x-7z-compressed",
+      // 其他常见类型
+      "application/json", "application/xml"
+    ]
     // @ts-ignore size is available in Node File
     const fileSize = (file as any).size as number | undefined
     if (file.type && !allowed.includes(file.type)) {
       return c.json({ success: false, message: "unsupported file type" }, 400)
     }
-    if (fileSize && fileSize > 10 * 1024 * 1024) {
+    if (fileSize && fileSize > 50 * 1024 * 1024) {
       return c.json({ success: false, message: "file too large" }, 400)
     }
 
@@ -211,7 +257,27 @@ app.post("/api/upload", async (c) => {
     const ext = (() => {
       const m = (file.name || "").match(/\.([a-zA-Z0-9]+)$/)
       if (m) return `.${m[1].toLowerCase()}`
-      const map: Record<string, string> = { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif" }
+      const map: Record<string, string> = {
+        // 图片类型
+        "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif", "image/svg+xml": ".svg",
+        // 视频类型
+        "video/mp4": ".mp4", "video/avi": ".avi", "video/mov": ".mov", "video/wmv": ".wmv",
+        "video/flv": ".flv", "video/webm": ".webm", "video/mkv": ".mkv",
+        // 音频类型
+        "audio/mp3": ".mp3", "audio/wav": ".wav", "audio/ogg": ".ogg", "audio/m4a": ".m4a", "audio/aac": ".aac",
+        // 文档类型
+        "application/pdf": ".pdf", "application/msword": ".doc",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+        "application/vnd.ms-excel": ".xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+        "application/vnd.ms-powerpoint": ".ppt",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+        "text/plain": ".txt", "text/csv": ".csv",
+        // 压缩文件
+        "application/zip": ".zip", "application/x-rar-compressed": ".rar", "application/x-7z-compressed": ".7z",
+        // 其他类型
+        "application/json": ".json", "application/xml": ".xml"
+      }
       return map[file.type] || ""
     })()
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`
