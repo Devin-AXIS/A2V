@@ -13,6 +13,7 @@ import type {
     SemanticTokens,
     CardConfig
 } from "@/types"
+import { http } from "@/lib/request"
 
 // 导入所有配置
 import { defaultLayoutConfig, layoutPresets } from "@/config/layout-config"
@@ -457,33 +458,24 @@ export async function collectApiConfigs(): Promise<Record<string, any>> {
 
         // 采集应用配置
         try {
-            const appResponse = await fetch(`${baseUrl}/api/apps/default-app/manifest?state=published`)
-            if (appResponse.ok) {
-                const appData = await appResponse.json()
-                configs.app_manifest = appData
-            }
+            const appResponse = await http.get('/api/apps/default-app/manifest?state=published')
+            configs.app_manifest = appResponse
         } catch (error) {
             console.warn('⚠️ 应用配置API调用失败:', error)
         }
 
         // 采集页面配置
         try {
-            const pageResponse = await fetch(`${baseUrl}/api/page-configs`)
-            if (pageResponse.ok) {
-                const pageData = await pageResponse.json()
-                configs.page_configs = pageData
-            }
+            const pageResponse = await http.get('/api/page-configs')
+            configs.page_configs = pageResponse
         } catch (error) {
             console.warn('⚠️ 页面配置API调用失败:', error)
         }
 
         // 采集预览配置
         try {
-            const previewResponse = await fetch(`${baseUrl}/api/preview-manifests`)
-            if (previewResponse.ok) {
-                const previewData = await previewResponse.json()
-                configs.preview_configs = previewData
-            }
+            const previewResponse = await http.get('/api/preview-manifests')
+            configs.preview_configs = previewResponse
         } catch (error) {
             console.warn('⚠️ 预览配置API调用失败:', error)
         }

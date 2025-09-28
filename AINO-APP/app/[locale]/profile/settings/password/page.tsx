@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import axios from "axios"
+import { http } from '@/lib/request'
 import { AppCard } from "@/components/layout/app-card"
 import { AppHeader } from "@/components/navigation/app-header"
 
@@ -69,7 +69,7 @@ export default function PasswordChangePage() {
         || window.localStorage.getItem('aino_token')
         || ''
 
-      const res = await axios.post(`http://localhost:3007/api/application-users/change-password?applicationId=${applicationId}`,
+      const res = await http.post(`/api/application-users/change-password?applicationId=${applicationId}`,
         {
           phone_number: phoneNumber,
           old_password: oldPassword,
@@ -82,7 +82,7 @@ export default function PasswordChangePage() {
           }
         }
       )
-      const ok = res?.data?.success
+      const ok = res?.success
       if (ok) {
         setSuccess("密码修改成功")
         setOldPassword("")
@@ -93,7 +93,7 @@ export default function PasswordChangePage() {
           router.push(`/${locale}/profile/settings`)
         }, 800)
       } else {
-        setError(res?.data?.error || "修改密码失败")
+        setError(res?.error || "修改密码失败")
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "修改密码失败")

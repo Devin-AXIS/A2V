@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
-import axios from "axios"
+import { http } from "@/lib/request"
 import { AppHeader } from "@/components/navigation/app-header"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppCard } from "@/components/layout/app-card"
@@ -292,9 +292,11 @@ export default function EditProfilePage() {
   }
 
   const handleSkillsUpdate = (skills: string[]) => {
-    console.log(skills, 23232323)
+    (skills) => setUserProfile(prev => ({ ...prev, skills }))
+    if (user && user.extends && user.extends.skills) {
+      user.extends.skills = skills;
+    }
     handleSaveUserData("skills");
-    // (skills) => setUserProfile(prev => ({ ...prev, skills }))
   }
 
   const handleSaveUserData = async (type: string) => {
@@ -307,16 +309,16 @@ export default function EditProfilePage() {
 
     const body = { props: { [type]: user.extends[type] } };
     // const body = { [type]: user.extends[type] };
-    const res = await axios.patch(
-      `http://localhost:3007/api/records/${user.extends.__dirId}/${user.extends.recordId}`,
+    const res = await http.patch(
+      `/api/records/${user.extends.__dirId}/${user.extends.recordId}`,
       body,
       {
         headers: {
           "Authorization": `Bearer ${token}`
         },
       })
-    const data = await res.json()
-    if (!res.ok || !data?.success || !data?.url) {
+    const data = res
+    if (!data?.success || !data?.url) {
       toast({
         title: "更新失败",
         description: data?.message || "更新失败,请重试.",

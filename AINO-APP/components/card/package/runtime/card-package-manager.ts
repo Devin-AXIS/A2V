@@ -1,4 +1,4 @@
-import axios from "axios"
+import { http } from "@/lib/request"
 import { CardRegistry } from "../../core/registry"
 import type { CardPackageConfig } from "./card-package-config"
 import { CARD_PACKAGES } from "./card-package-config"

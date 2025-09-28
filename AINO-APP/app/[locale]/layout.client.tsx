@@ -10,6 +10,7 @@ import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import type { Locale } from "@/lib/dictionaries"
 import { usePathname } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
+import { http } from "@/lib/request"
 
 
 const inter = Inter({ subsets: ["latin"] })
@@ -76,10 +77,9 @@ export function LayoutClient({
         if (!appId) return
         try { if (typeof window !== 'undefined') localStorage.setItem('APP_ID', appId) } catch { }
 
-        const res = await fetch(`http://localhost:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
-        let json: any = null
-        try { json = await res.json() } catch { json = null }
-        if (!res.ok || !json) return
+        const response = await http.get(`/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
+        const json = response
+        if (!json) return
         const config = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json
         if (aborted) return
         try { if (typeof window !== 'undefined') localStorage.setItem('QUERY_STRING', window.location.search) } catch { }

@@ -3,8 +3,8 @@
 import React from "react"
 
 import type { ReactNode } from "react"
-import axios from 'axios';
 import { useState, useEffect, cloneElement, isValidElement, useMemo, useRef } from "react"
+import { http } from "@/lib/request"
 import { AppHeader } from "@/components/navigation/app-header"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { Button } from "@/components/ui/button"
@@ -231,13 +231,13 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
   const getAllModulesConfig = async () => {
     const appId = window.localStorage.getItem('APP_ID');
-    const { data } = await axios.get(`http://localhost:3007/api/applications/${appId}/modules`, {
+    const response = await http.get(`/api/applications/${appId}/modules`, {
       headers: {
         'Content-Type': 'application/json',
         "Authorization": `Bearer ${window.localStorage.getItem('aino_auth_token')}`
       },
     })
-    const { modules } = data.data
+    const { modules } = response.data
     setModuleConfigs(modules)
   }
 
@@ -248,10 +248,9 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   const getCardDisplayData = async () => {
     if (window !== undefined) {
       const appId = window.localStorage.getItem('APP_ID');
-      const res = await fetch(`http://localhost:3007/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
-      let json: any = null
-      try { json = await res.json() } catch { json = null }
-      if (!res.ok || !json) return
+      const response = await http.get(`/api/applications/${encodeURIComponent(String(appId))}?noAuth=true`)
+      const json = response
+      if (!json) return
       const { config } = ((json && typeof json === 'object' && 'data' in json) ? (json as any).data : json) || {};
       const qs = new URLSearchParams(window.location.search);
       const tab = qs.get('tab') || 0;
@@ -377,8 +376,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
       // 同步到后端（按 key 持久化）
       try {
-        fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`,
-          { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        http.put(`/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`, payload)
           .catch(() => { })
       } catch { }
     } catch (err) {
@@ -447,8 +445,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         setOverrideTick((v) => v + 1)
         // 同步到后端（按 key 持久化 APP_PAGE_{id}）
         try {
-          fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(key)}`,
-            { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) })
+          http.put(`/api/page-configs/key/${encodeURIComponent(key)}`, next)
             .catch(() => { })
         } catch { }
       } catch (err) {
@@ -520,55 +517,51 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         // 若本地无数据，尝试从后端拉取
         (async () => {
           try {
-            const res = await fetch(`http://localhost:3007/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
-            if (res.ok) {
-              const j = await res.json().catch(() => null)
-              const data = j && (j.data ?? j)
-              if (data && Array.isArray(data.cards)) {
-                const parsed = data
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)) } catch { }
-                const savedList: Array<{ id?: string; type: string }> = parsed.cards.map((c: any) =>
-                  typeof c === "string" ? { type: c } : { id: c.id, type: c.type },
-                )
-                if (parsed.themes && typeof parsed.themes === "object") {
-                  try {
-                    Object.entries(parsed.themes as Record<string, any>).forEach(([cardId, theme]) => {
-                      const value = JSON.stringify(theme)
-                      try { localStorage.setItem(cardId, value) } catch { }
-                      if (cardId.startsWith("card_theme_")) {
-                        const newKey = cardId.replace(/^card_theme_/, "")
-                        try { localStorage.setItem(newKey, value) } catch { }
-                      }
-                    })
-                  } catch { }
+            const response = await http.get(`/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
+            const data = response
+            if (data && Array.isArray(data.cards)) {
+              const parsed = data
+              try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)) } catch { }
+              const savedList: Array<{ id?: string; type: string }> = parsed.cards.map((c: any) =>
+                typeof c === "string" ? { type: c } : { id: c.id, type: c.type },
+              )
+              if (parsed.themes && typeof parsed.themes === "object") {
+                try {
+                  Object.entries(parsed.themes as Record<string, any>).forEach(([cardId, theme]) => {
+                    const value = JSON.stringify(theme)
+                    try { localStorage.setItem(cardId, value) } catch { }
+                    if (cardId.startsWith("card_theme_")) {
+                      const newKey = cardId.replace(/^card_theme_/, "")
+                      try { localStorage.setItem(newKey, value) } catch { }
+                    }
+                  })
+                } catch { }
+              }
+              if (parsed.dataSources && typeof parsed.dataSources === 'object') {
+                const restoredLabels: Record<string, string> = {}
+                try {
+                  Object.entries(parsed.dataSources as Record<string, any>).forEach(([cardId, info]) => {
+                    try { localStorage.setItem(`CARD_DS_${cardId}`, JSON.stringify(info)) } catch { }
+                    const label = (info && (info as any).label) || ""
+                    if (label) restoredLabels[cardId] = String(label)
+                  })
+                } catch { }
+                if (Object.keys(restoredLabels).length > 0) {
+                  setSelectedDataSourceLabels((prev) => ({ ...prev, ...restoredLabels }))
                 }
-                if (parsed.dataSources && typeof parsed.dataSources === 'object') {
-                  const restoredLabels: Record<string, string> = {}
-                  try {
-                    Object.entries(parsed.dataSources as Record<string, any>).forEach(([cardId, info]) => {
-                      try { localStorage.setItem(`CARD_DS_${cardId}`, JSON.stringify(info)) } catch { }
-                      const label = (info && (info as any).label) || ""
-                      if (label) restoredLabels[cardId] = String(label)
-                    })
-                  } catch { }
-                  if (Object.keys(restoredLabels).length > 0) {
-                    setSelectedDataSourceLabels((prev) => ({ ...prev, ...restoredLabels }))
-                  }
-                }
-                const restored = recreateWorkspaceCardsFromSaved(savedList)
-                if (restored.length > 0) {
-                  setCardsForKey(STORAGE_KEY, restored)
-                  setIsEditing(false)
-                  return
-                }
+              }
+              const restored = recreateWorkspaceCardsFromSaved(savedList)
+              if (restored.length > 0) {
+                setCardsForKey(STORAGE_KEY, restored)
+                setIsEditing(false)
+                return
               }
             }
           } catch { }
-          setCards([])
-          setIsEditing(true)
         })()
         return
       }
+
       const parsed = JSON.parse(raw)
       if (parsed && Array.isArray(parsed.cards)) {
         const savedList: Array<{ id?: string; type: string }> = parsed.cards.map((c: any) =>

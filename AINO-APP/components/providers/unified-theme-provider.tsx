@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, typ
 import type { UnifiedThemeContextType, UnifiedThemePreset, FontColorConfig, ComponentColorConfig, ChartColorConfig } from "@/types"
 import { convertTokenValueToCSSValue, updateCSSVariable } from "@/lib/color-variable-mapper"
 import { unifiedThemePresets, getThemePreset } from "@/config/unified-theme-presets"
+import { http } from "@/lib/request"
 
 const UnifiedThemeContext = createContext<UnifiedThemeContextType | undefined>(undefined)
 
@@ -46,19 +47,17 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
         const appId = getAppId()
         if (appId) {
           const key = `unified-theme-${appId}`
-          const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(key)}`
-          const res = await fetch(url, { method: "GET" })
-          if (res.ok) {
-            const body = await res.json().catch(() => null as any)
-            const data = body?.data ?? body
-            const themeName: string | undefined = data?.themeName || data?.name || (typeof data === "string" ? data : undefined)
-            if (themeName) {
-              const serverTheme = getThemePreset(themeName)
-              if (!cancelled && serverTheme) {
-                setCurrentTheme(serverTheme)
-                setIsHydrated(true)
-                return
-              }
+          const url = `/api/page-configs/key/${encodeURIComponent(key)}`
+          const response = await http.get(url)
+          const body = response
+          const data = body?.data ?? body
+          const themeName: string | undefined = data?.themeName || data?.name || (typeof data === "string" ? data : undefined)
+          if (themeName) {
+            const serverTheme = getThemePreset(themeName)
+            if (!cancelled && serverTheme) {
+              setCurrentTheme(serverTheme)
+              setIsHydrated(true)
+              return
             }
           }
         }
@@ -110,12 +109,8 @@ export function UnifiedThemeProvider({ children }: { children: ReactNode }) {
         const appId = getAppId()
         if (!appId) return
         const key = `unified-theme-${appId}`
-        const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(key)}`
-        await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ themeName: currentTheme.name, updatedAt: Date.now() })
-        }).catch(() => { })
+        const url = `/api/page-configs/key/${encodeURIComponent(key)}`
+        await http.put(url, { themeName: currentTheme.name, updatedAt: Date.now() }).catch(() => { })
       } catch (e) {
         // ignore server save error; localStorage 已作为回退
       }

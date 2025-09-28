@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { http } from "@/lib/request"
 import { CardRegistry } from "../core/registry"
 
 export const dataInputs = {
@@ -167,23 +167,23 @@ export const setDatas = async () => {
             let realData;
             let resultData;
             if (type === "table") {
-                const { data } = await axios.get(`http://localhost:3007/api/records/${dirId}?noAuth=true`);
-                realData = data.data;
+                const response = await http.get(`/api/records/${dirId}?noAuth=true`);
+                realData = response.data;
                 resultData = [];
-                realData.forEach(item => {
+                realData.forEach((item, realIndex) => {
                     const currentRealData = {};
                     Object.keys(dataMapping).forEach(key => {
                         if (key.indexOf('[].') > -1) {
                             const path = key.split('[].');
-                            if (!currentRealData) currentRealData = [];
+                            if (!currentRealData[path[0]]) currentRealData[path[0]] = [];
                             const mappingPath = dataMapping[key].split('.');
                             item[mappingPath[0]].forEach((item, index) => {
                                 const aggregationData = {};
                                 item.images.concat(item.numbers).concat(item.texts).forEach(item2 => {
                                     aggregationData[item2.id] = item2;
                                 })
-                                if (!currentRealData[index]) currentRealData[index] = {};
-                                currentRealData[index][path[1]] = aggregationData[mappingPath[1]].value;
+                                if (!currentRealData[path[0]][index]) currentRealData[path[0]][index] = {};
+                                currentRealData[path[0]][index][path[1]] = aggregationData[mappingPath[1]].value;
                             })
                         } else {
                             currentRealData[key] = item[dataMapping[key]]
@@ -192,8 +192,8 @@ export const setDatas = async () => {
                     resultData.push(currentRealData)
                 })
             } else if (type === 'record') {
-                const { data } = await axios.get(`http://localhost:3007/api/records/${dirId}/${recordId}?noAuth=true`)
-                realData = data.data
+                const response = await http.get(`/api/records/${dirId}/${recordId}?noAuth=true`)
+                realData = response
                 resultData = {};
                 Object.keys(dataMapping).forEach(key => {
                     if (key.indexOf('[].') > -1) {

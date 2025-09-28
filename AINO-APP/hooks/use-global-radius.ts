@@ -4,6 +4,7 @@ import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useDesignTokens } from '@/components/providers/design-tokens-provider'
 import type { GlobalRadiusTokens } from '@/types'
+import { http } from '@/lib/request'
 
 export function useGlobalRadius() {
   const { tokens, updateTokens } = useDesignTokens()
@@ -37,7 +38,7 @@ export function useGlobalRadius() {
     return 'global'
   }, [pathname])
 
-  const STORAGE_KEY = useMemo(() => (appKey ? `global-radius-${appKey}` : null), [appKey])
+  const STORAGE_KEY = null;//useMemo(() => (appKey ? `global-radius-${appKey}` : null), [appKey])
   const hydratedRef = useRef(false)
   const serverDataLoadedRef = useRef(false)
 
@@ -171,12 +172,9 @@ export function useGlobalRadius() {
     const load = async () => {
       try {
         if (!STORAGE_KEY) return
-        const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
-        const res = await fetch(url, { method: 'GET' })
-        if (!res.ok) {
-          return
-        }
-        const body = await res.json().catch(() => null as any)
+        const url = `/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
+        const response = await http.get(url)
+        const body = response
         const data = body?.data ?? body
         const serverRadius: GlobalRadiusTokens | undefined = data?.globalRadius || data?.radius || data
         if (!serverRadius || typeof serverRadius !== 'object') return
@@ -257,14 +255,10 @@ export function useGlobalRadius() {
   const saveToServer = useCallback(async (payload?: GlobalRadiusTokens) => {
     try {
       if (!STORAGE_KEY) return
-      const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
+      const url = `/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
       const body = { globalRadius: payload || tokens?.globalRadius, updatedAt: Date.now() }
       console.log('[GlobalRadius] PUT (immediate)', { url, key: STORAGE_KEY, body })
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).catch(() => { })
+      await http.put(url, body).catch(() => { })
     } catch {
       // 忽略保存错误
     }

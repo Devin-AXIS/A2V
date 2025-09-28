@@ -7,6 +7,7 @@ import { CardRegistry } from "../../core/registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { getRandomHexColor } from "@/lib/utils"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { isType } from "@/components/card/utils"
 
 interface JobExperienceRatioCardProps {
   disableLocalTheme?: boolean
@@ -27,8 +28,8 @@ export default function JobExperienceRatioCard({ disableLocalTheme }: any) {
   const { key: providedKey } = useLocalThemeKey()
 
   const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
-
-  const hasColorList = data.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || getRandomHexColor() }));
+  const renderData = isType(data) === 'Array' ? data[0] : data;
+  const hasColorList = renderData.list.map((item, index) => ({ ...item, value: Number(item.value), color: item.color || getRandomHexColor() }));
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">
       <div className="space-y-2">

@@ -1,5 +1,5 @@
 "use client"
-
+import { isType } from "@/components/card/utils"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
@@ -29,7 +29,8 @@ export function ApplyResumeCard({ data, onApply, className }: ApplyResumeCardPro
     }
 
     const { key: providedKey } = useLocalThemeKey()
-    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultApplyResumeData)
+    let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultApplyResumeData)
+    merged = isType(merged) === "Array" ? merged[0] : merged;
 
     return (
         <AppCard className={className}>

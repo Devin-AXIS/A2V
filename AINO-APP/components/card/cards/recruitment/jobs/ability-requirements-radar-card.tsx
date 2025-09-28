@@ -4,6 +4,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { AbilityRequirementsRadar } from "@/components/data-display/ability-requirements-radar"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { isType } from "@/components/card/utils"
 
 interface AbilityRequirementsRadarCardProps {
     disableLocalTheme?: boolean
@@ -35,7 +36,8 @@ const defaultData: AbilityRequirementsRadarData = {
 
 export function AbilityRequirementsRadarCard({ disableLocalTheme, className }: AbilityRequirementsRadarCardProps) {
     const { key: providedKey } = useLocalThemeKey()
-    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+    let { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+    data = isType(data) === "Array" ? data[0] : data;
     data.chartData = data.chartData.map(item => ({ ...item, value: Number(item.value), fullMark: Number(item.fullMark) }))
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>

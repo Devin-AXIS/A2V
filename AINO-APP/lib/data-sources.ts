@@ -6,6 +6,8 @@
  * - Fetch data with basic error handling
  */
 
+import { http } from "@/lib/request"
+
 export type DataSourceAuthType = "server" | "appUser" | undefined
 
 export interface ManifestLike {
@@ -97,13 +99,14 @@ export async function queryDataSource<T = any>(
         if (token) headers['Authorization'] = `Bearer ${token}`
     }
 
-    const res = await fetch(urlObj.toString(), {
-        method,
+    const response = await http.request({
+        url: urlObj.toString(),
+        method: method as any,
         headers,
     })
-    const body = await res.json().catch(() => ({}))
-    if (!res.ok) {
-        const message = (body && (body.message || body.error)) || `Request failed: ${res.status}`
+    const body = response
+    if (!response.success) {
+        const message = (body && (body.message || body.error)) || `Request failed: ${response.code}`
         throw new Error(message)
     }
     const payload = (body && (body.data ?? body))

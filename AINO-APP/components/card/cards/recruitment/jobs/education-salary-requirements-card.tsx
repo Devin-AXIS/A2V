@@ -4,6 +4,8 @@ import { AppCard } from "@/components/layout/app-card"
 import { PercentageRankingCard } from "@/components/data-display/percentage-ranking-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { isType } from "@/components/card/utils"
+import { getRandomHexColor } from "@/lib/utils"
 
 interface EducationSalaryRecord {
     label: string
@@ -39,8 +41,9 @@ export function EducationSalaryRequirementsCard({ disableLocalTheme, className }
     const { key: providedKey } = useLocalThemeKey()
     const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
 
-    let renderData = data.data;
+    let renderData = isType(data) === 'Array' ? data[0]?.data : data.data;
     if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
+    renderData = renderData.map(d => ({ ...d, color: getRandomHexColor() }))
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">
@@ -49,7 +52,7 @@ export function EducationSalaryRequirementsCard({ disableLocalTheme, className }
             <PercentageRankingCard
                 title=""
                 description={data.description}
-                data={data.data}
+                data={renderData || []}
                 columns={{ label: "学历要求", value: "平均薪资", percentage: "占比" }}
                 showTitle={false}
             />

@@ -1,5 +1,5 @@
 import type { CardConfig, CardAction } from "@/types"
-import axios from 'axios';
+import { http } from "@/lib/request"
 import JobExperienceRatioCard from "../cards/recruitment/job-experience-ratio-card"
 import JobProspectTrendCard from "../cards/analytics/job-prospect-trend-card"
 import MonthlyJobGrowthCard from "../cards/analytics/monthly-job-growth-card"
@@ -226,33 +226,33 @@ CardRegistry.register({
   },
 })
 
-CardRegistry.register({
-  name: "job-prospect-trend",
-  displayName: "就业前景趋势",
-  category: "招聘",
-  type: "chart", // 添加卡片类型
-  component: JobProspectTrendCard,
-  businessFlow: "就业前景趋势分析，展示月度新增职位和排名变化",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "就业前景趋势卡片，显示职位增长趋势和市场排名",
-  },
-})
+// CardRegistry.register({
+//   name: "job-prospect-trend",
+//   displayName: "就业前景趋势",
+//   category: "招聘",
+//   type: "chart", // 添加卡片类型
+//   component: JobProspectTrendCard,
+//   businessFlow: "就业前景趋势分析，展示月度新增职位和排名变化",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "就业前景趋势卡片，显示职位增长趋势和市场排名",
+//   },
+// })
 
-CardRegistry.register({
-  name: "monthly-job-growth",
-  displayName: "月度职位增长",
-  category: "招聘",
-  type: "chart", // 添加卡片类型
-  component: MonthlyJobGrowthCard,
-  businessFlow: "月度职位增长统计，展示职位数量的时间变化趋势",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "月度职位增长卡片，显示职位增长的时间序列数据",
-  },
-})
+// CardRegistry.register({
+//   name: "monthly-job-growth",
+//   displayName: "月度职位增长",
+//   category: "招聘",
+//   type: "chart", // 添加卡片类型
+//   component: MonthlyJobGrowthCard,
+//   businessFlow: "月度职位增长统计，展示职位数量的时间变化趋势",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "月度职位增长卡片，显示职位增长的时间序列数据",
+//   },
+// })
 
 CardRegistry.register({
   name: "job-posting",
@@ -367,19 +367,19 @@ CardRegistry.register({
   },
 })
 
-CardRegistry.register({
-  name: "company-ranking",
-  displayName: "企业排行",
-  category: "招聘",
-  type: "list",
-  component: CompanyRankingCard,
-  businessFlow: "新兴业务领域相关企业排行展示",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "企业排行卡片",
-  },
-})
+// CardRegistry.register({
+//   name: "company-ranking",
+//   displayName: "企业排行",
+//   category: "招聘",
+//   type: "list",
+//   component: CompanyRankingCard,
+//   businessFlow: "新兴业务领域相关企业排行展示",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "企业排行卡片",
+//   },
+// })
 
 CardRegistry.register({
   name: "ability-requirements-radar",
@@ -395,47 +395,47 @@ CardRegistry.register({
   },
 })
 
-CardRegistry.register({
-  name: "core-skills-mastery",
-  displayName: "核心技能掌握度",
-  category: "招聘",
-  type: "chart",
-  component: CoreSkillsMasteryCard,
-  businessFlow: "核心技能掌握程度可视化展示",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "核心技能掌握度包装卡片",
-  },
-})
+// CardRegistry.register({
+//   name: "core-skills-mastery",
+//   displayName: "核心技能掌握度",
+//   category: "招聘",
+//   type: "chart",
+//   component: CoreSkillsMasteryCard,
+//   businessFlow: "核心技能掌握程度可视化展示",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "核心技能掌握度包装卡片",
+//   },
+// })
 
-CardRegistry.register({
-  name: "basic-ability-requirements",
-  displayName: "基础能力要求",
-  category: "招聘",
-  type: "list",
-  component: BasicAbilityRequirementsCard,
-  businessFlow: "基础能力要求清单展示",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "基础能力要求包装卡片",
-  },
-})
+// CardRegistry.register({
+//   name: "basic-ability-requirements",
+//   displayName: "基础能力要求",
+//   category: "招聘",
+//   type: "list",
+//   component: BasicAbilityRequirementsCard,
+//   businessFlow: "基础能力要求清单展示",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "基础能力要求包装卡片",
+//   },
+// })
 
-CardRegistry.register({
-  name: "education-background",
-  displayName: "教育背景分布",
-  category: "招聘",
-  type: "chart",
-  component: EducationBackgroundCard,
-  businessFlow: "岗位教育背景分布展示",
-  developer: {
-    name: "HR Analytics System",
-    version: "1.0.0",
-    description: "教育背景分布包装卡片",
-  },
-})
+// CardRegistry.register({
+//   name: "education-background",
+//   displayName: "教育背景分布",
+//   category: "招聘",
+//   type: "chart",
+//   component: EducationBackgroundCard,
+//   businessFlow: "岗位教育背景分布展示",
+//   developer: {
+//     name: "HR Analytics System",
+//     version: "1.0.0",
+//     description: "教育背景分布包装卡片",
+//   },
+// })
 
 
 

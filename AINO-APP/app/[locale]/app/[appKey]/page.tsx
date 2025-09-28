@@ -7,6 +7,7 @@ import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { PageDataProvider } from "@/components/providers/page-data-context"
 import { AppContextProvider } from "@/components/providers/app-context"
 import { setDatas } from "@/components/card/config/set-datas"
+import { http } from "@/lib/request"
 
 export default function AppRuntimePage() {
     const params = useParams<{ locale: string; appKey: string }>()
@@ -30,9 +31,9 @@ export default function AppRuntimePage() {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`http://localhost:3007/api/apps/${encodeURIComponent(String(appKey))}/manifest?state=published`)
-                const data = await res.json()
-                if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+                const response = await http.get(`/api/apps/${encodeURIComponent(String(appKey))}/manifest?state=published`)
+                const data = response
+                if (!data?.success) throw new Error(data?.message || "failed")
                 if (!canceled) setManifest(data.data?.manifest || data.data)
             } catch (e: any) {
                 if (!canceled) setError(e?.message || "error")

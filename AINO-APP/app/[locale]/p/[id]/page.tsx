@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import type { ContentNavConfig } from "@/components/navigation/content-navigation"
 import { setDatas } from "@/components/card/config/set-datas"
+import { http } from "@/lib/request"
 
 export default function MobileDynamicPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -46,10 +47,9 @@ export default function MobileDynamicPage() {
       } else if (cfgId) {
         (async () => {
           try {
-            const res = await fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
-            const j = await res.json().catch(() => null)
-            const data = j && (j.data ?? j)
-            if (res.ok && data) {
+            const response = await http.get(`/api/page-configs/${encodeURIComponent(cfgId)}`)
+            const data = response
+            if (data) {
               const defaultOptions = { showHeader: true, showBottomNav: false, showBack: false }
               const mergedOptions = { ...defaultOptions, ...(data?.options || {}) }
               localStorage.setItem(appPageKey, JSON.stringify({ ...data, options: mergedOptions }))

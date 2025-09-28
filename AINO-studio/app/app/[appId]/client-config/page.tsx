@@ -357,13 +357,13 @@ export default function ClientConfigPage() {
     mappings.forEach(({ mapConfig, table }) => {
       const { card, inputs, dataSource } = mapConfig;
       const { fields } = table.config;
-      let cardConfig = cardConfigsRes[card.packageId];
+      let cardConfigs = cardConfigsRes[card.packageId];
       if (card.packageId.indexOf("Sub") !== -1) {
-        cardConfig = cardConfig.find(c => c.cardId === card.type);
+        const cardConfig = cardConfigs.find(c => c.cardId === card.type);
         if (cardConfig) {
           cardConfig.dataConfig.forEach(({ key, label, type, child }, index) => {
             if (child) {
-              const currentFields = fields[index];
+              const currentFields = fields.find(f => f.label === label && f.type === type);
               if (currentFields) {
                 const currentFieldId = currentFields.key;
                 child.forEach((item, childIndex) => {

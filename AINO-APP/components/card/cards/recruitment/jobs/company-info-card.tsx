@@ -1,5 +1,5 @@
 "use client"
-
+import { isType } from "@/components/card/utils"
 import { AppCard } from "@/components/layout/app-card"
 import Image from "next/image"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
@@ -24,11 +24,13 @@ const defaultCompanyInfoData: CompanyInfoData = {
 
 export function CompanyInfoCard({ data, className }: CompanyInfoCardProps) {
     const { key: providedKey } = useLocalThemeKey()
-    const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultCompanyInfoData)
+    let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultCompanyInfoData)
+    merged = isType(merged) === "Array" ? merged[0] : merged;
+    console.log(merged, 23232323)
     return (
         <AppCard className={className}>
             <div className="p-4 flex items-center gap-4">
-                <Image src={merged.logo || "/placeholder.svg"} alt={`${merged.name} logo`} width={48} height={48} className="rounded-lg bg-white p-1" />
+                <Image src={`http://localhost:3007/${merged.logo}` || "/placeholder.svg"} alt={`${merged.name} logo`} width={48} height={48} className="rounded-lg bg-white p-1" />
                 <div>
                     <p className="font-bold text-gray-800">{merged.name}</p>
                     <p className="text-xs text-gray-500">{merged.description}</p>
