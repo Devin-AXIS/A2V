@@ -124,8 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
 
-      console.log(grades)
-
       user = {
         id: Date.now().toString(),
         phone: data.phone,
@@ -139,7 +137,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extends: { ...data },
       }
       MOCK_USERS.push(user)
-      console.log(user, 23232323)
 
       // 生成模拟token
       const token = user?.extends?.token//`mock_token_${Date.now()}`

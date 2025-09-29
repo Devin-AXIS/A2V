@@ -78,7 +78,7 @@ export function RelatedJobsListCard({
   // 优先使用传入的 jobs 数据，否则使用注册数据
   let renderData = jobs || realData;
   if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
-  
+
   // 调试数据
   console.log('相关岗位数据:', renderData)
   console.log('传入的jobs参数:', jobs)

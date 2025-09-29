@@ -64,7 +64,7 @@ const createAxiosInstance = (): AxiosInstance => {
             if (error.response?.status === 401) {
                 // Unauthorized - redirect to login
                 if (typeof window !== 'undefined') {
-                    localStorage.removeItem('token');
+                    localStorage.removeItem('aino_auth_token');
                     window.location.href = '/auth/login';
                 }
             }
