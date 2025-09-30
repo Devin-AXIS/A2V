@@ -1,8 +1,18 @@
-import bundleAnalyzer from '@next/bundle-analyzer'
+// 条件导入 bundle analyzer，避免生产环境依赖问题
+let withBundleAnalyzer = (config) => config
 
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-})
+// 检查是否启用分析且包可用
+if (process.env.ANALYZE === 'true') {
+  try {
+    // 使用动态导入避免生产环境依赖问题
+    const bundleAnalyzer = await import('@next/bundle-analyzer')
+    withBundleAnalyzer = bundleAnalyzer.default({
+      enabled: true,
+    })
+  } catch (error) {
+    console.warn('Bundle analyzer not available, using default config')
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
