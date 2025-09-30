@@ -12,7 +12,7 @@ import path from 'path'
 // 数据库连接配置
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
+    port: process.env.DB_PORT || 5433,
     database: process.env.DB_NAME || 'aino',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'password',
