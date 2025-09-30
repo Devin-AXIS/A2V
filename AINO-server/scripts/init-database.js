@@ -191,36 +191,40 @@ async function initDatabase() {
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
 
-        // 4. field_categories 表
+        // 4. field_categories 表（与 src/db/schema.ts 对齐）
         await ensureTableExists('field_categories', `
         CREATE TABLE field_categories (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             application_id UUID NOT NULL,
+            directory_id UUID NOT NULL,
             name TEXT NOT NULL,
             description TEXT,
-            icon TEXT,
-            sort_order INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT now(),
-            updated_at TIMESTAMP DEFAULT now(),
-            created_by UUID
+            "order" INTEGER DEFAULT 0,
+            enabled BOOLEAN DEFAULT true,
+            system BOOLEAN DEFAULT false,
+            predefined_fields JSONB DEFAULT '[]'::jsonb,
+            created_at TIMESTAMP DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP DEFAULT now() NOT NULL
         )
     `, [
             'ALTER TABLE field_categories ADD CONSTRAINT field_categories_pkey PRIMARY KEY (id)',
             'ALTER TABLE field_categories ADD CONSTRAINT field_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
-            'ALTER TABLE field_categories ADD CONSTRAINT field_categories_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)'
+            'ALTER TABLE field_categories ADD CONSTRAINT field_categories_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_field_categories_app ON field_categories (application_id)',
-            'CREATE INDEX idx_field_categories_created_at ON field_categories (created_at)',
-            'CREATE INDEX idx_field_categories_sort ON field_categories (sort_order)'
+            'CREATE INDEX field_categories_created_at_idx ON field_categories (created_at)',
+            'CREATE INDEX field_categories_app_dir_idx ON field_categories (application_id, directory_id)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
+            { name: 'directory_id', sql: 'directory_id UUID NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
             { name: 'description', sql: 'description TEXT' },
-            { name: 'icon', sql: 'icon TEXT' },
-            { name: 'sort_order', sql: 'sort_order INTEGER DEFAULT 0' },
-            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
-            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
-            { name: 'created_by', sql: 'created_by UUID' }
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'enabled', sql: 'enabled BOOLEAN DEFAULT true' },
+            { name: 'system', sql: 'system BOOLEAN DEFAULT false' },
+            {
+                name: 'predefined_fields', sql: 'predefined_fields JSONB DEFAULT '\''[]'\'':: jsonb' },
+            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now() NOT NULL' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now() NOT NULL' }
         ])
 
         // 5. field_definitions 表
