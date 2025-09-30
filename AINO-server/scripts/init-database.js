@@ -89,9 +89,11 @@ async function initDatabase() {
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             email TEXT NOT NULL,
             name TEXT NOT NULL,
-            password_hash TEXT,
+            password TEXT NOT NULL,
             avatar TEXT,
-            roles JSONB DEFAULT '[]'::jsonb,
+            roles TEXT[] DEFAULT ARRAY['user'],
+            status TEXT DEFAULT 'active',
+            last_login_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT now(),
             updated_at TIMESTAMP DEFAULT now()
         )
@@ -100,13 +102,16 @@ async function initDatabase() {
             'ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email)'
         ], [
             'CREATE INDEX idx_users_email ON users (email)',
-            'CREATE INDEX idx_users_created_at ON users (created_at)'
+            'CREATE INDEX idx_users_created_at ON users (created_at)',
+            'CREATE INDEX idx_users_status ON users (status)'
         ], [
             { name: 'email', sql: 'email TEXT NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
-            { name: 'password_hash', sql: 'password_hash TEXT' },
+            { name: 'password', sql: 'password TEXT NOT NULL' },
             { name: 'avatar', sql: 'avatar TEXT' },
-            { name: 'roles', sql: 'roles JSONB DEFAULT \'[]\'::jsonb' },
+            { name: 'roles', sql: 'roles TEXT[] DEFAULT ARRAY[\'user\']' },
+            { name: 'status', sql: 'status TEXT DEFAULT \'active\'' },
+            { name: 'last_login_at', sql: 'last_login_at TIMESTAMP' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
@@ -298,10 +303,10 @@ async function initDatabase() {
             'CREATE INDEX idx_modules_type ON modules (type)',
             'CREATE INDEX idx_modules_created_at ON modules (created_at)'
         ], [
-            { name: 'key', sql: 'key TEXT NOT NULL' },
+            { name: 'key', sql: 'key TEXT DEFAULT \'default-key\'' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
             { name: 'description', sql: 'description TEXT' },
-            { name: 'version', sql: 'version TEXT NOT NULL' },
+            { name: 'version', sql: 'version TEXT DEFAULT \'1.0.0\'' },
             { name: 'type', sql: 'type TEXT NOT NULL' },
             { name: 'config', sql: 'config JSONB DEFAULT \'{}\'::jsonb' },
             { name: 'manifest', sql: 'manifest JSONB DEFAULT \'{}\'::jsonb' },
@@ -358,7 +363,7 @@ async function initDatabase() {
         CREATE TABLE application_users (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             application_id UUID NOT NULL,
-            user_id UUID NOT NULL,
+            user_id UUID,
             role TEXT NOT NULL DEFAULT 'user',
             permissions JSONB DEFAULT '{}'::jsonb,
             created_at TIMESTAMP DEFAULT now(),
@@ -367,8 +372,7 @@ async function initDatabase() {
     `, [
             'ALTER TABLE application_users ADD CONSTRAINT application_users_pkey PRIMARY KEY (id)',
             'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
-            'ALTER TABLE application_users ADD CONSTRAINT application_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE',
-            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_user_id_key UNIQUE (application_id, user_id)'
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE'
         ], [
             'CREATE INDEX idx_application_users_app ON application_users (application_id)',
             'CREATE INDEX idx_application_users_user ON application_users (user_id)',
@@ -376,7 +380,7 @@ async function initDatabase() {
             'CREATE INDEX idx_application_users_created_at ON application_users (created_at)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
-            { name: 'user_id', sql: 'user_id UUID NOT NULL' },
+            { name: 'user_id', sql: 'user_id UUID' },
             { name: 'role', sql: 'role TEXT NOT NULL DEFAULT \'user\'' },
             { name: 'permissions', sql: 'permissions JSONB DEFAULT \'{}\'::jsonb' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
