@@ -122,29 +122,39 @@ async function initDatabase() {
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             name TEXT NOT NULL,
             description TEXT,
-            icon TEXT,
+            slug TEXT NOT NULL,
+            owner_id UUID NOT NULL,
             status TEXT DEFAULT 'active',
+            template TEXT DEFAULT 'blank',
             config JSONB DEFAULT '{}'::jsonb,
+            database_config JSONB DEFAULT '{}'::jsonb,
+            is_public BOOLEAN DEFAULT false,
+            version TEXT DEFAULT '1.0.0',
             created_at TIMESTAMP DEFAULT now(),
-            updated_at TIMESTAMP DEFAULT now(),
-            created_by UUID
+            updated_at TIMESTAMP DEFAULT now()
         )
     `, [
             'ALTER TABLE applications ADD CONSTRAINT applications_pkey PRIMARY KEY (id)',
-            'ALTER TABLE applications ADD CONSTRAINT applications_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)'
+            'ALTER TABLE applications ADD CONSTRAINT applications_slug_key UNIQUE (slug)',
+            'ALTER TABLE applications ADD CONSTRAINT applications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES users(id)'
         ], [
-            'CREATE INDEX idx_applications_created_by ON applications (created_by)',
+            'CREATE INDEX idx_applications_owner_id ON applications (owner_id)',
             'CREATE INDEX idx_applications_created_at ON applications (created_at)',
-            'CREATE INDEX idx_applications_status ON applications (status)'
+            'CREATE INDEX idx_applications_status ON applications (status)',
+            'CREATE INDEX applications_owner_status_idx ON applications (owner_id, status)'
         ], [
             { name: 'name', sql: 'name TEXT NOT NULL' },
             { name: 'description', sql: 'description TEXT' },
-            { name: 'icon', sql: 'icon TEXT' },
+            { name: 'slug', sql: 'slug TEXT NOT NULL' },
+            { name: 'owner_id', sql: 'owner_id UUID NOT NULL' },
             { name: 'status', sql: 'status TEXT DEFAULT \'active\'' },
+            { name: 'template', sql: 'template TEXT DEFAULT \'blank\'' },
             { name: 'config', sql: 'config JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'database_config', sql: 'database_config JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'is_public', sql: 'is_public BOOLEAN DEFAULT false' },
+            { name: 'version', sql: 'version TEXT DEFAULT \'1.0.0\'' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
-            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
-            { name: 'created_by', sql: 'created_by UUID' }
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
 
         // 3. directories 表
