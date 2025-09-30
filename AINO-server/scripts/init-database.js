@@ -221,8 +221,7 @@ async function initDatabase() {
             { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
             { name: 'enabled', sql: 'enabled BOOLEAN DEFAULT true' },
             { name: 'system', sql: 'system BOOLEAN DEFAULT false' },
-            {
-                name: 'predefined_fields', sql: 'predefined_fields JSONB DEFAULT '\''[]'\'':: jsonb' },
+            { name: 'predefined_fields', sql: 'predefined_fields JSONB DEFAULT \'[]\'::jsonb' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now() NOT NULL' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now() NOT NULL' }
         ])
