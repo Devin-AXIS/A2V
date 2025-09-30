@@ -1,18 +1,18 @@
 {
   "/_not-found/page": "/_not-found",
-  "/app/[appId]/modules/page": "/app/[appId]/modules",
   "/app/[appId]/page": "/app/[appId]",
-  "/app/[appId]/settings/page": "/app/[appId]/settings",
+  "/app/[appId]/modules/page": "/app/[appId]/modules",
+  "/debug/page": "/debug",
   "/app/[appId]/client-config/page": "/app/[appId]/client-config",
   "/app/[appId]/auth-test/page": "/app/[appId]/auth-test",
-  "/page": "/",
+  "/app/[appId]/settings/page": "/app/[appId]/settings",
   "/forgot-password/page": "/forgot-password",
-  "/simple-test/page": "/simple-test",
-  "/debug/page": "/debug",
-  "/test-country/page": "/test-country",
   "/login/page": "/login",
-  "/test-api-integration/page": "/test-api-integration",
   "/register/page": "/register",
+  "/test-api-integration/page": "/test-api-integration",
+  "/simple-test/page": "/simple-test",
+  "/test-country/page": "/test-country",
   "/test-modules/page": "/test-modules",
-  "/test-api/page": "/test-api"
+  "/test-api/page": "/test-api",
+  "/page": "/"
 }
