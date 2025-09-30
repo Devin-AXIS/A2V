@@ -10,7 +10,7 @@ export default function DebugPage() {
     try {
       setResult("测试直接 fetch...")
 
-      const response = await fetch('http://47.94.52.142:3001/api/users/login', {
+      const response = await fetch('http://localhost:3001/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
