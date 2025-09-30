@@ -295,31 +295,31 @@ async function initDatabase() {
         await ensureTableExists('modules', `
         CREATE TABLE modules (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
-            key TEXT NOT NULL,
+            application_id UUID NOT NULL,
             name TEXT NOT NULL,
-            description TEXT,
-            version TEXT NOT NULL,
             type TEXT NOT NULL,
+            icon TEXT,
             config JSONB DEFAULT '{}'::jsonb,
-            manifest JSONB DEFAULT '{}'::jsonb,
+            "order" INTEGER DEFAULT 0,
+            is_enabled BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT now(),
             updated_at TIMESTAMP DEFAULT now()
         )
     `, [
             'ALTER TABLE modules ADD CONSTRAINT modules_pkey PRIMARY KEY (id)',
-            'ALTER TABLE modules ADD CONSTRAINT modules_key_key UNIQUE (key)'
+            'ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_modules_key ON modules (key)',
+            'CREATE INDEX idx_modules_application_id ON modules (application_id)',
             'CREATE INDEX idx_modules_type ON modules (type)',
             'CREATE INDEX idx_modules_created_at ON modules (created_at)'
         ], [
-            { name: 'key', sql: 'key TEXT DEFAULT \'default-key\'' },
+            { name: 'application_id', sql: 'application_id UUID NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
-            { name: 'description', sql: 'description TEXT' },
-            { name: 'version', sql: 'version TEXT DEFAULT \'1.0.0\'' },
             { name: 'type', sql: 'type TEXT NOT NULL' },
+            { name: 'icon', sql: 'icon TEXT' },
             { name: 'config', sql: 'config JSONB DEFAULT \'{}\'::jsonb' },
-            { name: 'manifest', sql: 'manifest JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'is_enabled', sql: 'is_enabled BOOLEAN DEFAULT true' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
