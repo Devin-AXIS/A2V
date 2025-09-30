@@ -382,7 +382,7 @@ export default function ClientConfigPage() {
           })
         }
       } else {
-        cardConfig.forEach(({ key, label, type }) => {
+        cardConfigs.forEach(({ key, label, type }) => {
           const mappingKey = `${card.id}::table_${table.id}`;
           const inputKey = key;
           const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
