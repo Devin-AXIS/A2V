@@ -296,6 +296,7 @@ async function initDatabase() {
         CREATE TABLE modules (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             application_id UUID NOT NULL,
+            key TEXT NOT NULL,
             name TEXT NOT NULL,
             type TEXT NOT NULL,
             icon TEXT,
@@ -310,10 +311,12 @@ async function initDatabase() {
             'ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
             'CREATE INDEX idx_modules_application_id ON modules (application_id)',
+            'CREATE INDEX idx_modules_key ON modules (key)',
             'CREATE INDEX idx_modules_type ON modules (type)',
             'CREATE INDEX idx_modules_created_at ON modules (created_at)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
+            { name: 'key', sql: 'key TEXT NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
             { name: 'type', sql: 'type TEXT NOT NULL' },
             { name: 'icon', sql: 'icon TEXT' },

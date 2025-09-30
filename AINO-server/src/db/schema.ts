@@ -58,6 +58,7 @@ export const applicationMembers = pgTable("application_members", {
 export const modules = pgTable("modules", {
   id: uuid("id").primaryKey().defaultRandom(),
   applicationId: uuid("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
   name: text("name").notNull(),
   type: text("type").notNull(), // system, ecom, edu, content, project, custom
   icon: text("icon"),
@@ -69,6 +70,7 @@ export const modules = pgTable("modules", {
 }, (table) => ({
   createdAtIdx: index("modules_created_at_idx").on(table.createdAt),
   appEnabledIdx: index("modules_app_enabled_idx").on(table.applicationId, table.isEnabled),
+  keyIdx: index("modules_key_idx").on(table.key),
 }))
 
 // 模块安装记录表 - 支持模块生命周期管理

@@ -56,6 +56,7 @@ export class ApplicationService {
       if (module.key === 'user') {
         const [createdModule] = await db.insert(modules).values({
           applicationId,
+          key: module.key,
           name: module.name,
           type: module.type,
           icon: module.icon,
