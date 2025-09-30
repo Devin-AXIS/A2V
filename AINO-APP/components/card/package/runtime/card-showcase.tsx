@@ -1,12 +1,12 @@
 "use client"
 
-import { BusinessCardWrapper } from "../../system/business-card-wrapper"
-import { CardRegistry } from "./core/registry"
+import { BusinessCardWrapper } from "@/components/card/system/business-card-wrapper"
+import { CardRegistry } from "@/components/card/core/registry"
 import { AppCard } from "@/components/layout/app-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, Share2, ShoppingCart, Star, TrendingUp, Users, Settings } from "lucide-react"
-import { EnhancedDraggableCardContainer } from "./system/enhanced-draggable-card-container"
+import { EnhancedDraggableCardContainer } from "@/components/card/system/enhanced-draggable-card-container"
 import { useState } from "react"
 
 export function CardShowcase() {
