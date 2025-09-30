@@ -45,30 +45,7 @@ const STORAGE_KEYS = {
 }
 
 // 模拟用户数据
-const MOCK_USERS = [
-  {
-    id: '1',
-    phone: '13800138000',
-    name: 'iPollo 用户',
-    avatar: '/generic-user-avatar.png',
-    points: 2323,
-    followers: 22,
-    following: 334,
-    posts: 3434,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    phone: '13900139000',
-    name: '测试用户',
-    avatar: '/generic-user-avatar.png',
-    points: 1500,
-    followers: 15,
-    following: 200,
-    posts: 100,
-    createdAt: new Date().toISOString()
-  }
-]
+const MOCK_USERS = []
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -131,18 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 模拟登录验证
       let user: User | undefined
 
-      // if (password) {
-      //   // 密码登录 - 查找匹配的用户
-      //   user = MOCK_USERS.find(u => u.phone === phone)
-      //   if (!user) {
-      //     throw new Error('用户不存在')
-      //   }
-      // } else if (code) {
-      // 验证码登录 - 查找匹配的用户或创建新用户
-      // user = MOCK_USERS.find(u => u.phone === phone)
-      // if (!user) {
-      // 创建新用户
-
       const grades = {};
       Object.keys(data).forEach(key => {
         if (key.indexOf('followers') > -1) {
@@ -159,27 +124,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
 
-      console.log(grades)
-
       user = {
         id: Date.now().toString(),
         phone: data.phone,
-        name: data.profile.name,
-        avatar: data.profile.avatar,
+        name: data.name,
+        avatar: data.avatar,
         points: grades.points || 0,
         followers: grades.followers || 0,
         following: grades.following || 0,
         posts: grades.posts || 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        extends: { ...data },
       }
       MOCK_USERS.push(user)
-      // }
-      // } else {
-      //   throw new Error('请提供密码或验证码')
-      // }
 
       // 生成模拟token
-      const token = `mock_token_${Date.now()}`
+      const token = user?.extends?.token//`mock_token_${Date.now()}`
+      delete user?.extends?.token;
 
       // 保存到本地存储（绑定到当前 appId 以便多租户区分）
       if (typeof window !== 'undefined') {

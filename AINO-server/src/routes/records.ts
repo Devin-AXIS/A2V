@@ -399,6 +399,65 @@ records.patch('/:dir/:id', async (c) => {
   }
 })
 
+// 批量删除记录（按目录隔离）
+records.delete('/:dir/batch', zValidator('json', bulkDeleteSchema), async (c) => {
+  const dir = c.req.param('dir')
+  const { recordIds } = c.req.valid('json')
+  const user = c.get('user') as any
+
+  try {
+    // 获取目录信息确定租户
+    const directory = await getDirectoryById(dir)
+    if (!directory) {
+      return c.json({ success: false, error: '目录不存在' }, 404)
+    }
+    const t = tableFor(dir)
+    const tenantId = directory.applicationId
+    const results = []
+
+    for (const recordId of recordIds) {
+      try {
+        const [record] = await db.update(t)
+          .set({
+            deletedAt: sql`now()`,
+            version: sql`${t.version} + 1`
+          })
+          .where(and(
+            eq(t.id, recordId),
+            eq(t.tenantId, tenantId),
+            sql`${t.deletedAt} is null`,
+            sql`(${t.props} ->> '__dirId') = ${dir}`
+          ))
+          .returning()
+
+        results.push({
+          recordId,
+          success: !!record,
+          error: record ? null : '记录不存在'
+        })
+      } catch (error) {
+        results.push({
+          recordId,
+          success: false,
+          error: error instanceof Error ? error.message : '删除失败'
+        })
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        deletedCount: results.filter(r => r.success).length,
+        failedCount: results.filter(r => !r.success).length,
+        results
+      }
+    })
+  } catch (error) {
+    console.error('批量删除记录失败:', error)
+    return c.json({ success: false, error: '批量删除记录失败' }, 500)
+  }
+})
+
 // 删除记录（按目录隔离）
 records.delete('/:dir/:id', async (c) => {
   const dirId = c.req.param('dir')
@@ -807,101 +866,5 @@ records.patch('/:dir/:id', async (c) => {
   }
 })
 
-// 批量删除记录（按目录隔离）
-records.delete('/:dir/batch', zValidator('json', bulkDeleteSchema), async (c) => {
-  const dir = c.req.param('dir')
-  const { recordIds } = c.req.valid('json')
-  const user = c.get('user') as any
-
-  try {
-    // 获取目录信息确定租户
-    const directory = await getDirectoryById(dir)
-    if (!directory) {
-      return c.json({ success: false, error: '目录不存在' }, 404)
-    }
-    const t = tableFor(dir)
-    const tenantId = directory.applicationId
-    const results = []
-
-    for (const recordId of recordIds) {
-      try {
-        const [record] = await db.update(t)
-          .set({
-            deletedAt: sql`now()`,
-            version: sql`${t.version} + 1`
-          })
-          .where(and(
-            eq(t.id, recordId),
-            eq(t.tenantId, tenantId),
-            sql`${t.deletedAt} is null`,
-            sql`(${t.props} ->> '__dirId') = ${dir}`
-          ))
-          .returning()
-
-        results.push({
-          recordId,
-          success: !!record,
-          error: record ? null : '记录不存在'
-        })
-      } catch (error) {
-        results.push({
-          recordId,
-          success: false,
-          error: error instanceof Error ? error.message : '删除失败'
-        })
-      }
-    }
-
-    return c.json({
-      success: true,
-      data: {
-        deletedCount: results.filter(r => r.success).length,
-        failedCount: results.filter(r => !r.success).length,
-        results
-      }
-    })
-  } catch (error) {
-    console.error('批量删除记录失败:', error)
-    return c.json({ success: false, error: '批量删除记录失败' }, 500)
-  }
-})
-
-// 删除记录（按目录隔离）
-records.delete('/:dir/:id', async (c) => {
-  const dir = c.req.param('dir')
-  const id = c.req.param('id')
-
-  try {
-    const t = tableFor(dir)
-    // 获取目录信息确定租户
-    const directory = await getDirectoryById(dir)
-    if (!directory) {
-      return c.json({ success: false, error: '目录不存在' }, 404)
-    }
-    const tenantId = directory.applicationId
-
-    const [row] = await db.update(t)
-      .set({
-        deletedAt: sql`now()`,
-        version: sql`${t.version} + 1`
-      })
-      .where(and(
-        eq(t.id, id),
-        eq(t.tenantId, tenantId),
-        sql`${t.deletedAt} is null`,
-        sql`(${t.props} ->> '__dirId') = ${dir}`
-      ))
-      .returning()
-
-    if (!row) {
-      return c.json({ success: false, error: '记录不存在' }, 404)
-    }
-
-    return c.json({ success: true })
-  } catch (error) {
-    console.error('删除记录失败:', error)
-    return c.json({ success: false, error: '删除记录失败' }, 500)
-  }
-})
 
 export { records }

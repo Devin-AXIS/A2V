@@ -3,8 +3,15 @@ import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
 import { SimpleModuleService } from "./simple-service"
+import { DirectoryService } from "../directories/service";
+import { CardsConfig } from '../../lib/cards-config'
+import { EducationMainCard } from "../../lib/cards-config/education/main";
+import { DirectoryDefsService } from "../directory-defs/service"
+import { FieldDefsService } from '../field-defs/service'
+import { initModule } from "./utils"
 
 const app = new Hono()
+const dirService = new DirectoryService()
 
 // 简化的模块安装请求DTO
 const SimpleInstallRequest = z.object({
@@ -34,11 +41,13 @@ app.post("/install", mockRequireAuthMiddleware, zValidator("json", SimpleInstall
   }
 
   try {
-    const result = await moduleService.installModule(applicationId, data.moduleKey, data.installConfig)
+    data.installConfig.moduleKey = data.moduleKey;
+    const moduleResult = await moduleService.installModule(applicationId, data.moduleKey, data.installConfig)
+    await initModule(applicationId, data, moduleResult.id, user.id)
 
     return c.json({
       success: true,
-      data: result,
+      data: moduleResult,
       message: "模块安装成功",
     })
   } catch (error) {

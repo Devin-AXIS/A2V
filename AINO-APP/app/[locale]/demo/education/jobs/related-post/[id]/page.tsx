@@ -1,13 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import { useParams } from "next/navigation"
+import { usePageActions } from "@/hooks/use-page-actions"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppHeader } from "@/components/navigation/app-header"
-import { JobHeaderCard } from "@/components/card/jobs/job-header-card"
-import { JobRequirementsCard } from "@/components/card/jobs/job-requirements-card"
-import { JobBenefitsCard } from "@/components/card/jobs/job-benefits-card"
-import { CompanyInfoCard } from "@/components/card/jobs/company-info-card"
-import { ApplyResumeCard } from "@/components/card/jobs/apply-resume-card"
+import { JobHeaderCard } from "@/components/card/cards/recruitment/jobs/job-header-card"
+import { JobRequirementsCard } from "@/components/card/cards/recruitment/jobs/job-requirements-card"
+import { JobBenefitsCard } from "@/components/card/cards/recruitment/jobs/job-benefits-card"
+import { CompanyInfoCard } from "@/components/card/cards/recruitment/jobs/company-info-card"
+import { SecondaryPillBottomNav, type SecondaryPillBottomNavAction } from "@/components/navigation/secondary-pill-bottom-nav"
+import { Send, Heart, Bookmark, Share } from "lucide-react"
 
 interface JobDetail {
   id: string
@@ -89,6 +92,27 @@ export default function RelatedJobDetailPage() {
   const locale = params.locale as string
 
   const job = jobData[jobId] || jobData["1"]
+  const [isApplying, setIsApplying] = useState(false)
+
+  // 使用通用页面操作Hook
+  const { actions } = usePageActions({
+    title: job.title,
+    customActions: [
+      {
+        label: "投递简历",
+        onClick: () => {
+          setIsApplying(true)
+          setTimeout(() => {
+            setIsApplying(false)
+            alert("简历投递成功！")
+          }, 2000)
+        },
+        icon: <Send className="w-4 h-4" />,
+        variant: "primary",
+        loading: isApplying
+      }
+    ]
+  })
 
   return (
     <>
@@ -115,12 +139,14 @@ export default function RelatedJobDetailPage() {
           <div className="pt-4">
             <CompanyInfoCard data={{ name: job.company.name, logo: job.company.logo, description: job.company.description }} />
           </div>
-
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-sm z-50">
-            <ApplyResumeCard data={{}} onApply={() => alert("简历投递功能开发中...")} />
-          </div>
         </div>
       </div>
+
+      {/* 辅助功能胶囊型底部导航 */}
+      <SecondaryPillBottomNav
+        actions={actions}
+        position="center"
+      />
     </>
   )
 }

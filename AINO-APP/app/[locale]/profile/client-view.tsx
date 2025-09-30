@@ -8,6 +8,7 @@ import { User, HelpCircle, Headphones, Settings, Gift, PlusCircle, LogIn, UserPl
 import { AppCard } from "@/components/layout/app-card"
 import { AuthAvatar } from "@/components/auth/auth-avatar"
 import { useAuth } from "@/hooks/use-auth"
+import { useFavorites } from "@/hooks/use-favorites"
 import { Button } from "@/components/ui/button"
 import { useEffect } from "react"
 
@@ -35,9 +36,13 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
   const { locale } = useParams()
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuth()
+  const { getLikedCount, getFavoritedCount } = useFavorites()
 
-  const StatItem = ({ value, label }: { value: string; label: string }) => (
-    <div className="text-center">
+  const StatItem = ({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) => (
+    <div
+      className={`text-center ${onClick ? 'cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors' : ''}`}
+      onClick={onClick}
+    >
       <p className="text-xl font-bold" style={{ color: "var(--card-title-color)" }}>
         {value}
       </p>
@@ -142,9 +147,9 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
             <h3 className="text-lg font-bold text-gray-900" style={{ color: "var(--card-title-color)" }}>
               {user?.name || dict.name}
             </h3>
-            {user?.points && user.points > 1000 && (
+            {/* {user?.points && user.points > 1000 && (
               <Crown className="w-5 h-5 text-yellow-500" />
-            )}
+            )} */}
           </div>
           <p className="text-xs text-gray-500" style={{ color: "var(--card-text-color)" }}>
             {user?.phone || dict.id}
@@ -159,16 +164,24 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
       </div>
 
       {/* Abstract Stats */}
-      <AppCard>
+      {/* <AppCard>
         <div className="flex justify-around items-center py-4">
-          <StatItem value={user?.followers?.toString() || "0"} label={dict.followers} />
-          <StatItem value={user?.following?.toString() || "0"} label={dict.following} />
+          <StatItem
+            value={getLikedCount().toString()}
+            label={dict.followers}
+            onClick={() => router.push(`/${locale}/profile/likes`)}
+          />
+          <StatItem
+            value={getFavoritedCount().toString()}
+            label={dict.following}
+            onClick={() => router.push(`/${locale}/profile/favorites`)}
+          />
           <StatItem value={user?.posts?.toString() || "0"} label={dict.posts} />
         </div>
-      </AppCard>
+      </AppCard> */}
 
       {/* My Points Card */}
-      <AppCard className="p-5">
+      {/* <AppCard className="p-5">
         <div className="flex justify-between items-start">
           <div>
             <h4 className="text-sm font-medium" style={{ color: "var(--card-text-color)" }}>
@@ -204,7 +217,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
             <span>{dict.getPoints}</span>
           </Link>
         </div>
-      </AppCard>
+      </AppCard> */}
 
       {/* Toolbar Card */}
       <AppCard className="p-5">
@@ -235,7 +248,7 @@ export function ProfileClientView({ dict }: ProfileClientViewProps) {
           <ToolbarItem
             icon={<Settings className="w-5 h-5" style={{ color: "var(--card-text-color)" }} />}
             label={dict.settings}
-            href="#"
+            href={`/${locale}/profile/settings`}
           />
         </div>
       </AppCard>

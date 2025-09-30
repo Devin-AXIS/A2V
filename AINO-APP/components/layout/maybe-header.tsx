@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
 import { BrowserHeader } from "@/components/layout/browser-header"
+import { http } from "@/lib/request"
 
 type Props = { title: string }
 
@@ -24,10 +25,9 @@ export function MaybeHeader({ title }: Props) {
         return
       }
       if (cfgId) {
-        fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
-          .then((r) => r.json().catch(() => null))
-          .then((j) => {
-            const data = j && (j.data ?? j)
+        http.get(`/api/page-configs/${encodeURIComponent(cfgId)}`)
+          .then((response) => {
+            const data = response
             if (!data) return
             window.localStorage.setItem(`APP_PAGE_ROUTE_${route}`, JSON.stringify(data))
             setConfig(data)

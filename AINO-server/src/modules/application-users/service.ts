@@ -149,6 +149,7 @@ export class ApplicationUserService {
       throw new Error('用户已注册')
     } else {
       console.log('🔍 创建新用户')
+
       // 创建新用户（只创建账号）
       const hashedPassword = await bcrypt.hash(data.password, 10)
       const userData = {
@@ -158,7 +159,8 @@ export class ApplicationUserService {
         status: 'active',
         metadata: {
           source: 'register',
-          registeredAt: new Date().toISOString()
+          registeredAt: new Date().toISOString(),
+          // existingId: existing.id,
         }
       }
 
@@ -174,7 +176,7 @@ export class ApplicationUserService {
           .where(
             and(
               eq(dirUsers.tenantId, applicationId),
-              sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+              sql`${dirUsers.props}->>'phone_number' = ${`+86${data.phone_number}`} OR ${dirUsers.props}->>'phone' = ${`+86${data.phone_number}`}`
             )
           )
           .limit(1)
@@ -188,7 +190,7 @@ export class ApplicationUserService {
             .where(
               and(
                 eq(dirUsers.tenantId, userListDirId),
-                sql`${dirUsers.props}->>'phone_number' = ${data.phone_number} OR ${dirUsers.props}->>'phone' = ${data.phone_number}`
+                sql`${dirUsers.props}->>'phone_number' = ${`+86${data.phone_number}`} OR ${dirUsers.props}->>'phone' = ${`+86${data.phone_number}`}`
               )
             )
             .limit(1)
@@ -211,7 +213,6 @@ export class ApplicationUserService {
           }
           await db.update(dirUsers).set({ props: updatedProps }).where(eq(dirUsers.id, existing.id))
         } else {
-          // 在用户模块中创建对应的业务数据记录
           await this.createUserBusinessRecord(applicationId, user.id, user.phone, data)
         }
       } catch (err) {
@@ -402,78 +403,40 @@ export class ApplicationUserService {
 
     // 读取业务数据：优先按手机号在 dir_users.props 中查找，兼容 tenantId 两种存法（applicationId 或 用户列表目录ID）
     let businessData: any = {}
+    let recordId = "";
     try {
       const userListDirId = await this.getUserListDirectoryId(applicationId)
       const phoneToFind = user.phone
 
       // 优先：按手机号（兼容 phone/phone_number）
       let rec = await db
-        .select({ props: dirUsers.props })
+        .select({ props: dirUsers.props, id: dirUsers.id })
         .from(dirUsers)
-        // .where(
-        //   and(
-        //     eq(dirUsers.tenantId, applicationId),
-        //     sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
-        //   )
-        // )
+        .where(
+          and(
+            eq(dirUsers.tenantId, applicationId),
+            sql`${dirUsers.props}->>'userId' = ${user.id}`
+          )
+        )
         .limit(1)
 
       if (rec && rec.length > 0) {
         rec.forEach(item => {
           if (item.props.phone_number.indexOf(phoneToFind) > -1) {
             businessData = item.props
+            recordId = item.id
           }
         })
       }
-
-      // if ((!rec || rec.length === 0) && userListDirId) {
-      //   rec = await db
-      //     .select({ props: dirUsers.props })
-      //     .from(dirUsers)
-      //     .where(
-      //       and(
-      //         eq(dirUsers.tenantId, userListDirId),
-      //         sql`( ${dirUsers.props}->>'phone_number' = ${phoneToFind} OR ${dirUsers.props}->>'phone' = ${phoneToFind} )`
-      //       )
-      //     )
-      //     .limit(1)
-      // }
-
-      // // 备选：若手机号未找到，再按 userId
-      // if (!rec || rec.length === 0) {
-      //   rec = await db
-      //     .select({ props: dirUsers.props })
-      //     .from(dirUsers)
-      //     .where(
-      //       and(
-      //         eq(dirUsers.tenantId, applicationId),
-      //         sql`${dirUsers.props}->>'userId' = ${user.id}`
-      //       )
-      //     )
-      //     .limit(1)
-
-      //   if ((!rec || rec.length === 0) && userListDirId) {
-      //     rec = await db
-      //       .select({ props: dirUsers.props })
-      //       .from(dirUsers)
-      //       .where(
-      //         and(
-      //           eq(dirUsers.tenantId, userListDirId),
-      //           sql`${dirUsers.props}->>'userId' = ${user.id}`
-      //         )
-      //       )
-      //       .limit(1)
-      //   }
-      // }
-
-      // businessData = rec && rec[0] ? (rec[0].props || {}) : {}
     } catch { }
 
+    if (businessData) delete businessData.realname_status;
     return {
       ...user,
       ...businessData,
+      recordId,
       phone_number: businessData.phone_number || businessData.phone || user.phone,
-      profile: businessData,
+      // profile: businessData,
     }
   }
 

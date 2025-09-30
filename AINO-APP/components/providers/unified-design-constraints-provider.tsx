@@ -12,7 +12,7 @@ interface UnifiedDesignConstraintsContextType {
     violations: string[]
     recommendations: string[]
   }
-  
+
   // 获取推荐配置
   getRecommendations: (componentType: string) => {
     colors: string[]
@@ -20,15 +20,15 @@ interface UnifiedDesignConstraintsContextType {
     spacing: string[]
     radius: string[]
   }
-  
+
   // 生成约束报告
-  generateReport: (components: Array<{name: string, props: any}>) => {
+  generateReport: (components: Array<{ name: string, props: any }>) => {
     totalComponents: number
     validComponents: number
     invalidComponents: number
-    violations: Array<{component: string, violations: string[], recommendations: string[]}>
+    violations: Array<{ component: string, violations: string[], recommendations: string[] }>
   }
-  
+
   // 强制约束检查
   enforceConstraints: () => void
 }
@@ -49,29 +49,10 @@ export function UnifiedDesignConstraintsProvider({ children }: { children: React
   // 强制约束检查 - 在开发模式下自动运行
   const enforceConstraints = () => {
     if (process.env.NODE_ENV === 'development') {
-      console.group('🎨 统一设计约束检查')
-      
+
       // 检查所有已注册的组件
       const registeredComponents = getRegisteredComponents()
       const report = unifiedDesignConstraints.generateConstraintReport(registeredComponents)
-      
-      console.log(`📊 约束检查报告:`)
-      console.log(`   总组件数: ${report.totalComponents}`)
-      console.log(`   符合约束: ${report.validComponents}`)
-      console.log(`   违反约束: ${report.invalidComponents}`)
-      
-      if (report.violations.length > 0) {
-        console.warn('⚠️ 发现违反约束的组件:')
-        report.violations.forEach(({ component, violations, recommendations }) => {
-          console.warn(`   组件: ${component}`)
-          violations.forEach(v => console.warn(`     ❌ ${v}`))
-          recommendations.forEach(r => console.log(`     💡 ${r}`))
-        })
-      } else {
-        console.log('✅ 所有组件都符合统一设计约束!')
-      }
-      
-      console.groupEnd()
     }
   }
 
@@ -90,15 +71,15 @@ export function UnifiedDesignConstraintsProvider({ children }: { children: React
     validateComponent: (componentName: string, props: any) => {
       return unifiedDesignConstraints.validateComponent(componentName, props)
     },
-    
+
     getRecommendations: (componentType: string) => {
       return unifiedDesignConstraints.getComponentRecommendations(componentType)
     },
-    
-    generateReport: (components: Array<{name: string, props: any}>) => {
+
+    generateReport: (components: Array<{ name: string, props: any }>) => {
       return unifiedDesignConstraints.generateConstraintReport(components)
     },
-    
+
     enforceConstraints
   }
 

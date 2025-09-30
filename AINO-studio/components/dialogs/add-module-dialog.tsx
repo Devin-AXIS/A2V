@@ -26,7 +26,7 @@ function getMockThirdPartyModules(locale: string): ThirdPartyModule[] {
       id: "1",
       name: locale === "zh" ? "用户认证模块" : "User Authentication Module",
       provider: "AuthTech Solutions",
-      description: locale === "zh" 
+      description: locale === "zh"
         ? "完整的用户认证和授权系统，支持多种登录方式"
         : "Complete user authentication and authorization system with multiple login methods",
       category: locale === "zh" ? "认证" : "Authentication",
@@ -129,7 +129,7 @@ export function AddModuleDialog({
 
   const categories = ["all", ...Array.from(new Set(mockThirdPartyModules.map((m) => m.category)))]
 
-  const handleSubmit = (payload: { name: string; desc?: string; templateKey: string; icon?: string }) => {
+  const handleSubmit = (payload: { name: string; desc?: string; templateKey: string; icon?: string; defaultTableName?: string }) => {
     onSubmit(payload)
     onOpenChange(false)
   }

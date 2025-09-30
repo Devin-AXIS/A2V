@@ -4,7 +4,7 @@ import { z } from "zod"
 export const CreateApplicationRequest = z.object({
   name: z.string().min(1, "应用名称不能为空").max(64, "应用名称不能超过64个字符"),
   description: z.string().optional(),
-  template: z.enum(["blank", "ecom", "edu", "content", "project"]).default("blank"),
+  template: z.enum(["blank", "ecom", "edu", "rec", "content", "project"]).default("blank"),
   isPublic: z.boolean().default(false),
   config: z.record(z.string(), z.any()).optional(),
 })
@@ -25,7 +25,7 @@ export const GetApplicationsQuery = z.object({
   limit: z.coerce.number().min(1, "每页数量不能少于1").max(100, "每页数量不能超过100").default(20),
   search: z.string().optional(),
   status: z.enum(["active", "inactive", "archived"]).optional(),
-  template: z.enum(["blank", "ecom", "edu", "content", "project"]).optional(),
+  template: z.enum(["blank", "ecom", "edu", "rec", "content", "project"]).optional(),
 })
 
 // 应用响应

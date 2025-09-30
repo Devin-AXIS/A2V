@@ -20,6 +20,7 @@
     --color-red-700: oklch(50.5% 0.213 27.518);
     --color-red-800: oklch(44.4% 0.177 26.899);
     --color-orange-400: oklch(75% 0.183 55.934);
+    --color-orange-500: oklch(70.5% 0.213 47.604);
     --color-orange-600: oklch(64.6% 0.222 41.116);
     --color-amber-500: oklch(76.9% 0.188 70.08);
     --color-amber-600: oklch(66.6% 0.179 58.318);
@@ -827,6 +828,9 @@
   }
   .h-48 {
     height: calc(var(--spacing) * 48);
+  }
+  .h-64 {
+    height: calc(var(--spacing) * 64);
   }
   .h-72 {
     height: calc(var(--spacing) * 72);
@@ -1835,6 +1839,9 @@
       border-color: color-mix(in oklab, var(--border) 50%, transparent);
     }
   }
+  .border-current {
+    border-color: currentcolor;
+  }
   .border-destructive {
     border-color: var(--destructive);
   }
@@ -2721,6 +2728,9 @@
   .text-green-400 {
     color: var(--color-green-400);
   }
+  .text-green-500 {
+    color: var(--color-green-500);
+  }
   .text-green-600 {
     color: var(--color-green-600);
   }
@@ -2735,6 +2745,9 @@
   }
   .text-muted-foreground {
     color: var(--muted-foreground);
+  }
+  .text-orange-500 {
+    color: var(--color-orange-500);
   }
   .text-orange-600 {
     color: var(--color-orange-600);
@@ -4018,6 +4031,13 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-red-600);
+      }
+    }
+  }
+  .hover\:text-red-700 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-red-700);
       }
     }
   }

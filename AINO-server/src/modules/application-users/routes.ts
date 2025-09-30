@@ -11,6 +11,7 @@ import {
   LoginUserRequest,
   ChangePasswordRequest
 } from "./dto"
+import { generateToken } from "../../platform/auth"
 
 const app = new Hono()
 const service = new ApplicationUserService()
@@ -125,6 +126,43 @@ app.put("/:id",
       const id = c.req.param("id")
       const data = c.req.valid("json")
       const user = c.get("user")
+
+      // 从查询参数或请求头获取应用ID
+      const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
+      if (!applicationId) {
+        return c.json({
+          success: false,
+          error: "缺少应用ID参数",
+        }, 400)
+      }
+
+      const applicationUser = await service.updateApplicationUser(applicationId, id, data)
+
+      return c.json({
+        success: true,
+        data: applicationUser,
+      })
+    } catch (error) {
+      console.error("更新应用用户失败:", error)
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : "更新应用用户失败",
+      }, 400)
+    }
+  }
+)
+
+// 更新应用用户部分信息
+app.patch("/:id",
+  mockRequireAuthMiddleware,
+  // zValidator("json", UpdateApplicationUserRequest),
+  async (c) => {
+    try {
+      const id = c.req.param("id")
+      const data = c.req.valid("json")
+      const user = c.get("user")
+      console.log(data);
+      return;
 
       // 从查询参数或请求头获取应用ID
       const applicationId = c.req.query("applicationId") || c.req.header("x-application-id")
@@ -320,6 +358,8 @@ app.post("/login",
       }
 
       const result = await service.login(applicationId, data)
+      const token = generateToken(result.id, result.email, result.roles)
+      result.token = token
       return c.json({ success: true, data: result })
     } catch (error) {
       return c.json({ success: false, error: error instanceof Error ? error.message : "登录失败" }, 400)

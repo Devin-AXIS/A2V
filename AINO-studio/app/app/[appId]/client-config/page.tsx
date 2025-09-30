@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { AIOpsDrawer } from "@/components/ai/ai-ops-drawer"
 import { EventConfigDialog, type EventConfig } from "@/components/dialogs/event-config-dialog"
+import { collectAllConfigs } from "@/lib/config-collector"
 
 const Monaco = dynamic(() => import('@monaco-editor/react').then(m => m.default), { ssr: false })
 
@@ -161,7 +162,115 @@ export default function ClientConfigPage() {
   const [aiOpsOpen, setAiOpsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
+  const [collectingConfigs, setCollectingConfigs] = useState(false)
+  const [viewingConfigs, setViewingConfigs] = useState(false)
+  const [savedConfigs, setSavedConfigs] = useState<any>(null)
   const [authUIOpen, setAuthUIOpen] = useState(false)
+
+  // 配置采集函数
+  const handleCollectConfigs = async () => {
+    setCollectingConfigs(true)
+    try {
+      console.log('🔍 开始采集AINO系统配置...')
+      const configs = await collectAllConfigs()
+
+      // 保存配置到数据库
+      const appId = String(params.appId)
+      const timestamp = new Date().toISOString()
+
+      // 获取现有应用配置
+      const appRes = await api.applications.getApplication(appId)
+      if (!appRes.success) {
+        throw new Error(appRes.error || (lang === "zh" ? "获取应用配置失败" : "Failed to get application config"))
+      }
+
+      const existingConfig = appRes.data?.config || {}
+
+      // 将配置采集结果保存到 applications.config.collectedConfigs
+      const updatedConfig = {
+        ...existingConfig,
+        collectedConfigs: {
+          ...configs,
+          collectedAt: timestamp,
+          appId: appId,
+          version: "1.0.0"
+        }
+      }
+
+      // 更新应用配置
+      const updateRes = await api.applications.updateApplication(appId, { config: updatedConfig })
+      if (!updateRes.success) {
+        throw new Error(updateRes.error || (lang === "zh" ? "保存配置到数据库失败" : "Failed to save config to database"))
+      }
+
+      // 显示成功消息
+      toast({
+        title: lang === "zh" ? "配置采集成功" : "Config Collection Success",
+        description: lang === "zh"
+          ? `成功采集了 ${configs.metadata.totalConfigs} 个配置项并保存到数据库`
+          : `Successfully collected ${configs.metadata.totalConfigs} config items and saved to database`,
+      })
+
+      console.log('✅ 配置采集完成并保存到数据库:', configs)
+
+    } catch (error) {
+      console.error('❌ 配置采集失败:', error)
+      toast({
+        title: lang === "zh" ? "配置采集失败" : "Config Collection Failed",
+        description: error instanceof Error ? error.message : (lang === "zh" ? "未知错误" : "Unknown error"),
+        variant: "destructive"
+      })
+    } finally {
+      setCollectingConfigs(false)
+    }
+  }
+
+  // 查看已保存的配置采集结果
+  const handleViewSavedConfigs = async () => {
+    setViewingConfigs(true)
+    try {
+      const appId = String(params.appId)
+      const appRes = await api.applications.getApplication(appId)
+
+      if (!appRes.success) {
+        throw new Error(appRes.error || (lang === "zh" ? "获取应用配置失败" : "Failed to get application config"))
+      }
+
+      const collectedConfigs = appRes.data?.config?.collectedConfigs
+
+      if (!collectedConfigs) {
+        toast({
+          title: lang === "zh" ? "未找到配置" : "No Config Found",
+          description: lang === "zh" ? `还没有采集过配置，请先点击"采集配置"按钮` : "No configs collected yet, please click 'Collect Configs' first",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setSavedConfigs(collectedConfigs)
+
+      // 在控制台显示配置详情
+      console.log('📋 已保存的配置采集结果:', collectedConfigs)
+
+      toast({
+        title: lang === "zh" ? "配置加载成功" : "Config Loaded Successfully",
+        description: lang === "zh"
+          ? `加载了 ${collectedConfigs.metadata?.totalConfigs || 0} 个配置项，采集时间：${new Date(collectedConfigs.collectedAt).toLocaleString()}`
+          : `Loaded ${collectedConfigs.metadata?.totalConfigs || 0} config items, collected at: ${new Date(collectedConfigs.collectedAt).toLocaleString()}`,
+      })
+
+    } catch (error) {
+      console.error('❌ 查看配置失败:', error)
+      toast({
+        title: lang === "zh" ? "查看配置失败" : "Failed to View Configs",
+        description: error instanceof Error ? error.message : (lang === "zh" ? "未知错误" : "Unknown error"),
+        variant: "destructive"
+      })
+    } finally {
+      setViewingConfigs(false)
+    }
+  }
+
   const [previewSource, setPreviewSource] = useState<"preview">("manifest")
   const [pageUIOpen, setPageUIOpen] = useState(false)
   const [activePageKey, setActivePageKey] = useState<string>("")
@@ -220,11 +329,10 @@ export default function ClientConfigPage() {
   // 接收自子页面的 aino:data 数据缓存与字段映射状态
   const INCOMING_KEY = `AINO_CARD_DATA_${params.appId}`
   const [incomingMappings, setIncomingMappings] = useState<Record<string, { cardType: string; cardName?: string; dataSourceKey?: string; dataSourceLabel?: string; tableId?: string; tableName?: string; inputs: Record<string, any>; timestamp: number }>>({})
+  const [waitCreateMappings, setWaitCreateMappings] = useState<any[]>([])
   const [tableFieldsByDsKey, setTableFieldsByDsKey] = useState<Record<string, Array<{ key: string; label: string }>>>({})
   const [mappingSelections, setMappingSelections] = useState<Record<string, Record<string, string>>>({})
   const [bindingByMappingKey, setBindingByMappingKey] = useState<Record<string, string>>({})
-
-
 
   function saveIncomingData(payload: any) {
     try {
@@ -243,6 +351,92 @@ export default function ClientConfigPage() {
         return next
       })
     } catch { }
+  }
+
+  const handleCreateMaps = async (mappings: any[], cardConfigsRes: any) => {
+    mappings.forEach(({ mapConfig, table }) => {
+      const { card, inputs, dataSource } = mapConfig;
+      const { fields } = table.config;
+      let cardConfigs = cardConfigsRes[card.packageId];
+      if (card.packageId.indexOf("Sub") !== -1) {
+        const cardConfig = cardConfigs.find(c => c.cardId === card.type);
+        if (cardConfig) {
+          cardConfig.dataConfig.forEach(({ key, label, type, child }, index) => {
+            if (child) {
+              const currentFields = fields.find(f => f.label === label && f.type === type);
+              if (currentFields) {
+                const currentFieldId = currentFields.key;
+                child.forEach((item, childIndex) => {
+                  const mappingKey = `${card.id}::table_${table.id}`;
+                  const inputKey = `${key}[].${item.key}`;
+                  const fieldKey = `${currentFieldId}.${currentFields.metaItemsConfig.fields[childIndex].id}`;
+                  setMappingValue(mappingKey, inputKey, fieldKey);
+                })
+              }
+            } else {
+              const mappingKey = `${card.id}::table_${table.id}`;
+              const inputKey = key;
+              const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
+              setMappingValue(mappingKey, inputKey, fieldKey);
+            }
+          })
+        }
+      } else {
+        cardConfig.forEach(({ key, label, type }) => {
+          const mappingKey = `${card.id}::table_${table.id}`;
+          const inputKey = key;
+          const fieldKey = fields.find(f => f.label === label && f.type === type)?.key;
+          setMappingValue(mappingKey, inputKey, fieldKey);
+        })
+      }
+    })
+  }
+
+  const saveEditeCard = async (payload: any) => {
+    const appId = String(params.appId)
+    const modsRes = await api.applications.getApplicationModules(appId)
+    const mods = modsRes.success && modsRes.data ? modsRes.data.modules : []
+    const tables = await loadTables()
+    const { data: cardConfigsRes } = await api.modules.getCardConfigs()
+    const creatingMappings = [];
+    for (let i = 0; i < payload.length; i++) {
+      const card = payload[i];
+      const hasCardMod = mods.find(mod => card.packageId.startsWith(mod?.config?.moduleKey));
+      if (hasCardMod) {
+        const { moduleKey } = hasCardMod.config;
+        const tableKey = card.packageId === `${moduleKey}Sub` ? `${card.packageId}-${card.type}` : moduleKey
+        const hasTable = tables.find(table => table?.config?.moduleKey === tableKey);
+        // LOG: 未完成：子卡片自动绑定数据字段。还差一点
+        if (hasTable) {
+          addTableDataSource({
+            id: hasTable.id,
+            moduleName: hasTable.moduleName,
+            name: hasTable.name,
+          })
+          const dataSource = {
+            key: `table_${hasTable.id}`,
+            label: `${hasTable.moduleName}/${hasTable.name}`
+          };
+          const creatingMapping = {
+            card: {
+              id: card.id,
+              name: card.displayName,
+              type: card.type,
+              packageId: card.packageId,
+              moduleKey,
+            },
+            dataSource: dataSource,
+            inputs: card.inputFields,
+          }
+          creatingMappings.push({
+            mapConfig: creatingMapping,
+            table: hasTable,
+          })
+          saveIncomingData(creatingMapping)
+        }
+      }
+    }
+    handleCreateMaps(creatingMappings, cardConfigsRes)
   }
 
   async function loadTableFields(dsKey: string) {
@@ -502,11 +696,13 @@ export default function ClientConfigPage() {
       const appId = String(params.appId)
       const modsRes = await api.applications.getApplicationModules(appId)
       const mods = modsRes.success && modsRes.data ? modsRes.data.modules : []
+      const tables = [];
       const dirLists = await Promise.all(
         mods.map(async (m: any) => {
           try {
             const dres = await api.directories.getDirectories({ applicationId: appId, moduleId: m.id })
             const list = dres.success && dres.data ? dres.data.directories || [] : []
+            tables.push(list.map(item => ({ ...item, moduleName: m.name })));
             return list
               .filter((d: any) => d.type === "table")
               .map((d: any) => ({ id: d.id, name: d.name, moduleName: m.name })) as TableItem[]
@@ -515,7 +711,8 @@ export default function ClientConfigPage() {
           }
         }),
       )
-      setTables(dirLists.flat())
+      setTables(dirLists.flat());
+      return tables.flat();
     } finally {
       setTablesLoading(false)
     }
@@ -1011,7 +1208,6 @@ export default function ClientConfigPage() {
         }
       } catch { }
       setViewTab("preview")
-      toast({ description: lang === "zh" ? "预览已生成" : "Preview created" })
     } catch (e: any) {
       toast({ description: e?.message || (lang === "zh" ? "创建预览失败" : "Failed to create preview"), variant: "destructive" as any })
       setViewTab("code")
@@ -1133,6 +1329,8 @@ export default function ClientConfigPage() {
 
       const data = event.data || {};
       // 仅处理 AINO 规范的消息
+      if (data.cards && data.type === "DYN_CARDS") saveEditeCard(data.cards)
+      if (data.type === 'aino:data') saveIncomingData(data.payload)
       if (!data || typeof data !== "object" || !data.type || !String(data.type).startsWith("aino:")) return;
 
       // 确保frame存在
@@ -1656,6 +1854,45 @@ export default function ClientConfigPage() {
                         </div>
                       </div>
                     )}
+                    {/* 配置采集入口 */}
+                    {/* <div className="pt-2 space-y-2">
+                      <Button
+                        className="w-full justify-center"
+                        variant="outline"
+                        onClick={handleCollectConfigs}
+                        disabled={collectingConfigs}
+                      >
+                        {collectingConfigs ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            {lang === "zh" ? "采集中..." : "Collecting..."}
+                          </>
+                        ) : (
+                          <>
+                            <Database className="w-4 h-4 mr-2" />
+                            {lang === "zh" ? "采集配置" : "Collect Configs"}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        className="w-full justify-center"
+                        variant="secondary"
+                        onClick={handleViewSavedConfigs}
+                        disabled={viewingConfigs}
+                      >
+                        {viewingConfigs ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            {lang === "zh" ? "加载中..." : "Loading..."}
+                          </>
+                        ) : (
+                          <>
+                            <ListIcon className="w-4 h-4 mr-2" />
+                            {lang === "zh" ? "查看已保存配置" : "View Saved Configs"}
+                          </>
+                        )}
+                      </Button>
+                    </div> */}
                     {/* 登录配置入口（排在数据定义之前） */}
                     <div className="pt-2">
                       <Button
@@ -2496,6 +2733,32 @@ export default function ClientConfigPage() {
                     <Button variant="default" onClick={saveAll} disabled={saving}>
                       {saving ? (lang === "zh" ? "保存中..." : "Saving...") : (lang === "zh" ? "保存" : "Save")}
                     </Button>
+                    {/* <Button variant="outline" onClick={handleCollectConfigs} disabled={collectingConfigs}>
+                      {collectingConfigs ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {lang === "zh" ? "采集中..." : "Collecting..."}
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4 mr-2" />
+                          {lang === "zh" ? "采集配置" : "Collect Configs"}
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="secondary" onClick={handleViewSavedConfigs} disabled={viewingConfigs}>
+                      {viewingConfigs ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {lang === "zh" ? "加载中..." : "Loading..."}
+                        </>
+                      ) : (
+                        <>
+                          <ListIcon className="w-4 h-4 mr-2" />
+                          {lang === "zh" ? "查看配置" : "View Configs"}
+                        </>
+                      )}
+                    </Button> */}
                     <Button onClick={openPreview}>
                       {lang === "zh" ? (previewUrl ? "刷新预览" : "生成预览") : (previewUrl ? "Refresh" : "Generate")}
                     </Button>

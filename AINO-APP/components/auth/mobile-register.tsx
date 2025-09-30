@@ -1,6 +1,6 @@
 "use client"
-import axios from 'axios'
 import React, { useEffect, useMemo, useState } from 'react'
+import { http } from '@/lib/request'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, User, Lock, Smartphone, Check } from 'lucide-react'
@@ -99,26 +99,26 @@ export function MobileRegister({
       const applicationId = appConfig?.id
 
       // 调用Studio的注册API
-      const registerRes = await axios.post(`http://localhost:3007/api/modules/system/user/register?applicationId=${applicationId}`, {
+      const registerRes = await http.post(`/api/modules/system/user/register?applicationId=${applicationId}`, {
         phone_number: formData.phone,
         password: formData.password,
         name: formData.name
       })
 
-      console.log('注册响应:', registerRes.data)
+      console.log('注册响应:', registerRes)
 
-      if (registerRes.data?.success) {
+      if (registerRes?.success) {
         setStage('success')
         // 延迟调用onRegister回调
         setTimeout(() => {
           onRegister?.(formData)
         }, 1500)
       } else {
-        throw new Error(registerRes.data?.error || '注册失败')
+        throw new Error(registerRes?.error || '注册失败')
       }
     } catch (error: any) {
       console.error('注册失败:', error)
-      const errorMessage = error.response?.data?.error || error.message || '注册失败，请重试'
+      const errorMessage = error.message || '注册失败，请重试'
       setErrors(prev => ({ ...prev, phone: errorMessage }))
     } finally {
       setIsLoading(false)

@@ -259,7 +259,7 @@ const dictionary: Dictionary = {
     faq: [
       {
         question: "如何重置我的密码？",
-        answer: "您可以前往设置页面，点击“忘记密码”来重置您的密码。请按照发送到您邮箱的说明进行操作。",
+        answer: "您可以前往设置页面，点击“修改密码”来重置您的密码。",
         category: "账户",
       },
       {

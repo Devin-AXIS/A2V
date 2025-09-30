@@ -4,6 +4,7 @@ import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useDesignTokens } from '@/components/providers/design-tokens-provider'
 import type { GlobalRadiusTokens } from '@/types'
+import { http } from '@/lib/request'
 
 export function useGlobalRadius() {
   const { tokens, updateTokens } = useDesignTokens()
@@ -37,16 +38,9 @@ export function useGlobalRadius() {
     return 'global'
   }, [pathname])
 
-  const STORAGE_KEY = useMemo(() => (appKey ? `global-radius-${appKey}` : null), [appKey])
+  const STORAGE_KEY = null;//useMemo(() => (appKey ? `global-radius-${appKey}` : null), [appKey])
   const hydratedRef = useRef(false)
   const serverDataLoadedRef = useRef(false)
-
-  // 调试：打印关键参数
-  useEffect(() => {
-    try {
-      console.log('[GlobalRadius] appKey:', appKey, 'STORAGE_KEY:', STORAGE_KEY, 'API_BASE:', API_BASE)
-    } catch { }
-  }, [appKey, STORAGE_KEY, API_BASE])
 
   // 获取页面上组件的实际边角值
   const getActualRadius = useCallback((componentType: 'card' | 'button' | 'input' | 'modal') => {
@@ -74,8 +68,6 @@ export function useGlobalRadius() {
       const computedStyle = window.getComputedStyle(firstElement)
       const borderRadius = computedStyle.borderRadius
 
-      console.log(`🔍 检测到 ${componentType} 组件的实际边角值:`, borderRadius)
-
       // 将实际的 CSS 值转换为预设值
       if (borderRadius === '0px' || borderRadius === '0') return 'none'
       if (borderRadius === '2px' || borderRadius === '0.125rem') return 'sm'
@@ -100,7 +92,6 @@ export function useGlobalRadius() {
       return
     }
 
-    console.log('🎯 开始捕获初始边角状态...')
 
     // 获取所有组件的实际边角值
     const cardRadius = getActualRadius('card')
@@ -116,7 +107,6 @@ export function useGlobalRadius() {
       modal: modalRadius
     }
 
-    console.log('🎯 已捕获初始边角状态:', initialRadiusValues.current)
 
     // 更新默认预设为实际的初始状态
     if (tokens?.globalRadius) {
@@ -141,7 +131,6 @@ export function useGlobalRadius() {
       }
 
       updateTokens(newTokens)
-      console.log('✅ 已更新默认预设为真实初始状态')
     }
 
     initialRadiusCaptured.current = true
@@ -183,14 +172,9 @@ export function useGlobalRadius() {
     const load = async () => {
       try {
         if (!STORAGE_KEY) return
-        const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
-        console.log('[GlobalRadius] GET', url)
-        const res = await fetch(url, { method: 'GET' })
-        if (!res.ok) {
-          console.log('[GlobalRadius] GET not ok:', res.status)
-          return
-        }
-        const body = await res.json().catch(() => null as any)
+        const url = `/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
+        const response = await http.get(url)
+        const body = response
         const data = body?.data ?? body
         const serverRadius: GlobalRadiusTokens | undefined = data?.globalRadius || data?.radius || data
         if (!serverRadius || typeof serverRadius !== 'object') return
@@ -260,7 +244,6 @@ export function useGlobalRadius() {
       const capturedValue = initialRadiusValues.current[componentType]
       const capturedRadiusValue = tokens?.radius?.[capturedValue as keyof typeof tokens.radius]
       if (capturedRadiusValue) {
-        console.log(`🎯 默认预设使用捕获值: ${componentType} = ${capturedRadiusValue}`)
         return capturedRadiusValue
       }
     }
@@ -272,14 +255,10 @@ export function useGlobalRadius() {
   const saveToServer = useCallback(async (payload?: GlobalRadiusTokens) => {
     try {
       if (!STORAGE_KEY) return
-      const url = `${API_BASE}/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
+      const url = `/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`
       const body = { globalRadius: payload || tokens?.globalRadius, updatedAt: Date.now() }
       console.log('[GlobalRadius] PUT (immediate)', { url, key: STORAGE_KEY, body })
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).catch(() => { })
+      await http.put(url, body).catch(() => { })
     } catch {
       // 忽略保存错误
     }
@@ -434,12 +413,6 @@ export function useGlobalRadius() {
       buttonRadius = '0.75rem';
     }
 
-    console.log('🎯 应用边角到组件:', {
-      preset: tokens.globalRadius.active,
-      card: cardRadius,
-      button: buttonRadius
-    })
-
     // 使用CSS变量方式，避免直接DOM操作
     const root = document.documentElement
     root.style.setProperty('--radius-current-card', cardRadius)
@@ -494,7 +467,6 @@ export function useGlobalRadius() {
     }
     styleTag.textContent = overrideStyles
 
-    console.log('✅ 卡片和按钮边角配置已应用')
   }, [tokens, getComponentRadius])
 
   // 应用边角预设到DOM

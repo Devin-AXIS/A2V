@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../env'
 import { TJWTPayload, TIdentity } from './identity'
-import { findUserById } from '../modules/users/repo'
+import { findUserById, findUserByCId } from '../modules/users/repo'
 
 // JWT 密钥（实际应该从环境变量获取）
 const JWT_SECRET = process.env.JWT_SECRET || 'aino-jwt-secret-key-2024'
@@ -41,8 +41,11 @@ export async function getUserFromToken(token: string): Promise<TIdentity | null>
   }
 
   // 从数据库获取最新用户信息
-  const user = await findUserById(payload.id)
-  if (!user) return null
+  let user = await findUserById(payload.id)
+  if (!user) {
+    user = await findUserByCId(payload.id)
+    if (!user) return null
+  }
 
   return {
     id: user.id,

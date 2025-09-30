@@ -116,17 +116,17 @@ export function AuthIntegrationsSettings() {
         <div>
           <h1 className="text-lg font-semibold text-slate-900">{locale === "zh" ? "授权管理" : "Authorization"}</h1>
           <p className="text-sm text-slate-600 mt-1">
-            {locale === "zh" ? "配置 Firecrawl 与 FastGPT 的访问凭证（按应用存储）" : "Configure credentials for Firecrawl and FastGPT (per app)"}
+            {locale === "zh" ? "配置 ScrapeGraphAI 与 FastGPT 的访问凭证（按应用存储）" : "Configure credentials for Firecrawl and FastGPT (per app)"}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Firecrawl API Key</Label>
+            <Label>ScrapeGraphAI API Key</Label>
             <div className="flex items-center gap-2">
               <Input
                 type={show.firecrawl ? "text" : "password"}
-                placeholder="fc-xxxxxxxx"
+                placeholder="sgai-xxxxxxxx"
                 value={state.firecrawlKey || ""}
                 onChange={(e) => setState((s) => ({ ...s, firecrawlKey: e.target.value }))}
               />

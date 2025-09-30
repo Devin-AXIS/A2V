@@ -15,6 +15,11 @@ export { CategoryTabNavigation } from "./category-tab-navigation"
 export { ActionToolbar } from "./action-toolbar"
 export { DropdownFilterTabs } from "./dropdown-filter-tabs"
 export { EducationBottomNavigation } from "./education-bottom-navigation"
+export { PrimaryPillBottomNav, type PrimaryPillBottomNavAction } from "./primary-pill-bottom-nav"
+export { SecondaryPillBottomNav, type SecondaryPillBottomNavAction } from "./secondary-pill-bottom-nav"
+export { SinglePillBottomNav, type SinglePillBottomNavAction } from "./single-pill-bottom-nav"
+export { PillNavigationBar, type PillNavigationBarItem } from "./pill-navigation-bar"
+export { TextActionBottomNav, type TextActionBottomNavAction, type TextActionBottomNavInfo } from "./text-action-bottom-nav"
 
 // 新创建的导航组件
 export { Pagination } from "./pagination"

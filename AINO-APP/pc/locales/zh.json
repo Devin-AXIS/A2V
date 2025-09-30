@@ -36,14 +36,28 @@
   "navigationComponentsPage": {
     "title": "导航组件",
     "tabs": "标签页 Tabs",
-    "tabsContent": ["个人资料", "仪表盘", "设置", "团队"],
+    "tabsContent": [
+      "个人资料",
+      "仪表盘",
+      "设置",
+      "团队"
+    ],
     "appHeader": "应用标题栏 App Header",
     "appHeaderDescription": "向下滚动查看效果",
     "breadcrumbs": "面包屑 Breadcrumbs",
     "breadcrumbItems": [
-      { "label": "主页", "href": "#" },
-      { "label": "组件", "href": "#" },
-      { "label": "导航", "href": "#" }
+      {
+        "label": "主页",
+        "href": "#"
+      },
+      {
+        "label": "组件",
+        "href": "#"
+      },
+      {
+        "label": "导航",
+        "href": "#"
+      }
     ],
     "segmentedControl": "分段控制器 Segmented Control",
     "actionToolbar": "操作工具栏 Action Toolbar",
@@ -102,7 +116,12 @@
   "helpCenterPage": {
     "title": "帮助中心",
     "searchPlaceholder": "搜索问题...",
-    "categories": ["通用", "账户", "账单", "技术"],
+    "categories": [
+      "通用",
+      "账户",
+      "账单",
+      "技术"
+    ],
     "faq": [
       {
         "question": "如何重置我的密码？",

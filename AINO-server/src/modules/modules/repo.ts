@@ -387,107 +387,200 @@ export class ModuleRepository {
   async uninstall(applicationId: string, moduleKey: string) {
     console.log('🔍 卸载模块:', { applicationId, moduleKey })
 
-    // 如果传入的是UUID（模块安装记录ID或模块ID），优先按ID删除，避免同名误删
-    const looksLikeUuid = moduleKey && moduleKey.length === 36 && moduleKey.includes('-')
-    if (looksLikeUuid) {
-      try {
-        const [deletedByInstallId] = await db
-          .delete(moduleInstalls)
-          .where(
-            and(
-              eq(moduleInstalls.applicationId, applicationId),
-              eq(moduleInstalls.id, moduleKey)
-            )
-          )
-          .returning()
+    // 使用事务确保数据一致性
+    return await db.transaction(async (tx) => {
+      let moduleToDelete: any = null
+      let moduleId: string | null = null
 
-        if (deletedByInstallId) {
-          console.log('✅ 按 module_installs.id 卸载成功')
-          return deletedByInstallId
+      // 如果传入的是UUID（模块安装记录ID或模块ID），优先按ID删除，避免同名误删
+      const looksLikeUuid = moduleKey && moduleKey.length === 36 && moduleKey.includes('-')
+      if (looksLikeUuid) {
+        try {
+          const [deletedByInstallId] = await tx
+            .delete(moduleInstalls)
+            .where(
+              and(
+                eq(moduleInstalls.applicationId, applicationId),
+                eq(moduleInstalls.id, moduleKey)
+              )
+            )
+            .returning()
+
+          if (deletedByInstallId) {
+            console.log('✅ 按 module_installs.id 卸载成功')
+            moduleToDelete = deletedByInstallId
+            moduleId = moduleKey
+          }
+        } catch (error) {
+          console.log('⚠️ 按 module_installs.id 卸载失败:', error)
         }
-      } catch (error) {
-        console.log('⚠️ 按 module_installs.id 卸载失败:', error)
+
+        if (!moduleToDelete) {
+          try {
+            const [deletedByModuleId] = await tx
+              .delete(modules)
+              .where(
+                and(
+                  eq(modules.applicationId, applicationId),
+                  eq(modules.id, moduleKey)
+                )
+              )
+              .returning()
+
+            if (deletedByModuleId) {
+              console.log('✅ 按 modules.id 卸载成功')
+              moduleToDelete = deletedByModuleId
+              moduleId = moduleKey
+            }
+          } catch (error) {
+            console.log('⚠️ 按 modules.id 卸载失败:', error)
+          }
+        }
       }
 
-      try {
-        const [deletedByModuleId] = await db
+      // 先尝试从 module_installs 表卸载（按 moduleKey 字段）
+      if (!moduleToDelete) {
+        try {
+          const [deletedModule] = await tx
+            .delete(moduleInstalls)
+            .where(
+              and(
+                eq(moduleInstalls.applicationId, applicationId),
+                eq(moduleInstalls.moduleKey, moduleKey)
+              )
+            )
+            .returning()
+
+          if (deletedModule) {
+            console.log('✅ 从 module_installs 表按 moduleKey 卸载成功')
+            moduleToDelete = deletedModule
+            moduleId = deletedModule.id
+          }
+        } catch (error) {
+          console.log('⚠️ 从 module_installs 表按 moduleKey 卸载失败:', error)
+        }
+      }
+
+      // 如果按 moduleKey 没找到，尝试按 moduleName 字段
+      if (!moduleToDelete) {
+        try {
+          const [deletedModule] = await tx
+            .delete(moduleInstalls)
+            .where(
+              and(
+                eq(moduleInstalls.applicationId, applicationId),
+                eq(moduleInstalls.moduleName, moduleKey)
+              )
+            )
+            .returning()
+
+          if (deletedModule) {
+            console.log('✅ 从 module_installs 表按 moduleName 卸载成功')
+            moduleToDelete = deletedModule
+            moduleId = deletedModule.id
+          }
+        } catch (error) {
+          console.log('⚠️ 从 module_installs 表按 moduleName 卸载失败:', error)
+        }
+      }
+
+      // 如果 module_installs 表没有数据，从 modules 表卸载
+      if (!moduleToDelete) {
+        console.log('🔍 尝试从 modules 表卸载...')
+        const [deletedModule] = await tx
           .delete(modules)
           .where(
             and(
               eq(modules.applicationId, applicationId),
-              eq(modules.id, moduleKey)
+              eq(modules.name, moduleKey)
             )
           )
           .returning()
 
-        if (deletedByModuleId) {
-          console.log('✅ 按 modules.id 卸载成功')
-          return deletedByModuleId
+        if (deletedModule) {
+          console.log('✅ 从 modules 表卸载成功')
+          moduleToDelete = deletedModule
+          moduleId = deletedModule.id
         }
-      } catch (error) {
-        console.log('⚠️ 按 modules.id 卸载失败:', error)
       }
-    }
 
-    // 先尝试从 module_installs 表卸载（按 moduleKey 字段）
+      if (!moduleToDelete) {
+        console.log('❌ 两个表都没有找到要卸载的模块')
+        throw new Error('模块未找到')
+      }
+
+      // 清理模块相关的目录和表
+      if (moduleId) {
+        await this.cleanupModuleDirectories(tx, moduleId, applicationId)
+      }
+
+      return moduleToDelete
+    })
+  }
+
+  // 清理模块相关的目录和表
+  private async cleanupModuleDirectories(tx: any, moduleId: string, applicationId: string) {
+    console.log('🧹 开始清理模块相关的目录和表:', { moduleId, applicationId })
+
     try {
-      const [deletedModule] = await db
-        .delete(moduleInstalls)
+      // 1. 查找该模块相关的所有目录
+      const { directories } = await import("../../db/schema")
+      const moduleDirectories = await tx
+        .select()
+        .from(directories)
         .where(
           and(
-            eq(moduleInstalls.applicationId, applicationId),
-            eq(moduleInstalls.moduleKey, moduleKey)
+            eq(directories.moduleId, moduleId),
+            eq(directories.applicationId, applicationId)
           )
         )
-        .returning()
 
-      if (deletedModule) {
-        console.log('✅ 从 module_installs 表按 moduleKey 卸载成功')
-        return deletedModule
-      }
-    } catch (error) {
-      console.log('⚠️ 从 module_installs 表按 moduleKey 卸载失败:', error)
-    }
+      console.log(`🔍 找到 ${moduleDirectories.length} 个相关目录`)
 
-    // 如果按 moduleKey 没找到，尝试按 moduleName 字段
-    try {
-      const [deletedModule] = await db
-        .delete(moduleInstalls)
-        .where(
-          and(
-            eq(moduleInstalls.applicationId, applicationId),
-            eq(moduleInstalls.moduleName, moduleKey)
+      // 2. 删除每个目录及其相关数据
+      for (const directory of moduleDirectories) {
+        console.log(`🗑️ 删除目录: ${directory.name} (${directory.id})`)
+
+        // 删除目录定义
+        const { directoryDefs } = await import("../../db/schema")
+        await tx.delete(directoryDefs).where(eq(directoryDefs.directoryId, directory.id))
+        console.log(`✅ 已删除目录 ${directory.id} 的所有 directory_defs 记录`)
+
+        // 删除字段分类
+        const { fieldCategories } = await import("../../db/schema")
+        await tx.delete(fieldCategories).where(eq(fieldCategories.directoryId, directory.id))
+        console.log(`✅ 已删除目录 ${directory.id} 的所有 field_categories 记录`)
+
+        // 删除记录分类
+        const { recordCategories } = await import("../../db/schema")
+        await tx.delete(recordCategories).where(eq(recordCategories.directoryId, directory.id))
+        console.log(`✅ 已删除目录 ${directory.id} 的所有 record_categories 记录`)
+
+        // 删除字段定义
+        const { fieldDefs } = await import("../../db/schema")
+        await tx.delete(fieldDefs).where(eq(fieldDefs.directoryId, directory.id))
+        console.log(`✅ 已删除目录 ${directory.id} 的所有 field_defs 记录`)
+
+        // 删除关联记录
+        const { relationRecords } = await import("../../db/schema")
+        await tx.delete(relationRecords).where(
+          or(
+            eq(relationRecords.fromDirectoryId, directory.id),
+            eq(relationRecords.toDirectoryId, directory.id)
           )
         )
-        .returning()
+        console.log(`✅ 已删除目录 ${directory.id} 的所有 relation_records 记录`)
 
-      if (deletedModule) {
-        console.log('✅ 从 module_installs 表按 moduleName 卸载成功')
-        return deletedModule
+        // 最后删除目录本身
+        await tx.delete(directories).where(eq(directories.id, directory.id))
+        console.log(`✅ 目录 ${directory.id} 删除成功`)
       }
+
+      console.log('🎉 模块目录清理完成')
     } catch (error) {
-      console.log('⚠️ 从 module_installs 表按 moduleName 卸载失败:', error)
+      console.error('❌ 清理模块目录失败:', error)
+      throw error
     }
-
-    // 如果 module_installs 表没有数据，从 modules 表卸载
-    console.log('🔍 尝试从 modules 表卸载...')
-    const [deletedModule] = await db
-      .delete(modules)
-      .where(
-        and(
-          eq(modules.applicationId, applicationId),
-          eq(modules.name, moduleKey)
-        )
-      )
-      .returning()
-
-    if (deletedModule) {
-      console.log('✅ 从 modules 表卸载成功')
-      return deletedModule
-    }
-
-    console.log('❌ 两个表都没有找到要卸载的模块')
-    throw new Error('模块未找到')
   }
 
   // 检查模块是否已安装

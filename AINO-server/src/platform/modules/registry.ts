@@ -113,6 +113,21 @@ export function registerSystemModules(): void {
     description: '教育管理模块，包含课程管理、学生管理等功能',
   })
 
+  // 教育模块
+  moduleRegistry.register({
+    key: 'rec',
+    name: '招聘模块',
+    version: '1.0.0',
+    kind: ModuleKind.LOCAL,
+    routes: [
+      { method: 'GET', path: '/courses', description: '获取岗位列表' },
+      { method: 'POST', path: '/courses', description: '创建岗位' },
+      { method: 'GET', path: '/students', description: '获取求职者列表' },
+      { method: 'POST', path: '/students', description: '注册求职者' },
+    ],
+    description: '照片管理模块，包含岗位管理、求职者管理等功能',
+  })
+
   // 内容管理模块
   moduleRegistry.register({
     key: 'content',

@@ -5,7 +5,7 @@ import { use } from "react"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppHeader } from "@/components/navigation/app-header"
 import { PillNavigation } from "@/components/navigation/pill-navigation"
-import { FutureSkillsCourseCard } from "@/components/card/future-skills-course-card"
+import { FutureSkillsCourseCard } from "@/components/card/cards/education/future-skills-course-card"
 import { EducationBottomNavigation } from "@/components/navigation/education-bottom-navigation"
 import type { Locale } from "@/lib/dictionaries"
 

@@ -145,6 +145,7 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
               const cfgId = currentParams.get('cfgId')
               const previewId = currentParams.get('previewId')
               const appId = currentParams.get('appId')
+              const mainPath = window.localStorage.getItem('MAIN_PATH')
 
               if (cfgId) {
                 // 如果有 cfgId，使用 cfgId 参数
@@ -152,6 +153,9 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
               } else if (previewId && appId) {
                 // 否则使用存储的预览参数
                 fullHref = `/${locale}/preview?previewId=${previewId}&device=mobile&appId=${appId}`
+              } else if (mainPath) {
+                // 如果没有预览参数，回退到首页
+                fullHref = mainPath
               } else {
                 // 如果没有预览参数，回退到首页
                 fullHref = `/${locale}`
@@ -162,25 +166,30 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
             const isActive = pathname === fullHref || (href === "/" && pathname === `/${locale}`)
             const IconComp = Icon ?? (iconName ? iconMap[iconName] : undefined) ?? LayoutGrid
 
+            const jump = () => {
+              window.location.href = fullHref
+            }
+
             return (
-              <Link href={fullHref} key={`${label}-${index}-${href}`}>
-                <Button
-                  variant="ghost"
-                  className="rounded-2xl w-12 h-12 flex flex-col items-center justify-center transition-all duration-300 group"
+              // <Link href={fullHref} key={`${label}-${index}-${href}`}>
+              <Button
+                onClick={jump}
+                variant="ghost"
+                className="rounded-2xl w-12 h-12 flex flex-col items-center justify-center transition-all duration-300 group"
+                style={{
+                  backgroundColor: isActive ? activeBgColor : "transparent",
+                }}
+              >
+                <IconComp
+                  className="w-6 h-6 transition-colors"
                   style={{
-                    backgroundColor: isActive ? activeBgColor : "transparent",
+                    color: theme.fontColor,
+                    opacity: isActive ? 1 : 0.7,
                   }}
-                >
-                  <IconComp
-                    className="w-6 h-6 transition-colors"
-                    style={{
-                      color: theme.fontColor,
-                      opacity: isActive ? 1 : 0.7,
-                    }}
-                  />
-                  <span className="sr-only">{label}</span>
-                </Button>
-              </Link>
+                />
+                <span className="sr-only">{label}</span>
+              </Button>
+              // </Link>
             )
           })}
 

@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (cfgStr) {
         window.localStorage.setItem('APP_AUTH_CONFIG', cfgStr)
       }
-    } catch {}
+    } catch { }
   }, [])
 
   const handleLogin = async (data: any) => {

@@ -546,7 +546,7 @@ export default function BuilderPage() {
                     onClick={() => c.setOpenAddModule(true)}
                     className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
                   >
-                    {locale === "zh" ? "+ 安装插件" : "+ Install Plugin"}
+                    {locale === "zh" ? "+ 安装模块" : "+ Install Module"}
                   </button>
                 </div>
               </div>
@@ -1042,10 +1042,11 @@ export default function BuilderPage() {
         iconLabel={locale === "zh" ? "模块图标" : "Module Icon"}
         options={[
           { key: "blank-template", label: t("module_custom") },
-          { key: "ecom", label: t("module_ecom") },
+          // { key: "ecom", label: t("module_ecom") },
           { key: "edu", label: t("module_edu") },
-          { key: "content", label: t("module_content") },
-          { key: "project", label: t("module_project") },
+          { key: "rec", label: t("module_rec") },
+          // { key: "content", label: t("module_content") },
+          // { key: "project", label: t("module_project") },
         ]}
         defaultOptionKey="blank-template"
         onSubmit={(p) => c.handleCreateModuleFromDialog(p as any)}

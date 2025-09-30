@@ -32,7 +32,7 @@ interface EntityCreatorProps {
   initialName?: string
   showIconUpload?: boolean
   iconLabel?: string
-  onSubmit: (payload: { name: string; desc?: string; templateKey: string; icon?: string }) => void
+  onSubmit: (payload: { name: string; desc?: string; templateKey: string; icon?: string; defaultTableName?: string }) => void
   onCancel: () => void
 }
 
@@ -61,6 +61,7 @@ export function EntityCreator({
   const [tpl, setTpl] = useState<string>(defaultOptionKey || options[0]?.key || "")
   const [icon, setIcon] = useState<string>("")
   const [iconPreview, setIconPreview] = useState<string>("")
+  const [defaultTableName, setDefaultTableName] = useState<string>("")
 
   useEffect(() => {
     setName(initialName || "")
@@ -68,13 +69,14 @@ export function EntityCreator({
     setTpl(defaultOptionKey || options[0]?.key || "")
     setIcon("")
     setIconPreview("")
+    setDefaultTableName("")
   }, [defaultOptionKey, options, initialName])
 
-  const canSubmit = !!name.trim() && !!tpl
+  const canSubmit = !!name.trim() && !!tpl && (mode !== "module" || tpl === "blank-template" || !!defaultTableName.trim())
 
   const handleSubmit = () => {
     if (canSubmit) {
-      onSubmit({ name: name.trim(), desc: desc.trim(), templateKey: tpl, icon: icon || undefined })
+      onSubmit({ name: name.trim(), desc: desc.trim(), templateKey: tpl, icon: icon || undefined, defaultTableName: defaultTableName.trim() || undefined })
     }
   }
 
@@ -124,13 +126,13 @@ export function EntityCreator({
 
       {showIconUpload && (
         <div className="grid gap-2">
-                          <label className="text-sm text-slate-700">{iconLabel || defaultIconLabel}</label>
+          <label className="text-sm text-slate-700">{iconLabel || defaultIconLabel}</label>
           <div className="flex items-center gap-3">
             {iconPreview ? (
               <div className="relative">
-                <img 
-                  src={iconPreview} 
-                  alt={locale === "zh" ? "模块图标" : "Module Icon"} 
+                <img
+                  src={iconPreview}
+                  alt={locale === "zh" ? "模块图标" : "Module Icon"}
                   className="w-12 h-12 rounded-lg object-cover border border-gray-200"
                 />
                 <button
@@ -159,19 +161,31 @@ export function EntityCreator({
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 cursor-pointer transition"
               >
                 <Upload className="size-4" />
-                {iconPreview 
+                {iconPreview
                   ? (locale === "zh" ? "更换图标" : "Change Icon")
                   : (locale === "zh" ? "上传图标" : "Upload Icon")
                 }
               </label>
               <p className="text-xs text-gray-500 mt-1">
-                {locale === "zh" 
+                {locale === "zh"
                   ? "支持 PNG、JPG、SVG 格式，建议尺寸 64x64"
                   : "Supports PNG, JPG, SVG formats, recommended size 64x64"
                 }
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {mode === "module" && tpl !== "blank-template" && (
+        <div className="grid gap-1">
+          <label className="text-sm text-slate-700">{locale === "zh" ? "默认表名称" : "Default Table Name"}</label>
+          <Input
+            value={defaultTableName}
+            onChange={(e) => setDefaultTableName(e.target.value)}
+            placeholder={locale === "zh" ? "请输入默认表名称" : "Enter default table name"}
+            className="bg-white/80"
+          />
         </div>
       )}
 
@@ -190,9 +204,9 @@ export function EntityCreator({
             >
               <div className="flex items-center gap-2">
                 {o.icon && (
-                  <img 
-                    src={o.icon} 
-                    alt={o.label} 
+                  <img
+                    src={o.icon}
+                    alt={o.label}
                     className="w-5 h-5 rounded object-cover"
                   />
                 )}

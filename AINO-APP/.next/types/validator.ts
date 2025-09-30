@@ -36,12 +36,6 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 }
 
 
-// Validate ../../app/[locale]/ai-cards/page.tsx
-{
-  const handler = {} as typeof import("../../app/[locale]/ai-cards/page.js")
-  handler satisfies AppPageConfig<"/[locale]/ai-cards">
-}
-
 // Validate ../../app/[locale]/app/[appKey]/page.tsx
 {
   const handler = {} as typeof import("../../app/[locale]/app/[appKey]/page.js")
@@ -70,6 +64,12 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   const handler = {} as typeof import("../../app/[locale]/auth/register/page.js")
   handler satisfies AppPageConfig<"/[locale]/auth/register">
+}
+
+// Validate ../../app/[locale]/cards/[cardName]/detail/[id]/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/cards/[cardName]/detail/[id]/page.js")
+  handler satisfies AppPageConfig<"/[locale]/cards/[cardName]/detail/[id]">
 }
 
 // Validate ../../app/[locale]/chat/page.tsx
@@ -300,10 +300,46 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   handler satisfies AppPageConfig<"/[locale]/profile/edit">
 }
 
+// Validate ../../app/[locale]/profile/favorites/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/favorites/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/favorites">
+}
+
+// Validate ../../app/[locale]/profile/likes/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/likes/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/likes">
+}
+
 // Validate ../../app/[locale]/profile/page.tsx
 {
   const handler = {} as typeof import("../../app/[locale]/profile/page.js")
   handler satisfies AppPageConfig<"/[locale]/profile">
+}
+
+// Validate ../../app/[locale]/profile/settings/identity-verification/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/settings/identity-verification/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/settings/identity-verification">
+}
+
+// Validate ../../app/[locale]/profile/settings/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/settings/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/settings">
+}
+
+// Validate ../../app/[locale]/profile/settings/password/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/settings/password/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/settings/password">
+}
+
+// Validate ../../app/[locale]/profile/settings/phone/page.tsx
+{
+  const handler = {} as typeof import("../../app/[locale]/profile/settings/phone/page.js")
+  handler satisfies AppPageConfig<"/[locale]/profile/settings/phone">
 }
 
 // Validate ../../app/[locale]/profile/third-party/page.tsx

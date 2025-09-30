@@ -5,8 +5,9 @@ import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
-import { setDatas } from "@/components/card/set-datas"
+import { setDatas } from "@/components/card/config/set-datas"
 import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
+import { http } from "@/lib/request"
 
 export default function PreviewPage() {
   const params = useParams<{ locale: string; id: string }>()
@@ -53,9 +54,9 @@ export default function PreviewPage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`http://localhost:3007/api/preview-manifests/${id}`)
-        const data = await res.json()
-        if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+        const response = await http.get(`/api/preview-manifests/${id}`)
+        const data = response
+        if (!data?.success) throw new Error(data?.message || "failed")
         if (!canceled) {
           const mf = data.data?.manifest || {}
           try {

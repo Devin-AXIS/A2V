@@ -114,37 +114,22 @@ async function apiRequest<T>(
   }
 
   try {
-    console.log(`🌐 API Request: ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`)
-    console.log(`📋 Request Config:`, {
-      url: `${API_BASE_URL}${endpoint}`,
-      method: options.method || 'GET',
-      headers: config.headers,
-      body: options.body ? JSON.parse(options.body as string) : undefined
-    })
-
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
-
-    console.log(`📡 Response Status:`, response.status)
-    console.log(`📡 Response Headers:`, Object.fromEntries(response.headers.entries()))
 
     // 检查响应内容类型
     const contentType = response.headers.get('content-type')
-    console.log(`📡 Content-Type:`, contentType)
 
     let data
     if (contentType && contentType.includes('application/json')) {
       data = await response.json()
     } else {
       const text = await response.text()
-      console.log(`📡 Response Text:`, text)
       try {
         data = JSON.parse(text)
       } catch {
         data = { error: text }
       }
     }
-
-    console.log(`📡 Response Data:`, data)
 
     // 处理成功状态码 (200, 201, 204 等)
     if (response.ok) {
@@ -1043,6 +1028,10 @@ export const modulesApi = {
     return apiRequest<any>(`/api/modules/initialize-system?applicationId=${applicationId}`, {
       method: 'POST',
     })
+  },
+
+  async getCardConfigs(): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/modules/card-configs`)
   }
 }
 

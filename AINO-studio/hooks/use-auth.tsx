@@ -50,20 +50,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // 检查认证状态
   const checkAuth = async () => {
-    console.log("🔍 开始认证检查...")
     try {
       let token = getStoredToken()
 
       // 开发环境：如果没有token，设置默认的test-token
       if (!token) {
-        console.log("🔧 设置默认test-token")
         token = 'test-token'
         setStoredToken(token)
       }
 
-      console.log("🔑 Token 状态:", token ? "存在" : "不存在")
       if (token) {
-        console.log("🔄 尝试获取用户信息...")
         // 使用新的 API 服务获取用户信息，添加超时处理
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('API timeout')), 5000)
@@ -72,27 +68,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const authPromise = api.auth.getCurrentUser()
         const response = await Promise.race([authPromise, timeoutPromise])
 
-        console.log("📡 认证响应:", response)
 
         if (response.success && response.data) {
-          console.log("✅ 用户认证成功:", response.data)
           setUser(response.data)
         } else {
-          console.log("❌ Token 无效，清除存储")
           // Token 无效，清除存储
           removeStoredToken()
           localStorage.removeItem('user')
         }
       } else {
-        console.log("ℹ️ 无 Token，跳过认证检查")
       }
     } catch (error) {
-      console.error("❌ Auth check failed:", error)
       // 清除无效的认证信息
       removeStoredToken()
       localStorage.removeItem('user')
     } finally {
-      console.log("🏁 认证检查完成，设置 isLoading = false")
       setIsLoading(false)
     }
   }
@@ -104,24 +94,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      console.log("🔐 开始登录...")
 
       // 使用新的 API 服务进行登录
       const response = await api.auth.login({ email, password })
-
-      console.log("📡 登录响应:", response)
 
       if (response.success && response.data) {
         const { token, user } = response.data
         setUser(user)
         setStoredToken(token)
         localStorage.setItem('user', JSON.stringify(user))
-        console.log("✅ 登录成功")
       } else {
         throw new Error(response.error || response.message || '登录失败')
       }
     } catch (error) {
-      console.error('❌ 登录失败:', error)
       throw error
     } finally {
       setIsLoading(false)

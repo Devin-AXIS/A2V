@@ -10,8 +10,8 @@ import { Tabs } from "@/components/navigation/tabs"
 import { PillButton } from "@/components/basic/pill-button"
 import { Tag } from "@/components/basic/tag"
 import { EducationBottomNavigation } from "@/components/navigation/education-bottom-navigation"
-import RelatedJobsListCard from "@/components/card/business-cards/related-jobs-list-card"
-import { CourseOutlineCard } from "@/components/card/business-cards/course-outline-card"
+import RelatedJobsListCard from "@/components/card/cards/recruitment/related-jobs-list-card"
+import { CourseOutlineCard } from "@/components/card/cards/education/course-outline-card"
 
 const courseData = {
   id: 1,

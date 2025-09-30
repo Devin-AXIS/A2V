@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CardRegistry } from "@/components/card/registry"
+import { CardRegistry } from "@/components/card/core/registry"
 
 type RegistryHookResult<T> = {
     realData: T
@@ -8,6 +8,7 @@ type RegistryHookResult<T> = {
 
 export function useCardRegistryData<T>(name: string | undefined, defaultData: T) {
     const [data, setData] = useState<RegistryHookResult<T>>({ realData: defaultData, CARD_DISPLAY_DATA: null })
+    const [realData, setRealData] = useState<T>(null);
 
     const safeName = typeof name === 'string' ? name : ''
 
@@ -32,19 +33,20 @@ export function useCardRegistryData<T>(name: string | undefined, defaultData: T)
     useEffect(() => {
         try {
             const current = CardRegistry.getData(safeName)
+            const originalData = CardRegistry.getRealData(safeName)
             const displayPayload = cardDisplayEntry && typeof cardDisplayEntry === 'object' ? (cardDisplayEntry.display ?? null) : null
 
             // 初始化时优先使用当前注册中心数据
             if (current) {
-                setData({ realData: ((current as T) || defaultData), CARD_DISPLAY_DATA: displayPayload })
+                setData({ realData: ((current as T) || defaultData), CARD_DISPLAY_DATA: displayPayload, original: originalData })
             } else {
-                setData({ realData: defaultData, CARD_DISPLAY_DATA: displayPayload })
+                setData({ realData: defaultData, CARD_DISPLAY_DATA: displayPayload, original: originalData })
             }
 
             // 始终订阅后续更新
-            CardRegistry.listen(safeName, (eventName: string, payload: T) => {
+            CardRegistry.listen(safeName, (eventName: string, payload: T, originalData: any) => {
                 if (eventName === safeName) {
-                    setData({ realData: (payload || defaultData), CARD_DISPLAY_DATA: displayPayload })
+                    setData({ realData: (payload || defaultData), CARD_DISPLAY_DATA: displayPayload, original: originalData })
                 }
             })
         } catch {

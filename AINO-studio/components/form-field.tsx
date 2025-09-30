@@ -20,6 +20,7 @@ import { OtherVerificationInput } from "@/components/form-inputs/other-verificat
 import { ImageInput } from "@/components/form-inputs/image-input"
 import { AvatarInput } from "@/components/form-inputs/avatar-input"
 import { VideoInput } from "@/components/form-inputs/video-input"
+import { FileInput } from "@/components/form-inputs/file-input"
 
 import { ModernDateInput } from "@/components/form-inputs/modern-date-input"
 import { TimeInput } from "@/components/form-inputs/time-input"
@@ -54,13 +55,13 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
         if (!Array.isArray(value)) {
           const defaults = field.progressConfig?.defaultItems || []
           const items = (defaults.length > 0
-            ? defaults.map((d, idx) => ({ id: `${field.id}-${idx}`, key: d.key || `p${idx+1}`, label: d.label || `Item ${idx+1}`, status: d.status, weight: d.weight ?? 1, value: Number(value||0) }))
-            : [{ id: `${field.id}-0`, key: 'progress', label: 'Progress', status: 'planned', weight: 1, value: Number(value||0) }]
+            ? defaults.map((d, idx) => ({ id: `${field.id}-${idx}`, key: d.key || `p${idx + 1}`, label: d.label || `Item ${idx + 1}`, status: d.status, weight: d.weight ?? 1, value: Number(value || 0) }))
+            : [{ id: `${field.id}-0`, key: 'progress', label: 'Progress', status: 'planned', weight: 1, value: Number(value || 0) }]
           ) as any
           return (
             <ProgressItemsInput
               items={items}
-              onChange={(arr)=>onChange(arr)}
+              onChange={(arr) => onChange(arr)}
               aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
               showProgressBar={field.progressConfig?.showProgressBar !== false}
               showPercentage={field.progressConfig?.showPercentage !== false}
@@ -72,7 +73,7 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
         return (
           <ProgressItemsInput
             items={value}
-            onChange={(arr)=>onChange(arr)}
+            onChange={(arr) => onChange(arr)}
             aggregation={field.progressConfig?.aggregation || 'weightedAverage'}
             showProgressBar={field.progressConfig?.showProgressBar !== false}
             showPercentage={field.progressConfig?.showPercentage !== false}
@@ -246,30 +247,18 @@ function renderInput(field: FieldModel, record: RecordRow, onChange: (v: any) =>
         </div>
       )
     case "daterange":
-      return <ModernDateInput field={{...field, dateMode: "range"}} value={value} onChange={onChange} />
+      return <ModernDateInput field={{ ...field, dateMode: "range" }} value={value} onChange={onChange} />
     case "multidate":
-      return <ModernDateInput field={{...field, dateMode: "multiple"}} value={value} onChange={onChange} />
+      return <ModernDateInput field={{ ...field, dateMode: "multiple" }} value={value} onChange={onChange} />
     case "time":
       return <TimeInput value={value} onChange={onChange} />
     case "file":
       return (
-        <div className="flex items-center gap-2">
-          <Input
-            type="file"
-            className="bg-white"
-            accept={field.accept || "*/*"}
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              onChange(file.name)
-            }}
-          />
-          {value && (
-            <span className="text-xs rounded-full border bg-white px-2 py-0.5" title="文件名">
-              {String(value)}
-            </span>
-          )}
-        </div>
+        <FileInput
+          value={value}
+          onChange={onChange}
+          accept={field.accept || "*/*"}
+        />
       )
     case "image":
       return (
@@ -381,18 +370,18 @@ interface FormFieldProps {
 
 export function FormField({ field, record, app, onChange, showValidation = false }: FormFieldProps) {
   const value = (record as any)[field.key]
-  
+
   // 验证字段值
   const getValidationError = () => {
     if (!showValidation || !field.required) return null
-    
-    const isEmpty = 
+
+    const isEmpty =
       value === null ||
       value === undefined ||
       (typeof value === "string" && value.trim() === "") ||
       (Array.isArray(value) && value.length === 0) ||
       (typeof value === "object" && Object.keys(value).length === 0)
-    
+
     if (field.type === "number" || field.type === "percent") {
       if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return "请输入有效的数字"
@@ -402,12 +391,12 @@ export function FormField({ field, record, app, onChange, showValidation = false
     } else if (isEmpty) {
       return "此字段为必填项"
     }
-    
+
     return null
   }
-  
+
   const validationError = getValidationError()
-  
+
   // 对于experience类型的字段，不显示外层标签，避免重复标题
   if (field.type === "experience") {
     return (

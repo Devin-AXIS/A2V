@@ -42,7 +42,7 @@ export function AddEntityDialog({
   initialName?: string
   showIconUpload?: boolean
   iconLabel?: string
-  onSubmit: (payload: { name: string; desc?: string; templateKey: string; icon?: string }) => void
+  onSubmit: (payload: { name: string; desc?: string; templateKey: string; icon?: string; defaultTableName?: string }) => void
 }) {
   if (mode === "app") {
     return (

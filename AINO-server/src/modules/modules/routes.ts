@@ -13,6 +13,7 @@ import {
   UpdateModuleStatusRequest,
   GetModulesQuery,
 } from "./dto"
+import { CardsConfig } from '../../lib/cards-config'
 
 const app = new Hono()
 
@@ -570,6 +571,14 @@ app.get("/remote", mockRequireAuthMiddleware, async (c) => {
 app.all("/remote/:moduleKey/*", mockRequireAuthMiddleware, async (c) => {
   const user = c.get("user")
   return remoteProxy.fetch(c.req, { user })
+})
+
+app.get("/card-configs", mockRequireAuthMiddleware, async (c) => {
+  const user = c.get("user")
+  return c.json({
+    success: true,
+    data: CardsConfig,
+  })
 })
 
 // 获取特定模块信息

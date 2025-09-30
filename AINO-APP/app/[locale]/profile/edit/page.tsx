@@ -1,16 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
+import { http } from "@/lib/request"
 import { AppHeader } from "@/components/navigation/app-header"
 import { DynamicBackground } from "@/components/theme/dynamic-background"
 import { AppCard } from "@/components/layout/app-card"
 import { PillButton } from "@/components/basic/pill-button"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BottomDrawer } from "@/components/feedback/bottom-drawer"
-import { 
+import {
   BasicInfoCard,
   GenericFormCard,
   jobExpectationFields,
@@ -25,16 +27,16 @@ import {
   certificateDisplay,
   type BasicInfo,
   type DataItem
-} from "@/components/card/profile-cards"
+} from "@/components/card/cards/user/profile-cards"
 import { TagInput } from "@/components/input/tag-input"
-import { 
-  User, 
-  Camera, 
-  Check, 
-  X, 
-  ChevronRight, 
-  Shield, 
-  Smartphone, 
+import {
+  User,
+  Camera,
+  Check,
+  X,
+  ChevronRight,
+  Shield,
+  Smartphone,
   Mail,
   MapPin,
   Briefcase,
@@ -45,23 +47,27 @@ import {
   Edit,
   Eye
 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 
 export default function EditProfilePage() {
   const router = useRouter()
   const { locale } = useParams()
+  const { toast } = useToast()
+
+  const { user, isAuthenticated, isLoading } = useAuth()
 
   // 基础资料
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
-    name: "王宇",
-    avatar: "/generic-user-avatar.png",
-    gender: "男",
+    name: user?.name || "",
+    avatar: user?.avatar || "/generic-user-avatar.png",
+    gender: user?.extends?.gender || "男",
     country: "CN",
-    city: "北京 - 朝阳区",
-    birthday: "1990-05-15",
-    bio: "热爱技术，专注于前端开发",
-    profession: "前端工程师"
-  })
+    city: user?.extends?.city || "北京 - 朝阳区",
+    birthday: user?.extends?.birthday || "1990-05-15",
+    bio: user?.extends?.bio || "热爱技术，专注于前端开发",
+    profession: user?.extends?.profession || "前端工程师"
+  });
 
   // 其他档案数据
   const [userProfile, setUserProfile] = useState({
@@ -70,30 +76,57 @@ export default function EditProfilePage() {
     phoneVerified: true,
     email: "wangyu@example.com",
     emailVerified: false,
-    
-    
+
+
     // 个人优势
     personalAdvantages: "很傻",
-    
+
     // 求职期望
     jobExpectations: [] as DataItem[],
-    
+
     // 工作经历
-    workExperience: [] as DataItem[],
-    
+    workExperience: user?.extends?.work_exp || [] as DataItem[],
+
     // 项目经历
-    projectExperience: [] as DataItem[],
-    
+    projectExperience: user?.extends?.proj_exp || [] as DataItem[],
+
     // 教育经历
-    educationHistory: [] as DataItem[],
-    
+    educationHistory: user?.extends?.edu_exp || [] as DataItem[],
+
     // 证书资质
-    certificates: [] as DataItem[],
-    
+    certificates: user?.extends?.honors || [] as DataItem[],
+
     // 个人技能
-    skills: ["JavaScript", "TypeScript", "React", "Node.js", "前端开发"] as string[],
-    
+    skills: user?.extends?.skills || [] as string[],
+
   })
+
+  useEffect(() => {
+    setBasicInfo({
+      name: user?.name || "",
+      avatar: user?.avatar || "/generic-user-avatar.png",
+      gender: user?.extends?.gender || "男",
+      country: "CN",
+      city: user?.extends?.city || "北京 - 朝阳区",
+      birthday: user?.extends?.birthday || "1990-05-15",
+      bio: user?.extends?.bio || "热爱技术，专注于前端开发",
+      profession: user?.extends?.profession || "前端工程师"
+    })
+
+    // work_exp
+    // proj_exp
+    // edu_exp
+    // honors
+
+    setUserProfile({
+      ...userProfile,
+      workExperience: user?.extends?.work_exp || [] as DataItem[],
+      projectExperience: user?.extends?.proj_exp || [] as DataItem[],
+      educationHistory: user?.extends?.edu_exp || [] as DataItem[],
+      certificates: user?.extends?.honors || [] as DataItem[],
+      skills: user?.extends?.skills || [] as string[],
+    })
+  }, [user])
 
   const [showContactEdit, setShowContactEdit] = useState(false)
   const [editingSection, setEditingSection] = useState<string | null>(null)
@@ -107,10 +140,10 @@ export default function EditProfilePage() {
 
 
   // 编辑项组件
-  const EditableItem = ({ 
-    icon, 
-    title, 
-    content, 
+  const EditableItem = ({
+    icon,
+    title,
+    content,
     action = "编辑",
     onClick,
     showArrow = true,
@@ -126,7 +159,7 @@ export default function EditProfilePage() {
     status?: 'verified' | 'unverified' | 'incomplete'
     isOptimizable?: boolean
   }) => (
-    <div 
+    <div
       onClick={onClick}
       className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl"
     >
@@ -148,7 +181,7 @@ export default function EditProfilePage() {
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-2">
         {status === 'verified' && (
           <Shield className="w-4 h-4" style={{ color: "var(--card-success-color, #22c55e)" }} />
@@ -156,11 +189,11 @@ export default function EditProfilePage() {
         {status === 'incomplete' && (
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }} />
         )}
-        
+
         <PillButton variant="default">
           {action}
         </PillButton>
-        
+
         {showArrow && (
           <ChevronRight className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
         )}
@@ -170,7 +203,7 @@ export default function EditProfilePage() {
 
   // 添加项组件
   const AddSection = ({ title, onClick }: { title: string; onClick: () => void }) => (
-    <div 
+    <div
       onClick={onClick}
       className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl border-2 border-dashed"
       style={{ borderColor: "var(--card-border-color, #e2e8f0)" }}
@@ -180,15 +213,134 @@ export default function EditProfilePage() {
     </div>
   )
 
+  const handleWorkUpdate = (workExperience: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    workExperience.forEach((item, index) => {
+      const { id, title, organization, description, department, salary, startDate, endDate, isCurrent, isCurrently } = item;
+      const currentWorkExp = user?.extends?.work_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.department = department;
+        currentWorkExp.salary = salary;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isCurrently = isCurrently;
+      }
+    })
+    handleSaveUserData("work_exp");
+  }
+
+  const handleProjectUpdate = (projectExperience: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    projectExperience.forEach((item, index) => {
+      const { id, title, organization, description, department, technologies, startDate, endDate, isCurrent, isOngoing } = item;
+      const currentWorkExp = user?.extends?.proj_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.department = department;
+        currentWorkExp.technologies = technologies;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isOngoing = isOngoing;
+      }
+    })
+    handleSaveUserData("proj_exp");
+  }
+
+  const handleEducationUpdate = (educationHistory: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    educationHistory.forEach((item, index) => {
+      const { id, title, organization, description, degree, startDate, endDate, isCurrent, isCurrently } = item;
+      const currentWorkExp = user?.extends?.edu_exp?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.degree = degree;
+        currentWorkExp.startDate = startDate;
+        currentWorkExp.endDate = endDate;
+        currentWorkExp.isCurrent = isCurrent;
+        currentWorkExp.isCurrently = isCurrently;
+      }
+    })
+    handleSaveUserData("edu_exp");
+  }
+
+  const handleCertificateUpdate = (certificates: DataItem[]) => {
+    // (workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))
+    certificates.forEach((item, index) => {
+      const { id, title, organization, description, credentialId, issueDate, expiryDate, isCurrent, isNeverExpires } = item;
+      const currentWorkExp = user?.extends?.honors?.find((exp) => exp.id === id);
+      if (currentWorkExp) {
+        currentWorkExp.title = title;
+        currentWorkExp.organization = organization;
+        currentWorkExp.description = description;
+        currentWorkExp.credentialId = credentialId;
+        currentWorkExp.issueDate = issueDate;
+        currentWorkExp.expiryDate = expiryDate;
+        currentWorkExp.isNeverExpires = isNeverExpires;
+        currentWorkExp.isCurrent = isCurrent;
+      }
+    })
+    handleSaveUserData("honors");
+  }
+
+  const handleSkillsUpdate = (skills: string[]) => {
+    (skills) => setUserProfile(prev => ({ ...prev, skills }))
+    if (user && user.extends && user.extends.skills) {
+      user.extends.skills = skills;
+    }
+    handleSaveUserData("skills");
+  }
+
+  const handleSaveUserData = async (type: string) => {
+    const scopedKey = user?.extends?.applicationId ? `aino_auth_token:${user?.extends?.applicationId}` : null
+    const token =
+      (scopedKey ? window.localStorage.getItem(scopedKey) : null)
+      || window.localStorage.getItem('aino_auth_token')
+      || window.localStorage.getItem('aino_token')
+      || ''
+
+    const body = { props: { [type]: user.extends[type] } };
+    // const body = { [type]: user.extends[type] };
+    const res = await http.patch(
+      `/api/records/${user.extends.__dirId}/${user.extends.recordId}`,
+      body,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+      })
+    const data = res
+    if (!data?.success || !data?.url) {
+      toast({
+        title: "更新失败",
+        description: data?.message || "更新失败,请重试.",
+        variant: "destructive"
+      })
+    } else {
+      toast({
+        title: "更新成功",
+        description: "用户信息已更新"
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen pb-32">
       <DynamicBackground />
       <AppHeader title="我的在线简历" showBackButton />
 
       <div className="px-4 py-6 space-y-4 pt-20">
-        
+
         {/* 简历专业评分卡片 */}
-        <AppCard>
+        {/* <AppCard>
           <div className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -209,7 +361,7 @@ export default function EditProfilePage() {
               </PillButton>
             </div>
           </div>
-        </AppCard>
+        </AppCard> */}
 
         {/* 基础资料 */}
         <BasicInfoCard
@@ -225,14 +377,14 @@ export default function EditProfilePage() {
               <h3 className="text-base font-semibold" style={{ color: "var(--card-title-color)" }}>个人优势</h3>
               <Edit className="w-4 h-4" style={{ color: "var(--card-accent-color, #3b82f6)" }} />
             </div>
-            
+
             <div className="flex items-center gap-2 mb-2">
               <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--card-warning-color, #f59e0b)" }}>
                 <span className="text-xs text-white">!</span>
               </div>
               <span className="text-sm" style={{ color: "var(--card-warning-color, #f59e0b)" }}>补充你的优势信息</span>
             </div>
-            
+
             <p className="text-sm" style={{ color: "var(--card-text-color)" }}>
               {userProfile.personalAdvantages}
             </p>
@@ -240,7 +392,7 @@ export default function EditProfilePage() {
         </AppCard>
 
         {/* 求职期望 */}
-        <GenericFormCard
+        {/* <GenericFormCard
           title="求职期望"
           data={userProfile.jobExpectations}
           onUpdate={(jobExpectations) => setUserProfile(prev => ({ ...prev, jobExpectations }))}
@@ -249,13 +401,13 @@ export default function EditProfilePage() {
           allowMultiple={false}
           emptyText="暂未设置求职期望"
           addButtonText="设置期望"
-        />
+        /> */}
 
         {/* 工作经历 */}
         <GenericFormCard
           title="工作经历"
           data={userProfile.workExperience}
-          onUpdate={(workExperience) => setUserProfile(prev => ({ ...prev, workExperience }))}
+          onUpdate={handleWorkUpdate}
           fields={workExperienceFields}
           displayConfig={workExperienceDisplay}
           allowMultiple={true}
@@ -267,7 +419,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="项目经历"
           data={userProfile.projectExperience}
-          onUpdate={(projectExperience) => setUserProfile(prev => ({ ...prev, projectExperience }))}
+          onUpdate={handleProjectUpdate}
           fields={projectFields}
           displayConfig={projectDisplay}
           allowMultiple={true}
@@ -279,7 +431,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="教育经历"
           data={userProfile.educationHistory}
-          onUpdate={(educationHistory) => setUserProfile(prev => ({ ...prev, educationHistory }))}
+          onUpdate={handleEducationUpdate}
           fields={educationFields}
           displayConfig={educationDisplay}
           allowMultiple={true}
@@ -291,7 +443,7 @@ export default function EditProfilePage() {
         <GenericFormCard
           title="证书资质"
           data={userProfile.certificates}
-          onUpdate={(certificates) => setUserProfile(prev => ({ ...prev, certificates }))}
+          onUpdate={handleCertificateUpdate}
           fields={certificateFields}
           displayConfig={certificateDisplay}
           allowMultiple={true}
@@ -308,10 +460,10 @@ export default function EditProfilePage() {
                 {userProfile.skills.length} 个技能
               </div>
             </div>
-            
-            <TagInput 
+
+            <TagInput
               value={userProfile.skills}
-              onChange={(skills) => setUserProfile(prev => ({ ...prev, skills }))}
+              onChange={handleSkillsUpdate}
               placeholder="输入技能后按回车添加"
               maxTags={20}
               emptyText="暂未添加技能标签"
@@ -324,7 +476,7 @@ export default function EditProfilePage() {
         {/* 预览按钮 */}
         <AppCard>
           <div className="p-4">
-            <PillButton 
+            <PillButton
               className="w-full flex items-center justify-center gap-2"
               onClick={() => console.log("预览简历")}
             >
@@ -335,19 +487,9 @@ export default function EditProfilePage() {
         </AppCard>
       </div>
 
-      {/* 固定底部操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t p-4">
-        <div className="flex gap-3 max-w-md mx-auto">
-          <PillButton variant="default" onClick={() => router.back()} className="flex-1">
-            <X className="w-4 h-4 mr-2" />
-            取消
-          </PillButton>
-          <PillButton onClick={handleSaveProfile} className="flex-1">
-            <Check className="w-4 h-4 mr-2" />
-            保存简历
-          </PillButton>
-        </div>
-      </div>
+      {/* 底部安全距离 */}
+      <div className="h-20"></div>
+
 
       {/* 联系方式编辑弹窗 */}
       <BottomDrawer
@@ -365,7 +507,7 @@ export default function EditProfilePage() {
               className="rounded-xl"
             />
           </div>
-          
+
           <div>
             <label className="text-sm font-medium mb-2 block">邮箱</label>
             <Input

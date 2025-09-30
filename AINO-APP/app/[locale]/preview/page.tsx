@@ -6,8 +6,9 @@ import { DynamicPageComponent } from "@/components/dynamic-page/dynamic-page-com
 import { PCDynamicPageComponent } from "@/components/dynamic-page/pc-dynamic-page-component"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
-import { setDatas } from "@/components/card/set-datas"
+import { setDatas } from "@/components/card/config/set-datas"
 import { getIframeBridge, startAutoHeightReporting } from "@/lib/iframe-bridge"
+import { http } from "@/lib/request"
 
 function PreviewContent() {
   const params = useParams<{ locale: string; id: string }>()
@@ -107,9 +108,9 @@ function PreviewContent() {
 
         if (cfgId) {
           // 如果有 cfgId，从页面配置 API 获取配置
-          const res = await fetch(`http://localhost:3007/api/page-configs/${encodeURIComponent(cfgId)}`)
-          const data = await res.json()
-          if (!res.ok || !data?.success) throw new Error(data?.message || "failed to load page config")
+          const response = await http.get(`/api/page-configs/${encodeURIComponent(cfgId)}`)
+          const data = response
+          if (!data?.success) throw new Error(data?.message || "failed to load page config")
 
           // 将页面配置转换为 manifest 格式
           const pageConfig = data.data || data
@@ -133,9 +134,9 @@ function PreviewContent() {
           }
         } else if (id) {
           // 如果有 previewId，从预览 manifest API 获取
-          const res = await fetch(`http://localhost:3007/api/preview-manifests/${id}`)
-          const data = await res.json()
-          if (!res.ok || !data?.success) throw new Error(data?.message || "failed")
+          const response = await http.get(`/api/preview-manifests/${id}`)
+          const data = response
+          if (!data?.success) throw new Error(data?.message || "failed")
           mf = data.data?.manifest || {}
         } else {
           throw new Error("No previewId or cfgId provided")
