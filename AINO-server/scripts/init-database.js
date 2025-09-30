@@ -486,6 +486,174 @@ async function initDatabase() {
             { name: 'created_by', sql: 'created_by UUID' }
         ])
 
+        // 12. directory_defs 表
+        await ensureTableExists('directory_defs', `
+        CREATE TABLE directory_defs (
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
+            slug TEXT NOT NULL,
+            title TEXT NOT NULL,
+            name TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'active',
+            application_id UUID,
+            directory_id UUID,
+            created_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now()
+        )
+    `, [
+            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_pkey PRIMARY KEY (id)',
+            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_slug_key UNIQUE (slug)',
+            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
+            'ALTER TABLE directory_defs ADD CONSTRAINT directory_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id) ON DELETE CASCADE'
+        ], [
+            'CREATE INDEX directory_defs_created_at_idx ON directory_defs (created_at)',
+            'CREATE INDEX directory_defs_app_status_idx ON directory_defs (application_id, status)'
+        ], [
+            { name: 'slug', sql: 'slug TEXT NOT NULL' },
+            { name: 'title', sql: 'title TEXT NOT NULL' },
+            { name: 'name', sql: 'name TEXT NOT NULL' },
+            { name: 'version', sql: 'version INTEGER NOT NULL DEFAULT 1' },
+            { name: 'status', sql: 'status TEXT NOT NULL DEFAULT \'active\'' },
+            { name: 'application_id', sql: 'application_id UUID' },
+            { name: 'directory_id', sql: 'directory_id UUID' },
+            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
+        ])
+
+        // 13. field_defs 表
+        await ensureTableExists('field_defs', `
+        CREATE TABLE field_defs (
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
+            application_id UUID NOT NULL,
+            directory_id UUID NOT NULL,
+            key TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            type TEXT NOT NULL,
+            schema JSONB,
+            relation JSONB,
+            lookup JSONB,
+            computed JSONB,
+            validators JSONB,
+            read_roles JSONB DEFAULT '["admin", "member"]'::jsonb,
+            write_roles JSONB DEFAULT '["admin"]'::jsonb,
+            required BOOLEAN DEFAULT false,
+            category_id UUID
+        )
+    `, [
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_pkey PRIMARY KEY (id)',
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directory_defs(id) ON DELETE CASCADE',
+            'ALTER TABLE field_defs ADD CONSTRAINT field_defs_category_id_fkey FOREIGN KEY (category_id) REFERENCES field_categories(id) ON DELETE SET NULL'
+        ], [
+            'CREATE INDEX field_defs_application_id_idx ON field_defs (application_id)',
+            'CREATE INDEX field_defs_directory_idx ON field_defs (directory_id)',
+            'CREATE INDEX field_defs_category_id_idx ON field_defs (category_id)',
+            'CREATE INDEX field_defs_key_idx ON field_defs (key)'
+        ], [
+            { name: 'application_id', sql: 'application_id UUID NOT NULL' },
+            { name: 'directory_id', sql: 'directory_id UUID NOT NULL' },
+            { name: 'key', sql: 'key TEXT NOT NULL' },
+            { name: 'kind', sql: 'kind TEXT NOT NULL' },
+            { name: 'type', sql: 'type TEXT NOT NULL' },
+            { name: 'schema', sql: 'schema JSONB' },
+            { name: 'relation', sql: 'relation JSONB' },
+            { name: 'lookup', sql: 'lookup JSONB' },
+            { name: 'computed', sql: 'computed JSONB' },
+            { name: 'validators', sql: 'validators JSONB' },
+            { name: 'read_roles', sql: 'read_roles JSONB DEFAULT \'["admin", "member"]\'::jsonb' },
+            { name: 'write_roles', sql: 'write_roles JSONB DEFAULT \'["admin"]\'::jsonb' },
+            { name: 'required', sql: 'required BOOLEAN DEFAULT false' },
+            { name: 'category_id', sql: 'category_id UUID' }
+        ])
+
+        // 14. dir_users 表
+        await ensureTableExists('dir_users', `
+        CREATE TABLE dir_users (
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
+            tenant_id UUID NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            props JSONB NOT NULL DEFAULT '{}'::jsonb,
+            created_by UUID,
+            updated_by UUID,
+            created_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now(),
+            deleted_at TIMESTAMP
+        )
+    `, [
+            'ALTER TABLE dir_users ADD CONSTRAINT dir_users_pkey PRIMARY KEY (id)'
+        ], [
+            'CREATE INDEX dir_users_created_at_idx ON dir_users (created_at)',
+            'CREATE INDEX dir_users_tenant_idx ON dir_users (tenant_id)'
+        ], [
+            { name: 'tenant_id', sql: 'tenant_id UUID NOT NULL' },
+            { name: 'version', sql: 'version INTEGER NOT NULL DEFAULT 1' },
+            { name: 'props', sql: 'props JSONB NOT NULL DEFAULT \'{}\'::jsonb' },
+            { name: 'created_by', sql: 'created_by UUID' },
+            { name: 'updated_by', sql: 'updated_by UUID' },
+            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
+            { name: 'deleted_at', sql: 'deleted_at TIMESTAMP' }
+        ])
+
+        // 15. field_indexes 表
+        await ensureTableExists('field_indexes', `
+        CREATE TABLE field_indexes (
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
+            dir_slug TEXT NOT NULL,
+            record_id UUID NOT NULL,
+            field_key TEXT NOT NULL,
+            search_value TEXT,
+            numeric_value INTEGER,
+            created_at TIMESTAMP DEFAULT now()
+        )
+    `, [
+            'ALTER TABLE field_indexes ADD CONSTRAINT field_indexes_pkey PRIMARY KEY (id)'
+        ], [
+            'CREATE INDEX field_indexes_created_at_idx ON field_indexes (created_at)',
+            'CREATE INDEX field_indexes_dir_slug_idx ON field_indexes (dir_slug)',
+            'CREATE INDEX field_indexes_record_field_idx ON field_indexes (record_id, field_key)'
+        ], [
+            { name: 'dir_slug', sql: 'dir_slug TEXT NOT NULL' },
+            { name: 'record_id', sql: 'record_id UUID NOT NULL' },
+            { name: 'field_key', sql: 'field_key TEXT NOT NULL' },
+            { name: 'search_value', sql: 'search_value TEXT' },
+            { name: 'numeric_value', sql: 'numeric_value INTEGER' },
+            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' }
+        ])
+
+        // 16. audit_logs 表
+        await ensureTableExists('audit_logs', `
+        CREATE TABLE audit_logs (
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
+            application_id UUID,
+            user_id UUID,
+            action TEXT NOT NULL,
+            resource TEXT NOT NULL,
+            resource_id TEXT,
+            details JSONB DEFAULT '{}'::jsonb,
+            ip_address TEXT,
+            user_agent TEXT,
+            created_at TIMESTAMP DEFAULT now() NOT NULL
+        )
+    `, [
+            'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (id)',
+            'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
+            'ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)'
+        ], [
+            'CREATE INDEX audit_logs_created_at_idx ON audit_logs (created_at)',
+            'CREATE INDEX audit_logs_app_user_idx ON audit_logs (application_id, user_id)'
+        ], [
+            { name: 'application_id', sql: 'application_id UUID' },
+            { name: 'user_id', sql: 'user_id UUID' },
+            { name: 'action', sql: 'action TEXT NOT NULL' },
+            { name: 'resource', sql: 'resource TEXT NOT NULL' },
+            { name: 'resource_id', sql: 'resource_id TEXT' },
+            { name: 'details', sql: 'details JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'ip_address', sql: 'ip_address TEXT' },
+            { name: 'user_agent', sql: 'user_agent TEXT' },
+            { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now() NOT NULL' }
+        ])
+
         console.log('🎉 数据库初始化完成！')
 
     } catch (error) {
