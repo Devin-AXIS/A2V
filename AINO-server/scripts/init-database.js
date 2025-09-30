@@ -87,11 +87,11 @@ async function initDatabase() {
         await ensureTableExists('users', `
         CREATE TABLE users (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
-            email TEXT NOT NULL,
             name TEXT NOT NULL,
+            email TEXT NOT NULL,
             password TEXT NOT NULL,
-            avatar TEXT,
             roles TEXT[] DEFAULT ARRAY['user'],
+            avatar TEXT,
             status TEXT DEFAULT 'active',
             last_login_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT now(),
@@ -101,15 +101,14 @@ async function initDatabase() {
             'ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id)',
             'ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email)'
         ], [
-            'CREATE INDEX idx_users_email ON users (email)',
-            'CREATE INDEX idx_users_created_at ON users (created_at)',
-            'CREATE INDEX idx_users_status ON users (status)'
+            'CREATE INDEX users_created_at_idx ON users (created_at)',
+            'CREATE INDEX users_status_idx ON users (status)'
         ], [
-            { name: 'email', sql: 'email TEXT NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
+            { name: 'email', sql: 'email TEXT NOT NULL' },
             { name: 'password', sql: 'password TEXT NOT NULL' },
-            { name: 'avatar', sql: 'avatar TEXT' },
             { name: 'roles', sql: 'roles TEXT[] DEFAULT ARRAY[\'user\']' },
+            { name: 'avatar', sql: 'avatar TEXT' },
             { name: 'status', sql: 'status TEXT DEFAULT \'active\'' },
             { name: 'last_login_at', sql: 'last_login_at TIMESTAMP' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
@@ -138,9 +137,7 @@ async function initDatabase() {
             'ALTER TABLE applications ADD CONSTRAINT applications_slug_key UNIQUE (slug)',
             'ALTER TABLE applications ADD CONSTRAINT applications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES users(id)'
         ], [
-            'CREATE INDEX idx_applications_owner_id ON applications (owner_id)',
-            'CREATE INDEX idx_applications_created_at ON applications (created_at)',
-            'CREATE INDEX idx_applications_status ON applications (status)',
+            'CREATE INDEX applications_created_at_idx ON applications (created_at)',
             'CREATE INDEX applications_owner_status_idx ON applications (owner_id, status)'
         ], [
             { name: 'name', sql: 'name TEXT NOT NULL' },
@@ -162,33 +159,36 @@ async function initDatabase() {
         CREATE TABLE directories (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             application_id UUID NOT NULL,
+            module_id UUID NOT NULL,
             name TEXT NOT NULL,
-            description TEXT,
-            slug TEXT,
-            icon TEXT,
+            slug TEXT NOT NULL,
+            type TEXT NOT NULL,
+            supports_category BOOLEAN DEFAULT false,
             config JSONB DEFAULT '{}'::jsonb,
+            "order" INTEGER DEFAULT 0,
+            is_enabled BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT now(),
-            updated_at TIMESTAMP DEFAULT now(),
-            created_by UUID
+            updated_at TIMESTAMP DEFAULT now()
         )
     `, [
             'ALTER TABLE directories ADD CONSTRAINT directories_pkey PRIMARY KEY (id)',
-            'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
-            'ALTER TABLE directories ADD CONSTRAINT directories_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)'
+            'ALTER TABLE directories ADD CONSTRAINT directories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_directories_app ON directories (application_id)',
-            'CREATE INDEX idx_directories_created_at ON directories (created_at)',
-            'CREATE INDEX idx_directories_slug ON directories (slug)'
+            'CREATE INDEX directories_created_at_idx ON directories (created_at)',
+            'CREATE INDEX directories_app_module_idx ON directories (application_id, module_id)',
+            'CREATE INDEX directories_slug_idx ON directories (slug)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
+            { name: 'module_id', sql: 'module_id UUID NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
-            { name: 'description', sql: 'description TEXT' },
-            { name: 'slug', sql: 'slug TEXT' },
-            { name: 'icon', sql: 'icon TEXT' },
+            { name: 'slug', sql: 'slug TEXT NOT NULL' },
+            { name: 'type', sql: 'type TEXT NOT NULL' },
+            { name: 'supports_category', sql: 'supports_category BOOLEAN DEFAULT false' },
             { name: 'config', sql: 'config JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'is_enabled', sql: 'is_enabled BOOLEAN DEFAULT true' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
-            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
-            { name: 'created_by', sql: 'created_by UUID' }
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
 
         // 4. field_categories 表
@@ -310,10 +310,9 @@ async function initDatabase() {
             'ALTER TABLE modules ADD CONSTRAINT modules_pkey PRIMARY KEY (id)',
             'ALTER TABLE modules ADD CONSTRAINT modules_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_modules_application_id ON modules (application_id)',
-            'CREATE INDEX idx_modules_key ON modules (key)',
-            'CREATE INDEX idx_modules_type ON modules (type)',
-            'CREATE INDEX idx_modules_created_at ON modules (created_at)'
+            'CREATE INDEX modules_created_at_idx ON modules (created_at)',
+            'CREATE INDEX modules_app_enabled_idx ON modules (application_id, is_enabled)',
+            'CREATE INDEX modules_key_idx ON modules (key)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
             { name: 'key', sql: 'key TEXT NOT NULL' },
@@ -336,35 +335,33 @@ async function initDatabase() {
             module_name TEXT NOT NULL,
             module_version TEXT NOT NULL,
             module_type TEXT NOT NULL,
-            module_icon TEXT NULL,
             install_type TEXT NOT NULL,
-            install_config JSONB NULL DEFAULT '{}'::jsonb,
-            install_status TEXT NULL DEFAULT 'active'::text,
-            install_error TEXT NULL,
-            installed_at TIMESTAMP NULL DEFAULT now(),
-            updated_at TIMESTAMP NULL DEFAULT now(),
-            created_by UUID NULL
+            install_config JSONB DEFAULT '{}'::jsonb,
+            install_status TEXT DEFAULT 'active',
+            install_error TEXT,
+            installed_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now(),
+            created_by UUID
         )
     `, [
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_pkey PRIMARY KEY (id)',
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE module_installs ADD CONSTRAINT module_installs_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)',
-            'ALTER TABLE module_installs ADD CONSTRAINT module_installs_application_id_module_key_key UNIQUE (application_id, module_key)'
+            'ALTER TABLE module_installs ADD CONSTRAINT unique_app_module UNIQUE (application_id, module_key)'
         ], [
-            'CREATE INDEX idx_module_installs_app ON module_installs (application_id)',
-            'CREATE INDEX idx_module_installs_created_at ON module_installs (installed_at)',
-            'CREATE INDEX idx_module_installs_status ON module_installs (install_status)',
-            'CREATE INDEX idx_module_installs_type ON module_installs (module_type)'
+            'CREATE INDEX module_installs_app_module_idx ON module_installs (application_id, module_key)',
+            'CREATE INDEX module_installs_status_idx ON module_installs (install_status)',
+            'CREATE INDEX module_installs_type_idx ON module_installs (module_type)',
+            'CREATE INDEX module_installs_created_at_idx ON module_installs (installed_at)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
             { name: 'module_key', sql: 'module_key TEXT NOT NULL' },
             { name: 'module_name', sql: 'module_name TEXT NOT NULL' },
             { name: 'module_version', sql: 'module_version TEXT NOT NULL' },
             { name: 'module_type', sql: 'module_type TEXT NOT NULL' },
-            { name: 'module_icon', sql: 'module_icon TEXT' },
             { name: 'install_type', sql: 'install_type TEXT NOT NULL' },
             { name: 'install_config', sql: 'install_config JSONB DEFAULT \'{}\'::jsonb' },
-            { name: 'install_status', sql: 'install_status TEXT DEFAULT \'active\'::text' },
+            { name: 'install_status', sql: 'install_status TEXT DEFAULT \'active\'' },
             { name: 'install_error', sql: 'install_error TEXT' },
             { name: 'installed_at', sql: 'installed_at TIMESTAMP DEFAULT now()' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
@@ -376,26 +373,31 @@ async function initDatabase() {
         CREATE TABLE application_users (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
             application_id UUID NOT NULL,
-            user_id UUID,
-            role TEXT NOT NULL DEFAULT 'user',
-            permissions JSONB DEFAULT '{}'::jsonb,
+            phone TEXT NOT NULL,
+            password TEXT,
+            status TEXT DEFAULT 'active',
+            role TEXT DEFAULT 'user',
+            metadata JSONB DEFAULT '{}'::jsonb,
+            last_login_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT now(),
             updated_at TIMESTAMP DEFAULT now()
         )
     `, [
             'ALTER TABLE application_users ADD CONSTRAINT application_users_pkey PRIMARY KEY (id)',
-            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
-            'ALTER TABLE application_users ADD CONSTRAINT application_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE'
+            'ALTER TABLE application_users ADD CONSTRAINT application_users_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_application_users_app ON application_users (application_id)',
-            'CREATE INDEX idx_application_users_user ON application_users (user_id)',
-            'CREATE INDEX idx_application_users_role ON application_users (role)',
-            'CREATE INDEX idx_application_users_created_at ON application_users (created_at)'
+            'CREATE INDEX application_users_created_at_idx ON application_users (created_at)',
+            'CREATE INDEX application_users_app_status_idx ON application_users (application_id, status)',
+            'CREATE INDEX application_users_app_phone_idx ON application_users (application_id, phone)',
+            'CREATE INDEX application_users_phone_idx ON application_users (phone)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
-            { name: 'user_id', sql: 'user_id UUID' },
-            { name: 'role', sql: 'role TEXT NOT NULL DEFAULT \'user\'' },
-            { name: 'permissions', sql: 'permissions JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'phone', sql: 'phone TEXT NOT NULL' },
+            { name: 'password', sql: 'password TEXT' },
+            { name: 'status', sql: 'status TEXT DEFAULT \'active\'' },
+            { name: 'role', sql: 'role TEXT DEFAULT \'user\'' },
+            { name: 'metadata', sql: 'metadata JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'last_login_at', sql: 'last_login_at TIMESTAMP' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
             { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
@@ -407,62 +409,80 @@ async function initDatabase() {
             application_id UUID NOT NULL,
             directory_id UUID NOT NULL,
             name TEXT NOT NULL,
-            description TEXT,
-            icon TEXT,
-            sort_order INTEGER DEFAULT 0,
+            path TEXT NOT NULL,
+            level INTEGER NOT NULL,
+            parent_id UUID,
+            "order" INTEGER DEFAULT 0,
+            enabled BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT now(),
-            updated_at TIMESTAMP DEFAULT now(),
-            created_by UUID
+            updated_at TIMESTAMP DEFAULT now()
         )
     `, [
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_pkey PRIMARY KEY (id)',
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
             'ALTER TABLE record_categories ADD CONSTRAINT record_categories_directory_id_fkey FOREIGN KEY (directory_id) REFERENCES directories(id) ON DELETE CASCADE',
-            'ALTER TABLE record_categories ADD CONSTRAINT record_categories_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)'
+            'ALTER TABLE record_categories ADD CONSTRAINT record_categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES record_categories(id) ON DELETE CASCADE'
         ], [
-            'CREATE INDEX idx_record_categories_app ON record_categories (application_id)',
-            'CREATE INDEX idx_record_categories_directory ON record_categories (directory_id)',
-            'CREATE INDEX idx_record_categories_created_at ON record_categories (created_at)',
-            'CREATE INDEX idx_record_categories_sort ON record_categories (sort_order)'
+            'CREATE INDEX record_categories_created_at_idx ON record_categories (created_at)',
+            'CREATE INDEX record_categories_app_dir_idx ON record_categories (application_id, directory_id)',
+            'CREATE INDEX record_categories_parent_idx ON record_categories (parent_id)'
         ], [
             { name: 'application_id', sql: 'application_id UUID NOT NULL' },
             { name: 'directory_id', sql: 'directory_id UUID NOT NULL' },
             { name: 'name', sql: 'name TEXT NOT NULL' },
-            { name: 'description', sql: 'description TEXT' },
-            { name: 'icon', sql: 'icon TEXT' },
-            { name: 'sort_order', sql: 'sort_order INTEGER DEFAULT 0' },
+            { name: 'path', sql: 'path TEXT NOT NULL' },
+            { name: 'level', sql: 'level INTEGER NOT NULL' },
+            { name: 'parent_id', sql: 'parent_id UUID' },
+            { name: 'order', sql: '"order" INTEGER DEFAULT 0' },
+            { name: 'enabled', sql: 'enabled BOOLEAN DEFAULT true' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
-            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
-            { name: 'created_by', sql: 'created_by UUID' }
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' }
         ])
 
         // 11. relation_records 表
         await ensureTableExists('relation_records', `
         CREATE TABLE relation_records (
             id UUID NOT NULL DEFAULT gen_random_uuid(),
-            source_record_id UUID NOT NULL,
-            target_record_id UUID NOT NULL,
+            application_id UUID NOT NULL,
+            from_directory_id UUID NOT NULL,
+            from_record_id UUID NOT NULL,
+            from_field_key TEXT NOT NULL,
+            to_directory_id UUID NOT NULL,
+            to_record_id UUID NOT NULL,
+            to_field_key TEXT,
             relation_type TEXT NOT NULL,
-            metadata JSONB DEFAULT '{}'::jsonb,
+            bidirectional BOOLEAN DEFAULT false,
             created_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now(),
             created_by UUID
         )
     `, [
             'ALTER TABLE relation_records ADD CONSTRAINT relation_records_pkey PRIMARY KEY (id)',
-            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_source_record_id_fkey FOREIGN KEY (source_record_id) REFERENCES records(id) ON DELETE CASCADE',
-            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_target_record_id_fkey FOREIGN KEY (target_record_id) REFERENCES records(id) ON DELETE CASCADE',
-            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)'
+            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE',
+            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)',
+            'ALTER TABLE relation_records ADD CONSTRAINT relation_records_unique UNIQUE (from_directory_id, from_record_id, from_field_key, to_directory_id, to_record_id)'
         ], [
-            'CREATE INDEX idx_relation_records_source ON relation_records (source_record_id)',
-            'CREATE INDEX idx_relation_records_target ON relation_records (target_record_id)',
-            'CREATE INDEX idx_relation_records_type ON relation_records (relation_type)',
-            'CREATE INDEX idx_relation_records_created_at ON relation_records (created_at)'
+            'CREATE INDEX relation_records_created_at_idx ON relation_records (created_at)',
+            'CREATE INDEX relation_records_from_idx ON relation_records (from_directory_id, from_record_id, from_field_key)',
+            'CREATE INDEX relation_records_to_idx ON relation_records (to_directory_id, to_record_id, to_field_key)',
+            'CREATE INDEX relation_records_app_idx ON relation_records (application_id)',
+            'CREATE INDEX idx_rel_out ON relation_records (application_id, from_directory_id, from_record_id, relation_type, to_directory_id)',
+            'CREATE INDEX idx_rel_in ON relation_records (application_id, to_directory_id, to_record_id, relation_type, from_directory_id)',
+            'CREATE INDEX idx_rel_from_field ON relation_records (application_id, from_directory_id, from_field_key, from_record_id)',
+            'CREATE INDEX idx_rel_to_field ON relation_records (application_id, to_directory_id, to_field_key, to_record_id)',
+            'CREATE INDEX idx_rel_idempotent ON relation_records (application_id, from_directory_id, from_record_id, to_directory_id, to_record_id, relation_type)'
         ], [
-            { name: 'source_record_id', sql: 'source_record_id UUID NOT NULL' },
-            { name: 'target_record_id', sql: 'target_record_id UUID NOT NULL' },
+            { name: 'application_id', sql: 'application_id UUID NOT NULL' },
+            { name: 'from_directory_id', sql: 'from_directory_id UUID NOT NULL' },
+            { name: 'from_record_id', sql: 'from_record_id UUID NOT NULL' },
+            { name: 'from_field_key', sql: 'from_field_key TEXT NOT NULL' },
+            { name: 'to_directory_id', sql: 'to_directory_id UUID NOT NULL' },
+            { name: 'to_record_id', sql: 'to_record_id UUID NOT NULL' },
+            { name: 'to_field_key', sql: 'to_field_key TEXT' },
             { name: 'relation_type', sql: 'relation_type TEXT NOT NULL' },
-            { name: 'metadata', sql: 'metadata JSONB DEFAULT \'{}\'::jsonb' },
+            { name: 'bidirectional', sql: 'bidirectional BOOLEAN DEFAULT false' },
             { name: 'created_at', sql: 'created_at TIMESTAMP DEFAULT now()' },
+            { name: 'updated_at', sql: 'updated_at TIMESTAMP DEFAULT now()' },
             { name: 'created_by', sql: 'created_by UUID' }
         ])
 
