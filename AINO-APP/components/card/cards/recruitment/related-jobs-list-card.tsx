@@ -73,7 +73,7 @@ export function RelatedJobsListCard({
   const { locale } = useParams()
   const { key: providedKey } = useLocalThemeKey()
 
-  const { realData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobs)
+  const { realData, CARD_DISPLAY_DATA, original } = useCardRegistryData(providedKey, defaultJobs)
 
   // 优先使用传入的 jobs 数据，否则使用注册数据
   let renderData = jobs || realData;
@@ -83,10 +83,8 @@ export function RelatedJobsListCard({
   console.log('相关岗位数据:', renderData)
   console.log('传入的jobs参数:', jobs)
 
-  const handleJobClick = (jobId: number) => {
-    console.log('点击相关岗位:', jobId)
-    console.log('跳转路径:', `/${locale}/cards/job-position/detail/${jobId}`)
-    router.push(`/${locale}/cards/job-position/detail/${jobId}`)
+  const handleJobClick = (index: number) => {
+    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}`)
   }
 
   return (
@@ -95,11 +93,11 @@ export function RelatedJobsListCard({
         {title}
       </h3>
       <div className="space-y-3 flex-1 min-h-0 overflow-auto">
-        {renderData.map((job) => (
+        {renderData.map((job, index) => (
           <AppCard key={job.id}>
             <div
               className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleJobClick(job.id)}
+              onClick={() => handleJobClick(index)}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

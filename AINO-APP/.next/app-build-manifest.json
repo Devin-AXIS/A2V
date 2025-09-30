@@ -37,15 +37,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/cards/[cardName]/detail/[id]/page.js"
     ],
-    "/[locale]/auth/login/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/auth/login/page.js"
+      "static/chunks/app/_not-found/page.js"
     ],
     "/[locale]/profile/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[locale]/profile/page.js"
+    ],
+    "/[locale]/auth/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/auth/login/page.js"
+    ],
+    "/[locale]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/page.js"
+    ],
+    "/[locale]/p/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/p/[id]/page.js"
     ]
   }
 }

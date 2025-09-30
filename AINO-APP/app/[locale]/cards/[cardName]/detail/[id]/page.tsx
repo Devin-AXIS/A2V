@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, use } from "react"
+import { http } from "@/lib/request"
+import { useState, use, useEffect } from "react"
 import { SecondaryPillBottomNav, type SecondaryPillBottomNavAction } from "@/components/navigation/secondary-pill-bottom-nav"
 import { Bot } from "lucide-react"
 import { usePageActions } from "@/hooks/use-page-actions"
@@ -46,7 +47,15 @@ export default function CardDetailPage({
   // 获取卡片包信息
   const packageConfig = CardPackageManager.getPackageByMainCard(cardName)
   const subCards = CardPackageManager.getSubCardsByMainCard(cardName)
-  
+
+  const getDirData = async () => {
+    const data = await http.get(`/api/records/${id}`)
+  }
+
+  useEffect(() => {
+    getDirData()
+  }, [id])
+
   // 调试信息
   console.log('当前卡片名称:', cardName)
   console.log('卡片包配置:', packageConfig)

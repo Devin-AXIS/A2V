@@ -106,7 +106,7 @@ class CardRegistry {
   static setData(name, data, realData) {
     datas[name] = data;
     realDatas[name] = realData;
-    listens[name]?.(name, data);
+    listens[name]?.(name, data, realData);
     // this.listens.forEach(cb => cb(name, data));
   }
 
