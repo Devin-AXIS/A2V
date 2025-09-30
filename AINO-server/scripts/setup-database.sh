@@ -117,7 +117,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "📝 下一步操作:"
     echo "   1. 启动 AINO 服务器: npm start"
-    echo "   2. 访问管理界面: http://localhost:3007"
+    echo "   2. 访问管理界面: http://47.94.52.142:3007"
     echo "   3. 使用默认账号登录: admin@aino.com / admin123"
     echo ""
     echo "⚠️  重要提醒:"

@@ -809,7 +809,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
     toast({ description: t("已提交 Dry-run，请稍等…", "Dry-run submitted, please wait…") })
     // demo call: send a tiny parse task to server AI gateway
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'}/api/ai/chat`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'}/api/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -838,7 +838,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }
 
   function getApiBase() {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'
+    return process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'
   }
 
   async function onScrapeTest() {
