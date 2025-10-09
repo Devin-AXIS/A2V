@@ -20,6 +20,7 @@ interface Job {
 }
 
 interface RelatedJobsListCardProps {
+  insideData?: any
   disableLocalTheme?: boolean
   jobs?: Job[]
   title?: string
@@ -65,6 +66,7 @@ const defaultJobs: Job[] = [
 ]
 
 export function RelatedJobsListCard({
+  insideData,
   disableLocalTheme,
   jobs,
   title = "相关岗位",
@@ -76,15 +78,13 @@ export function RelatedJobsListCard({
   const { realData, CARD_DISPLAY_DATA, original } = useCardRegistryData(providedKey, defaultJobs)
 
   // 优先使用传入的 jobs 数据，否则使用注册数据
-  let renderData = jobs || realData;
+  let renderData = realData || jobs;
+  if (insideData) renderData = insideData;
   if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
 
-  // 调试数据
-  console.log('相关岗位数据:', renderData)
-  console.log('传入的jobs参数:', jobs)
-
-  const handleJobClick = (index: number) => {
-    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}`)
+  const handleJobClick = (job: any, index: number) => {
+    // job-detail-intro-card
+    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?searchStr=${job.title}`)
   }
 
   return (
@@ -94,10 +94,10 @@ export function RelatedJobsListCard({
       </h3>
       <div className="space-y-3 flex-1 min-h-0 overflow-auto">
         {renderData.map((job, index) => (
-          <AppCard key={job.id}>
+          <AppCard key={job.title}>
             <div
               className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleJobClick(index)}
+              onClick={() => handleJobClick(job, index)}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

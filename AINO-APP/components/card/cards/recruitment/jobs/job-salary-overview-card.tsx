@@ -10,6 +10,7 @@ import { isType } from "@/components/card/utils"
 interface JobSalaryOverviewCardProps {
     disableLocalTheme?: boolean
     className?: string
+    insideData?: any
 }
 
 const defaultJobSalaryOverviewData: JobSalaryOverviewData = {
@@ -26,10 +27,10 @@ const defaultJobSalaryOverviewData: JobSalaryOverviewData = {
     ],
 }
 
-export function JobSalaryOverviewCard({ disableLocalTheme, className }: JobSalaryOverviewCardProps) {
+export function JobSalaryOverviewCard({ insideData, disableLocalTheme, className }: JobSalaryOverviewCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobSalaryOverviewData)
-    const data = {
+    let data = {
         rankingData: [],
         salaryDistribution: [],
     };
@@ -47,6 +48,9 @@ export function JobSalaryOverviewCard({ disableLocalTheme, className }: JobSalar
                 })
             })
         })
+    }
+    if (insideData) {
+        data = insideData;
     }
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>

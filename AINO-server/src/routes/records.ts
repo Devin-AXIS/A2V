@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { and, eq, desc, sql } from 'drizzle-orm'
+import { and, eq, desc, sql, like } from 'drizzle-orm'
 import { db } from '../db'
 import { dirUsers, directories, directoryDefs, fieldDefs } from '../db/schema'
 import { getDirectoryMeta } from '../lib/meta'
@@ -66,6 +66,7 @@ function tableFor(dir: string) {
 records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
   const dirId = c.req.param('dir')
   const query = c.req.valid('query')
+  const searchStr = c.req.query('searchStr')
 
   try {
     console.log('🔍 获取记录列表:', { dirId, query })
@@ -97,6 +98,13 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
       // 目录隔离：仅返回当前目录的记录
       sql`(${t.props} ->> '__dirId') = ${dirId}`
     ]
+
+    // 如果存在searchStr，添加模糊查询条件
+    if (searchStr && searchStr.trim()) {
+      whereConditions.push(
+        sql`${t.props}::text ILIKE ${`%${searchStr.trim()}%`}`
+      )
+    }
 
     // 如果有过滤条件，添加到where条件中
     if (query.filter) {

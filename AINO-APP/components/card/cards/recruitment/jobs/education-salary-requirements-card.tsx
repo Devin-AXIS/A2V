@@ -23,6 +23,7 @@ interface EducationSalaryRequirementsData {
 interface EducationSalaryRequirementsCardProps {
     disableLocalTheme?: boolean
     className?: string
+    insideData?: any
 }
 
 const defaultData: EducationSalaryRequirementsData = {
@@ -37,13 +38,17 @@ const defaultData: EducationSalaryRequirementsData = {
     ],
 }
 
-export function EducationSalaryRequirementsCard({ disableLocalTheme, className }: EducationSalaryRequirementsCardProps) {
+export function EducationSalaryRequirementsCard({ insideData, disableLocalTheme, className }: EducationSalaryRequirementsCardProps) {
     const { key: providedKey } = useLocalThemeKey()
-    const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
+    let { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
 
     let renderData = isType(data) === 'Array' ? data[0]?.data : data.data;
     if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
     renderData = renderData.map(d => ({ ...d, color: getRandomHexColor() }))
+    if (insideData) {
+        data = insideData;
+        renderData = insideData.data;
+    }
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">

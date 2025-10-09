@@ -207,7 +207,6 @@ export default function BuilderPage() {
           })
         })
         const tebleData = await tebleRes.json().catch(() => ({}))
-        console.log(tebleData, 23232323)
 
         for (let j = 0; j < directory.fields.length; j++) {
           // 创建字段

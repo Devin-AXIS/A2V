@@ -3,13 +3,13 @@
 import { Pie, PieChart, ResponsiveContainer, Cell } from "recharts"
 import { useDataChartTheme } from "@/components/providers/unified-chart-theme-provider"
 
-const data = [
+const defaultData = [
   { name: "不限经验", value: 50, color: "#3b82f6" },
   { name: "3-5年", value: 40, color: "#f59e0b" },
   { name: "1-3年", value: 10, color: "#10b981" },
 ]
 
-export function SalaryExperienceDonut() {
+export function SalaryExperienceDonut({ data }) {
   const { palette } = useDataChartTheme()
 
   return (
@@ -19,7 +19,7 @@ export function SalaryExperienceDonut() {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={data || defaultData}
               cx="50%"
               cy="50%"
               innerRadius={25}
@@ -28,7 +28,7 @@ export function SalaryExperienceDonut() {
               cornerRadius={4}
               paddingAngle={2}
             >
-              {data.map((entry, index) => (
+              {(data || defaultData).map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
               ))}
             </Pie>
@@ -38,7 +38,7 @@ export function SalaryExperienceDonut() {
 
       {/* 图例 */}
       <div className="space-y-2 text-sm">
-        {data.map((item, index) => (
+        {(data || defaultData).map((item, index) => (
           <div key={item.name} className="flex items-center gap-2">
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"

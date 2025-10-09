@@ -23,6 +23,7 @@ interface JobCityRankingData {
 interface JobCityRankingCardProps {
     disableLocalTheme?: boolean
     className?: string
+    insideData?: any
 }
 
 const defaultData: JobCityRankingData = {
@@ -36,12 +37,19 @@ const defaultData: JobCityRankingData = {
     ],
 }
 
-export function JobCityRankingCard({ disableLocalTheme, className }: JobCityRankingCardProps) {
+export function JobCityRankingCard({ insideData, disableLocalTheme, className }: JobCityRankingCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     const { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
-    const currentData = isType(data) === 'Array' ? data[0] : data;
+    let currentData = isType(data) === 'Array' ? data[0] : data;
     let renderData = currentData.data;
     renderData = renderData.map(item => ({ ...item, percentage: Number(item.percentage), color: getRandomHexColor() }))
+
+
+    if (insideData) {
+        currentData = insideData;
+        renderData = insideData.data;
+    }
+
     if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>

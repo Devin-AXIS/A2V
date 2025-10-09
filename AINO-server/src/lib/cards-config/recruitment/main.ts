@@ -177,6 +177,12 @@ export const RecruitmentSubCards = [
             { key: "description", type: "text", label: "描述" },
             { key: "avgMonthlySalary", type: "text", label: "平均月薪" },
             { key: "dataSource", type: "text", label: "数据源" },
+            {
+                key: "salaryDistribution", type: "meta_items", label: "薪资分布", child: [
+                    { key: "range", type: "text", label: "薪资范围" },
+                    { key: "percentage", type: "number", label: "占比" },
+                ]
+            },
         ],
         displayName: "职位详情介绍",
         type: "display",

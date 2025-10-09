@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { AppCard } from "@/components/layout/app-card"
+import { useParams, useSearchParams } from "next/navigation"
 import { PillButton } from "@/components/basic/pill-button"
 import { SalaryTrendMiniChart } from "@/components/data-display/salary-trend-mini-chart"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
@@ -24,10 +25,18 @@ const defaultData = {
 export function JobPositionCard({
   disableLocalTheme,
 }: JobPositionCardProps) {
+  const params = useParams<{ locale: string; appKey: string }>()
   const { key: providedKey } = useLocalThemeKey()
   let { realData: jobData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
   if (isType(jobData) === 'Array') {
     jobData = jobData[0] || defaultData;
+  }
+
+  const jump = () => {
+    const locale = params.locale || "zh"
+    const detailUrl = `/cards/job-position/detail/${jobData.id}?searchStr=${jobData.title}`;
+    const newHref = `${window.location.origin}/${locale}${detailUrl}`;
+    window.location.href = newHref;
   }
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-4">
@@ -49,11 +58,11 @@ export function JobPositionCard({
         </div>
         <div className="flex flex-col items-end gap-2">
           <SalaryTrendMiniChart />
-          <Link href={`/cards/job-position/detail/${jobData.id}`}>
-            <PillButton variant="primary" className="text-xs px-3 py-1">
-              查看详情
-            </PillButton>
-          </Link>
+          {/* <Link href={detailUrl}> */}
+          <PillButton onClick={() => jump()} variant="primary" className="text-xs px-3 py-1">
+            查看详情
+          </PillButton>
+          {/* </Link> */}
         </div>
       </div>
     </AppCard>

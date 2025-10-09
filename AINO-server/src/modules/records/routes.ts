@@ -39,9 +39,9 @@ const bulkDeleteSchema = z.object({
 records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
   const dir = c.req.param('dir')
   const query = c.req.valid('query')
-  
+
   console.log('🔍 记录API被调用:', { dir, query })
-  
+
   try {
     const service = new RecordsService()
     const result = await service.listRecords(dir, query)
@@ -58,7 +58,7 @@ records.get('/:dir', zValidator('query', listQuerySchema), async (c) => {
 records.get('/:dir/:id', async (c) => {
   const dir = c.req.param('dir')
   const id = c.req.param('id')
-  
+
   try {
     const service = new RecordsService()
     const record = await service.getRecord(dir, id)
@@ -77,9 +77,9 @@ records.post('/:dir', zValidator('json', createRecordSchema), async (c) => {
   const dir = c.req.param('dir')
   const data = c.req.valid('json')
   const user = c.get('user') as any
-  
+
   console.log('🔍 modules/records 路由被调用:', { dir, data })
-  
+
   try {
     const service = new RecordsService()
     const record = await service.createRecord(dir, data.props, user?.id || 'system')
@@ -96,7 +96,7 @@ records.patch('/:dir/:id', zValidator('json', updateRecordSchema), async (c) => 
   const id = c.req.param('id')
   const data = c.req.valid('json')
   const user = c.get('user') as any
-  
+
   try {
     const service = new RecordsService()
     const record = await service.updateRecord(dir, id, data.props, data.version, user?.id || 'system')
@@ -115,13 +115,13 @@ records.delete('/:dir/batch', zValidator('json', bulkDeleteSchema), async (c) =>
   const dir = c.req.param('dir')
   const { recordIds } = c.req.valid('json')
   const user = c.get('user') as any
-  
+
   try {
     const service = new RecordsService()
     const results = await service.bulkDeleteRecords(dir, recordIds, user?.id || 'system')
-    
-    return c.json({ 
-      success: true, 
+
+    return c.json({
+      success: true,
       data: {
         deletedCount: results.filter(r => r.success).length,
         failedCount: results.filter(r => !r.success).length,
@@ -139,7 +139,7 @@ records.delete('/:dir/:id', async (c) => {
   const dir = c.req.param('dir')
   const id = c.req.param('id')
   const user = c.get('user') as any
-  
+
   try {
     const service = new RecordsService()
     const success = await service.deleteRecord(dir, id, user?.id || 'system')

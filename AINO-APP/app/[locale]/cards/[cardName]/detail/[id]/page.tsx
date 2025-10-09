@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/navigation/app-header"
 import type { Locale } from "@/lib/dictionaries"
 import { CardPackageManager } from "@/components/card/package/runtime/card-package-manager"
 import { CardRegistry } from "@/components/card/core/registry"
+import { getInsidePageDatas, insidePageCardDataHandles, insidePageArrayCardDatas } from "@/components/card/core/insidePageHandles"
 
 export default function CardDetailPage({
   params,
@@ -21,6 +22,50 @@ export default function CardDetailPage({
   const { locale, cardName, id } = use(params)
   const [activeTab, setActiveTab] = useState("职业数据")
   const tabs = ["职业数据", "具备能力", "相关岗位"]
+  const [dirs, setDirs] = useState<any>([]);
+  const [cardDatas, setCardDatas] = useState<any>({});
+
+  const getDirData = async () => {
+    const currentDir = await http.get(`/api/directories/${id}`)
+    const { data } = await http.get(`/api/directories?moduleId=${currentDir.data.moduleId}`)
+    setDirs(data.directories);
+  }
+
+  const getCardDatas = async (dirs) => {
+    if (!dirs || !dirs.length) return;
+    const qs = new URLSearchParams(window.location.search)
+    const searchStr = qs.get('searchStr')
+    const newCardDatas = {};
+    for (let i = 0; i < subCards.length; i++) {
+      const card = subCards[i];
+      const currentDir = dirs.find(dir => dir.config.moduleKey.indexOf(card.id) > -1);
+      if (currentDir) {
+        const data = await getInsidePageDatas(card.id, currentDir, searchStr);
+        if (data.length) {
+          if (insidePageArrayCardDatas[card.id]) {
+            const { fields } = currentDir.config;
+            const resultData = [];
+            data.forEach(itemData => {
+              const currentResultData = {};
+              fields.forEach(field => {
+                currentResultData[field.label] = itemData[field.key];
+              })
+              resultData.push(currentResultData);
+            });
+            newCardDatas[card.id] = resultData;
+          } else {
+            const { fields } = currentDir.config;
+            const resultData = {};
+            fields.forEach(field => {
+              resultData[field.label] = data[0][field.key];
+            });
+            newCardDatas[card.id] = resultData;
+          }
+        }
+      }
+    }
+    setCardDatas(newCardDatas);
+  }
 
   const [isTesting, setIsTesting] = useState(false)
 
@@ -48,13 +93,13 @@ export default function CardDetailPage({
   const packageConfig = CardPackageManager.getPackageByMainCard(cardName)
   const subCards = CardPackageManager.getSubCardsByMainCard(cardName)
 
-  const getDirData = async () => {
-    const data = await http.get(`/api/records/${id}`)
-  }
+  useEffect(() => {
+    getDirData();
+  }, [id])
 
   useEffect(() => {
-    getDirData()
-  }, [id])
+    getCardDatas(dirs)
+  }, [dirs])
 
   // 调试信息
   console.log('当前卡片名称:', cardName)
@@ -72,8 +117,12 @@ export default function CardDetailPage({
               .filter(card => card.category === 'data')
               .map(card => {
                 const CardComponent = card.component
+                let insideData = null;
+                if (cardDatas[card.id] && insidePageCardDataHandles[card.id]) {
+                  insideData = insidePageCardDataHandles[card.id](cardDatas[card.id])
+                }
                 return CardComponent ? (
-                  <CardComponent key={card.id} data={{ id }} />
+                  <CardComponent insideData={insideData} key={card.id} data={{ id }} />
                 ) : null
               })
             }
@@ -86,8 +135,12 @@ export default function CardDetailPage({
               .filter(card => card.category === 'ability')
               .map(card => {
                 const CardComponent = card.component
+                let insideData = null;
+                if (cardDatas[card.id] && insidePageCardDataHandles[card.id]) {
+                  insideData = insidePageCardDataHandles[card.id](cardDatas[card.id])
+                }
                 return CardComponent ? (
-                  <CardComponent key={card.id} data={{ id }} />
+                  <CardComponent insideData={insideData} key={card.id} data={{ id }} />
                 ) : null
               })
             }
@@ -100,8 +153,12 @@ export default function CardDetailPage({
               .filter(card => card.category === 'related')
               .map(card => {
                 const CardComponent = card.component
+                let insideData = null;
+                if (cardDatas[card.id] && insidePageCardDataHandles[card.id]) {
+                  insideData = insidePageCardDataHandles[card.id](cardDatas[card.id])
+                }
                 return CardComponent ? (
-                  <CardComponent key={card.id} data={{ id }} />
+                  <CardComponent insideData={insideData} key={card.id} data={{ id }} />
                 ) : null
               })
             }
@@ -115,6 +172,8 @@ export default function CardDetailPage({
   // 获取主卡片组件（职位详情介绍）
   const MainCardComponent = CardRegistry.get('job-detail-intro')?.component
 
+  const jobDetailIntroData = insidePageCardDataHandles['job-detail-intro'](cardDatas['job-detail-intro'])
+
   return (
     <div className="min-h-screen pb-24">
       <DynamicBackground />
@@ -122,7 +181,7 @@ export default function CardDetailPage({
       <div className="pt-16 p-4 space-y-6">
         {/* 主卡片：职位详情介绍 */}
         {MainCardComponent && (
-          <MainCardComponent className="p-6" data={{ id }} />
+          <MainCardComponent insideData={jobDetailIntroData} className="p-6" data={{ id }} />
         )}
 
         <div className="px-4">

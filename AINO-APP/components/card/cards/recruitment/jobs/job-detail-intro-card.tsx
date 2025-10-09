@@ -16,6 +16,7 @@ interface JobDetailIntroData {
 interface JobDetailIntroCardProps {
     disableLocalTheme?: boolean
     className?: string
+    insideData?: any
 }
 
 const defaultData: JobDetailIntroData = {
@@ -26,11 +27,14 @@ const defaultData: JobDetailIntroData = {
     dataSource: "来自全网10份数据",
 }
 
-export function JobDetailIntroCard({ disableLocalTheme, className }: JobDetailIntroCardProps) {
+export function JobDetailIntroCard({ insideData, disableLocalTheme, className }: JobDetailIntroCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     let { realData: data, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
     data = isType(data) === "Array" ? data[0] : data;
 
+    if (insideData) {
+        data = insideData;
+    }
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h1 className="text-base font-semibold mb-3" data-slot="card-title">
@@ -46,7 +50,7 @@ export function JobDetailIntroCard({ disableLocalTheme, className }: JobDetailIn
                     <div className="text-2xl font-bold text-primary">{data.avgMonthlySalary}</div>
                     <div className="text-xs text-muted-foreground">{data.dataSource}</div>
                 </div>
-                <SalaryExperienceDonut />
+                <SalaryExperienceDonut data={data.salaryDistribution || []} />
             </div>
         </AppCard>
     )
