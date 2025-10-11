@@ -31,6 +31,9 @@ export function JobSalaryOverviewCard({ insideData, disableLocalTheme, className
     const { key: providedKey } = useLocalThemeKey()
     const { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobSalaryOverviewData)
     let data = {
+        title: "收入分布怎么样？",
+        avgSalary: "¥15900",
+        ranking: 351,
         rankingData: [],
         salaryDistribution: [],
     };
@@ -55,7 +58,7 @@ export function JobSalaryOverviewCard({ insideData, disableLocalTheme, className
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={className ? className : "p-6"}>
             <h2 className="text-base font-semibold mb-4" data-slot="card-title">
-                人工智能训练师收入分布怎么样？
+                {data.title}
             </h2>
             <SalaryOverviewCard data={data} />
         </AppCard>

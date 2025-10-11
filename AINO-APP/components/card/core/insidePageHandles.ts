@@ -1,9 +1,77 @@
 import { getRandomHexColor } from "@/lib/utils"
 import { http } from "@/lib/request"
 
-export const getInsidePageDatas = async (cardName, currentDir, searchStr) => {
-    const { data } = await http.get(`/api/records/${currentDir.id}?searchStr=${searchStr}`)
-    return data;
+export const getInsidePageDatas = async (key, did, rid) => {
+    const { data } = await http.get(`/api/records/${did}/${rid}`)
+    const parsedData = JSON.parse(data[key]);
+    console.log(parsedData, 23232323)
+
+    const result = {
+        "job-detail-intro": {
+            "标题": parsedData.title,
+            "描述": parsedData.description,
+            "平均月薪": parsedData.salary.average,
+            "数据源": "来自全网10份数据",
+        },
+        "job-salary-overview": {
+            "标题": parsedData.title,
+            "平均月薪": parsedData.salary.average,
+            "排名": Math.floor(Math.random() * 200) + 1,
+            "数据排名趋势图": [],
+            "职位类型标签": [],
+        },
+        "education-salary-requirements": {
+            "标题": `${parsedData.title}职业学历收入情况`,
+            "描述": `${parsedData.title}职业学历收入情况`,
+            "数据": [],
+        },
+        "job-experience-ratio": {
+            "标题": `${parsedData.title}不同工作年限的薪资占比`,
+            "描述": `工作年限不同，${parsedData.title}的薪资是否相同呢？以下是职位平均薪资与占比数据`,
+            "数据": [],
+        },
+        "job-city-ranking": {
+            "标题": `${parsedData.title}工作城市排名`,
+            "描述": `${parsedData.title}工作城市排名`,
+            "数据": [],
+        },
+        "related-jobs-list": {},
+        // "ability-requirements-radar": {},
+    }
+
+    let eduSalCount = 0;
+    parsedData.educationDistribution.forEach(item => eduSalCount += item.salary);
+    parsedData.educationDistribution.forEach(item => {
+        result['education-salary-requirements']['数据'].push({
+            "标签": item.education,
+            "值": item.salary,
+            "占比": Math.floor((item.salary / eduSalCount) * 100),
+        })
+    })
+
+    let expSalCount = 0;
+    parsedData.experienceDistribution.forEach(item => expSalCount += item.salary);
+    parsedData.experienceDistribution.forEach(item => {
+        result['job-experience-ratio']['数据'].push({
+            "工作年限": `${item.years}年`,
+            "薪资": item.salary,
+            "占比": Math.floor((item.salary / expSalCount) * 100),
+        })
+    })
+
+
+
+    let cityCount = 0;
+    parsedData.cityRanking.forEach(item => cityCount += item.avgSalary);
+    parsedData.cityRanking.forEach(item => {
+        result['job-city-ranking']['数据'].push({
+            "标签": item.city,
+            "值": item.avgSalary,
+            "占比": Math.floor((item.avgSalary / cityCount) * 100),
+        })
+    })
+
+    return result
 }
 
 export const insidePageArrayCardDatas = {
@@ -42,14 +110,9 @@ export const insidePageCardDataHandles = {
             if (data['数据排名趋势图'] && data['数据排名趋势图'].length) {
                 newData.rankingData = [];
                 data['数据排名趋势图'].forEach(item => {
-                    const newItem = {};
-                    const allDatas = item.texts.concat(item.numbers.concat(item.images));
-                    allDatas.forEach(text => {
-                        newItem[text.label] = text.value;
-                    })
                     newData.rankingData.push({
-                        name: newItem['职位名'],
-                        rank: Number(newItem['排名']),
+                        name: item['职位名'],
+                        rank: Number(item['排名']),
                         color: getRandomHexColor(),
                     })
                 });
@@ -57,18 +120,16 @@ export const insidePageCardDataHandles = {
             if (data['职位类型标签'] && data['职位类型标签'].length) {
                 newData.salaryDistribution = [];
                 data['职位类型标签'].forEach(item => {
-                    const newItem = {};
-                    const allDatas = item.texts.concat(item.numbers.concat(item.images));
-                    allDatas.forEach(text => {
-                        newItem[text.label] = text.value;
-                    })
                     newData.salaryDistribution.push({
-                        range: newItem['薪资范围'],
-                        percentage: Number(newItem['占比']),
+                        range: item['薪资范围'],
+                        percentage: Number(item['占比']),
                         color: getRandomHexColor(),
                     })
                 })
             }
+            newData.title = data['标题'];
+            newData.avgSalary = data['平均月薪'];
+            newData.ranking = data['排名'];
             return newData;
         }
         return null;
@@ -81,15 +142,10 @@ export const insidePageCardDataHandles = {
             if (data['数据'] && data['数据'].length) {
                 newData.data = [];
                 data['数据'].forEach(item => {
-                    const allDatas = item.texts.concat(item.numbers.concat(item.images));
-                    const newItem = {};
-                    allDatas.forEach(text => {
-                        newItem[text.label] = text.value;
-                    })
                     newData.data.push({
-                        label: newItem['标签'],
-                        value: newItem['值'],
-                        percentage: newItem['占比'],
+                        label: item['标签'],
+                        value: item['值'],
+                        percentage: item['占比'],
                         color: getRandomHexColor(),
                     });
                 })
@@ -106,15 +162,10 @@ export const insidePageCardDataHandles = {
             if (data['数据'] && data['数据'].length) {
                 newData.data = [];
                 data['数据'].forEach(item => {
-                    const allDatas = item.texts.concat(item.numbers.concat(item.images));
-                    const newItem = {};
-                    allDatas.forEach(text => {
-                        newItem[text.label] = text.value;
-                    })
                     newData.data.push({
-                        jobs: newItem['职位数'],
-                        name: newItem['工作年限'],
-                        value: newItem['占比'],
+                        jobs: item['薪资'],
+                        name: item['工作年限'],
+                        value: item['占比'],
                         color: getRandomHexColor(),
                     });
                 })
@@ -131,15 +182,10 @@ export const insidePageCardDataHandles = {
             if (data['数据'] && data['数据'].length) {
                 newData.data = [];
                 data['数据'].forEach(item => {
-                    const allDatas = item.texts.concat(item.numbers.concat(item.images));
-                    const newItem = {};
-                    allDatas.forEach(text => {
-                        newItem[text.label] = text.value;
-                    })
                     newData.data.push({
-                        label: newItem['标签'],
-                        value: newItem['值'],
-                        percentage: newItem['占比'],
+                        label: item['标签'],
+                        value: item['值'],
+                        percentage: item['占比'],
                         color: getRandomHexColor(),
                     });
                 })
@@ -148,6 +194,7 @@ export const insidePageCardDataHandles = {
         }
         return null;
     },
+    // LOG: todo
     "related-jobs-list": (data) => {
         const newData = [];
         if (data && data.length) {
@@ -165,6 +212,7 @@ export const insidePageCardDataHandles = {
         }
         return null
     },
+    // LOG: todo
     "ability-requirements-radar": (data) => {
         const newData = {};
         if (data) {

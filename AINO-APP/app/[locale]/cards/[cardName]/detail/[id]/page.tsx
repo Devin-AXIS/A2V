@@ -24,47 +24,23 @@ export default function CardDetailPage({
   const tabs = ["职业数据", "具备能力", "相关岗位"]
   const [dirs, setDirs] = useState<any>([]);
   const [cardDatas, setCardDatas] = useState<any>({});
+  const [currentDir, setCurrentDir] = useState<any>(null);
 
   const getDirData = async () => {
     const currentDir = await http.get(`/api/directories/${id}`)
     const { data } = await http.get(`/api/directories?moduleId=${currentDir.data.moduleId}`)
     setDirs(data.directories);
+    setCurrentDir(currentDir.data);
   }
 
   const getCardDatas = async (dirs) => {
     if (!dirs || !dirs.length) return;
     const qs = new URLSearchParams(window.location.search)
-    const searchStr = qs.get('searchStr')
+    const rid = qs.get('rid')
     const newCardDatas = {};
-    for (let i = 0; i < subCards.length; i++) {
-      const card = subCards[i];
-      const currentDir = dirs.find(dir => dir.config.moduleKey.indexOf(card.id) > -1);
-      if (currentDir) {
-        const data = await getInsidePageDatas(card.id, currentDir, searchStr);
-        if (data.length) {
-          if (insidePageArrayCardDatas[card.id]) {
-            const { fields } = currentDir.config;
-            const resultData = [];
-            data.forEach(itemData => {
-              const currentResultData = {};
-              fields.forEach(field => {
-                currentResultData[field.label] = itemData[field.key];
-              })
-              resultData.push(currentResultData);
-            });
-            newCardDatas[card.id] = resultData;
-          } else {
-            const { fields } = currentDir.config;
-            const resultData = {};
-            fields.forEach(field => {
-              resultData[field.label] = data[0][field.key];
-            });
-            newCardDatas[card.id] = resultData;
-          }
-        }
-      }
-    }
-    setCardDatas(newCardDatas);
+    const currentField = currentDir?.config?.fields?.find(field => field.label === "内页卡片数据");
+    const insideData = await getInsidePageDatas(currentField?.key, id, rid);
+    setCardDatas(insideData);
   }
 
   const [isTesting, setIsTesting] = useState(false)
@@ -101,11 +77,9 @@ export default function CardDetailPage({
     getCardDatas(dirs)
   }, [dirs])
 
-  // 调试信息
-  console.log('当前卡片名称:', cardName)
-  console.log('卡片包配置:', packageConfig)
-  console.log('子卡片列表:', subCards)
-  console.log('相关岗位子卡片:', subCards.filter(card => card.category === 'related'))
+  // useEffect(() => {
+  //   getInsideData();
+  // }, [])
 
   // 根据卡片包系统动态渲染子卡片
   const renderTabContent = () => {

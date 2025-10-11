@@ -22,6 +22,7 @@ import { docsRoute } from "./docs/routes"
 import previewManifestsRoute from "./modules/preview-manifests/routes"
 import aiRoute from "./modules/ai/routes"
 import crawlRoute from "./modules/crawl/routes"
+import crawlerRoute from "./modules/crawler/routes"
 import pageConfigsRoute from "./modules/page-configs/routes"
 import moduleConfigsRoute from "./modules/module-configs/routes"
 import { databaseMiddleware } from "./middleware/database"
@@ -170,6 +171,9 @@ app.route("/api/ai", aiRoute)
 
 // 爬取服务路由（Firecrawl 集成）
 app.route("/api/crawl", crawlRoute)
+
+// 爬虫服务路由（Crawlee 集成）
+app.route("/api/crawler", crawlerRoute)
 
 // 页面配置临时存储/读取
 app.route("/api/page-configs", pageConfigsRoute)

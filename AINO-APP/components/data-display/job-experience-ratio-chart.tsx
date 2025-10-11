@@ -36,7 +36,7 @@ export function JobExperienceRatioChart({ showTitle = true, data }: JobExperienc
           style={{ color: "var(--card-text-color)" }}
         >
           <div>工作年限</div>
-          <div className="text-center">月度新增职位</div>
+          <div className="text-center">平均薪资</div>
           <div className="text-center">职位占比</div>
         </div>
 

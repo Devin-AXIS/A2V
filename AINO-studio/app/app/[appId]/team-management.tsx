@@ -336,12 +336,12 @@ export function TeamManagement() {
       departments.map((dept) =>
         dept.id === selectedDepartment.id
           ? {
-              ...dept,
-              name: deptForm.name,
-              description: deptForm.description,
-              leaderId: deptForm.leaderId || undefined,
-              leaderName: deptForm.leaderId ? members.find((m) => m.id === deptForm.leaderId)?.name : undefined,
-            }
+            ...dept,
+            name: deptForm.name,
+            description: deptForm.description,
+            leaderId: deptForm.leaderId || undefined,
+            leaderName: deptForm.leaderId ? members.find((m) => m.id === deptForm.leaderId)?.name : undefined,
+          }
           : dept,
       ),
     )
@@ -385,10 +385,10 @@ export function TeamManagement() {
       members.map((member) =>
         member.id === selectedMember.id
           ? {
-              ...member,
-              role: memberForm.role,
-              department: memberForm.department,
-            }
+            ...member,
+            role: memberForm.role,
+            department: memberForm.department,
+          }
           : member,
       ),
     )
@@ -817,13 +817,13 @@ export function TeamManagement() {
       {/* Edit Department Dialog - 保留内联，因为是编辑功能 */}
       <Dialog open={editDeptDialogOpen} onOpenChange={setEditDeptDialogOpen}>
         <DialogContent className="bg-white/70 backdrop-blur border-white/60" aria-describedby="edit-dept-description">
-                  <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building className="size-5" />
-            {locale === "zh" ? "编辑部门" : "Edit Department"}
-          </DialogTitle>
-          <DialogDescription id="edit-dept-description">{locale === "zh" ? "修改部门信息" : "Modify department information"}</DialogDescription>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building className="size-5" />
+              {locale === "zh" ? "编辑部门" : "Edit Department"}
+            </DialogTitle>
+            <DialogDescription id="edit-dept-description">{locale === "zh" ? "修改部门信息" : "Modify department information"}</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>{locale === "zh" ? "部门名称 *" : "Department Name *"}</Label>
@@ -876,10 +876,10 @@ export function TeamManagement() {
           className="max-w-2xl bg-white/70 backdrop-blur border-white/60"
           aria-describedby="edit-role-description"
         >
-                  <DialogHeader>
-          <DialogTitle>{locale === "zh" ? "编辑角色权限" : "Edit Role Permissions"}</DialogTitle>
-          <DialogDescription id="edit-role-description">{locale === "zh" ? "修改角色的权限配置" : "Modify role permission configuration"}</DialogDescription>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{locale === "zh" ? "编辑角色权限" : "Edit Role Permissions"}</DialogTitle>
+            <DialogDescription id="edit-role-description">{locale === "zh" ? "修改角色的权限配置" : "Modify role permission configuration"}</DialogDescription>
+          </DialogHeader>
           {selectedRole && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-slate-50/60 rounded-lg">
@@ -904,17 +904,17 @@ export function TeamManagement() {
                             checked={roleForm.permissions.includes(perm.id)}
                             onCheckedChange={() => togglePermission(perm.id)}
                           />
-                                                  <Label htmlFor={`edit-${perm.id}`} className="text-sm">
-                          {perm.name === "查看" ? (locale === "zh" ? "查看" : "View") :
-                           perm.name === "创建" ? (locale === "zh" ? "创建" : "Create") :
-                           perm.name === "编辑" ? (locale === "zh" ? "编辑" : "Edit") :
-                           perm.name === "删除" ? (locale === "zh" ? "删除" : "Delete") :
-                           perm.name === "用户管理" ? (locale === "zh" ? "用户管理" : "User Management") :
-                           perm.name === "角色管理" ? (locale === "zh" ? "角色管理" : "Role Management") :
-                           perm.name === "系统设置" ? (locale === "zh" ? "系统设置" : "System Settings") :
-                           perm.name === "数据导出" ? (locale === "zh" ? "数据导出" : "Data Export") :
-                           perm.name === "API访问" ? (locale === "zh" ? "API访问" : "API Access") : perm.name}
-                        </Label>
+                          <Label htmlFor={`edit-${perm.id}`} className="text-sm">
+                            {perm.name === "查看" ? (locale === "zh" ? "查看" : "View") :
+                              perm.name === "创建" ? (locale === "zh" ? "创建" : "Create") :
+                                perm.name === "编辑" ? (locale === "zh" ? "编辑" : "Edit") :
+                                  perm.name === "删除" ? (locale === "zh" ? "删除" : "Delete") :
+                                    perm.name === "用户管理" ? (locale === "zh" ? "用户管理" : "User Management") :
+                                      perm.name === "角色管理" ? (locale === "zh" ? "角色管理" : "Role Management") :
+                                        perm.name === "系统设置" ? (locale === "zh" ? "系统设置" : "System Settings") :
+                                          perm.name === "数据导出" ? (locale === "zh" ? "数据导出" : "Data Export") :
+                                            perm.name === "API访问" ? (locale === "zh" ? "API访问" : "API Access") : perm.name}
+                          </Label>
                         </div>
                       ))}
                     </div>
@@ -935,10 +935,10 @@ export function TeamManagement() {
       {/* Edit Member Dialog - 保留内联，因为是编辑功能 */}
       <Dialog open={editMemberDialogOpen} onOpenChange={setEditMemberDialogOpen}>
         <DialogContent className="bg-white/70 backdrop-blur border-white/60" aria-describedby="edit-member-description">
-                  <DialogHeader>
-          <DialogTitle>{locale === "zh" ? "编辑成员信息" : "Edit Member Information"}</DialogTitle>
-          <DialogDescription id="edit-member-description">{locale === "zh" ? "修改成员的角色和部门" : "Modify member's role and department"}</DialogDescription>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{locale === "zh" ? "编辑成员信息" : "Edit Member Information"}</DialogTitle>
+            <DialogDescription id="edit-member-description">{locale === "zh" ? "修改成员的角色和部门" : "Modify member's role and department"}</DialogDescription>
+          </DialogHeader>
           {selectedMember && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">

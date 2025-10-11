@@ -84,7 +84,7 @@ export function RelatedJobsListCard({
 
   const handleJobClick = (job: any, index: number) => {
     // job-detail-intro-card
-    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?searchStr=${job.title}`)
+    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}`)
   }
 
   return (

@@ -128,7 +128,7 @@ export function DirectoryList({
                 "bg-white/60 hover:bg-white/80 border border-white/60 text-left",
                 "shadow-[0_4px_12px_rgba(31,38,135,0.12)]",
                 d.id === selectedId &&
-                  "bg-gradient-to-br from-sky-100/70 to-blue-50/70 border-sky-200 ring-1 ring-sky-200",
+                "bg-gradient-to-br from-sky-100/70 to-blue-50/70 border-sky-200 ring-1 ring-sky-200",
               )}
             >
               <button

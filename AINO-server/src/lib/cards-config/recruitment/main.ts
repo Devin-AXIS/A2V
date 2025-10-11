@@ -163,6 +163,7 @@ export const RecruitmentSubCards = [
             { key: "education", type: "text", label: "教育" },
             { key: "experience", type: "text", label: "经验" },
             { key: "jobType", type: "text", label: "职位类型" },
+            { key: "insideData", type: "text", label: "内页卡片数据" },
         ],
         displayName: "相关岗位列表",
         type: "list",

@@ -127,6 +127,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [tz, setTz] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai")
   const [intervalHours, setIntervalHours] = useState<string>("")
   const [dedupKey, setDedupKey] = useState<"url" | "externalId" | "titleWindow">("url")
+  const [captured, setCaptured] = useState<boolean>(false)
 
   const [loadingMeta, setLoadingMeta] = useState(false)
   const [runOnce, setRunOnce] = useState(false)
@@ -1028,6 +1029,32 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     } finally { setBusy((b) => ({ ...b, batchStart: false })) }
   }
 
+  async function captureTemplate() {
+    setCaptured(true)
+    let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+    if (!token) {
+      token = 'test-token'
+    }
+
+    const r = await fetch(`${getApiBase()}/api/crawler/tanzhi/jobs`, {
+      method: 'GET',
+      mode: 'cors' as RequestMode,
+      credentials: 'include' as RequestCredentials,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
+    setExtractedOverride([{
+      result: {
+        jobs: data.data
+      }
+    }]);
+    setCaptured(false);
+  }
+
   async function onBatchStatus() {
     const { firecrawlKey } = readAuth()
     if (!firecrawlKey || !batchId) return
@@ -1105,6 +1132,14 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
             </DrawerHeader>
             <div className="px-4 pb-4">
               <ScrollArea className="h-[68vh] pr-2">
+                <div className="space-y-2 mb-4">
+                  <div className="text-sm font-medium">{t("按模板抓取", "Capture according to template")}</div>
+                  <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-2 max-h-[160px] overflow-auto text-xs">
+                    <Button size="sm" className="cursor-pointer" onClick={captureTemplate} disabled={!!captured}>
+                      {captured ? <><Loader2 className="size-4 mr-1 animate-spin" />{t("抓取中", "Scraping")}</> : t("谈职岗位信息", "Start scrape")}
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <section className="space-y-3">
                     <div className="text-sm font-medium">{t("数据源", "Source")}</div>

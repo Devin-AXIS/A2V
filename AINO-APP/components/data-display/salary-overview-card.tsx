@@ -28,8 +28,8 @@ export function SalaryOverviewCard({ data }) {
         <div className="space-y-4">
           <div>
             <div className="text-sm text-muted-foreground mb-1">平均月薪</div>
-            <div className="text-3xl font-bold">¥15900</div>
-            <div className="text-sm text-muted-foreground mt-2">排名第351</div>
+            <div className="text-3xl font-bold">{data.avgSalary}</div>
+            <div className="text-sm text-muted-foreground mt-2">排名{data.ranking}</div>
           </div>
 
           {/* 排名趋势图 */}

@@ -275,7 +275,7 @@ function Col({
   }
 
   const { locale } = useLocale()
-  
+
   return (
     <Card className="p-3 bg-white/60 border-white/60 backdrop-blur">
       <div className="flex items-center justify-between mb-2">
@@ -307,7 +307,7 @@ function Col({
 
       {list.length > pageSize && (
         <div className="text-xs text-muted-foreground mb-2 text-center">
-          {locale === "zh" 
+          {locale === "zh"
             ? `显示第 ${startIndex + 1}-${Math.min(endIndex, list.length)} 条，共 ${list.length} 条`
             : `Showing ${startIndex + 1}-${Math.min(endIndex, list.length)} of ${list.length} items`
           }
@@ -395,7 +395,7 @@ function Col({
         {!onAddName && list.length === 0 && (
           <div className="pt-1">
             <Button size="sm" variant="secondary" disabled>
-              {locale === "zh" 
+              {locale === "zh"
                 ? "请在上一级的条目上使用「+ 子级」添加"
                 : "Please use '+ Sub' on the previous level item to add"
               }

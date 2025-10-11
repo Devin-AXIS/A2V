@@ -190,6 +190,7 @@ export const setDatas = async () => {
                             currentRealData[key] = item[dataMapping[key]]
                         }
                     })
+                    currentRealData.recordId = item.id;
                     resultData.push(currentRealData)
                 })
             } else if (type === 'record') {

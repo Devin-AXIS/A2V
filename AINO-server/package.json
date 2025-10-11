@@ -24,6 +24,7 @@
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.1.0",
     "@hono/zod-validator": "^0.7.2",
+    "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.4",
     "hono": "^4.9.4",
