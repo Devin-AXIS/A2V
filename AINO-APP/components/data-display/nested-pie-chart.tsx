@@ -52,7 +52,7 @@ export function NestedPieChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Nested pie chart showing quarterly and monthly breakdown.
       </p>
-      <div className="h-64 relative focus:outline-none [&_*]:focus:outline-none">
+      <div className="h-64 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             {/* Inner pie - Quarters */}

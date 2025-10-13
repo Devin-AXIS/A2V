@@ -24,7 +24,7 @@ export function JobProspectLineChart({
   const { palette } = useDataChartTheme()
 
   return (
-    <div className={className ? className : "h-32"}>
+    <div className={`${className ? className : "h-32"} chart-container`}>
       <ResponsiveContainer width="100%" height="100%">
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <AreaChart data={data as any[]} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>

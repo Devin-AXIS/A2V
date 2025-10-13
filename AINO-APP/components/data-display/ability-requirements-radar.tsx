@@ -20,7 +20,7 @@ export function AbilityRequirementsRadar({ data, className }: AbilityRequirement
   return (
     <>
       <h3 className="text-base font-semibold mb-4">能力要求分布</h3>
-      <div className={className ? className : "h-64"}>
+      <div className={`${className ? className : "h-64"} chart-container`}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
             <PolarGrid stroke={palette[0]} />

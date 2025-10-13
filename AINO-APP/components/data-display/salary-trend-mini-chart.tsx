@@ -9,7 +9,7 @@ export function SalaryTrendMiniChart() {
   const { palette } = useDataChartTheme()
 
   return (
-    <div className="h-8 w-16">
+    <div className="h-8 w-16 chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <Line type="monotone" data={data} dataKey="value" stroke={palette[2]} strokeWidth={2} dot={false} />

@@ -25,7 +25,7 @@ export function ProgressRadialBarChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Distribution of visitor age groups
       </p>
-      <div className="h-72">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart cx="50%" cy="50%" innerRadius="10%" outerRadius="80%" barSize={10} data={data}>
             <Tooltip

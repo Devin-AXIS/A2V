@@ -13,7 +13,7 @@ export function WorkExperienceDonut() {
 
   return (
     <div className="space-y-4">
-      <div className="h-32 relative">
+      <div className="h-32 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

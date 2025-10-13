@@ -14,7 +14,7 @@ export function JobProspectTrendChart() {
   const { palette } = useDataChartTheme()
 
   return (
-    <div className="w-full h-full min-h-0">
+    <div className="w-full h-full min-h-0 chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart accessibilityLayer={false}
           data={data}

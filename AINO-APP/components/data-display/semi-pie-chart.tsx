@@ -49,7 +49,7 @@ export function SemiPieChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Semi-circular pie chart showing device usage.
       </p>
-      <div className="h-48 relative focus:outline-none [&_*]:focus:outline-none">
+      <div className="h-48 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

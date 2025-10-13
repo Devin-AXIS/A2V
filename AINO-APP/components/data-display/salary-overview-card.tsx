@@ -33,7 +33,7 @@ export function SalaryOverviewCard({ data }) {
           </div>
 
           {/* 排名趋势图 */}
-          <div className="h-16 w-full">
+          <div className="h-16 w-full chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.rankingData || []}>
                 <Line

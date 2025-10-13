@@ -37,8 +37,8 @@ export default function SkillProgressChart({
           {description}
         </p>
       </div>
-      
-      <div className="space-y-4 focus:outline-none [&_*]:focus:outline-none">
+
+      <div className="space-y-4 chart-container">
         {data.map((item, index) => (
           <div key={index} className="group">
             <div className="flex justify-between items-center mb-2">

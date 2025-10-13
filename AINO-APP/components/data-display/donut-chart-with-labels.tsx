@@ -59,7 +59,7 @@ export function DonutChartWithLabels() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Spent this month
       </p>
-      <div className="h-64 relative">
+      <div className="h-64 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

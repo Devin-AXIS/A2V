@@ -26,7 +26,7 @@ export default function SimplePieCard({ disableLocalTheme, className = "", data 
 
     return (
         <AppCard disableLocalTheme={disableLocalTheme} className={`p-4 flex flex-col ${className}`}>
-            <div>
+            <div className="chart-container">
                 <ResponsiveContainer width="100%" height={height}>
                     <PieChart margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
                         <Pie

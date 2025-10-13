@@ -51,7 +51,7 @@ export function JobExperienceRatioChart({ showTitle = true, data }: JobExperienc
                 {item.jobs}
               </div>
               <div className="flex justify-center">
-                <div className="w-16 h-16 relative">
+                <div className="w-16 h-16 relative chart-container">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

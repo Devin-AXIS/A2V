@@ -83,7 +83,7 @@ export function DonutChartActive() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Hover over a segment to see details.
       </p>
-      <div className="h-64">
+      <div className="h-64 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart accessibilityLayer={false}>
             <Pie

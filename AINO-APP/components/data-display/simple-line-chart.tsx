@@ -25,7 +25,7 @@ export function SimpleLineChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         January - July 2024
       </p>
-      <div className="h-72">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}

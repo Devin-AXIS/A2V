@@ -35,7 +35,7 @@ export function ScatterChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Correlation between metrics
       </p>
-      <div className="h-72 focus:outline-none [&_*]:focus:outline-none">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />

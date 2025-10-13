@@ -3556,6 +3556,17 @@ video {
 .ease-out {
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
+/* 移除图表组件的所有焦点边框 */
+.chart-container,
+  .chart-container *,
+  .chart-container *:focus,
+  .chart-container *:focus-visible,
+  .chart-container *:focus-within {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+/* 移除Recharts组件的焦点样式 */
 .\[--cell-size\:--spacing\(8\)\] {
   --cell-size: var(--spacing(8));
 }

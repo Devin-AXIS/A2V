@@ -31,7 +31,7 @@ export function BarChartWithLabel() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Revenue with growth indicators
       </p>
-      <div className="h-72">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barCategoryGap="60%" margin={{ top: 40, right: 30, left: 20, bottom: 5 }}>
             <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />

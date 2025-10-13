@@ -103,7 +103,7 @@ export function LabeledPieChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Distribution of leads by acquisition channel.
       </p>
-      <div className="h-80 relative focus:outline-none [&_*]:focus:outline-none">
+      <div className="h-80 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

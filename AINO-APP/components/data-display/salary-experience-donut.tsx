@@ -15,7 +15,7 @@ export function SalaryExperienceDonut({ data }) {
   return (
     <div className="flex items-center gap-6">
       {/* 环形图 */}
-      <div className="h-24 w-24 relative flex-shrink-0">
+      <div className="h-24 w-24 relative flex-shrink-0 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

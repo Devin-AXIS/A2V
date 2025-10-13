@@ -16,7 +16,7 @@ export function JobTrendAreaChart() {
   const { palette } = useDataChartTheme()
 
   return (
-    <div className="h-64" style={{ height: "240px" }}>
+    <div className="h-64 chart-container" style={{ height: "240px" }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}

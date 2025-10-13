@@ -14,7 +14,7 @@ export function EducationSalaryChart() {
   const { palette } = useDataChartTheme()
 
   return (
-    <div className="h-48">
+    <div className="h-48 chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <XAxis dataKey="education" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#666" }} />

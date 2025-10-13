@@ -25,7 +25,7 @@ export function MultiLineChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Revenue, profit, and expenses trends
       </p>
-      <div className="h-72">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart accessibilityLayer={false} data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />

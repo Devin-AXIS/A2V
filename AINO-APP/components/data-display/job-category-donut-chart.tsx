@@ -17,7 +17,7 @@ export function JobCategoryDonutChart() {
   return (
     <div className="space-y-4">
       {/* 环形图 */}
-      <div className="h-48 relative">
+      <div className="h-48 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

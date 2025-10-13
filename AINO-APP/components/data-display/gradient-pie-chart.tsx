@@ -35,7 +35,7 @@ export function GradientPieChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Revenue distribution by subscription tier.
       </p>
-      <div className="h-64 relative [&_*]:focus:outline-none">
+      <div className="h-64 relative chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <defs>

@@ -106,7 +106,7 @@ export function TreemapChart() {
       <p className="text-sm text-gray-500 mb-4" style={{ color: "var(--card-text-color)" }}>
         Distribution of development resources
       </p>
-      <div className="h-72 focus:outline-none [&_*]:focus:outline-none">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <Treemap data={data} dataKey="size" aspectRatio={4 / 3} stroke="#fff" content={CustomizedContentWithPalette}>
             <Tooltip

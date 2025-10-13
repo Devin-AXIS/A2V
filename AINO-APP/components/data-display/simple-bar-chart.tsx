@@ -26,7 +26,7 @@ export function SimpleBarChart() {
       <h3 className="text-lg font-semibold" style={{ color: "var(--card-title-color)" }}>
         Overview
       </h3>
-      <div className="h-72">
+      <div className="h-72 chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart accessibilityLayer={false} data={data} barCategoryGap="20%" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <XAxis dataKey="name" stroke={palette[3] || "hsl(var(--muted-foreground))"} fontSize={12} tickLine={false} axisLine={false} />
