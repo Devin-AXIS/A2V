@@ -157,7 +157,7 @@ export default function BuilderPage() {
 
     try {
       const token = window.localStorage.getItem('aino_token');
-      const publishedModuleRes = await fetch(`http://localhost:3007/api/module-configs/${moduleToInstall.id}`, {
+      const publishedModuleRes = await fetch(`http://47.94.52.142:3007/api/module-configs/${moduleToInstall.id}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       })
@@ -166,7 +166,7 @@ export default function BuilderPage() {
       const { directories } = publishedModuleData;
 
       // 创建模块
-      const installedModuleRes = await fetch(`http://localhost:3007/api/modules/simple/install?applicationId=${params.appId}`, {
+      const installedModuleRes = await fetch(`http://47.94.52.142:3007/api/modules/simple/install?applicationId=${params.appId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -192,7 +192,7 @@ export default function BuilderPage() {
       for (let i = 0; i < directories.length; i++) {
         const directory = directories[i];
         const mappedName = tableNameMappingObject[directory.name] || directory.name
-        const tebleRes = await fetch(`http://localhost:3007/api/directories?applicationId=${params.appId}&moduleId=${installedModuleId}`, {
+        const tebleRes = await fetch(`http://47.94.52.142:3007/api/directories?applicationId=${params.appId}&moduleId=${installedModuleId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -211,7 +211,7 @@ export default function BuilderPage() {
         for (let j = 0; j < directory.fields.length; j++) {
           // 创建字段
           const field = directory.fields[j];
-          const fieldRes = await fetch(`http://localhost:3007/api/directory-defs/by-directory/${tebleData.data.id}`, {
+          const fieldRes = await fetch(`http://47.94.52.142:3007/api/directory-defs/by-directory/${tebleData.data.id}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -232,7 +232,7 @@ export default function BuilderPage() {
             type: field.type,
             validators: {},
           }
-          const fieldDefRes = await fetch(`http://localhost:3007/api/field-defs`, {
+          const fieldDefRes = await fetch(`http://47.94.52.142:3007/api/field-defs`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -276,7 +276,7 @@ export default function BuilderPage() {
   const handlePublicModule = async () => {
     const currentModule = { ...c.currentModule, type: "public" };
     try {
-      const createResponse = await fetch(`http://localhost:3007/api/module-configs`, {
+      const createResponse = await fetch(`http://47.94.52.142:3007/api/module-configs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload: JSON.stringify(currentModule), title: currentModule.name, description: currentModule.type }),

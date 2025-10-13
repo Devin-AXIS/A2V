@@ -1,0 +1,18 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/app/[appId]/modules/page": "/app/[appId]/modules",
+  "/app/[appId]/page": "/app/[appId]",
+  "/app/[appId]/settings/page": "/app/[appId]/settings",
+  "/debug/page": "/debug",
+  "/app/[appId]/auth-test/page": "/app/[appId]/auth-test",
+  "/forgot-password/page": "/forgot-password",
+  "/app/[appId]/client-config/page": "/app/[appId]/client-config",
+  "/register/page": "/register",
+  "/test-api-integration/page": "/test-api-integration",
+  "/login/page": "/login",
+  "/test-country/page": "/test-country",
+  "/simple-test/page": "/simple-test",
+  "/test-api/page": "/test-api",
+  "/test-modules/page": "/test-modules",
+  "/page": "/"
+}

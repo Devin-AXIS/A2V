@@ -454,7 +454,7 @@ export async function collectApiConfigs(): Promise<Record<string, any>> {
     const configs: Record<string, any> = {}
 
     try {
-        const baseUrl = 'http://localhost:3007'
+        const baseUrl = 'http://47.94.52.142:3007'
 
         // 采集应用配置
         try {

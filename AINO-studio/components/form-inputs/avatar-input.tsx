@@ -65,7 +65,7 @@ export function AvatarInput({
           const uploadOne = async (file: File) => {
             const form = new FormData()
             form.append("file", file)
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/upload`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3001'}/api/upload`, {
               method: "POST",
               headers: {
                 // 让浏览器自动设置 multipart 边界
