@@ -5305,11 +5305,6 @@ video {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
-.\[\&_\*\]\:focus\:outline-none:focus * {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-
 .\[\&_\.recharts-cartesian-axis-tick_text\]\:fill-muted-foreground .recharts-cartesian-axis-tick text {
   fill: hsl(var(--muted-foreground));
 }

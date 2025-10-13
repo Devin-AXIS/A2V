@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Briefcase } from "lucide-react"
+import { Briefcase, ChevronLeft, ChevronRight } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
+import { Button } from "@/components/ui/button"
 import { CardRegistry } from "../../core/registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
@@ -24,6 +25,8 @@ interface RelatedJobsListCardProps {
   disableLocalTheme?: boolean
   jobs?: Job[]
   title?: string
+  pageSize?: number
+  showPagination?: boolean
 }
 
 const defaultJobs: Job[] = [
@@ -70,6 +73,8 @@ export function RelatedJobsListCard({
   disableLocalTheme,
   jobs,
   title = "相关岗位",
+  pageSize = 3,
+  showPagination = true,
 }: RelatedJobsListCardProps) {
   const router = useRouter()
   const { locale } = useParams()
@@ -77,10 +82,32 @@ export function RelatedJobsListCard({
 
   const { realData, CARD_DISPLAY_DATA, original } = useCardRegistryData(providedKey, defaultJobs)
 
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+
   // 优先使用传入的 jobs 数据，否则使用注册数据
-  let renderData = realData || jobs;
-  if (insideData) renderData = insideData;
-  if (CARD_DISPLAY_DATA?.limit && renderData?.length) renderData = renderData.slice(0, CARD_DISPLAY_DATA.limit)
+  let allData = realData || jobs;
+  if (insideData) allData = insideData;
+  // if (CARD_DISPLAY_DATA?.limit && allData?.length) allData = allData.slice(0, CARD_DISPLAY_DATA.limit)
+
+  // 计算分页数据
+  const totalItems = allData?.length || 0
+  const totalPages = Math.ceil(totalItems / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const renderData = allData?.slice(startIndex, endIndex) || []
+
+  // 当数据变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [allData])
+
+  // 分页控制函数
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
 
   const handleJobClick = (job: any, index: number) => {
     // job-detail-intro-card
@@ -134,6 +161,66 @@ export function RelatedJobsListCard({
           </AppCard>
         ))}
       </div>
+
+      {/* 分页控制器 */}
+      {showPagination && totalPages > 1 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {startIndex + 1}-{Math.min(endIndex, totalItems)}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              {/* 页码显示 */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppCard>
   )
 }

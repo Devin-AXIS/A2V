@@ -168,7 +168,7 @@ export const setDatas = async () => {
             let realData;
             let resultData;
             if (type === "table") {
-                const response = await http.get(`/api/records/${dirId}?noAuth=true`);
+                const response = await http.get(`/api/records/${dirId}?noAuth=true&limit=100`);
                 realData = response.data;
                 resultData = [];
                 realData.forEach((item, realIndex) => {
