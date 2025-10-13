@@ -3,18 +3,18 @@
 import { useDataChartTheme } from "@/hooks/use-data-chart-theme"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 
-const rankingData = [
-  { name: "互联网专家", rank: 340 },
-  { name: "人工智能开发", rank: 351 },
-  { name: "售前解决方案", rank: 360 },
-]
+// const rankingData = [
+//   { name: "互联网专家", rank: 340 },
+//   { name: "人工智能开发", rank: 351 },
+//   { name: "售前解决方案", rank: 360 },
+// ]
 
-const salaryDistribution = [
-  { range: "0-8k", percentage: 10, color: "bg-teal-400" },
-  { range: "8-15k", percentage: 40, color: "bg-teal-500" },
-  { range: "15-30k", percentage: 50, color: "bg-teal-600" },
-  { range: ">30k", percentage: 0, color: "bg-gray-300" },
-]
+// const salaryDistribution = [
+//   { range: "0-8k", percentage: 10, color: "bg-teal-400" },
+//   { range: "8-15k", percentage: 40, color: "bg-teal-500" },
+//   { range: "15-30k", percentage: 50, color: "bg-teal-600" },
+//   { range: ">30k", percentage: 0, color: "bg-gray-300" },
+// ]
 
 export function SalaryOverviewCard({ data }) {
   const { primaryColor } = useDataChartTheme()
@@ -49,9 +49,9 @@ export function SalaryOverviewCard({ data }) {
 
           {/* 职位类型标签 */}
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>互联网专家</span>
-            <span>人工智能开...</span>
-            <span>售前解决方案</span>
+            <span>{data.rankingData[0]?.name}</span>
+            <span>{data.rankingData[1]?.name}</span>
+            <span>{data.rankingData[2]?.name}</span>
           </div>
         </div>
 

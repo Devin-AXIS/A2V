@@ -829,7 +829,7 @@ crawlRoute.get('/tanzhi/jobs', mockRequireAuthMiddleware, async (c) => {
 
 
         const datas = [];
-        results.forEach(item => {
+        sortBySalaryAverage(results).forEach(item => {
             datas.push({
                 title: item.title,
                 description: item.description,
@@ -853,5 +853,14 @@ crawlRoute.get('/tanzhi/jobs', mockRequireAuthMiddleware, async (c) => {
         return c.json({ success: false, error: error instanceof Error ? error.message : 'Internal server error' }, 500)
     }
 })
+
+// 根据薪资平均值排序数组的函数
+function sortBySalaryAverage<T extends { salary: { average: number } }>(arr: T[]): T[] {
+    return arr.sort((a, b) => {
+        const salaryA = a.salary?.average || 0;
+        const salaryB = b.salary?.average || 0;
+        return salaryB - salaryA; // 降序排列，薪资高的在前
+    });
+}
 
 export default crawlRoute;

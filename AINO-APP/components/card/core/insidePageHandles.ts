@@ -1,10 +1,14 @@
 import { getRandomHexColor } from "@/lib/utils"
 import { http } from "@/lib/request"
 
-export const getInsidePageDatas = async (key, did, rid) => {
+const colors = ['bg-teal-300', 'bg-teal-400', 'bg-teal-500', 'bg-teal-600']
+const getColors = () => {
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+export const getInsidePageDatas = async (key, did, rid, records) => {
     const { data } = await http.get(`/api/records/${did}/${rid}`)
     const parsedData = JSON.parse(data[key]);
-    console.log(parsedData, 23232323)
 
     const result = {
         "job-detail-intro": {
@@ -12,11 +16,12 @@ export const getInsidePageDatas = async (key, did, rid) => {
             "描述": parsedData.description,
             "平均月薪": parsedData.salary.average,
             "数据源": "来自全网10份数据",
+            "薪资分布": [],
         },
         "job-salary-overview": {
             "标题": parsedData.title,
             "平均月薪": parsedData.salary.average,
-            "排名": Math.floor(Math.random() * 200) + 1,
+            "排名": 1,
             "数据排名趋势图": [],
             "职位类型标签": [],
         },
@@ -38,6 +43,74 @@ export const getInsidePageDatas = async (key, did, rid) => {
         "related-jobs-list": {},
         // "ability-requirements-radar": {},
     }
+
+    parsedData.workOpportunities.distribution.forEach(item => {
+        result['job-detail-intro']['薪资分布'].push({
+            '年份': `${item.years}年`,
+            "占比": item.percentage
+        })
+    })
+
+    // job-salary-overview
+    let currentJobSalaryOverview;
+    let currentJobSalaryOverviewIndex;
+    (records.reverse()).forEach((item, index) => {
+        if (item.id === rid) {
+            currentJobSalaryOverview = item;
+            currentJobSalaryOverviewIndex = index;
+        }
+    })
+    result['job-salary-overview']['排名'] = currentJobSalaryOverviewIndex + 1;
+    const currentJobSalaryOverviewKeys = {};
+    for (let key in currentJobSalaryOverview) {
+        if (currentJobSalaryOverview[key] === parsedData.title) currentJobSalaryOverviewKeys.title = key;
+        if (currentJobSalaryOverview[key] === parsedData.salary.average) currentJobSalaryOverviewKeys.salary = key;
+    }
+    let first, last, middle, firstIndex, lastIndex, middleIndex;
+    if (currentJobSalaryOverviewIndex === 0) {
+        first = currentJobSalaryOverview;
+        firstIndex = 1;
+        last = records[records.length - 1];
+        lastIndex = records.length;
+        middle = records[Math.floor(records.length / 2)]
+        middleIndex = Math.floor(records.length / 2);
+    } else if (currentJobSalaryOverviewIndex === records.length - 1) {
+        first = records[0];
+        firstIndex = 1;
+        last = currentJobSalaryOverview;
+        lastIndex = currentJobSalaryOverviewIndex;
+        middle = records[Math.floor(records.length / 2)]
+        middleIndex = Math.floor(records.length / 2);
+    } else {
+        first = records[0];
+        firstIndex = 1;
+        last = records[records.length - 1];
+        lastIndex = records.length;
+        middle = currentJobSalaryOverview;
+        middleIndex = currentJobSalaryOverviewIndex;
+    }
+
+    result['job-salary-overview']['数据排名趋势图'].push({
+        "职位名": last[currentJobSalaryOverviewKeys.title],
+        "排名": lastIndex,
+    })
+    result['job-salary-overview']['数据排名趋势图'].push({
+        "职位名": middle[currentJobSalaryOverviewKeys.title],
+        "排名": middleIndex,
+    })
+    result['job-salary-overview']['数据排名趋势图'].push({
+        "职位名": first[currentJobSalaryOverviewKeys.title],
+        "排名": firstIndex,
+    })
+
+    const salaryDistribution = calculateSalaryDistribution(parsedData.cityRanking, parsedData.experienceDistribution);
+    salaryDistribution.forEach(item => {
+        item.color = getColors();
+        item['薪资范围'] = item['range']
+        item['占比'] = item['percentage']
+    })
+    result['job-salary-overview']['职位类型标签'].push(...salaryDistribution);
+
 
     let eduSalCount = 0;
     parsedData.educationDistribution.forEach(item => eduSalCount += item.salary);
@@ -89,13 +162,9 @@ export const insidePageCardDataHandles = {
             if (data['薪资分布'] && data['薪资分布'].length) {
                 newData.salaryDistribution = [];
                 data['薪资分布'].forEach(item => {
-                    const allDatas = {};
-                    item.texts.forEach(text => {
-                        allDatas[text.label] = text.value;
-                    })
                     newData.salaryDistribution.push({
-                        name: allDatas['年份'],
-                        value: Number(allDatas['占比']),
+                        name: item['年份'],
+                        value: Number(item['占比']),
                         color: getRandomHexColor(),
                     })
                 })
@@ -237,3 +306,75 @@ export const insidePageCardDataHandles = {
         return null;
     }
 }
+
+/**
+ * 根据薪资数据动态计算不同薪资档位的占比
+ * @param data 包含avgSalary字段的对象数组
+ * @returns 薪资档位占比数组
+ */
+export const calculateSalaryDistribution = (data: Array<{ avgSalary: number }>) => {
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    // 提取所有薪资数据并排序
+    const salaries = data.map(item => item.avgSalary).sort((a, b) => a - b);
+    const minSalary = salaries[0];
+    const maxSalary = salaries[salaries.length - 1];
+
+    // 如果所有薪资相同，返回单一档位
+    if (minSalary === maxSalary) {
+        return [{
+            range: `${minSalary}k`,
+            percentage: 100
+        }];
+    }
+
+    // 动态计算三个档位的分界点
+    const range1 = minSalary;
+    const range2 = minSalary + (maxSalary - minSalary) / 3;
+    const range3 = minSalary + (maxSalary - minSalary) * 2 / 3;
+    const range4 = maxSalary;
+
+    // 定义动态薪资档位
+    const ranges = [
+        {
+            min: range1,
+            max: range2,
+            label: `${Math.round(range1 / 1000)}k-${Math.round(range2 / 1000)}k`
+        },
+        {
+            min: range2,
+            max: range3,
+            label: `${Math.round(range2 / 1000)}k-${Math.round(range3 / 1000)}k`
+        },
+        {
+            min: range3,
+            max: range4,
+            label: `${Math.round(range3 / 1000)}k-${Math.round(range4 / 1000)}k`
+        },
+    ];
+
+    // 统计每个档位的数据数量
+    const rangeCounts = ranges.map(range => {
+        const count = data.filter(item => {
+            const salary = item.avgSalary;
+            return salary >= range.min && salary < range.max;
+        }).length;
+        return {
+            range: range.label,
+            count: count
+        };
+    });
+
+    // 计算总数量
+    const totalCount = data.length;
+
+    // 计算每个档位的占比
+    const result = rangeCounts.map(item => ({
+        range: item.range,
+        percentage: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0
+    }));
+
+    return result;
+};

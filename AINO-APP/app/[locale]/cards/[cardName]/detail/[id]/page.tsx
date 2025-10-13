@@ -39,7 +39,8 @@ export default function CardDetailPage({
     const rid = qs.get('rid')
     const newCardDatas = {};
     const currentField = currentDir?.config?.fields?.find(field => field.label === "内页卡片数据");
-    const insideData = await getInsidePageDatas(currentField?.key, id, rid);
+    const { data: records } = await http.get(`/api/records/${id}?limit=100`)
+    const insideData = await getInsidePageDatas(currentField?.key, id, rid, records);
     setCardDatas(insideData);
   }
 
