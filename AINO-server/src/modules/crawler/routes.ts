@@ -285,8 +285,8 @@ function extractCityRanking(html: string) {
     return cityData
 }
 
-// 提取类似职位数据 - 改进提取逻辑
-function extractSimilarJobs(html: string) {
+// 提取类似职位数据 - 改进提取逻辑，包含详细信息
+async function extractSimilarJobs(html: string) {
     const similarJobs: any = {}
     const jobs: any[] = []
 
@@ -316,10 +316,27 @@ function extractSimilarJobs(html: string) {
                 title = title.trim()
 
                 if (title && title.length > 1) {
-                    jobs.push({
-                        title,
-                        url: url.startsWith('http') ? url : `https://www.tanzhi.cn${url}`
-                    })
+                    const fullUrl = url.startsWith('http') ? url : `https://www.tanzhi.cn${url}`
+
+                    // 抓取该职位的详细信息
+                    try {
+                        const jobDetails = await fetchSimilarJobDetails(fullUrl)
+                        jobs.push({
+                            title,
+                            url: fullUrl,
+                            ...jobDetails
+                        })
+                    } catch (error) {
+                        // 如果抓取失败，至少保留基本信息
+                        jobs.push({
+                            title,
+                            url: fullUrl,
+                            averageSalary: null,
+                            education: null,
+                            location: null,
+                            experience: null
+                        })
+                    }
                 }
             }
         }
@@ -329,7 +346,7 @@ function extractSimilarJobs(html: string) {
     if (jobs.length === 0) {
         const allJobLinks = html.match(/<a[^>]*href=["']\/job-titles\/[^"']*["'][^>]*>([^<]+)<\/a>/gi)
         if (allJobLinks) {
-            allJobLinks.forEach(link => {
+            for (const link of allJobLinks) {
                 const titleMatch = link.match(/<a[^>]*href=["'](\/job-titles\/[^"']*)["'][^>]*>([^<]+)<\/a>/i)
                 if (titleMatch) {
                     const url = titleMatch[1]
@@ -356,14 +373,32 @@ function extractSimilarJobs(html: string) {
                             !title.includes('招聘') &&
                             !title.includes('对比') &&
                             !title.includes('订阅')) {
-                            jobs.push({
-                                title,
-                                url: url.startsWith('http') ? url : `https://www.tanzhi.cn${url}`
-                            })
+
+                            const fullUrl = url.startsWith('http') ? url : `https://www.tanzhi.cn${url}`
+
+                            // 抓取该职位的详细信息
+                            try {
+                                const jobDetails = await fetchSimilarJobDetails(fullUrl)
+                                jobs.push({
+                                    title,
+                                    url: fullUrl,
+                                    ...jobDetails
+                                })
+                            } catch (error) {
+                                // 如果抓取失败，至少保留基本信息
+                                jobs.push({
+                                    title,
+                                    url: fullUrl,
+                                    averageSalary: null,
+                                    education: null,
+                                    location: null,
+                                    experience: null
+                                })
+                            }
                         }
                     }
                 }
-            })
+            }
         }
     }
 
@@ -374,6 +409,54 @@ function extractSimilarJobs(html: string) {
 
     similarJobs.jobs = uniqueJobs.slice(0, 10) // 最多返回10个
     return similarJobs
+}
+
+// 抓取相似职位的详细信息
+async function fetchSimilarJobDetails(url: string) {
+    try {
+        const res = await fetchWithTimeout(url, { method: 'GET' }, 15000)
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`)
+        }
+        const html = await res.text()
+
+        // 提取平均薪资
+        const avgSalaryMatch = html.match(/平均月薪[\s\S]*?¥(\d+(?:,\d+)*)/i)
+        const averageSalary = avgSalaryMatch ? parseInt(avgSalaryMatch[1].replace(/,/g, '')) : null
+
+        // 提取学历要求 - 从学历分布中获取最常见的学历
+        const educationData = extractEducationDistribution(html)
+        const education = educationData.distribution && educationData.distribution.length > 0
+            ? educationData.distribution[0].education
+            : null
+
+        // 提取工作地点 - 从城市排名中获取主要城市
+        const cityData = extractCityRanking(html)
+        const location = cityData.ranking && cityData.ranking.length > 0
+            ? cityData.ranking[0].city
+            : null
+
+        // 提取经验要求 - 从年限分布中获取最常见的年限
+        const experienceData = extractExperienceDistribution(html)
+        const experience = experienceData.distribution && experienceData.distribution.length > 0
+            ? `${experienceData.distribution[0].years}年`
+            : null
+
+        return {
+            averageSalary,
+            education,
+            location,
+            experience
+        }
+    } catch (error) {
+        console.error(`Failed to fetch details for ${url}:`, error)
+        return {
+            averageSalary: null,
+            education: null,
+            location: null,
+            experience: null
+        }
+    }
 }
 
 // 提取新增职位趋势数据 - 改进匹配逻辑
@@ -701,7 +784,7 @@ async function parseDetailPage(url: string, html: string) {
     const cityRanking = extractCityRanking(html)
 
     // 类似职位
-    const similarJobs = extractSimilarJobs(html)
+    const similarJobs = await extractSimilarJobs(html)
 
     const result = {
         url,

@@ -40,7 +40,7 @@ export const getInsidePageDatas = async (key, did, rid, records) => {
             "描述": `${parsedData.title}工作城市排名`,
             "数据": [],
         },
-        "related-jobs-list": {},
+        "related-jobs-list": [],
         // "ability-requirements-radar": {},
     }
 
@@ -141,6 +141,20 @@ export const getInsidePageDatas = async (key, did, rid, records) => {
             "标签": item.city,
             "值": item.avgSalary,
             "占比": Math.floor((item.avgSalary / cityCount) * 100),
+        })
+    })
+
+    // related-jobs-list
+    // result['related-jobs-list']
+    console.log(parsedData.similarJobs, 23232323)
+    parsedData.similarJobs.forEach((item) => {
+        result['related-jobs-list'].push({
+            "标题": item.title,
+            "平均薪资": item.averageSalary,
+            "工作地点": item.location,
+            "教育": item.education,
+            "经验": item.experience,
+            "职位类型": item.title,
         })
     })
 

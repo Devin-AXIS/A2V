@@ -1,5 +1,4 @@
 {
-  "/[locale]/auth/login/page": "app/[locale]/auth/login/page.js",
-  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js",
-  "/[locale]/preview/page": "app/[locale]/preview/page.js"
+  "/[locale]/preview/page": "app/[locale]/preview/page.js",
+  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js"
 }
