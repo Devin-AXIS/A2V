@@ -134,6 +134,15 @@ class CardRegistry {
     filters[name] = filter;
     const currentRealData = realDatas[name];
     const currentData = datas[name];
+
+    // 添加空值检查
+    if (!currentRealData || !Array.isArray(currentRealData)) {
+      console.warn(`CardRegistry.selectFilter: No real data found for ${name}`);
+      filtedDatas[name] = [];
+      listens[name]?.(name, []);
+      return;
+    }
+
     filtedDatas[name] = [];
     currentRealData.forEach((item, index) => {
       if (`${item[filter.fieldId]}` === filter.value) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Briefcase, ChevronLeft, ChevronRight } from "lucide-react"
 import { AppCard } from "@/components/layout/app-card"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { CardRegistry } from "../../core/registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
+import { DropdownFilterTabs, DropdownFilterItem } from "@/components/navigation/dropdown-filter-tabs"
 
 interface Job {
   id: number
@@ -85,22 +86,101 @@ export function RelatedJobsListCard({
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
 
+  // 筛选状态
+  const [filterValues, setFilterValues] = useState({
+    "职业类型": "",
+    "工作地点": "",
+    "薪资区间": ""
+  })
+
   // 优先使用传入的 jobs 数据，否则使用注册数据
   let allData = realData || jobs;
   if (insideData) allData = insideData;
+
   // if (CARD_DISPLAY_DATA?.limit && allData?.length) allData = allData.slice(0, CARD_DISPLAY_DATA.limit)
 
+  // 定义6个固定的薪资区间
+  const SALARY_RANGES = [
+    "5K以下",
+    "5K-10K",
+    "10K-15K",
+    "15K-20K",
+    "20K-30K",
+    "30K以上"
+  ]
+
+  // 薪资区间函数 - 优化处理数字类型的salary参数
+  const getSalaryRange = (salary: number | string) => {
+    if (!salary) return null
+
+    let avgSalary: number
+
+    // 处理数字类型
+    if (typeof salary === 'number') {
+      avgSalary = salary
+    } else {
+      // 处理字符串类型，提取薪资范围
+      const salaryStr = `${salary}`
+
+      // 提取薪资范围，处理 "15,000-25,000" 格式
+      const match = salaryStr.match(/(\d+)[^\d]*(\d+)/)
+      if (!match) return null
+
+      const minSalary = parseInt(match[1])
+      const maxSalary = parseInt(match[2])
+      avgSalary = (minSalary + maxSalary) / 2
+    }
+
+    // 根据平均薪资返回对应区间
+    if (avgSalary < 5000) return "5K以下"
+    if (avgSalary < 10000) return "5K-10K"
+    if (avgSalary < 15000) return "10K-15K"
+    if (avgSalary < 20000) return "15K-20K"
+    if (avgSalary < 30000) return "20K-30K"
+    return "30K以上"
+  }
+
+  // 从 allData 中提取筛选选项
+  const filterOptions = useMemo(() => {
+    if (!allData || !Array.isArray(allData)) return { jobTypes: [], locations: [], salaryRanges: [] }
+
+    const jobTypes = [...new Set(allData.map(job => job.jobType).filter(Boolean))]
+    const locations = [...new Set(allData.map(job => job.location).filter(Boolean))]
+    // 使用固定的6个薪资区间，不再从数据中动态生成
+    const salaryRanges = SALARY_RANGES
+
+    return { jobTypes, locations, salaryRanges }
+  }, [allData])
+
+  // 筛选数据
+  const filteredData = useMemo(() => {
+    if (!allData || !Array.isArray(allData)) return []
+
+    return allData.filter(job => {
+      const jobTypeMatch = !filterValues["职业类型"] || job.jobType === filterValues['职业类型']
+      const locationMatch = !filterValues['工作地点'] || job.location === filterValues['工作地点']
+      const salaryMatch = !filterValues['薪资区间'] || getSalaryRange(job.avgSalary) === filterValues['薪资区间']
+
+      return jobTypeMatch && locationMatch && salaryMatch
+    })
+  }, [allData, filterValues])
+
   // 计算分页数据
-  const totalItems = allData?.length || 0
+  const totalItems = filteredData?.length || 0
   const totalPages = Math.ceil(totalItems / pageSize)
   const startIndex = (currentPage - 1) * pageSize
   const endIndex = startIndex + pageSize
-  const renderData = allData?.slice(startIndex, endIndex) || []
+  const renderData = filteredData?.slice(startIndex, endIndex) || []
 
   // 当数据变化时重置到第一页
   useEffect(() => {
     setCurrentPage(1)
   }, [allData])
+
+  // 当筛选条件变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterValues])
 
   // 分页控制函数
   const handlePageChange = (page: number) => {
@@ -109,57 +189,116 @@ export function RelatedJobsListCard({
     }
   }
 
+  // 筛选处理函数
+  const handleFilterChange = (category: string, value: string) => {
+    setFilterValues(prev => ({
+      ...prev,
+      [category]: value
+    }))
+  }
+
   const handleJobClick = (job: any, index: number) => {
     // job-detail-intro-card
     router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}`)
   }
+
+  // 构建筛选组件配置
+  const filterItems: DropdownFilterItem[] = [
+    {
+      category: "职业类型",
+      options: [
+        { label: "全部", value: "" },
+        ...filterOptions.jobTypes.map(type => ({ label: type, value: type }))
+      ],
+      defaultValue: ""
+    },
+    {
+      category: "工作地点",
+      options: [
+        { label: "全部", value: "" },
+        ...filterOptions.locations.map(location => ({ label: location, value: location }))
+      ],
+      defaultValue: ""
+    },
+    {
+      category: "薪资区间",
+      options: [
+        { label: "全部", value: "" },
+        ...filterOptions.salaryRanges.map(range => ({ label: range, value: range }))
+      ],
+      defaultValue: ""
+    }
+  ]
 
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">
       <h3 className="text-lg font-semibold mb-4" data-slot="card-title">
         {title}
       </h3>
-      <div className="space-y-3 flex-1 min-h-0 overflow-auto">
-        {renderData.map((job, index) => (
-          <AppCard key={job.title}>
-            <div
-              className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleJobClick(job, index)}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg flex items-center justify-center">
-                      <Briefcase className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-bold" data-slot="card-title">
-                        {job.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{job.location}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-primary">¥{job.avgSalary}</p>
-                    <p className="text-xs text-muted-foreground">平均月薪</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Tag variant="white" size="sm">
-                    {job.education}
-                  </Tag>
-                  <Tag variant="white" size="sm">
-                    {job.experience}
-                  </Tag>
-                  <Tag variant="white" size="sm">
-                    {job.jobType}
-                  </Tag>
+      {/* 筛选组件 */}
+      <div className="mb-4">
+        <DropdownFilterTabs
+          items={filterItems}
+          values={filterValues}
+          onValueChange={handleFilterChange}
+          cardId="related-jobs-list-card"
+        />
+      </div>
+
+      <div className="space-y-3 flex-1 min-h-0 overflow-auto">
+        {renderData.length > 0 ? (
+          renderData.map((job, index) => (
+            <AppCard key={job.title}>
+              <div
+                className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleJobClick(job, index)}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg flex items-center justify-center">
+                        <Briefcase className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-bold" data-slot="card-title">
+                          {job.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{job.location}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-primary">¥{job.avgSalary}</p>
+                      <p className="text-xs text-muted-foreground">平均月薪</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Tag variant="white" size="sm">
+                      {job.education}
+                    </Tag>
+                    <Tag variant="white" size="sm">
+                      {job.experience}
+                    </Tag>
+                    <Tag variant="white" size="sm">
+                      {job.jobType}
+                    </Tag>
+                  </div>
                 </div>
               </div>
+            </AppCard>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+              <Briefcase className="w-8 h-8 text-muted-foreground" />
             </div>
-          </AppCard>
-        ))}
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2">暂无匹配的岗位</h3>
+            <p className="text-sm text-muted-foreground">
+              请尝试调整筛选条件或选择其他筛选选项
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 分页控制器 */}

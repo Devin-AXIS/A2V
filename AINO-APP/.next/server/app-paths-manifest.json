@@ -1,3 +1,7 @@
 {
+  "/[locale]/components/navigation/page": "app/[locale]/components/navigation/page.js",
+  "/[locale]/page": "app/[locale]/page.js",
+  "/[locale]/demo/education/jobs/page": "app/[locale]/demo/education/jobs/page.js",
+  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js",
   "/[locale]/preview/page": "app/[locale]/preview/page.js"
 }
