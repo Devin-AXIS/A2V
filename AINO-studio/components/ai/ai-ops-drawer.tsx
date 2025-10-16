@@ -1184,7 +1184,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                     </div>
                   </section>
 
-                  <section className="space-y-3">
+                  {/* <section className="space-y-3">
                     <div className="space-y-1">
                       <Label>{t("去重与更新策略", "Dedup & update strategy")}</Label>
                       <RadioGroup value={dedupKey} onValueChange={(v: any) => setDedupKey(v)} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -1285,7 +1285,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         </div>
                       </div>
                     </div>
-                  </section>
+                  </section> */}
 
                   <section className="space-y-3 lg:col-span-2">
                     {/* Extracted sample + array path selection */}

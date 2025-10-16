@@ -1,7 +1,6 @@
 {
-  "/[locale]/components/navigation/page": "app/[locale]/components/navigation/page.js",
+  "/[locale]/preview/page": "app/[locale]/preview/page.js",
+  "/[locale]/auth/login/page": "app/[locale]/auth/login/page.js",
   "/[locale]/page": "app/[locale]/page.js",
-  "/[locale]/demo/education/jobs/page": "app/[locale]/demo/education/jobs/page.js",
-  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js",
-  "/[locale]/preview/page": "app/[locale]/preview/page.js"
+  "/[locale]/profile/page": "app/[locale]/profile/page.js"
 }
