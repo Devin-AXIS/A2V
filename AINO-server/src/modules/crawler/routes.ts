@@ -695,6 +695,113 @@ function extractJobDescription(html: string): string | null {
     return null
 }
 
+// 提取职业类型信息
+function extractJobCategory(html: string, jobTitle: string): string | null {
+    try {
+        // 从页面中提取职业分类数据
+        const categoryMatch = html.match(/hotJobsSalary.*?\[(.*?)\]/s)
+        if (categoryMatch) {
+            // 尝试解析JSON数据
+            const jsonStr = '[' + categoryMatch[1] + ']'
+            const categories = JSON.parse(jsonStr)
+
+            // 遍历分类，查找匹配的职业类型
+            for (const category of categories) {
+                if (category.hot_job_titles && Array.isArray(category.hot_job_titles)) {
+                    for (const title of category.hot_job_titles) {
+                        // 检查职位名称是否包含在热门职位中
+                        if (title.includes(jobTitle) || jobTitle.includes(title)) {
+                            return category.name
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.log('解析职业分类数据失败:', error)
+    }
+
+    // 如果无法从数据中提取，尝试基于职位名称推断类型
+    return inferJobCategoryFromTitle(jobTitle)
+}
+
+// 基于职位名称推断职业类型
+function inferJobCategoryFromTitle(jobTitle: string): string | null {
+    const title = jobTitle.toLowerCase()
+
+    // 技术类
+    if (title.includes('工程师') || title.includes('开发') || title.includes('程序员') ||
+        title.includes('算法') || title.includes('架构师') || title.includes('技术')) {
+        return '技术'
+    }
+
+    // 产品类
+    if (title.includes('产品经理') || title.includes('产品') || title.includes('pm')) {
+        return '产品'
+    }
+
+    // 设计类
+    if (title.includes('设计师') || title.includes('设计') || title.includes('ui') ||
+        title.includes('ux') || title.includes('美工') || title.includes('原画')) {
+        return '设计'
+    }
+
+    // 销售类
+    if (title.includes('销售') || title.includes('商务') || title.includes('客户经理') ||
+        title.includes('业务') || title.includes('推广')) {
+        return '销售'
+    }
+
+    // 运营类
+    if (title.includes('运营') || title.includes('推广') || title.includes('营销') ||
+        title.includes('新媒体') || title.includes('内容')) {
+        return '运营'
+    }
+
+    // 金融类
+    if (title.includes('金融') || title.includes('投资') || title.includes('财务') ||
+        title.includes('会计') || title.includes('审计')) {
+        return '金融'
+    }
+
+    // 法律类
+    if (title.includes('律师') || title.includes('法务') || title.includes('法律') ||
+        title.includes('合规')) {
+        return '法律'
+    }
+
+    // 教育培训类
+    if (title.includes('老师') || title.includes('教师') || title.includes('培训') ||
+        title.includes('教育') || title.includes('讲师')) {
+        return '教育培训'
+    }
+
+    // 广告类
+    if (title.includes('广告') || title.includes('创意') || title.includes('策划')) {
+        return '广告'
+    }
+
+    // 建筑类
+    if (title.includes('建筑') || title.includes('工程') || title.includes('施工') ||
+        title.includes('监理')) {
+        return '建筑'
+    }
+
+    // 传媒类
+    if (title.includes('编辑') || title.includes('记者') || title.includes('媒体') ||
+        title.includes('传媒') || title.includes('内容')) {
+        return '传媒'
+    }
+
+    // 房地产类
+    if (title.includes('房地产') || title.includes('地产') || title.includes('置业') ||
+        title.includes('物业')) {
+        return '房地产'
+    }
+
+    return "其它"
+}
+
 async function parseDetailPage(url: string, html: string) {
 
     // 职业名称: 优先从 <title> 或 H1/H2 中获取
@@ -727,6 +834,9 @@ async function parseDetailPage(url: string, html: string) {
     const jobDescription = extractJobDescription(html)
     const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1]?.trim() || null
     const intro = jobDescription || metaDesc || extractTextBetween(html, /<p[^>]*>/i, /<\/p>/i) || null
+
+    // 职业类型: 从页面数据中提取或基于职位名称推断
+    const jobCategory = extractJobCategory(html, title)
 
     // 薪资数据
     const salaryData = extractSalaryData(html)
@@ -791,6 +901,7 @@ async function parseDetailPage(url: string, html: string) {
         // 基础信息
         title: title || null,
         description: intro,
+        category: jobCategory, // 职业类型
 
         // 薪资相关
         salary: {
@@ -914,14 +1025,13 @@ crawlRoute.get('/tanzhi/jobs', mockRequireAuthMiddleware, async (c) => {
         const datas = [];
         sortBySalaryAverage(results).forEach(item => {
             datas.push({
-                title: item.title,
-                description: item.description,
-                city: item.cityRanking[0]?.city || '',
-                education: item.educationDistribution[0]?.education || '',
-                experience: `${item.experienceDistribution[0]?.years}年` || '',
-                type: item.title,
-                salary: item.salary.average,
-                insideData: JSON.stringify(item),
+                "标题": item.title,
+                "工作地点": item.cityRanking[0]?.city || '',
+                "教育": item.educationDistribution[0]?.education || '',
+                "经验": `${item.experienceDistribution[0]?.years}年` || '',
+                "职位类型": item.category || '', // 职业类型
+                "平均薪资": item.salary.average,
+                "内页数据": JSON.stringify(item),
             })
         })
 

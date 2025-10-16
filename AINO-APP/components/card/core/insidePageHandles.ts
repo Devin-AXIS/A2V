@@ -144,9 +144,6 @@ export const getInsidePageDatas = async (key, did, rid, records) => {
         })
     })
 
-    // related-jobs-list
-    // result['related-jobs-list']
-    console.log(parsedData.similarJobs, 23232323)
     parsedData.similarJobs.forEach((item) => {
         result['related-jobs-list'].push({
             "标题": item.title,

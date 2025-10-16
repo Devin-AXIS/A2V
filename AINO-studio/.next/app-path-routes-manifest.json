@@ -1,18 +1,18 @@
 {
   "/_not-found/page": "/_not-found",
   "/app/[appId]/modules/page": "/app/[appId]/modules",
-  "/app/[appId]/page": "/app/[appId]",
-  "/app/[appId]/settings/page": "/app/[appId]/settings",
-  "/debug/page": "/debug",
-  "/app/[appId]/auth-test/page": "/app/[appId]/auth-test",
-  "/forgot-password/page": "/forgot-password",
   "/app/[appId]/client-config/page": "/app/[appId]/client-config",
-  "/register/page": "/register",
-  "/test-api-integration/page": "/test-api-integration",
+  "/debug/page": "/debug",
+  "/app/[appId]/settings/page": "/app/[appId]/settings",
+  "/forgot-password/page": "/forgot-password",
   "/login/page": "/login",
-  "/test-country/page": "/test-country",
+  "/app/[appId]/auth-test/page": "/app/[appId]/auth-test",
+  "/app/[appId]/page": "/app/[appId]",
+  "/page": "/",
+  "/test-api-integration/page": "/test-api-integration",
   "/simple-test/page": "/simple-test",
+  "/test-country/page": "/test-country",
   "/test-api/page": "/test-api",
-  "/test-modules/page": "/test-modules",
-  "/page": "/"
+  "/register/page": "/register",
+  "/test-modules/page": "/test-modules"
 }
