@@ -4,7 +4,7 @@ import { Pie, PieChart, ResponsiveContainer, Cell } from "recharts"
 import { useDataChartTheme } from "@/components/providers/unified-chart-theme-provider"
 
 const data = [
-  { name: "1-3年", value: 1, color: "#3b82f6" },
+  { name: "1-3年", value: 1, color: "#000000" },
   { name: "不限经验", value: 3, color: "#06b6d4" },
 ]
 

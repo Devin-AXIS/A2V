@@ -13,7 +13,7 @@ export function useTheme() {
   const [theme, setTheme] = useState<ThemeConfig>({
     isDark: false,
     backgroundStyle: "gradient",
-    primaryColor: "#3b82f6",
+    primaryColor: "#000000",
     secondaryColor: "#10b981",
   })
 

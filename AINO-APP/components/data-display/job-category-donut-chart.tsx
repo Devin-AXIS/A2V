@@ -4,7 +4,7 @@ import { Pie, PieChart, ResponsiveContainer, Cell } from "recharts"
 import { useDataChartTheme } from "@/components/providers/unified-chart-theme-provider"
 
 const data = [
-  { name: "AI训练/数据", value: 26, color: "#3b82f6" },
+  { name: "AI训练/数据", value: 26, color: "#000000" },
   { name: "AI", value: 24, color: "#8b5cf6" },
   { name: "AIGC/多媒体", value: 18, color: "#10b981" },
   { name: "产品", value: 16, color: "#f59e0b" },

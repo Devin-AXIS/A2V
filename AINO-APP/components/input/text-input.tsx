@@ -11,7 +11,7 @@ interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export function TextInput({ label, id, className, ...props }: TextInputProps) {
   const { palette } = useChartTheme()
-  const primaryColor = palette[0] || "#3b82f6"
+  const primaryColor = palette[0] || "#000000"
 
   return (
     <div className="w-full max-w-sm">

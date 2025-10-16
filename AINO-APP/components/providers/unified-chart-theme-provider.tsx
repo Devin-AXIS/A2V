@@ -4,14 +4,14 @@ import { createContext, useContext, useState, useMemo, useEffect, type ReactNode
 const chartPalettes = [
   {
     name: "默认",
-    colors: ["#6366f1", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
+    colors: ["#000000", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
   }
 ]
 
 const dataChartPalettes = [
   {
     name: "默认",
-    colors: ["#6366f1", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
+    colors: ["#000000", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
   }
 ]
 
@@ -20,7 +20,7 @@ interface UnifiedChartThemeContextType {
   chartPalette: string[]
   activeChartPaletteName: string
   applyChartPalette: (paletteName: string) => void
-  
+
   // 数据图表调色板
   dataChartPalette: string[]
   activeDataChartPaletteName: string
@@ -32,13 +32,13 @@ const UnifiedChartThemeContext = createContext<UnifiedChartThemeContextType | un
 export function UnifiedChartThemeProvider({ children }: { children: ReactNode }) {
   // 图表调色板状态
   const [activeChartPaletteName, setActiveChartPaletteName] = useState<string>(chartPalettes[0].name)
-  
+
   // 数据图表调色板状态
   const [activeDataChartPaletteName, setActiveDataChartPaletteName] = useState<string>(dataChartPalettes[0].name)
 
   // 统一主题的颜色状态
   const [unifiedChartColors, setUnifiedChartColors] = useState<string[]>([])
-  const [unifiedComponentColors, setUnifiedComponentColors] = useState<{primary: string, secondary: string, danger: string} | null>(null)
+  const [unifiedComponentColors, setUnifiedComponentColors] = useState<{ primary: string, secondary: string, danger: string } | null>(null)
 
   // 监听统一主题的颜色更新事件
   useEffect(() => {
@@ -83,7 +83,7 @@ export function UnifiedChartThemeProvider({ children }: { children: ReactNode })
         ...chartPalettes[0].colors.slice(3) // 保留其他颜色
       ]
     }
-    
+
     const activePalette = chartPalettes.find((p) => p.name === activeChartPaletteName)
     return activePalette ? activePalette.colors : chartPalettes[0].colors
   }, [activeChartPaletteName, unifiedComponentColors])
@@ -94,7 +94,7 @@ export function UnifiedChartThemeProvider({ children }: { children: ReactNode })
     if (unifiedChartColors.length > 0) {
       return unifiedChartColors
     }
-    
+
     const activePalette = dataChartPalettes.find((p) => p.name === activeDataChartPaletteName)
     return activePalette ? activePalette.colors : dataChartPalettes[0].colors
   }, [activeDataChartPaletteName, unifiedChartColors])

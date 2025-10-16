@@ -26,7 +26,7 @@ function getContrastColor(hexColor: string): string {
 
 export function DatePickerWithValue({ placeholder, value, onChange }: DatePickerWithValueProps) {
     const { palette } = useChartTheme()
-    const primaryColor = palette[0] || "#3b82f6"
+    const primaryColor = palette[0] || "#000000"
     const textColorForPrimary = useMemo(() => getContrastColor(primaryColor), [primaryColor])
 
     const [isOpen, setIsOpen] = useState(false)

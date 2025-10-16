@@ -31,7 +31,7 @@ const defaultPresets = [
   {
     name: "蓝色",
     colors: [
-      { id: 1, name: "主色", value: "#3b82f6", enabled: true },
+      { id: 1, name: "主色", value: "#000000", enabled: true },
       { id: 2, name: "次色", value: "#dbeafe", enabled: true },
       { id: 3, name: "强调色", value: "#bfdbfe", enabled: true }
     ]
