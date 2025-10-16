@@ -6,7 +6,7 @@ import { useDataChartTheme } from "@/components/providers/unified-chart-theme-pr
 import { ChartCard } from "./chart-card"
 
 const data = [
-  { name: "Desktop", value: 45, color: "#3b82f6" },
+  { name: "Desktop", value: 45, color: "#000000" },
   { name: "Mobile", value: 35, color: "#10b981" },
   { name: "Tablet", value: 20, color: "#f59e0b" },
 ]

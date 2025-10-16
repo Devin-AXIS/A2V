@@ -64,7 +64,7 @@ export function ImageUpload({
   cropAspectRatio
 }: ImageUploadProps) {
   const { palette } = useChartTheme()
-  const primaryColor = palette[0] || "#3b82f6"
+  const primaryColor = palette[0] || "#000000"
   const textColorForPrimary = useMemo(() => getContrastColor(primaryColor), [primaryColor])
 
   const [isUploading, setIsUploading] = useState(false)
@@ -135,7 +135,7 @@ export function ImageUpload({
       // 计算实际的裁剪区域（相对于原图的比例）
       const scaleX = img.naturalWidth / imageSize.width
       const scaleY = img.naturalHeight / imageSize.height
-      
+
       const actualCropX = cropArea.x * scaleX
       const actualCropY = cropArea.y * scaleY
       const actualCropWidth = cropArea.width * scaleX
@@ -191,7 +191,7 @@ export function ImageUpload({
   // 处理文件选择
   const handleFileSelect = async (file: File) => {
     setError(null)
-    
+
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
       setError('请选择图片文件')
@@ -205,34 +205,34 @@ export function ImageUpload({
     }
 
     setIsUploading(true)
-    
+
     try {
       // 创建预览URL
       const previewUrl = URL.createObjectURL(file)
-      
+
       if (enableCrop) {
         // 如果启用裁剪，先设置原始图片，然后打开裁剪编辑器
         setOriginalImage(previewUrl)
-        
+
         // 加载图片获取尺寸信息
         const img = new window.Image()
         img.onload = () => {
           // 设置图片尺寸
           setImageSize({ width: img.width, height: img.height })
-          
+
           // 计算初始裁剪区域
-          const aspectRatio = cropAspectRatio || (shape === 'circle' ? 1 : shape === 'square' ? 1 : 4/3)
+          const aspectRatio = cropAspectRatio || (shape === 'circle' ? 1 : shape === 'square' ? 1 : 4 / 3)
           const maxSize = Math.min(img.width, img.height) * 0.8 // 80%的图片大小作为初始裁剪区域
           const cropWidth = shape === 'circle' || shape === 'square' ? maxSize : maxSize
           const cropHeight = shape === 'circle' || shape === 'square' ? maxSize : maxSize / aspectRatio
-          
+
           setCropArea({
             x: (img.width - cropWidth) / 2,
             y: (img.height - cropHeight) / 2,
             width: cropWidth,
             height: cropHeight
           })
-          
+
           setCropState({
             x: 0,
             y: 0,
@@ -241,7 +241,7 @@ export function ImageUpload({
             scale: 1,
             rotation: 0
           })
-          
+
           setShowCropEditor(true)
           setIsUploading(false)
         }
@@ -281,9 +281,9 @@ export function ImageUpload({
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
+
     if (disabled) return
-    
+
     const files = e.dataTransfer.files
     if (files && files[0]) {
       handleFileSelect(files[0])
@@ -330,7 +330,7 @@ export function ImageUpload({
 
   const handleCropConfirm = async () => {
     if (!originalImage) return
-    
+
     setIsUploading(true)
     try {
       const croppedUrl = await cropImage()
@@ -361,10 +361,10 @@ export function ImageUpload({
 
   const handleCropMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return
-    
+
     const newX = Math.max(0, Math.min(e.clientX - dragStart.x, imageSize.width - cropArea.width))
     const newY = Math.max(0, Math.min(e.clientY - dragStart.y, imageSize.height - cropArea.height))
-    
+
     setCropArea(prev => ({
       ...prev,
       x: newX,
@@ -379,13 +379,13 @@ export function ImageUpload({
   // 调整裁剪区域大小
   const handleResizeCrop = (direction: 'increase' | 'decrease') => {
     const factor = direction === 'increase' ? 1.1 : 0.9
-    const aspectRatio = cropAspectRatio || (shape === 'circle' ? 1 : shape === 'square' ? 1 : 4/3)
-    
+    const aspectRatio = cropAspectRatio || (shape === 'circle' ? 1 : shape === 'square' ? 1 : 4 / 3)
+
     const newWidth = Math.min(Math.max(cropArea.width * factor, 50), imageSize.width)
     const newHeight = newWidth / aspectRatio
-    
+
     if (newHeight > imageSize.height) return
-    
+
     setCropArea(prev => ({
       x: Math.max(0, prev.x - (newWidth - prev.width) / 2),
       y: Math.max(0, prev.y - (newHeight - prev.height) / 2),
@@ -404,8 +404,8 @@ export function ImageUpload({
           dragActive
             ? "border-blue-400 bg-blue-50"
             : value
-            ? "border-transparent"
-            : "border-gray-300 hover:border-gray-400",
+              ? "border-transparent"
+              : "border-gray-300 hover:border-gray-400",
           disabled && "opacity-50 cursor-not-allowed",
           "bg-white/70 backdrop-blur-lg shadow-sm"
         )}
@@ -432,14 +432,14 @@ export function ImageUpload({
               fill
               className={cn("object-cover", currentShapeConfig)}
             />
-            
+
             {!disabled && (
               <button
                 onClick={handleRemove}
                 className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-colors z-10"
-                style={{ 
+                style={{
                   backgroundColor: primaryColor,
-                  color: textColorForPrimary 
+                  color: textColorForPrimary
                 }}
               >
                 <X className="w-3 h-3" />
@@ -455,7 +455,7 @@ export function ImageUpload({
           <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-2">
             {isUploading ? (
               <div className="flex flex-col items-center gap-2">
-                <div 
+                <div
                   className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
                   style={{ borderColor: primaryColor, borderTopColor: 'transparent' }}
                 />
@@ -503,7 +503,7 @@ export function ImageUpload({
           {/* 图片预览和裁剪区域 */}
           <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ height: '300px' }}>
             {originalImage && (
-              <div 
+              <div
                 className="relative w-full h-full select-none"
                 onMouseMove={handleCropMouseMove}
                 onMouseUp={handleCropMouseUp}
@@ -526,13 +526,13 @@ export function ImageUpload({
                       const displayWidth = img.offsetWidth
                       const displayHeight = img.offsetHeight
                       setImageSize({ width: displayWidth, height: displayHeight })
-                      
+
                       // 重新计算裁剪区域
                       const aspectRatio = cropAspectRatio || 1
                       const cropSize = Math.min(displayWidth, displayHeight) * 0.6
                       const cropWidth = cropSize
                       const cropHeight = cropSize / aspectRatio
-                      
+
                       setCropArea({
                         x: (displayWidth - cropWidth) / 2,
                         y: (displayHeight - cropHeight) / 2,
@@ -541,7 +541,7 @@ export function ImageUpload({
                       })
                     }}
                   />
-                  
+
                   {/* 裁剪区域遮罩 */}
                   <div className="absolute inset-0 bg-black/40">
                     {/* 裁剪框 */}
@@ -566,11 +566,11 @@ export function ImageUpload({
                           className="object-contain"
                           style={{
                             transform: `translate(${-cropArea.x}px, ${-cropArea.y}px) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`,
-                            transformOrigin: `${cropArea.x + cropArea.width/2}px ${cropArea.y + cropArea.height/2}px`
+                            transformOrigin: `${cropArea.x + cropArea.width / 2}px ${cropArea.y + cropArea.height / 2}px`
                           }}
                         />
                       </div>
-                      
+
                       {/* 裁剪框角落控制点 */}
                       <div className="absolute -top-1 -left-1 w-3 h-3 bg-white border border-gray-300 rounded-full"></div>
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-white border border-gray-300 rounded-full"></div>
@@ -597,7 +597,7 @@ export function ImageUpload({
                 >
                   <RotateCw className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
                 </button>
-                
+
                 <button
                   onClick={handleZoomOut}
                   className="p-2 rounded-lg bg-white/70 backdrop-blur-lg border border-white/80 shadow-sm hover:shadow-md transition-all"
@@ -605,7 +605,7 @@ export function ImageUpload({
                 >
                   <ZoomOut className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
                 </button>
-                
+
                 <button
                   onClick={handleZoomIn}
                   className="p-2 rounded-lg bg-white/70 backdrop-blur-lg border border-white/80 shadow-sm hover:shadow-md transition-all"
@@ -615,7 +615,7 @@ export function ImageUpload({
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <p className="text-xs font-medium text-center" style={{ color: "var(--card-title-color)" }}>
                 裁剪区域
@@ -629,7 +629,7 @@ export function ImageUpload({
                   <Crop className="w-4 h-4" style={{ color: "var(--card-text-color)" }} />
                   <span className="text-xs ml-1">-</span>
                 </button>
-                
+
                 <button
                   onClick={() => handleResizeCrop('increase')}
                   className="p-2 rounded-lg bg-white/70 backdrop-blur-lg border border-white/80 shadow-sm hover:shadow-md transition-all"

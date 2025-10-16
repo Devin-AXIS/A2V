@@ -17,13 +17,13 @@ export const unifiedThemePresets: UnifiedThemePreset[] = [
       },
       // 组件颜色配置
       componentColors: {
-        primary: "#6366f1",    // 主要按钮
+        primary: "#000000",    // 主要按钮
         secondary: "#8b5cf6",  // 次要按钮
         danger: "#f59e0b"      // 危险按钮
       },
       // 数据图配色（6个颜色）
       chartColors: {
-        colors: ["#6366f1", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
+        colors: ["#000000", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444", "#64748b"]
       }
     }
   },
@@ -37,8 +37,8 @@ export const unifiedThemePresets: UnifiedThemePreset[] = [
         body: "#374151"
       },
       componentColors: {
-        primary: "#171717",
-        secondary: "#525252", 
+        primary: "#000000",
+        secondary: "#525252",
         danger: "#dc2626"
       },
       chartColors: {
@@ -56,12 +56,12 @@ export const unifiedThemePresets: UnifiedThemePreset[] = [
         body: "#374151"
       },
       componentColors: {
-        primary: "#3b82f6",
+        primary: "#000000",
         secondary: "#64748b",
         danger: "#ef4444"
       },
       chartColors: {
-        colors: ["#3b82f6", "#64748b", "#ef4444", "#22c55e", "#f59e0b", "#9ca3af"]
+        colors: ["#000000", "#64748b", "#ef4444", "#22c55e", "#f59e0b", "#9ca3af"]
       }
     }
   },

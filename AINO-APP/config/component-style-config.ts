@@ -15,18 +15,18 @@ export const defaultComponentStyleConfig: ComponentStyleConfig = {
     },
     variants: {
       primary: {
-        backgroundColor: "#3b82f6",
+        backgroundColor: "#000000",
         color: "#ffffff",
-        borderColor: "#3b82f6",
+        borderColor: "#000000",
         hover: {
-          backgroundColor: "#2563eb",
+          backgroundColor: "#1a1a1a",
           color: "#ffffff",
-          borderColor: "#2563eb"
+          borderColor: "#1a1a1a"
         },
         active: {
-          backgroundColor: "#1d4ed8",
+          backgroundColor: "#333333",
           color: "#ffffff",
-          borderColor: "#1d4ed8"
+          borderColor: "#333333"
         },
         disabled: {
           backgroundColor: "#9ca3af",
@@ -58,17 +58,17 @@ export const defaultComponentStyleConfig: ComponentStyleConfig = {
       },
       outline: {
         backgroundColor: "transparent",
-        color: "#3b82f6",
-        borderColor: "#3b82f6",
+        color: "#000000",
+        borderColor: "#000000",
         hover: {
-          backgroundColor: "#3b82f6",
+          backgroundColor: "#000000",
           color: "#ffffff",
-          borderColor: "#3b82f6"
+          borderColor: "#000000"
         },
         active: {
-          backgroundColor: "#2563eb",
+          backgroundColor: "#333333",
           color: "#ffffff",
-          borderColor: "#2563eb"
+          borderColor: "#333333"
         },
         disabled: {
           backgroundColor: "transparent",
@@ -79,16 +79,16 @@ export const defaultComponentStyleConfig: ComponentStyleConfig = {
       },
       ghost: {
         backgroundColor: "transparent",
-        color: "#3b82f6",
+        color: "#000000",
         borderColor: "transparent",
         hover: {
-          backgroundColor: "#eff6ff",
-          color: "#3b82f6",
+          backgroundColor: "#f5f5f5",
+          color: "#000000",
           borderColor: "transparent"
         },
         active: {
-          backgroundColor: "#dbeafe",
-          color: "#2563eb",
+          backgroundColor: "#e5e5e5",
+          color: "#000000",
           borderColor: "transparent"
         },
         disabled: {
@@ -130,8 +130,8 @@ export const defaultComponentStyleConfig: ComponentStyleConfig = {
     },
     states: {
       focus: {
-        borderColor: "#3b82f6",
-        boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)"
+        borderColor: "#000000",
+        boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.1)"
       },
       error: {
         borderColor: "#ef4444",
@@ -318,12 +318,12 @@ export const componentStylePresets = {
         ...defaultComponentStyleConfig.button.variants,
         primary: {
           ...defaultComponentStyleConfig.button.variants.primary,
-          backgroundColor: "#6366f1",
-          borderColor: "#6366f1",
+          backgroundColor: "#000000",
+          borderColor: "#000000",
           hover: {
-            backgroundColor: "#4f46e5",
+            backgroundColor: "#333333",
             color: "#ffffff",
-            borderColor: "#4f46e5"
+            borderColor: "#333333"
           }
         }
       }

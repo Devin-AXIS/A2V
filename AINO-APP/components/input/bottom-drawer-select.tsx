@@ -30,16 +30,16 @@ function getContrastColor(hexColor: string): string {
   return yiq >= 128 ? "#000000" : "#ffffff"
 }
 
-export function BottomDrawerSelect({ 
-  placeholder = "请选择", 
-  value, 
-  onChange, 
+export function BottomDrawerSelect({
+  placeholder = "请选择",
+  value,
+  onChange,
   options,
   className,
   title = "请选择"
 }: BottomDrawerSelectProps) {
   const { palette } = useChartTheme()
-  const primaryColor = palette[0] || "#3b82f6"
+  const primaryColor = palette[0] || "#000000"
   const textColorForPrimary = useMemo(() => getContrastColor(primaryColor), [primaryColor])
 
   const [isOpen, setIsOpen] = useState(false)

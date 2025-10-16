@@ -40,7 +40,7 @@ export function TagInput({
   emptyText = "暂无标签"
 }: TagInputProps) {
   const { palette } = useChartTheme()
-  const primaryColor = palette[0] || "#3b82f6"
+  const primaryColor = palette[0] || "#000000"
   const textColorForPrimary = useMemo(() => getContrastColor(primaryColor), [primaryColor])
 
   const [inputValue, setInputValue] = useState("")
@@ -59,7 +59,7 @@ export function TagInput({
   const addTag = (tag: string) => {
     if (!tag || value.includes(tag)) return
     if (maxTags && value.length >= maxTags) return
-    
+
     const newTags = [...value, tag]
     onChange?.(newTags)
     setInputValue("")
@@ -73,7 +73,7 @@ export function TagInput({
   const handleModeToggle = () => {
     const newMode = mode === 'view' ? 'edit' : 'view'
     onModeChange?.(newMode)
-    
+
     if (newMode === 'edit') {
       setIsEditing(true)
       setTimeout(() => inputRef.current?.focus(), 100)
@@ -99,9 +99,9 @@ export function TagInput({
               <button
                 onClick={handleModeToggle}
                 className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg transition-colors"
-                style={{ 
+                style={{
                   backgroundColor: `${primaryColor}15`,
-                  color: primaryColor 
+                  color: primaryColor
                 }}
               >
                 <Plus className="w-3 h-3" />
@@ -117,7 +117,7 @@ export function TagInput({
                 variant="white"
                 size="sm"
                 className="transition-all duration-200 hover:shadow-md"
-                style={{ 
+                style={{
                   borderColor: `${primaryColor}30`,
                   backgroundColor: "white"
                 }}
@@ -144,7 +144,7 @@ export function TagInput({
   return (
     <div className={cn("w-full", className)}>
       <div className="min-h-[44px] p-3 rounded-xl bg-white/70 backdrop-blur-lg border border-white/80 shadow-sm focus-within:ring-2 transition-all duration-300"
-           style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}>
+        style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}>
         <div className="flex flex-wrap gap-2 items-center">
           {value.map((tag, index) => (
             <Tag
@@ -152,7 +152,7 @@ export function TagInput({
               variant="white"
               size="sm"
               className="transition-all duration-200 hover:shadow-md group"
-              style={{ 
+              style={{
                 borderColor: `${primaryColor}30`,
                 backgroundColor: `${primaryColor}10`
               }}
@@ -168,7 +168,7 @@ export function TagInput({
               )}
             </Tag>
           ))}
-          
+
           {!readonly && (!maxTags || value.length < maxTags) && (
             <>
               {isEditing ? (
@@ -191,7 +191,7 @@ export function TagInput({
                 <button
                   onClick={handleAddClick}
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border border-dashed transition-colors"
-                  style={{ 
+                  style={{
                     borderColor: `${primaryColor}50`,
                     color: primaryColor
                   }}
@@ -203,22 +203,22 @@ export function TagInput({
             </>
           )}
         </div>
-        
+
         {maxTags && (
           <div className="mt-2 text-xs text-gray-400">
             {value.length}/{maxTags} 个标签
           </div>
         )}
       </div>
-      
+
       {mode === 'edit' && onModeChange && (
         <div className="flex justify-end mt-2">
           <button
             onClick={() => onModeChange('view')}
             className="px-3 py-1 text-xs rounded-lg transition-colors"
-            style={{ 
+            style={{
               backgroundColor: `${primaryColor}15`,
-              color: primaryColor 
+              color: primaryColor
             }}
           >
             完成编辑
