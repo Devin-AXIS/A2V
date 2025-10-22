@@ -355,7 +355,7 @@ function generateMarkdownDocs(): string {
 
 AINO 应用管理平台 API 文档
 
-**基础URL:** http://localhost:3001
+**基础URL:** http://47.94.52.142:3001
 
 ## 认证
 
@@ -506,7 +506,7 @@ function generateHtmlDocs(): string {
 <body>
     <div class="container">
         <h1>AINO API 文档</h1>
-        <p><strong>基础URL:</strong> http://localhost:3001</p>
+        <p><strong>基础URL:</strong> http://47.94.52.142:3001</p>
         
         <h2>认证</h2>
         <p>大部分接口需要认证，请在请求头中包含认证信息：</p>
