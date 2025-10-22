@@ -145,7 +145,6 @@ export const getInsidePageDatas = async (key, did, rid, records, titleKey) => {
     })
 
     parsedData.similarJobs.forEach((item) => {
-        // console.log(key, did, rid, records, 23232323)
         const currentRecord = records.find(r => {
             return r[titleKey] === item.title
         })
@@ -156,7 +155,6 @@ export const getInsidePageDatas = async (key, did, rid, records, titleKey) => {
             "教育": item.education,
             "经验": item.experience,
             "职位类型": item.title,
-            dirId: did,
             // recordId: records.find(),
         })
     })

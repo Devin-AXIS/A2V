@@ -82,7 +82,7 @@ export function AuthIntegrationsSettings() {
       const endpoint = state.openaiEndpoint?.trim()
       const key = state.openaiKey?.trim()
       if (!endpoint || !key) throw new Error('missing')
-      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'}/api/ai/chat`, {
+      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'}/api/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-aino-openai-endpoint': endpoint, 'x-aino-openai-key': key },
         body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'ping' }] })
@@ -99,7 +99,7 @@ export function AuthIntegrationsSettings() {
     try {
       const key = state.firecrawlKey?.trim()
       if (!key) throw new Error('missing')
-      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'}/api/crawl/scrape`, {
+      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'}/api/crawl/scrape`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-aino-firecrawl-key': key },
         body: JSON.stringify({ url: 'https://example.com', options: { formats: ['markdown'] } })
       })

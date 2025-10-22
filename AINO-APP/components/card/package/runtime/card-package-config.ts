@@ -142,6 +142,14 @@ export const RECRUITMENT_PACKAGE: CardPackageConfig = {
       type: "list",
       category: "related"
     },
+    // 职业列表子卡片
+    {
+      cardId: "occupation-list",
+      packageId: "recruitment-package-sub",
+      displayName: "职业列表",
+      type: "list",
+      category: "related"
+    },
 
     // 其他功能子卡片
     {

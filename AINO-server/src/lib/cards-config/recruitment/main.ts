@@ -153,9 +153,9 @@ export const RecruitmentSubCards = [
     //     category: "ability"
     // },
 
-    // 相关岗位类子卡片
+    // 职业列表子卡片
     {
-        cardId: "related-jobs-list",
+        cardId: "occupation-list",
         dataConfig: [
             { key: "title", type: "text", label: "标题" },
             { key: "avgSalary", type: "text", label: "平均薪资" },
@@ -163,8 +163,26 @@ export const RecruitmentSubCards = [
             { key: "education", type: "text", label: "教育" },
             { key: "experience", type: "text", label: "经验" },
             { key: "jobType", type: "text", label: "职位类型" },
-            // { key: "insideData", type: "text", label: "内页卡片数据" },
+            { key: "insideData", type: "text", label: "内页卡片数据" },
+        ],
+        displayName: "职业列表",
+        type: "list",
+        category: "related"
+    },
+
+    // 相关岗位类子卡片
+    {
+        cardId: "related-jobs-list",
+        dataConfig: [
+            { key: "title", type: "text", label: "标题" },
+            { key: "salary", type: "text", label: "薪资" },
+            { key: "location", type: "text", label: "工作地点" },
+            { key: "education", type: "text", label: "教育" },
+            { key: "experience", type: "text", label: "经验" },
+            { key: "jobType", type: "text", label: "职位类型" },
             { key: "href", type: "text", label: "链接" },
+            { key: "company", type: "text", label: "公司名" },
+            { key: "companySize", type: "text", label: "公司规模" },
         ],
         displayName: "相关岗位列表",
         type: "list",

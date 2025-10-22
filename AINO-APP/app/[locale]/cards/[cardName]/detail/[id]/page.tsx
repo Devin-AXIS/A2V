@@ -26,17 +26,47 @@ export default function CardDetailPage({
   const [dirs, setDirs] = useState<any>([]);
   const [cardDatas, setCardDatas] = useState<any>({});
   const [currentDir, setCurrentDir] = useState<any>(null);
+  const [allJobs, setAllJobs] = useState<any>([]);
+  const qs = new URLSearchParams(window.location.search)
+  const jobType = qs.get('jobType')
 
   const getDirData = async () => {
     const currentDir = await http.get(`/api/directories/${id}`)
     const { data } = await http.get(`/api/directories?moduleId=${currentDir.data.moduleId}`)
+    let relatedJobsListDir = data.directories.find(dir => dir.config?.moduleKey === "recSub-related-jobs-list");
+    if (relatedJobsListDir) {
+      const { data: records } = await http.get(`/api/records/${relatedJobsListDir.id}?limit=100`)
+      const titleKey = relatedJobsListDir.config?.fields?.find(field => field.label === "标题");
+      const eduKey = relatedJobsListDir.config?.fields?.find(field => field.label === "教育");
+      const expKey = relatedJobsListDir.config?.fields?.find(field => field.label === "经验");
+      const hrefKey = relatedJobsListDir.config?.fields?.find(field => field.label === "链接");
+      const localKey = relatedJobsListDir.config?.fields?.find(field => field.label === "工作地点");
+      const typeKey = relatedJobsListDir.config?.fields?.find(field => field.label === "职位类型");
+      const salaryKey = relatedJobsListDir.config?.fields?.find(field => field.label === "薪资");
+      const companyKey = relatedJobsListDir.config?.fields?.find(field => field.label === "公司名");
+      const companySizeKey = relatedJobsListDir.config?.fields?.find(field => field.label === "公司规模");
+      const datas = [];
+      records.forEach(record => {
+        datas.push({
+          title: record[titleKey?.key],
+          edu: record[eduKey?.key] === '未指定' ? "不限" : record[eduKey?.key],
+          exp: record[expKey?.key] === '未指定' ? "不限" : record[expKey?.key],
+          href: record[hrefKey?.key] || "",
+          local: record[localKey?.key] === '未指定' ? "全国" : record[localKey?.key],
+          type: record[typeKey?.key] === '未指定' ? "其它" : record[typeKey?.key],
+          salary: record[salaryKey?.key] === '未指定' ? "面谈" : record[salaryKey?.key],
+          company: (record[companyKey?.key] === "未指定" || record[companyKey?.key] === "不限") ? "未知" : record[companyKey?.key],
+          companySize: (record[companySizeKey?.key] === "未指定" || record[companySizeKey?.key] === "不限") ? "未知" : record[companySizeKey?.key],
+        });
+      });
+      setAllJobs(datas)
+    }
     setDirs(data.directories);
     setCurrentDir(currentDir.data);
   }
 
   const getCardDatas = async (dirs) => {
     if (!dirs || !dirs.length) return;
-    const qs = new URLSearchParams(window.location.search)
     const rid = qs.get('rid')
     const newCardDatas = {};
     const currentField = currentDir?.config?.fields?.find(field => field.label === "内页卡片数据");
@@ -129,13 +159,11 @@ export default function CardDetailPage({
             {subCards
               .filter(card => card.category === 'related')
               .map(card => {
+                if (card.id !== "related-jobs-list") return null
                 const CardComponent = card.component
-                let insideData = null;
-                if (cardDatas[card.id] && insidePageCardDataHandles[card.id]) {
-                  insideData = insidePageCardDataHandles[card.id](cardDatas[card.id])
-                }
+                const insideData = allJobs.filter(job => job.type === jobType);
                 return CardComponent ? (
-                  <CardComponent insideData={insideData} key={card.id} data={{ id }} />
+                  <CardComponent insideData={insideData} isRelatedJobsList={true} key={card.id} data={{ id }} />
                 ) : null
               })
             }

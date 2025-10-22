@@ -34,14 +34,25 @@ export const dataInputs = {
         education: "String",
         tags: "String[]",
     },
-    // 相关岗位列表
-    "related-jobs-list": {
+    "occupation-list": {
         title: "String",
         avgSalary: "String",
         location: "String",
         education: "String",
         experience: "String",
         jobType: "String",
+    },
+    // 相关岗位列表
+    "related-jobs-list": {
+        title: "String",
+        salary: "String",
+        location: "String",
+        education: "String",
+        experience: "String",
+        jobType: "String",
+        href: "String",
+        company: "String",
+        companySize: "String",
     },
     // 工作年限占比分析
     "job-experience-ratio": {

@@ -14,76 +14,14 @@ import { useFrostedEffect } from "@/components/providers/frosted-effect-provider
 import { http } from "@/lib/request"
 import { getInsidePageDatas, insidePageCardDataHandles, insidePageArrayCardDatas } from "@/components/card/core/insidePageHandles"
 
-// 模拟数据
-const mockJobs: JobData[] = [
-    {
-        id: "1",
-        title: "工作室合伙人",
-        company: "万家分享",
-        companySize: "500-999人",
-        salary: "15-30K",
-        location: "昌平区 天通苑",
-        tags: ["经验不限", "学历不限", "创业型", "资源整合", "各类人才"],
-        contact: {
-            name: "王先生",
-            position: "联合创始人"
-        },
-        activity: "今日回复10+次",
-        isActive: true
-    },
-    {
-        id: "2",
-        title: "前端开发工程 (长期兼职)",
-        company: "柠檬优力 天使轮",
-        companySize: "0-20人",
-        salary: "500-600元/天",
-        location: "朝阳区 常营",
-        tags: ["本科", "HTML5", "JavaScript", "Vue", "CSS"],
-        contact: {
-            name: "朱俊",
-            position: "HRBP"
-        },
-        activity: "今日活跃"
-    },
-    {
-        id: "3",
-        title: "居家日结!不需要面试!兼职/全职 日结",
-        company: "扬州捷挚运动科技",
-        companySize: "20-99人",
-        salary: "9-11K",
-        location: "朝阳区 大望路",
-        tags: ["经验不限", "学历不限", "抖音", "全职兼职均可", "远程办公"],
-        contact: {
-            name: "于先生",
-            position: "主管"
-        },
-        activity: "回复率高"
-    },
-    {
-        id: "4",
-        title: "1w别墅管理员值班",
-        company: "北京秧渊芯科技",
-        companySize: "20-99人",
-        salary: "10-11K",
-        location: "昌平区 天通苑",
-        tags: ["经验不限", "学历不限", "缴纳五险", "带薪年假", "包吃"],
-        contact: {
-            name: "屈女士",
-            position: "经理"
-        },
-        activity: "回复率高"
-    }
-]
-
 interface JobListPageProps {
     className?: string
+    insideData?: any[]
 }
 
-export function JobListPage({ className }: JobListPageProps) {
-    const [activeTab, setActiveTab] = useState("推荐")
-    const [selectedLocation, setSelectedLocation] = useState("北京")
+export function JobListPage({ insideData, className }: JobListPageProps) {
     const { frostedEffect } = useFrostedEffect()
-    const [jobs, setJobs] = useState<any[]>([]);
+    const [jobs, setJobs] = useState<any[]>(insideData || []);
 
     const getAllJobs = async () => {
         // const {data: dirs} = await http.get(`/api/jobs?appId=${appId}`)
@@ -132,7 +70,9 @@ export function JobListPage({ className }: JobListPageProps) {
     }
 
     useEffect(() => {
-        getAllJobs();
+        if (!insideData) {
+            getAllJobs();
+        }
     }, [])
 
     const tabs = ["推荐", "附近", "最新"]

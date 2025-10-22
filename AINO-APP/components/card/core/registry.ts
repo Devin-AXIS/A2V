@@ -30,6 +30,7 @@ import { JobRequirementsCard } from "../cards/recruitment/jobs/job-requirements-
 import { JobBenefitsCard } from "../cards/recruitment/jobs/job-benefits-card"
 import { CompanyInfoCard } from "../cards/recruitment/jobs/company-info-card"
 import { ApplyResumeCard } from "../cards/recruitment/jobs/apply-resume-card"
+import { JobListPage } from "../../job/job-list-page"
 
 // 用户相关卡片
 import { BasicInfoCard } from "../cards/user/profile-cards/basic-info-card"
@@ -316,6 +317,20 @@ CardRegistry.register({
     name: "HR System",
     version: "1.0.0",
     description: "相关岗位推荐卡片，支持自定义岗位数据和自动跳转到详情页",
+  },
+})
+
+CardRegistry.register({
+  name: "occupation-list",
+  displayName: "职业列表",
+  category: "招聘",
+  type: "list", // 添加卡片类型
+  component: JobListPage,
+  businessFlow: "职业列表，包含岗位信息、薪资范围和详情跳转功能",
+  developer: {
+    name: "HR System",
+    version: "1.0.0",
+    description: "职业列表卡片，支持自定义岗位数据和自动跳转到详情页",
   },
 })
 

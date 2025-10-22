@@ -23,6 +23,7 @@ interface Job {
 
 interface RelatedJobsListCardProps {
   insideData?: any
+  isRelatedJobsList?: boolean
   disableLocalTheme?: boolean
   jobs?: Job[]
   title?: string
@@ -71,6 +72,7 @@ const defaultJobs: Job[] = [
 
 export function RelatedJobsListCard({
   insideData,
+  isRelatedJobsList,
   disableLocalTheme,
   jobs,
   title = "相关岗位",
@@ -86,7 +88,6 @@ export function RelatedJobsListCard({
   }
 
   const { realData, CARD_DISPLAY_DATA, original } = useCardRegistryData(providedKey, defaultJobs)
-  // console.log(providedKey, realData, original, 23232323)
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
@@ -173,7 +174,22 @@ export function RelatedJobsListCard({
   const totalPages = Math.ceil(totalItems / pageSize)
   const startIndex = (currentPage - 1) * pageSize
   const endIndex = startIndex + pageSize
-  const renderData = filteredData?.slice(startIndex, endIndex) || []
+  let renderData = filteredData?.slice(startIndex, endIndex) || []
+
+  if (isRelatedJobsList) {
+    renderData = [];
+    insideData.forEach(item => {
+      renderData.push({
+        title: item.title,
+        avgSalary: item.salary,
+        location: item.local,
+        education: item.edu,
+        experience: item.exp,
+        jobType: item.type,
+        href: item.href,
+      })
+    })
+  }
 
   // 当数据变化时重置到第一页
   useEffect(() => {
@@ -201,8 +217,11 @@ export function RelatedJobsListCard({
   }
 
   const handleJobClick = (job: any, index: number) => {
-    // router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}&providedKey=${providedKey}`)
-    window.location.href = job.href;
+    if (isRelatedJobsList) {
+      window.location.href = job.href;
+    } else {
+      router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}&providedKey=${providedKey}&jobType=${job.jobType}`)
+    }
   }
 
   // 构建筛选组件配置
@@ -305,7 +324,7 @@ export function RelatedJobsListCard({
       </div>
 
       {/* 分页控制器 */}
-      {showPagination && totalPages > 1 && (
+      {showPagination && totalPages > 1 && !isRelatedJobsList && (
         <div className="mt-4 pt-4 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">

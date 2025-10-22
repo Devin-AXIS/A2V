@@ -2,6 +2,158 @@ import fetch from 'node-fetch'
 import { Hono } from 'hono'
 import { mockRequireAuthMiddleware } from "../../middleware/auth"
 
+// 假数据生成器 - 基于BOSS直聘网站数据结构
+function generateMockJobData() {
+    const jobCategories = [
+        { name: '技术', jobs: ['Java开发工程师', 'C/C++开发工程师', 'PHP开发工程师', 'Python开发工程师', '前端开发工程师', 'Android开发工程师', 'iOS开发工程师', '算法工程师', '架构师', '全栈工程师'] },
+        { name: '硬件', jobs: ['电子工程师', '硬件工程师', '嵌入式软件工程师', 'FPGA开发工程师', '射频工程师', '通信工程师'] },
+        { name: '产品', jobs: ['产品经理', '产品专员', '用户研究', 'AI产品经理', '数据产品经理'] },
+        { name: '运营', jobs: ['客服专员', '新媒体运营', '内容运营', '产品运营', '用户运营', '数据运营'] },
+        { name: '销售', jobs: ['销售经理', '商务拓展', '客户经理', '销售代表', '渠道销售'] },
+        { name: '设计', jobs: ['UI设计师', 'UX设计师', '平面设计师', '产品设计师', '视觉设计师'] },
+        { name: '金融', jobs: ['金融分析师', '投资经理', '财务经理', '风控专员', '审计专员'] }
+    ]
+
+    const cities = ['北京市', '上海市', '深圳市', '广州市', '杭州市', '成都市', '武汉市', '西安市', '南京市', '苏州市']
+    const educationLevels = ['大专', '本科', '硕士', '博士']
+    const experienceLevels = [1, 2, 3, 5, 8, 10, 15]
+
+    const mockJobs = []
+
+    // 为每个分类生成职位数据
+    jobCategories.forEach(category => {
+        category.jobs.forEach(jobTitle => {
+            const baseSalary = Math.floor(Math.random() * 20000) + 8000 // 8k-28k基础薪资
+            const experience = experienceLevels[Math.floor(Math.random() * experienceLevels.length)]
+            const education = educationLevels[Math.floor(Math.random() * educationLevels.length)]
+            const city = cities[Math.floor(Math.random() * cities.length)]
+
+            // 根据经验调整薪资
+            const salaryMultiplier = 1 + (experience * 0.1)
+            const averageSalary = Math.floor(baseSalary * salaryMultiplier)
+
+            // 生成年限分布数据
+            const experienceDistribution = experienceLevels.slice(0, 4).map(exp => ({
+                years: exp,
+                salary: Math.floor(averageSalary * (0.7 + exp * 0.1))
+            }))
+
+            // 生成学历分布数据
+            const educationDistribution = educationLevels.map(edu => ({
+                education: edu,
+                salary: Math.floor(averageSalary * (0.8 + Math.random() * 0.4))
+            }))
+
+            // 生成城市排名数据
+            const cityRanking = cities.slice(0, 5).map(cityName => ({
+                city: cityName,
+                avgSalary: Math.floor(averageSalary * (0.8 + Math.random() * 0.4)),
+                jobCount: Math.floor(Math.random() * 1000) + 100,
+                avgHousingPrice: Math.floor(Math.random() * 50000) + 20000,
+                competitivenessIndex: Math.floor(Math.random() * 100)
+            }))
+
+            // 生成类似职位
+            const similarJobs = category.jobs
+                .filter(job => job !== jobTitle)
+                .slice(0, 5)
+                .map(job => ({
+                    title: job,
+                    url: `https://www.zhipin.com/job-detail/${Math.random().toString(36).substr(2, 9)}.html`,
+                    averageSalary: Math.floor(averageSalary * (0.8 + Math.random() * 0.4)),
+                    education: educationLevels[Math.floor(Math.random() * educationLevels.length)],
+                    location: cities[Math.floor(Math.random() * cities.length)],
+                    experience: `${experienceLevels[Math.floor(Math.random() * experienceLevels.length)]}年`
+                }))
+
+            // 生成新增职位趋势数据
+            const monthlyTrend = [
+                { month: '2月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '3月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '4月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '5月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '6月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '7月', count: Math.floor(Math.random() * 50) + 10 },
+                { month: '8月', count: Math.floor(Math.random() * 50) + 10 }
+            ]
+
+            const jobData = {
+                url: `https://www.zhipin.com/job-detail/${Math.random().toString(36).substr(2, 9)}.html`,
+                title: jobTitle,
+                description: `${jobTitle}是${category.name}领域的重要职位，负责相关技术开发、产品设计或运营管理工作。该职位需要具备扎实的专业技能和丰富的项目经验。`,
+                category: category.name,
+                salary: {
+                    average: averageSalary,
+                    highest: Math.floor(averageSalary * 1.5),
+                    lowest: Math.floor(averageSalary * 0.7),
+                    distribution: {
+                        average: averageSalary,
+                        highest: Math.floor(averageSalary * 1.5),
+                        lowest: Math.floor(averageSalary * 0.7)
+                    }
+                },
+                experienceDistribution: experienceDistribution,
+                salaryDistribution: {
+                    average: averageSalary,
+                    highest: Math.floor(averageSalary * 1.5),
+                    lowest: Math.floor(averageSalary * 0.7)
+                },
+                salaryDifference: {
+                    min: Math.floor(averageSalary * 0.7),
+                    max: Math.floor(averageSalary * 1.5),
+                    difference: Math.floor(averageSalary * 0.8)
+                },
+                educationDistribution: educationDistribution,
+                jobProspects: {
+                    description: `${jobTitle}岗位的就业前景良好，随着${category.name}行业的快速发展，该职位的市场需求持续增长。预计该职位在未来将处于强需求状态。`,
+                    currentMonth: {
+                        month: '2025年8月',
+                        count: Math.floor(Math.random() * 100) + 50,
+                        rank: Math.floor(Math.random() * 20) + 1
+                    },
+                    outlook: '强需求',
+                    growthRate: [
+                        { month: '2月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '3月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '4月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '5月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '6月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '7月', rate: Math.floor(Math.random() * 20) - 10 },
+                        { month: '8月', rate: Math.floor(Math.random() * 20) - 10 }
+                    ]
+                },
+                newJobs: {
+                    count: Math.floor(Math.random() * 200) + 100,
+                    currentMonth: {
+                        month: '2025年8月',
+                        count: Math.floor(Math.random() * 50) + 20,
+                        rank: Math.floor(Math.random() * 10) + 1
+                    },
+                    monthlyTrend: monthlyTrend,
+                    outlook: '强需求',
+                    hotJobs: [
+                        { title: jobTitle, salary: averageSalary },
+                        { title: category.jobs[Math.floor(Math.random() * category.jobs.length)], salary: Math.floor(averageSalary * 0.9) },
+                        { title: category.jobs[Math.floor(Math.random() * category.jobs.length)], salary: Math.floor(averageSalary * 1.1) }
+                    ]
+                },
+                workOpportunities: {
+                    distribution: experienceDistribution.slice(0, 3).map(exp => ({
+                        years: exp.years,
+                        percentage: Math.floor(Math.random() * 30) + 20
+                    }))
+                },
+                cityRanking: cityRanking,
+                similarJobs: similarJobs
+            }
+
+            mockJobs.push(jobData)
+        })
+    })
+
+    return mockJobs
+}
+
 const crawlRoute = new Hono()
 
 let cacheLinks, cacheJobTitles;
@@ -950,6 +1102,41 @@ function toAbsoluteUrl(pathOrUrl: string): string {
 
 // 即时抓取：GET /crawler/tanzhi/jobs
 crawlRoute.get('/tanzhi/jobs', mockRequireAuthMiddleware, async (c) => {
+    // 检查是否使用假数据模式
+    const useMockData = c.req.query('mock') === 'true' || c.req.query('useMock') === 'true'
+
+    if (useMockData) {
+        // 使用假数据模式
+        try {
+            const mockJobs = generateMockJobData()
+
+            const datas = [];
+            sortBySalaryAverage(mockJobs).forEach(item => {
+                datas.push({
+                    "标题": item.title,
+                    "工作地点": item.cityRanking[0]?.city || '',
+                    "教育": item.educationDistribution[0]?.education || '',
+                    "经验": `${item.experienceDistribution[0]?.years}年` || '',
+                    "职位类型": item.category || '',
+                    "平均薪资": item.salary.average,
+                    "内页数据": JSON.stringify(item),
+                })
+            })
+
+            return c.json({
+                success: true,
+                count: datas.length,
+                data: datas,
+                mock: true,
+                message: '使用假数据模式，基于BOSS直聘网站数据结构生成'
+            })
+        } catch (error) {
+            console.log('假数据生成错误:', error)
+            return c.json({ success: false, error: error instanceof Error ? error.message : 'Mock data generation error' }, 500)
+        }
+    }
+
+    // 原有的真实数据抓取逻辑
     // 仅在内存中使用的临时集合，函数结束自然释放
     const visited = new Set<string>()
     const results: any[] = []
@@ -1042,8 +1229,39 @@ crawlRoute.get('/tanzhi/jobs', mockRequireAuthMiddleware, async (c) => {
             data: datas,
         })
     } catch (error) {
-        console.log(23232323, error)
         return c.json({ success: false, error: error instanceof Error ? error.message : 'Internal server error' }, 500)
+    }
+})
+
+// 假数据专用路由：GET /crawler/mock/jobs
+crawlRoute.get('/mock/jobs', mockRequireAuthMiddleware, async (c) => {
+    try {
+        const mockJobs = generateMockJobData()
+
+        const datas = [];
+        sortBySalaryAverage(mockJobs).forEach(item => {
+            datas.push({
+                "标题": item.title,
+                "工作地点": item.cityRanking[0]?.city || '',
+                "教育": item.educationDistribution[0]?.education || '',
+                "经验": `${item.experienceDistribution[0]?.years}年` || '',
+                "职位类型": item.category || '',
+                "平均薪资": item.salary.average,
+                "内页数据": JSON.stringify(item),
+            })
+        })
+
+        return c.json({
+            success: true,
+            count: datas.length,
+            data: datas,
+            mock: true,
+            message: '基于BOSS直聘网站数据结构的假数据',
+            source: 'BOSS直聘 (zhipin.com) 数据结构模拟'
+        })
+    } catch (error) {
+        console.log('假数据生成错误:', error)
+        return c.json({ success: false, error: error instanceof Error ? error.message : 'Mock data generation error' }, 500)
     }
 })
 
