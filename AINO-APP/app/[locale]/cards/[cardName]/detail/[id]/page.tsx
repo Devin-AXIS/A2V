@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/navigation/app-header"
 import type { Locale } from "@/lib/dictionaries"
 import { CardPackageManager } from "@/components/card/package/runtime/card-package-manager"
 import { CardRegistry } from "@/components/card/core/registry"
+import { LocalThemeKeyProvider } from "@/components/providers/local-theme-key"
 import { getInsidePageDatas, insidePageCardDataHandles, insidePageArrayCardDatas } from "@/components/card/core/insidePageHandles"
 
 export default function CardDetailPage({
@@ -39,8 +40,9 @@ export default function CardDetailPage({
     const rid = qs.get('rid')
     const newCardDatas = {};
     const currentField = currentDir?.config?.fields?.find(field => field.label === "内页卡片数据");
+    const titleField = currentDir?.config?.fields?.find(field => field.label === "标题");
     const { data: records } = await http.get(`/api/records/${id}?limit=100`)
-    const insideData = await getInsidePageDatas(currentField?.key, id, rid, records);
+    const insideData = await getInsidePageDatas(currentField?.key, id, rid, records, titleField?.key);
     setCardDatas(insideData);
   }
 

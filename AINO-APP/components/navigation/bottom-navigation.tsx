@@ -113,6 +113,14 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
     return null
   }
 
+  const profileItem = navItems.find(item => item.href === "/profile");
+  navItems[1] = {
+    href: "/jobs",
+    iconName: "grid",
+    label: "",
+  }
+  navItems.push(profileItem)
+
   const iconMap: Record<string, React.ComponentType<any>> = {
     home: Home,
     user: User,

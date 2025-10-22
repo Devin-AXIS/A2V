@@ -305,6 +305,22 @@
       "namedRegex": "^/(?<nxtPlocale>[^/]+?)/help\\-center(?:/)?$"
     },
     {
+      "page": "/[locale]/job-demo",
+      "regex": "^/([^/]+?)/job\\-demo(?:/)?$",
+      "routeKeys": {
+        "nxtPlocale": "nxtPlocale"
+      },
+      "namedRegex": "^/(?<nxtPlocale>[^/]+?)/job\\-demo(?:/)?$"
+    },
+    {
+      "page": "/[locale]/jobs",
+      "regex": "^/([^/]+?)/jobs(?:/)?$",
+      "routeKeys": {
+        "nxtPlocale": "nxtPlocale"
+      },
+      "namedRegex": "^/(?<nxtPlocale>[^/]+?)/jobs(?:/)?$"
+    },
+    {
       "page": "/[locale]/p/[id]",
       "regex": "^/([^/]+?)/p/([^/]+?)(?:/)?$",
       "routeKeys": {

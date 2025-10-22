@@ -6,7 +6,7 @@ const getColors = () => {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export const getInsidePageDatas = async (key, did, rid, records) => {
+export const getInsidePageDatas = async (key, did, rid, records, titleKey) => {
     const { data } = await http.get(`/api/records/${did}/${rid}`)
     const parsedData = JSON.parse(data[key]);
 
@@ -145,6 +145,10 @@ export const getInsidePageDatas = async (key, did, rid, records) => {
     })
 
     parsedData.similarJobs.forEach((item) => {
+        // console.log(key, did, rid, records, 23232323)
+        const currentRecord = records.find(r => {
+            return r[titleKey] === item.title
+        })
         result['related-jobs-list'].push({
             "标题": item.title,
             "平均薪资": item.averageSalary,
@@ -152,6 +156,8 @@ export const getInsidePageDatas = async (key, did, rid, records) => {
             "教育": item.education,
             "经验": item.experience,
             "职位类型": item.title,
+            dirId: did,
+            // recordId: records.find(),
         })
     })
 

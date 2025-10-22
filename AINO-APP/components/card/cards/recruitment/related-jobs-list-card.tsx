@@ -78,10 +78,15 @@ export function RelatedJobsListCard({
   showPagination = true,
 }: RelatedJobsListCardProps) {
   const router = useRouter()
-  const { locale } = useParams()
-  const { key: providedKey } = useLocalThemeKey()
+  const { locale, id: dirId } = useParams()
+  let { key: providedKey } = useLocalThemeKey()
+  if (!providedKey) {
+    const qs = new URLSearchParams(window.location.search)
+    providedKey = qs.get('providedKey')
+  }
 
   const { realData, CARD_DISPLAY_DATA, original } = useCardRegistryData(providedKey, defaultJobs)
+  // console.log(providedKey, realData, original, 23232323)
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
@@ -96,8 +101,6 @@ export function RelatedJobsListCard({
   // 优先使用传入的 jobs 数据，否则使用注册数据
   let allData = realData || jobs;
   if (insideData) allData = insideData;
-
-  // if (CARD_DISPLAY_DATA?.limit && allData?.length) allData = allData.slice(0, CARD_DISPLAY_DATA.limit)
 
   // 定义6个固定的薪资区间
   const SALARY_RANGES = [
@@ -198,8 +201,8 @@ export function RelatedJobsListCard({
   }
 
   const handleJobClick = (job: any, index: number) => {
-    // job-detail-intro-card
-    router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}`)
+    // router.push(`/${locale}/cards/job-position/detail/${original[index]?.__dirId}?rid=${job.recordId}&providedKey=${providedKey}`)
+    window.location.href = job.href;
   }
 
   // 构建筛选组件配置
@@ -281,7 +284,7 @@ export function RelatedJobsListCard({
                       {job.experience}
                     </Tag>
                     <Tag variant="white" size="sm">
-                      {job.jobType}
+                      {job.jobType || "其它"}
                     </Tag>
                   </div>
                 </div>
