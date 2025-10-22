@@ -2684,6 +2684,9 @@ video {
   --tw-gradient-to: rgb(255 255 255 / 0)  var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), rgb(255 255 255 / 0.2) var(--tw-gradient-via-position), var(--tw-gradient-to);
 }
+.to-blue-200 {
+  --tw-gradient-to: #bfdbfe var(--tw-gradient-to-position);
+}
 .to-blue-50 {
   --tw-gradient-to: #eff6ff var(--tw-gradient-to-position);
 }
@@ -3016,6 +3019,9 @@ video {
 }
 .pt-8 {
   padding-top: 2rem;
+}
+.pt-14 {
+  padding-top: 3.5rem;
 }
 .text-left {
   text-align: left;
@@ -3728,6 +3734,11 @@ video {
 
 .hover\:border-primary\/30:hover {
   border-color: hsl(var(--primary-500) / 0.3);
+}
+
+.hover\:border-l-blue-500:hover {
+  --tw-border-opacity: 1;
+  border-left-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
 }
 
 .hover\:bg-accent:hover {

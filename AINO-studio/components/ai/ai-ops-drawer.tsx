@@ -225,36 +225,37 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
 
     const fields = new Set<string>()
 
-    // 分析第一个数据项的所有字段
-    const firstItem = data[0]
-    if (firstItem && typeof firstItem === 'object') {
-      // 递归提取所有字段路径
-      function extractFields(obj: any, prefix = ''): void {
-        for (const [key, value] of Object.entries(obj)) {
-          const fieldPath = prefix ? `${prefix}.${key}` : key
+    // 分析所有数据项，不只是第一个
+    data.forEach((item, index) => {
+      if (item && typeof item === 'object') {
+        // 递归提取所有字段路径
+        function extractFields(obj: any, prefix = ''): void {
+          for (const [key, value] of Object.entries(obj)) {
+            const fieldPath = prefix ? `${prefix}.${key}` : key
 
-          // 如果是基本类型，添加到字段列表
-          if (value !== null && value !== undefined &&
-            (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
-            fields.add(fieldPath)
-          }
-          // 如果是对象，递归处理
-          else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            extractFields(value, fieldPath)
-          }
-          // 如果是数组，添加数组路径，并分析数组内对象的字段
-          else if (Array.isArray(value)) {
-            fields.add(fieldPath)
-            // 分析数组内第一个对象的字段
-            if (value.length > 0 && value[0] && typeof value[0] === 'object') {
-              extractFields(value[0], fieldPath)
+            // 如果是基本类型，添加到字段列表
+            if (value !== null && value !== undefined &&
+              (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
+              fields.add(fieldPath)
+            }
+            // 如果是对象，递归处理
+            else if (value && typeof value === 'object' && !Array.isArray(value)) {
+              extractFields(value, fieldPath)
+            }
+            // 如果是数组，添加数组路径，并分析数组内对象的字段
+            else if (Array.isArray(value)) {
+              fields.add(fieldPath)
+              // 分析数组内第一个对象的字段
+              if (value.length > 0 && value[0] && typeof value[0] === 'object') {
+                extractFields(value[0], fieldPath)
+              }
             }
           }
         }
-      }
 
-      extractFields(firstItem)
-    }
+        extractFields(item)
+      }
+    })
 
     return Array.from(fields).sort()
   }
@@ -465,19 +466,21 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     // 使用从采集数据中提取的字段，如果没有则使用默认字段
     const availableFields = sampleSourceKeys.length > 0 ? sampleSourceKeys : sampleKeys
 
+    // 如果没有可用字段，返回空数组
+    if (!availableFields || availableFields.length === 0) {
+      return []
+    }
+
     const list = availableFields
       .map((k) => ({ k, s: scoreKey(f.key, k) }))
       .sort((a, b) => b.s - a.s)
       .map((x) => x.k)
-    const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
-    const resultList = [];
 
-    (filtered || []).forEach(key => {
-      if (key.startsWith(arrayPath)) {
-        resultList.push(key)
-      }
-    })
-    return resultList.slice(0, 8) // 显示更多候选字段
+    // 应用搜索过滤
+    const filtered = keySearch ? list.filter(k => k.toLowerCase().includes(keySearch.toLowerCase())) : list
+
+    // 确保显示足够的候选字段，优先显示高分的字段
+    return filtered.slice(0, 15) // 显示更多候选字段
   }
 
   // ---------- Progress helpers ----------
@@ -845,7 +848,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   async function onScrapeTest() {
     const { firecrawlKey } = readAuth()
     if (!firecrawlKey) {
-      toast({ description: t("请先在授权管理配置 Firecrawl Key", "Please configure Firecrawl Key in Authorization"), variant: "destructive" as any })
+      toast({ description: t("请先在授权管理配置 ScrapeGraphAI API Key", "Please configure ScrapeGraphAI API Key in Authorization"), variant: "destructive" as any })
       return
     }
     const firstUrl = (urls.split(/\n+/).map(s => s.trim()).filter(Boolean)[0]) || domain || ''
@@ -1431,8 +1434,19 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                                       <Input value={mapping[f.key] || ""} onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))} placeholder={t("如 title/desc/link", "e.g. title/desc/link")} />
                                       <div className="flex flex-wrap gap-1">
                                         {candidatesForField(f).map((k) => (
-                                          <button key={k} type="button" onClick={() => setMapping((m) => ({ ...m, [f.key]: k }))} className={`text-[10px] px-1.5 py-0.5 rounded border ${mapping[f.key] === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70'}`}>{k}</button>
+                                          <button
+                                            key={k}
+                                            type="button"
+                                            onClick={() => setMapping((m) => ({ ...m, [f.key]: k }))}
+                                            className={`text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap ${mapping[f.key] === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70 hover:bg-gray-100'}`}
+                                            title={k} // 添加完整字段名的提示
+                                          >
+                                            {k}
+                                          </button>
                                         ))}
+                                        {candidatesForField(f).length === 0 && (
+                                          <span className="text-[10px] text-gray-500">{t("无可用字段", "No available fields")}</span>
+                                        )}
                                         {f.required && !mapping[f.key] && (
                                           <span className="text-[10px] text-red-600 ml-1">{t("必填", "Required")}</span>
                                         )}

@@ -21,6 +21,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/app/[appId]/error.js"
     ],
+    "/app/[appId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/app/[appId]/page.js"
+    ],
     "/app/[appId]/client-config/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
