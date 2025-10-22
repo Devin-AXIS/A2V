@@ -13,7 +13,7 @@ export default function SimpleTestPage() {
     try {
       setResult("测试中...")
 
-      const response = await fetch('http://47.94.52.142:3001/api/users/login', {
+      const response = await fetch('http://localhost:3001/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export default function SimpleTestPage() {
         return
       }
 
-      const response = await fetch('http://47.94.52.142:3001/api/applications', {
+      const response = await fetch('http://localhost:3001/api/applications', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
