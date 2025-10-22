@@ -11,7 +11,7 @@ export const openApiConfig = {
   },
   servers: [
     {
-      url: 'http://47.94.52.142:3001',
+      url: 'http://localhost:3001',
       description: '开发环境',
     },
   ],

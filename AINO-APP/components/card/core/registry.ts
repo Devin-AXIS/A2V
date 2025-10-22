@@ -306,6 +306,7 @@ CardRegistry.register({
   },
 })
 
+// JobListPage
 CardRegistry.register({
   name: "related-jobs-list",
   displayName: "相关岗位列表",
@@ -325,7 +326,7 @@ CardRegistry.register({
   displayName: "职业列表",
   category: "招聘",
   type: "list", // 添加卡片类型
-  component: JobListPage,
+  component: RelatedJobsListCard,
   businessFlow: "职业列表，包含岗位信息、薪资范围和详情跳转功能",
   developer: {
     name: "HR System",

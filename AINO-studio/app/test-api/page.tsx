@@ -147,8 +147,8 @@ export default function TestApiPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              <div>后端 API: <span className="text-green-600">http://47.94.52.142:3001</span></div>
-              <div>前端地址: <span className="text-green-600">http://47.94.52.142:3000</span></div>
+              <div>后端 API: <span className="text-green-600">http://localhost:3001</span></div>
+              <div>前端地址: <span className="text-green-600">http://localhost:3000</span></div>
               <div>Token: <span className="text-gray-600">{typeof window !== 'undefined' ? (localStorage.getItem('aino_token') || '未设置') : '未设置'}</span></div>
             </div>
           </CardContent>
