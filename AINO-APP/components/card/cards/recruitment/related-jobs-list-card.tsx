@@ -175,6 +175,7 @@ export function RelatedJobsListCard({
   const startIndex = (currentPage - 1) * pageSize
   const endIndex = startIndex + pageSize
   let renderData = filteredData?.slice(startIndex, endIndex) || []
+  console.log(renderData, 23232323)
 
   if (isRelatedJobsList) {
     renderData = [];

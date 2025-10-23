@@ -274,9 +274,29 @@ function extractNumber(text: string): number | null {
 function extractSalaryData(html: string) {
     const salaryData: any = {}
 
-    // 平均薪资 - 更精确的匹配
-    const avgMatch = html.match(/平均月薪[\s\S]*?¥(\d+(?:,\d+)*)/i)
-    if (avgMatch) salaryData.average = parseInt(avgMatch[1].replace(/,/g, ''))
+    // 平均薪资 - 改进匹配逻辑，支持多种格式
+    const avgPatterns = [
+        /平均月薪[\s\S]*?¥(\d+(?:,\d+)*)/i,
+        /平均薪资[\s\S]*?¥(\d+(?:,\d+)*)/i,
+        /平均[\s\S]*?¥(\d+(?:,\d+)*)/i,
+        /￥(\d+(?:,\d+)*)\/月/gi
+    ]
+
+    for (const pattern of avgPatterns) {
+        const match = html.match(pattern)
+        if (match) {
+            salaryData.average = parseInt(match[1].replace(/,/g, ''))
+            break
+        }
+    }
+
+    // 如果没有找到平均薪资，尝试从页面中提取第一个薪资数据作为平均薪资
+    if (!salaryData.average) {
+        const firstSalaryMatch = html.match(/￥(\d+(?:,\d+)*)\/月/i)
+        if (firstSalaryMatch) {
+            salaryData.average = parseInt(firstSalaryMatch[1].replace(/,/g, ''))
+        }
+    }
 
     // 最高薪资 - 匹配"最高¥数字"格式
     const maxMatch = html.match(/最高¥(\d+(?:,\d+)*)/i)
@@ -285,6 +305,24 @@ function extractSalaryData(html: string) {
     // 最低薪资 - 匹配"最低¥数字"格式
     const minMatch = html.match(/最低¥(\d+(?:,\d+)*)/i)
     if (minMatch) salaryData.lowest = parseInt(minMatch[1].replace(/,/g, ''))
+
+    // 如果没有找到最高和最低薪资，尝试从所有薪资中计算
+    if (!salaryData.highest || !salaryData.lowest) {
+        const allSalaries = []
+        const salaryMatches = html.match(/￥(\d+(?:,\d+)*)\/月/gi)
+        if (salaryMatches) {
+            salaryMatches.forEach(match => {
+                const salary = parseInt(match.replace(/￥|,|\/月/gi, ''))
+                if (salary > 0) allSalaries.push(salary)
+            })
+
+            if (allSalaries.length > 0) {
+                if (!salaryData.highest) salaryData.highest = Math.max(...allSalaries)
+                if (!salaryData.lowest) salaryData.lowest = Math.min(...allSalaries)
+                if (!salaryData.average) salaryData.average = Math.round(allSalaries.reduce((a, b) => a + b, 0) / allSalaries.length)
+            }
+        }
+    }
 
     return salaryData
 }
@@ -430,6 +468,30 @@ function extractCityRanking(html: string) {
                     })
                 }
             })
+        }
+    }
+
+    // 如果还是没有足够数据，尝试从JSON数据中提取城市信息
+    if (cityRanking.length < 5) {
+        try {
+            // 尝试从页面中的JSON数据提取城市信息
+            const jsonMatch = html.match(/\"cities\":\s*\[(.*?)\]/s)
+            if (jsonMatch) {
+                const citiesData = JSON.parse('[' + jsonMatch[1] + ']')
+                citiesData.forEach((city: any) => {
+                    if (city.name && !cityRanking.find(item => item.city === city.name)) {
+                        cityRanking.push({
+                            city: city.name,
+                            avgSalary: 0,
+                            jobCount: 0,
+                            avgHousingPrice: 0,
+                            competitivenessIndex: 0
+                        })
+                    }
+                })
+            }
+        } catch (error) {
+            console.log('解析城市JSON数据失败:', error)
         }
     }
 

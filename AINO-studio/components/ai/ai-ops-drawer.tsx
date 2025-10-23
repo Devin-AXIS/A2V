@@ -1039,8 +1039,8 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
       token = 'test-token'
     }
 
-    // const r = await fetch(`${getApiBase()}/api/crawler/tanzhi/jobs`, {
-    const r = await fetch(`${getApiBase()}/api/crawler/mock/jobs`, {
+    const r = await fetch(`${getApiBase()}/api/crawler/tanzhi/jobs`, {
+      // const r = await fetch(`${getApiBase()}/api/crawler/mock/jobs`, {
       method: 'GET',
       mode: 'cors' as RequestMode,
       credentials: 'include' as RequestCredentials,
