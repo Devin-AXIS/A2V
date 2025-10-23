@@ -17,7 +17,7 @@ export function useGlobalRadius() {
   } | null>(null)
 
   // API 基础地址
-  const API_BASE = (typeof process !== 'undefined' && (process as any).env?.NEXT_PUBLIC_API_BASE) || 'http://localhost:3007'
+  const API_BASE = (typeof process !== 'undefined' && (process as any).env?.NEXT_PUBLIC_API_BASE) || 'http://47.94.52.142::3007'
   const pathname = usePathname()
 
   // 从路由中解析 appKey（或 previewId）

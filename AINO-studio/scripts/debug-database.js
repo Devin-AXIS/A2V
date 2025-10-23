@@ -8,16 +8,16 @@ const { Pool } = require('pg')
 
 async function debugDatabase() {
   console.log('🔍 直接查询数据库调试...')
-  
+
   // 使用默认的PostgreSQL连接
   const pool = new Pool({
-    host: 'localhost',
+    host: '47.94.52.142:',
     port: 5432,
     database: 'aino',
     user: 'aino',
     password: 'pass'
   })
-  
+
   try {
     // 1. 查询目录数据
     console.log('\n1. 查询目录数据...')
@@ -26,7 +26,7 @@ async function debugDatabase() {
     dirsResult.rows.forEach((dir, index) => {
       console.log(`  ${index + 1}. ID: ${dir.id}, Name: ${dir.name}, ModuleId: ${dir.module_id}, ApplicationId: ${dir.application_id}`)
     })
-    
+
     // 2. 查询模块数据
     console.log('\n2. 查询模块数据...')
     const modulesResult = await pool.query('SELECT * FROM modules LIMIT 5')
@@ -34,7 +34,7 @@ async function debugDatabase() {
     modulesResult.rows.forEach((module, index) => {
       console.log(`  ${index + 1}. ID: ${module.id}, Name: ${module.name}, ApplicationId: ${module.application_id}`)
     })
-    
+
     // 3. 查询目录定义数据
     console.log('\n3. 查询目录定义数据...')
     const dirDefsResult = await pool.query('SELECT * FROM directory_defs LIMIT 5')
@@ -42,7 +42,7 @@ async function debugDatabase() {
     dirDefsResult.rows.forEach((dirDef, index) => {
       console.log(`  ${index + 1}. ID: ${dirDef.id}, DirectoryId: ${dirDef.directory_id}, Title: ${dirDef.title}`)
     })
-    
+
     // 4. 查询字段定义数据
     console.log('\n4. 查询字段定义数据...')
     const fieldDefsResult = await pool.query('SELECT * FROM field_defs LIMIT 5')
@@ -60,7 +60,7 @@ async function debugDatabase() {
         }
       }
     })
-    
+
   } catch (error) {
     console.error('❌ 数据库查询失败:', error)
   } finally {

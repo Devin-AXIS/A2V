@@ -6,7 +6,7 @@ console.log('🚀 启动 AINO 后端服务...');
 // 设置环境变量
 process.env.NODE_ENV = 'development';
 process.env.PORT = '3007';
-process.env.DB_HOST = 'localhost';
+process.env.DB_HOST = '47.94.52.142:';
 process.env.DB_PORT = '5433';
 process.env.DB_USER = 'aino';
 process.env.DB_PASSWORD = 'pass';

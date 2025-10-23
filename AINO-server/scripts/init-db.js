@@ -1,7 +1,7 @@
 import { Pool } from 'pg'
 
-const pool = new Pool({ 
-  host: 'localhost',
+const pool = new Pool({
+  host: '47.94.52.142:',
   port: 5433,
   user: 'aino',
   password: 'pass',
@@ -12,7 +12,7 @@ const pool = new Pool({
 async function initDatabase() {
   try {
     console.log('🔧 初始化数据库...')
-    
+
     // 创建 users 表
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -29,7 +29,7 @@ async function initDatabase() {
       )
     `)
     console.log('✅ users 表创建成功')
-    
+
     // 创建 applications 表
     await pool.query(`
       CREATE TABLE IF NOT EXISTS applications (
@@ -49,7 +49,7 @@ async function initDatabase() {
       )
     `)
     console.log('✅ applications 表创建成功')
-    
+
     // 插入测试用户
     const testUser = await pool.query(`
       INSERT INTO users (name, email, password, roles) 
@@ -57,10 +57,10 @@ async function initDatabase() {
       ON CONFLICT (email) DO NOTHING
       RETURNING id
     `, ['Admin', 'admin@aino.com', 'mock-password-hash', ['admin']])
-    
+
     if (testUser.rows.length > 0) {
       console.log('✅ 测试用户创建成功:', testUser.rows[0].id)
-      
+
       // 插入示例应用
       const sampleApp = await pool.query(`
         INSERT INTO applications (name, description, slug, owner_id, template) 
@@ -68,16 +68,16 @@ async function initDatabase() {
         ON CONFLICT (slug) DO NOTHING
         RETURNING id
       `, ['示例应用', '这是一个示例应用', 'example-app', testUser.rows[0].id, 'default'])
-      
+
       if (sampleApp.rows.length > 0) {
         console.log('✅ 示例应用创建成功:', sampleApp.rows[0].id)
       }
     } else {
       console.log('ℹ️ 测试用户已存在')
     }
-    
+
     console.log('🎉 数据库初始化完成')
-    
+
   } catch (error) {
     console.error('❌ 数据库初始化失败:', error)
     throw error

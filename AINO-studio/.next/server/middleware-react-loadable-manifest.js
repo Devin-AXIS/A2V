@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app/app/[appId]/client-config/page.tsx -> @monaco-editor/react\":{\"id\":\"app/app/[appId]/client-config/page.tsx -> @monaco-editor/react\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_pnpm_monaco-editor_react_4_7_0_monaco-editor_0_52_2_react-dom-e08e4e.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST='{"app/app/[appId]/client-config/page.tsx -> @monaco-editor/react":{"id":55386,"files":["static/chunks/5386.07376d5885ccb0ec.js"]},"app/debug/page.tsx -> @/lib/api":{"id":91650,"files":["static/chunks/1650-4e172cfc46990bcc.js"]}}';

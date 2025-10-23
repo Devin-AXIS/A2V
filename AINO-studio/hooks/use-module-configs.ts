@@ -32,7 +32,7 @@ export function useModuleConfigs() {
                 ...(searchQuery && { q: searchQuery })
             })
 
-            const response = await fetch(`http://localhost:3007/api/module-configs?${params}`)
+            const response = await fetch(`http://47.94.52.142::3007/api/module-configs?${params}`)
             const data = await response.json()
 
             if (data.success) {
@@ -53,7 +53,7 @@ export function useModuleConfigs() {
 
     const deleteConfig = async (id: string) => {
         try {
-            const response = await fetch(`http://localhost:3007/api/module-configs/${id}`, {
+            const response = await fetch(`http://47.94.52.142::3007/api/module-configs/${id}`, {
                 method: 'DELETE'
             })
             const data = await response.json()

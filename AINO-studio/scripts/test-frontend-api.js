@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // 测试前端API调用
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142::3001'
 
 async function testFrontendAPI() {
   console.log('🧪 测试前端 API 调用...\n')

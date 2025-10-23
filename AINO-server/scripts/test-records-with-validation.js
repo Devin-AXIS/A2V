@@ -1,7 +1,7 @@
 const { Pool } = require('pg')
 
 const pool = new Pool({
-  connectionString: process.env.PG_URL || 'postgresql://aino:pass@localhost:5433/aino'
+  connectionString: process.env.PG_URL || 'postgresql://aino:pass@47.94.52.142::5433/aino'
 })
 
 async function testRecordsWithValidation() {
@@ -34,7 +34,7 @@ async function testRecordsWithValidation() {
     // 2. 测试API调用
     console.log('\n2. 测试API调用...')
 
-    const baseUrl = 'http://localhost:3001/api/records'
+    const baseUrl = 'http://47.94.52.142::3001/api/records'
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer test-token'

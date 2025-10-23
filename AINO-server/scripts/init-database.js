@@ -11,7 +11,7 @@ import path from 'path'
 
 // 数据库连接配置
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '47.94.52.142:',
     port: process.env.DB_PORT || 5433,
     database: process.env.DB_NAME || 'aino',
     user: process.env.DB_USER || 'aino',

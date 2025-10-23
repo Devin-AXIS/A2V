@@ -11,7 +11,7 @@ const testData = {
 const postData = JSON.stringify(testData)
 
 const options = {
-  hostname: 'localhost',
+  hostname: '47.94.52.142:',
   port: 3001,
   path: '/api/directories?applicationId=0f6c007e-0d10-4119-abb9-85eef2e82dcc&moduleId=fa9d9c7c-9cc6-4aa1-ade9-b259c99b74e3',
   method: 'POST',
@@ -25,12 +25,12 @@ const options = {
 const req = http.request(options, (res) => {
   console.log(`状态码: ${res.statusCode}`)
   console.log(`响应头: ${JSON.stringify(res.headers)}`)
-  
+
   let data = ''
   res.on('data', (chunk) => {
     data += chunk
   })
-  
+
   res.on('end', () => {
     console.log('响应体:', data)
     try {

@@ -68,8 +68,8 @@ async function startServer() {
       fetch: app.fetch,
       port: port
     }, () => {
-      console.log(`🚀 AINO Server running at http://localhost:${port}`)
-      console.log(`📊 Health check: http://localhost:${port}/health`)
+      console.log(`🚀 AINO Server running at http://47.94.52.142::${port}`)
+      console.log(`📊 Health check: http://47.94.52.142::${port}/health`)
       console.log(`🌍 Environment: ${env.NODE_ENV}`)
       console.log('✅ 服务器启动完成！')
     })

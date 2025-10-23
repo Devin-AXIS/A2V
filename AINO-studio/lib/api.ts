@@ -1,5 +1,5 @@
 // API 基础配置
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142::3007'
 
 // 通用响应类型
 export interface ApiResponse<T = any> {

@@ -151,7 +151,7 @@ export class CardPackageManager {
     // if (window !== undefined) {
     //   const qs = new URLSearchParams(window.location.search)
     //   const appId = qs.get('appId') || window.localStorage.getItem('APP_ID');
-    //   const { data } = await axios.get(`http://localhost:3007/api/applications/${appId}/modules`, {
+    //   const { data } = await axios.get(`http://47.94.52.142::3007/api/applications/${appId}/modules`, {
     //     headers: {
     //       'Content-Type': 'application/json',
     //       "Authorization": `Bearer ${window.localStorage.getItem('aino_auth_token')}`

@@ -49,7 +49,7 @@ get_db_config() {
     print_info "配置数据库连接参数..."
     
     # 从环境变量或用户输入获取配置
-    DB_HOST=${DB_HOST:-$(read -p "数据库主机 [localhost]: " input && echo ${input:-localhost})}
+    DB_HOST=${DB_HOST:-$(read -p "数据库主机 [47.94.52.142:]: " input && echo ${input:-47.94.52.142:})}
     DB_PORT=${DB_PORT:-$(read -p "数据库端口 [5432]: " input && echo ${input:-5432})}
     DB_USER=${DB_USER:-$(read -p "数据库用户 [aino]: " input && echo ${input:-aino})}
     DB_PASSWORD=${DB_PASSWORD:-$(read -s -p "数据库密码: " input && echo $input)}
@@ -129,7 +129,7 @@ show_next_steps() {
     echo "     npm run dev"
     echo ""
     echo "  2. 访问管理界面:"
-    echo "     http://localhost:3007"
+    echo "     http://47.94.52.142::3007"
     echo ""
     echo "  3. 使用默认账号登录:"
     echo "     邮箱: admin@aino.com"

@@ -2,7 +2,7 @@
 console.log("🔍 开始调试登录功能...")
 
 // 测试 API 基础 URL
-const API_BASE_URL = 'http://localhost:3001'
+const API_BASE_URL = 'http://47.94.52.142::3001'
 console.log("🌐 API 基础 URL:", API_BASE_URL)
 
 // 测试登录请求

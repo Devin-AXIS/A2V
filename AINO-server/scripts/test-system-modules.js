@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = 'http://47.94.52.142::3001'
 
 async function testSystemModules() {
   console.log('🧪 测试系统模块自动创建...\n')

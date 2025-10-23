@@ -4,7 +4,7 @@
  * 调试目录数据
  */
 
-const API_BASE_URL = 'http://localhost:3001'
+const API_BASE_URL = 'http://47.94.52.142::3001'
 
 async function debugDirectoryData() {
   console.log('🔍 调试目录数据...')

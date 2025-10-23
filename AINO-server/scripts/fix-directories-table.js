@@ -7,7 +7,7 @@
 const { Pool } = require('pg')
 
 const pool = new Pool({
-  host: 'localhost',
+  host: '47.94.52.142:',
   port: 5433,
   user: 'aino',
   password: 'pass',
@@ -17,12 +17,12 @@ const pool = new Pool({
 async function fixDirectoriesTable() {
   try {
     console.log('🔧 修复目录表结构...\n')
-    
+
     // 1. 删除现有的目录表
     console.log('1. 删除现有目录表...')
     await pool.query('DROP TABLE IF EXISTS directories CASCADE')
     console.log('   ✅ 目录表已删除\n')
-    
+
     // 2. 重新创建目录表
     console.log('2. 重新创建目录表...')
     await pool.query(`
@@ -41,7 +41,7 @@ async function fixDirectoriesTable() {
       )
     `)
     console.log('   ✅ 目录表已创建\n')
-    
+
     // 3. 添加外键约束
     console.log('3. 添加外键约束...')
     await pool.query(`
@@ -53,7 +53,7 @@ async function fixDirectoriesTable() {
       FOREIGN KEY ("module_id") REFERENCES "public"."modules"("id") ON DELETE cascade ON UPDATE no action
     `)
     console.log('   ✅ 外键约束已添加\n')
-    
+
     // 4. 验证表结构
     console.log('4. 验证表结构...')
     const result = await pool.query(`
@@ -62,14 +62,14 @@ async function fixDirectoriesTable() {
       WHERE table_name = 'directories' 
       ORDER BY ordinal_position
     `)
-    
+
     console.log('📋 新的目录表字段结构:')
     result.rows.forEach(row => {
       console.log(`   - ${row.column_name}: ${row.data_type} ${row.is_nullable === 'NO' ? 'NOT NULL' : 'NULL'}`)
     })
-    
+
     console.log('\n🎉 目录表结构修复完成！')
-    
+
   } catch (error) {
     console.error('❌ 修复失败:', error.message)
   } finally {
