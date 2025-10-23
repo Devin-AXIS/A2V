@@ -11,7 +11,7 @@ async function debugDatabase() {
 
   // 使用默认的PostgreSQL连接
   const pool = new Pool({
-    host: '47.94.52.142:',
+    host: '47.94.52.142',
     port: 5432,
     database: 'aino',
     user: 'aino',

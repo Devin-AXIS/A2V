@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 
 async function checkFieldDefs() {
   const pool = new Pool({
-    host: process.env.DB_HOST || '47.94.52.142:',
+    host: process.env.DB_HOST || '47.94.52.142',
     port: process.env.DB_PORT || 5432,
     user: process.env.DB_USER || 'aino',
     password: process.env.DB_PASSWORD || 'pass',

@@ -96,7 +96,7 @@ echo "🔍 检查数据库连接..."
 if ! node --input-type=module -e "
 import { Pool } from 'pg';
 const pool = new Pool({
-  host: process.env.DB_HOST || '47.94.52.142:',
+  host: process.env.DB_HOST || '47.94.52.142',
   port: parseInt(process.env.DB_PORT || '5433'),
   user: process.env.DB_USER || 'aino',
   password: process.env.DB_PASSWORD || 'pass',
@@ -127,7 +127,7 @@ echo "🔍 检查数据库初始化状态..."
 if node --input-type=module -e "
 import { Pool } from 'pg';
 const pool = new Pool({
-  host: process.env.DB_HOST || '47.94.52.142:',
+  host: process.env.DB_HOST || '47.94.52.142',
   port: parseInt(process.env.DB_PORT || '5433'),
   user: process.env.DB_USER || 'aino',
   password: process.env.DB_PASSWORD || 'pass',
@@ -182,8 +182,8 @@ echo "=================================="
 export NODE_ENV=development
 export PORT=${PORT:-3007}
 echo "NODE_ENV=$NODE_ENV"
-echo "服务器将在 http://47.94.52.142::$PORT 启动"
-echo "健康检查: http://47.94.52.142::$PORT/health"
+echo "服务器将在 http://47.94.52.142:$PORT 启动"
+echo "健康检查: http://47.94.52.142:$PORT/health"
 echo "按 Ctrl+C 停止服务器"
 echo "=================================="
 

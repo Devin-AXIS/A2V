@@ -14,7 +14,7 @@ function generateApiDocs() {
     title: "AINO API 文档",
     version: "1.0.0",
     description: "AINO 平台 API 接口文档",
-    baseUrl: "http://47.94.52.142::3001",
+    baseUrl: "http://47.94.52.142:3001",
     endpoints: {
       health: {
         method: "GET",
@@ -82,7 +82,7 @@ function generateApiDocs() {
   fs.writeFileSync(docsPath, JSON.stringify(docs, null, 2))
 
   console.log('✅ API文档已生成:', docsPath)
-  console.log('📚 Swagger UI 地址: http://47.94.52.142::3001/docs/swagger')
+  console.log('📚 Swagger UI 地址: http://47.94.52.142:3001/docs/swagger')
 }
 
 // 主函数

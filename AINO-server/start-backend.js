@@ -7,7 +7,7 @@ const env = {
   ...process.env,
   NODE_ENV: 'development',
   PORT: '3007',
-  DB_HOST: '47.94.52.142:',
+  DB_HOST: '47.94.52.142',
   DB_PORT: '5433',
   DB_USER: 'aino',
   DB_PASSWORD: 'pass',

@@ -9,7 +9,7 @@ import { Pool } from 'pg'
 
 // 数据库连接配置 - 使用默认值
 const DB_CONFIG = {
-    host: process.env.DB_HOST || '47.94.52.142:',
+    host: process.env.DB_HOST || '47.94.52.142',
     port: parseInt(process.env.DB_PORT || '5433'),
     user: process.env.DB_USER || 'aino',
     password: process.env.DB_PASSWORD || 'pass',

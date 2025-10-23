@@ -42,7 +42,7 @@ export function ImageInput({
         const uploadOne = async (file: File) => {
           const form = new FormData()
           form.append("file", file)
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142::3001'}/api/upload`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3001'}/api/upload`, {
             method: "POST",
             body: form,
           })

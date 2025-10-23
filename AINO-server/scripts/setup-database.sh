@@ -62,7 +62,7 @@ if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
 fi
 
 # 设置默认数据库配置
-DB_HOST=${DB_HOST:-"47.94.52.142:"}
+DB_HOST=${DB_HOST:-"47.94.52.142"}
 DB_PORT=${DB_PORT:-"5433"}
 DB_USER=${DB_USER:-"aino"}
 DB_PASSWORD=${DB_PASSWORD:-"pass"}
@@ -117,7 +117,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "📝 下一步操作:"
     echo "   1. 启动 AINO 服务器: npm start"
-    echo "   2. 访问管理界面: http://47.94.52.142::3007"
+    echo "   2. 访问管理界面: http://47.94.52.142:3007"
     echo "   3. 使用默认账号登录: admin@aino.com / admin123"
     echo ""
     echo "⚠️  重要提醒:"

@@ -51,7 +51,7 @@
       "loader": "default",
       "loaderFile": "",
       "domains": [
-        "47.94.52.142:"
+        "47.94.52.142"
       ],
       "disableStaticImages": false,
       "minimumCacheTTL": 60,

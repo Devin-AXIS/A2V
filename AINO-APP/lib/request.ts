@@ -18,7 +18,7 @@ interface ApiResponse<T = any> {
 // Create axios instance
 const createAxiosInstance = (): AxiosInstance => {
     const instance = axios.create({
-        baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://47.94.52.142::3007',
+        baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://47.94.52.142:3007',
         timeout: 10000,
         headers: {
             'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 const { Pool } = require('pg')
 
 const pool = new Pool({
-  connectionString: process.env.PG_URL || 'postgresql://aino:pass@47.94.52.142::5433/aino'
+  connectionString: process.env.PG_URL || 'postgresql://aino:pass@47.94.52.142:5433/aino'
 })
 
 async function testFieldDefsAPI() {
@@ -29,7 +29,7 @@ async function testFieldDefsAPI() {
     // 2. 测试API调用
     console.log('\n2. 测试API调用...')
 
-    const baseUrl = 'http://47.94.52.142::3001/api/field-defs'
+    const baseUrl = 'http://47.94.52.142:3001/api/field-defs'
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer test-token'

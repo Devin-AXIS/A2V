@@ -4,7 +4,7 @@
  * 测试自定义经历字段的保存和加载
  */
 
-const API_BASE_URL = 'http://47.94.52.142::3001'
+const API_BASE_URL = 'http://47.94.52.142:3001'
 
 async function testCustomExperienceField() {
   console.log('🧪 测试自定义经历字段的保存和加载...')

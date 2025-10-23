@@ -3,7 +3,7 @@
   "config": {
     "env": {
       "PORT": "3006",
-      "NEXT_PUBLIC_API_URL": "http://47.94.52.142::3007"
+      "NEXT_PUBLIC_API_URL": "http://47.94.52.142:3007"
     },
     "webpack": null,
     "eslint": {

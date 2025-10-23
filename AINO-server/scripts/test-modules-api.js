@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const BASE_URL = 'http://47.94.52.142::3001'
+const BASE_URL = 'http://47.94.52.142:3001'
 
 async function testModulesAPI() {
   console.log('🧪 测试应用模块 API...\n')
