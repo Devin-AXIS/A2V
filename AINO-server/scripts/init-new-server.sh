@@ -129,7 +129,7 @@ show_next_steps() {
     echo "     npm run dev"
     echo ""
     echo "  2. 访问管理界面:"
-    echo "     http://47.94.52.142:3007"
+    echo "     http://localhost:3007"
     echo ""
     echo "  3. 使用默认账号登录:"
     echo "     邮箱: admin@aino.com"

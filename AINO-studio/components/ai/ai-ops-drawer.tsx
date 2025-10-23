@@ -813,7 +813,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
     toast({ description: t("已提交 Dry-run，请稍等…", "Dry-run submitted, please wait…") })
     // demo call: send a tiny parse task to server AI gateway
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'}/api/ai/chat`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'}/api/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -842,7 +842,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }
 
   function getApiBase() {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'
   }
 
   async function onScrapeTest() {
@@ -1034,29 +1034,36 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
 
   async function captureTemplate() {
     setCaptured(true)
-    let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
-    if (!token) {
-      token = 'test-token'
-    }
-
-    const r = await fetch(`${getApiBase()}/api/crawler/tanzhi/jobs`, {
-      // const r = await fetch(`${getApiBase()}/api/crawler/mock/jobs`, {
-      method: 'GET',
-      mode: 'cors' as RequestMode,
-      credentials: 'include' as RequestCredentials,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    })
-    const data = await r.json().catch(() => ({}))
-    if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
-    setExtractedOverride([{
-      result: {
-        jobs: data.data
+    try {
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
       }
-    }]);
-    setCaptured(false);
+
+      // const r = await fetch(`${getApiBase()}/api/crawler/tanzhi/jobs`, {
+      const r = await fetch(`${getApiBase()}/api/crawler/mock/jobs`, {
+        method: 'GET',
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok || data?.success === false) throw new Error(data?.message || 'batch start failed')
+      setExtractedOverride([{
+        result: {
+          jobs: data.data
+        }
+      }]);
+      setCaptured(false);
+    } catch (e) {
+      toast({ description: t("抓取失败", "Scrape failed"), variant: "destructive" as any })
+      console.log(e)
+    } finally {
+      setCaptured(false);
+    }
   }
 
   async function onBatchStatus() {
@@ -1187,6 +1194,9 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                       </div>
                     </div>
                   </section>
+                  {/* <section className="space-y-3">
+                    asd
+                  </section> */}
 
                   {/* <section className="space-y-3">
                     <div className="space-y-1">
