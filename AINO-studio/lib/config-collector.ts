@@ -434,8 +434,8 @@ function findAppIframe(): HTMLIFrameElement | null {
         try {
             // 检查iframe的src是否指向AINO-APP
             if (iframe.src && (
-                iframe.src.includes('localhost:3002') ||
-                iframe.src.includes('localhost:3005') ||
+                iframe.src.includes('47.94.52.142:3002') ||
+                iframe.src.includes('47.94.52.142:3005') ||
                 iframe.src.includes('/preview') ||
                 iframe.src.includes('/p/')
             )) {
