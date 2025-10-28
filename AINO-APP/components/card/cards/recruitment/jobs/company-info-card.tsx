@@ -1,5 +1,5 @@
 "use client"
-import { isType } from "@/components/card/utils"
+import { isType, findItemCardDataByTitle } from "@/components/card/utils"
 import { AppCard } from "@/components/layout/app-card"
 import Image from "next/image"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
@@ -23,9 +23,9 @@ const defaultCompanyInfoData: CompanyInfoData = {
 }
 
 export function CompanyInfoCard({ data, className }: CompanyInfoCardProps) {
-    const { key: providedKey } = useLocalThemeKey()
+    const { key: providedKey, recMainTitle } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultCompanyInfoData)
-    merged = isType(merged) === "Array" ? merged[0] : merged;
+    merged = isType(merged) === 'Array' ? findItemCardDataByTitle(merged, recMainTitle) : merged;
     return (
         <AppCard className={className}>
             <div className="p-4 flex items-center gap-4">

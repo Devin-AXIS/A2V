@@ -510,6 +510,20 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
     }
   }, [cards, pageId, computedTopTabs, currentContentNav, activeTopIndex, activeContentIndex])
 
+  let recMainCard, recMainTitle;
+  visibleCards.forEach(item => {
+    if (item.packageId === 'rec') {
+      recMainCard = item;
+    }
+  })
+  if (recMainCard) {
+    const recMainData = CardRegistry.getData(recMainCard.id)
+    if (recMainData && recMainData.length) {
+      recMainTitle = recMainData[0].title
+    }
+  }
+
+
   useEffect(() => {
     try {
       // const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
@@ -976,7 +990,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                   items={visibleCards.map((card) => ({
                     id: card.id,
                     content: (
-                      <LocalThemeKeyProvider value={card.id}>
+                      <LocalThemeKeyProvider value={card.id} recMainTitle={recMainTitle}>
                         <div className={`relative group ${card.width === "half" ? "w-full" : ""}`}>
                           {isEditing && pageCategory.config.allowEdit && (
                             <Button

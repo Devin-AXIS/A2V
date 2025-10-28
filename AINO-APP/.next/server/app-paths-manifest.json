@@ -1,8 +1,5 @@
 {
+  "/[locale]/page": "app/[locale]/page.js",
   "/[locale]/preview/page": "app/[locale]/preview/page.js",
-  "/[locale]/profile/page": "app/[locale]/profile/page.js",
-  "/[locale]/jobs/page": "app/[locale]/jobs/page.js",
-  "/[locale]/auth/login/page": "app/[locale]/auth/login/page.js",
-  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js",
-  "/[locale]/page": "app/[locale]/page.js"
+  "/[locale]/cards/[cardName]/detail/[id]/page": "app/[locale]/cards/[cardName]/detail/[id]/page.js"
 }

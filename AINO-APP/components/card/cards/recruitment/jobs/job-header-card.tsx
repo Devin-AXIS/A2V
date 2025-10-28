@@ -4,7 +4,7 @@ import { AppCard } from "@/components/layout/app-card"
 import { MapPin, GraduationCap, Briefcase, Clock, DollarSign } from "lucide-react"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
-import { isType } from "@/components/card/utils"
+import { isType, findItemCardDataByTitle } from "@/components/card/utils"
 
 export interface JobLocation {
     province: string
@@ -41,9 +41,9 @@ const defaultJobHeaderData: JobHeaderData = {
 }
 
 export function JobHeaderCard({ insideData, data, className }: JobHeaderCardProps) {
-    const { key: providedKey } = useLocalThemeKey()
+    const { key: providedKey, recMainTitle } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobHeaderData)
-    merged = isType(merged) === 'Array' ? merged[0] : merged;
+    merged = isType(merged) === 'Array' ? findItemCardDataByTitle(merged, recMainTitle) : merged;
     return (
         <AppCard className={className}>
             <div className="p-5 space-y-4">
