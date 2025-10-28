@@ -66,12 +66,12 @@ export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProp
           </div>
         </div>
 
-        <div className="space-y-2">
+        {jobData.tags && jobData.tags.length > 0 && <div className="space-y-2">
           <div className="text-xs" data-slot="card-text">
             技能要求
           </div>
           <div className="flex flex-wrap gap-2">
-            {jobData.tags.map((tag, index) => (
+            {jobData.tags?.map((tag, index) => (
               <span
                 key={index}
                 className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-600 border border-blue-200"
@@ -80,7 +80,7 @@ export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProp
               </span>
             ))}
           </div>
-        </div>
+        </div>}
 
         <div className="flex gap-2 pt-2">
           <PillButton variant="primary" className="flex-1">

@@ -385,40 +385,40 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
   }
 
   // 自动保存：在编辑模式下，卡片/数据源标签等变更后防抖写入本地存储
-  const autosaveTimerRef = useRef<number | null>(null)
-  useEffect(() => {
-    if (!isEditing) return
-    try {
-      if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
-      autosaveTimerRef.current = window.setTimeout(() => {
-        try { saveLayoutToLocalStorage() } catch { }
-      }, 400)
-    } catch { }
-    return () => {
-      if (autosaveTimerRef.current) {
-        window.clearTimeout(autosaveTimerRef.current)
-        autosaveTimerRef.current = null
-      }
-    }
-  }, [cards, selectedDataSourceLabels, STORAGE_KEY, isEditing])
+  // const autosaveTimerRef = useRef<number | null>(null)
+  // useEffect(() => {
+  //   if (!isEditing) return
+  //   try {
+  //     if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
+  //     autosaveTimerRef.current = window.setTimeout(() => {
+  //       try { saveLayoutToLocalStorage() } catch { }
+  //     }, 400)
+  //   } catch { }
+  //   return () => {
+  //     if (autosaveTimerRef.current) {
+  //       window.clearTimeout(autosaveTimerRef.current)
+  //       autosaveTimerRef.current = null
+  //     }
+  //   }
+  // }, [cards, selectedDataSourceLabels, STORAGE_KEY, isEditing])
 
   // 监听跨标签页的配置变化（如 CARD_DS_* 或 APP_PAGE_{id}），在编辑模式下触发保存
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      try {
-        if (!isEditing) return
-        const key = e.key || ""
-        if ((pageId && key === `APP_PAGE_${pageId}`) || key.startsWith('CARD_DS_')) {
-          if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
-          autosaveTimerRef.current = window.setTimeout(() => {
-            try { saveLayoutToLocalStorage() } catch { }
-          }, 300)
-        }
-      } catch { }
-    }
-    if (typeof window !== 'undefined') window.addEventListener('storage', handler)
-    return () => { if (typeof window !== 'undefined') window.removeEventListener('storage', handler) }
-  }, [isEditing, pageId])
+  // useEffect(() => {
+  //   const handler = (e: StorageEvent) => {
+  //     try {
+  //       if (!isEditing) return
+  //       const key = e.key || ""
+  //       if ((pageId && key === `APP_PAGE_${pageId}`) || key.startsWith('CARD_DS_')) {
+  //         if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
+  //         autosaveTimerRef.current = window.setTimeout(() => {
+  //           try { saveLayoutToLocalStorage() } catch { }
+  //         }, 300)
+  //       }
+  //     } catch { }
+  //   }
+  //   if (typeof window !== 'undefined') window.addEventListener('storage', handler)
+  //   return () => { if (typeof window !== 'undefined') window.removeEventListener('storage', handler) }
+  // }, [isEditing, pageId])
 
   // 监听来自 Studio 的覆盖配置写入（SET_OVERRIDE）
   useEffect(() => {
@@ -444,10 +444,10 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
         localStorage.setItem(key, JSON.stringify(next))
         setOverrideTick((v) => v + 1)
         // 同步到后端（按 key 持久化 APP_PAGE_{id}）
-        try {
-          http.put(`/api/page-configs/key/${encodeURIComponent(key)}`, next)
-            .catch(() => { })
-        } catch { }
+        // try {
+        //   http.put(`/api/page-configs/key/${encodeURIComponent(key)}`, next)
+        //     .catch(() => { })
+        // } catch { }
       } catch (err) {
         console.error('SET_OVERRIDE failed:', err)
       }
@@ -512,13 +512,13 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
 
   useEffect(() => {
     try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+      // const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+      const raw = null
       if (!raw) {
         // 若本地无数据，尝试从后端拉取
         (async () => {
           try {
-            const response = await http.get(`/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
-            const data = response
+            const { data } = await http.get(`/api/page-configs/key/${encodeURIComponent(STORAGE_KEY)}`)
             if (data && Array.isArray(data.cards)) {
               const parsed = data
               try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)) } catch { }
@@ -959,7 +959,7 @@ export function DynamicPageComponent({ category, locale, layout: propLayout, sho
                 />
               </div>
             )}
-            <div className="mb-6">
+            <div className="mb-16">
               {cards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">

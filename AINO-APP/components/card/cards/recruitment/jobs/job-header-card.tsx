@@ -24,6 +24,7 @@ export interface JobHeaderData {
 }
 
 export interface JobHeaderCardProps {
+    insideData?: any
     data?: Partial<JobHeaderData>
     className?: string
 }
@@ -39,7 +40,7 @@ const defaultJobHeaderData: JobHeaderData = {
     employmentType: "全职",
 }
 
-export function JobHeaderCard({ data, className }: JobHeaderCardProps) {
+export function JobHeaderCard({ insideData, data, className }: JobHeaderCardProps) {
     const { key: providedKey } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobHeaderData)
     merged = isType(merged) === 'Array' ? merged[0] : merged;
@@ -54,7 +55,8 @@ export function JobHeaderCard({ data, className }: JobHeaderCardProps) {
                     </div>
                     <div className="flex items-center gap-1.5">
                         <MapPin className="w-4 h-4 text-secondary" />
-                        <span>{`${merged.location_province}·${merged.location_city}·${merged.location_district}`}</span>
+                        <span>{`${merged.location_province || ""} ${merged.location_city || ""} ${merged.location_district || ""}`}
+                        </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <GraduationCap className="w-4 h-4 text-muted-foreground" />

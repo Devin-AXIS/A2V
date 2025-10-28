@@ -71,7 +71,7 @@ fi
 
 # 启动开发服务器
 echo "🚀 启动开发服务器..."
-echo "   访问地址: http://47.94.52.142:3002"
+echo "   访问地址: http://localhost:3002"
 echo "   按 Ctrl+C 停止服务器"
 echo ""
 

@@ -346,7 +346,29 @@ export default function ClientConfigPage() {
       if (!cardType) return
       const dsPart = dsKey || (tableId ? `table:${tableId}` : 'unknown')
       const mappingKey = `${cardType}::${dsPart}`
+
       setIncomingMappings((s) => {
+        // 检查是否已经存在相同的数据映射
+        const existingMapping = s[mappingKey]
+        if (existingMapping) {
+          // 如果已存在，检查输入参数是否有变化
+          const inputsChanged = JSON.stringify(existingMapping.inputs) !== JSON.stringify(inputs)
+          if (!inputsChanged) {
+            // 输入参数没有变化，不重复添加
+            return s
+          }
+          // 输入参数有变化，更新现有映射
+          return {
+            ...s,
+            [mappingKey]: {
+              ...existingMapping,
+              inputs,
+              timestamp: Date.now()
+            }
+          }
+        }
+
+        // 不存在相同映射，添加新的映射
         const next = { ...s, [mappingKey]: { cardType, cardName, dataSourceKey: dsKey, dataSourceLabel: dsLabel, tableId: tableId ? String(tableId) : undefined, tableName: tableName ? String(tableName) : undefined, inputs, timestamp: Date.now() } }
         return next
       })
@@ -1178,7 +1200,7 @@ export default function ClientConfigPage() {
         bodyColor: authConfig.bodyColor || undefined,
         providers: (authConfig.providers || []).map((p: any) => ({ key: p.key, enabled: !!p.enabled })),
       }
-      const u = new URL(`http://47.94.52.142:3005/${baseLang}/auth/login`)
+      const u = new URL(`http://localhost:3005/${baseLang}/auth/login`)
       u.searchParams.set("authCfg", JSON.stringify(cfg))
       u.searchParams.set("v", String(Date.now()))
       setPreviewUrl(u.toString())
@@ -1188,7 +1210,7 @@ export default function ClientConfigPage() {
   async function openPreview() {
     try {
       const body = draft
-      const res = await fetch("http://47.94.52.142:3007/api/preview-manifests", {
+      const res = await fetch("http://localhost:3007/api/preview-manifests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manifest: body }),
@@ -1198,7 +1220,7 @@ export default function ClientConfigPage() {
       const id = data.data.id
       setPreviewId(id)
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-      const url = `http://47.94.52.142:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+      const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
       // 设置预览ID到localStorage，供底部导航使用
       try {
@@ -1217,7 +1239,7 @@ export default function ClientConfigPage() {
   async function openPreviewInNewTab() {
     try {
       const body = draft
-      const res = await fetch("http://47.94.52.142:3007/api/preview-manifests", {
+      const res = await fetch("http://localhost:3007/api/preview-manifests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manifest: body }),
@@ -1227,7 +1249,7 @@ export default function ClientConfigPage() {
       const id = data.data.id
       setPreviewId(id)
       const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-      const url = `http://47.94.52.142:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+      const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
       setPreviewUrl(url)
       // 设置预览ID到localStorage，供底部导航使用
       try {
@@ -1285,7 +1307,7 @@ export default function ClientConfigPage() {
         return openPreview()
       }
       const body = bodyOverride ?? draft
-      const res = await fetch(`http://47.94.52.142:3007/api/preview-manifests/${previewId}`, {
+      const res = await fetch(`http://localhost:3007/api/preview-manifests/${previewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manifest: body }),
@@ -1294,7 +1316,7 @@ export default function ClientConfigPage() {
       if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
       // 更新预览URL上的 data 参数，保持与当前数据源一致
       try {
-        const u = new URL(previewUrl || `http://47.94.52.142:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
+        const u = new URL(previewUrl || `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
         u.searchParams.set("device", device)
         u.searchParams.set("appId", String(params.appId))
         const dataParam = JSON.stringify(draft?.dataSources || {})
@@ -1302,7 +1324,7 @@ export default function ClientConfigPage() {
         setPreviewUrl(u.toString())
       } catch {
         const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-        const fallback = `http://47.94.52.142:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+        const fallback = `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(fallback)
       }
 
@@ -1320,7 +1342,7 @@ export default function ClientConfigPage() {
   }
 
   useEffect(() => {
-    const allowedChildOrigin = "http://47.94.52.142:3005"; // 调整为实际被嵌入系统的域名
+    const allowedChildOrigin = "http://localhost:3005"; // 调整为实际被嵌入系统的域名
     const frame = document.getElementById("my-app-iframe");
 
     function onMessage(event) {
@@ -1430,7 +1452,7 @@ export default function ClientConfigPage() {
       const body = mergedDraft
       if (!previewId) {
         // 没有预览则创建
-        const res = await fetch("http://47.94.52.142:3007/api/preview-manifests", {
+        const res = await fetch("http://localhost:3007/api/preview-manifests", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ manifest: body }),
@@ -1440,11 +1462,11 @@ export default function ClientConfigPage() {
         const id = data.data.id
         setPreviewId(id)
         const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
-        const url = `http://47.94.52.142:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
+        const url = `http://localhost:3005/${lang}/preview?previewId=${id}&device=${device}&appId=${params.appId}&data=${dataParam}`
         setPreviewUrl(url)
       } else {
         // 已有预览则更新
-        const res = await fetch(`http://47.94.52.142:3007/api/preview-manifests/${previewId}`, {
+        const res = await fetch(`http://localhost:3007/api/preview-manifests/${previewId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ manifest: body }),
@@ -1452,7 +1474,7 @@ export default function ClientConfigPage() {
         const data = await res.json().catch(() => ({}))
         if (!res.ok || data?.success === false) throw new Error(data?.message || "save failed")
         try {
-          const u = new URL(previewUrl || `http://47.94.52.142:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
+          const u = new URL(previewUrl || `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}`)
           u.searchParams.set("device", device)
           u.searchParams.set("appId", String(params.appId))
           const dataParam = JSON.stringify(mergedDraft?.dataSources || {})
@@ -1460,7 +1482,7 @@ export default function ClientConfigPage() {
           setPreviewUrl(u.toString())
         } catch {
           const dataParam = encodeURIComponent(JSON.stringify(mergedDraft?.dataSources || {}))
-          const fallback = `http://47.94.52.142:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+          const fallback = `http://localhost:3005/${lang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
           setPreviewUrl(fallback)
         }
       }
@@ -1494,14 +1516,14 @@ export default function ClientConfigPage() {
       // 根据源决定预览 URL
       if (previewSource === "auth-login") {
         const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
-        setPreviewUrl(`http://47.94.52.142:3005/${baseLang}/auth/login`)
+        setPreviewUrl(`http://localhost:3005/${baseLang}/auth/login`)
         setViewTab("preview")
       } else if (previewSource === "home") {
         const baseLang = (draft.app?.defaultLanguage || (lang === "zh" ? "zh" : "en")) as string
         try {
           if (previewId) {
             const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-            const url = `http://47.94.52.142:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+            const url = `http://localhost:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
             setPreviewUrl(url)
             // 设置预览ID到localStorage，供底部导航使用
             try {
@@ -1543,8 +1565,8 @@ export default function ClientConfigPage() {
       const k = String(activePageKey || '')
       if (!k) return
       const cfg = (draft.pages && (draft as any).pages[k]) || {}
-      const base = String(previewUrl || `http://47.94.52.142:3005/${lang}/p/${k.replace(/^p-/, '')}`)
-      fetch('http://47.94.52.142:3007/api/page-configs', {
+      const base = String(previewUrl || `http://localhost:3005/${lang}/p/${k.replace(/^p-/, '')}`)
+      fetch('http://localhost:3007/api/page-configs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cfg),
@@ -1804,11 +1826,11 @@ export default function ClientConfigPage() {
                                   if (pageKey) {
                                     try {
                                       const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                      const u = new URL(`http://47.94.52.142:3005/${lang}${r}`)
+                                      const u = new URL(`http://localhost:3005/${lang}${r}`)
                                       setPreviewUrl(u.toString())
                                     } catch {
                                       const r = item.route?.startsWith('/') ? item.route : `/${pageKey}`
-                                      setPreviewUrl(`http://47.94.52.142:3005/${lang}${r}`)
+                                      setPreviewUrl(`http://localhost:3005/${lang}${r}`)
                                     }
                                     setActivePageKey(pageKey)
                                     setPageUIOpen(true)
@@ -1918,7 +1940,7 @@ export default function ClientConfigPage() {
                               bodyColor: authConfig.bodyColor || undefined,
                               providers: (authConfig.providers || []).map((p: any) => ({ key: p.key, enabled: !!p.enabled })),
                             }
-                            const u = new URL(`http://47.94.52.142:3005/${baseLang}/auth/login`)
+                            const u = new URL(`http://localhost:3005/${baseLang}/auth/login`)
                             u.searchParams.set("authCfg", JSON.stringify(cfg))
                             u.searchParams.set("v", String(Date.now()))
                             setPreviewUrl(u.toString())
@@ -2034,7 +2056,7 @@ export default function ClientConfigPage() {
                         try {
                           const baseLang = (draft.app?.defaultLanguage || "zh") as string;
                           const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {}))
-                          const url = `http://47.94.52.142:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
+                          const url = `http://localhost:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`
                           setPreviewUrl(url);
                         } catch { }
                       }}>
@@ -2119,8 +2141,8 @@ export default function ClientConfigPage() {
                                   try {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
-                                    const base = String(previewUrl || `http://47.94.52.142:3005/${lang}/p/${k.replace(/^p-/, '')}`)
-                                    fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                    const base = String(previewUrl || `http://localhost:3005/${lang}/p/${k.replace(/^p-/, '')}`)
+                                    fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                       .then(r => r.json().catch(() => null))
                                       .then(j => {
                                         const id = j && (j.id || j.data?.id)
@@ -2158,8 +2180,8 @@ export default function ClientConfigPage() {
                                   try {
                                     const k = activePageKey as string
                                     const cfg = draft.pages?.[k] || {}
-                                    const base = String(previewUrl || `http://47.94.52.142:3005/${lang}/p/${k.replace(/^p-/, '')}`)
-                                    fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                    const base = String(previewUrl || `http://localhost:3005/${lang}/p/${k.replace(/^p-/, '')}`)
+                                    fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                       .then(r => r.json().catch(() => null))
                                       .then(j => {
                                         const id = j && (j.id || j.data?.id)
@@ -2375,16 +2397,16 @@ export default function ClientConfigPage() {
                                       const rawCfg = (draft.pages && (draft as any).pages[pageKey as string]) || { title: { zh: `${it.displayName || it.type}内页`, en: `${it.displayName || it.type} Detail` }, layout: 'mobile', route: `/${pageKey}` }
                                       const cfg = { ...rawCfg, options: { ...(rawCfg?.options || {}), showBack: true } }
                                       // 将配置上传到后端，返回 cfgId，避免 URL 过长
-                                      fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                                      fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                                         .then(r => r.json().catch(() => null))
                                         .then(j => {
                                           const id = j && (j.id || j.data?.id)
-                                          const u = new URL(`http://47.94.52.142:3005/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
+                                          const u = new URL(`http://localhost:3005/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
                                           if (id) u.searchParams.set('cfgId', String(id))
                                           setPreviewUrl(u.toString())
                                         })
                                         .catch(() => {
-                                          const u = new URL(`http://47.94.52.142:3005/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
+                                          const u = new URL(`http://localhost:3005/${lang}/p/${String(pageKey).replace(/^p-/, '')}`)
                                           setPreviewUrl(u.toString())
                                         })
                                       setActivePageKey(String(pageKey))
@@ -2424,8 +2446,8 @@ export default function ClientConfigPage() {
                         try {
                           const k = activePageKey as string
                           const cfg = draft.pages?.[k] || {}
-                          const base = String(previewUrl || `http://47.94.52.142:3005/${lang}/p/${k.replace(/^p-/, '')}`)
-                          fetch('http://47.94.52.142:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+                          const base = String(previewUrl || `http://localhost:3005/${lang}/p/${k.replace(/^p-/, '')}`)
+                          fetch('http://localhost:3007/api/page-configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
                             .then(r => r.json().catch(() => null))
                             .then(j => {
                               const id = j && (j.id || j.data?.id)
@@ -2446,7 +2468,7 @@ export default function ClientConfigPage() {
                   // 左侧：登录配置编辑视图
                   <div className="h-full p-1 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setAuthUIOpen(false); setPreviewSource("preview"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {})); const url = `http://47.94.52.142:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`; setPreviewUrl(url); } catch { } }}>
+                      <Button variant="outline" size="sm" onClick={() => { setAuthUIOpen(false); setPreviewSource("preview"); setViewTab("preview"); try { const baseLang = (draft.app?.defaultLanguage || "zh") as string; const dataParam = encodeURIComponent(JSON.stringify(draft?.dataSources || {})); const url = `http://localhost:3005/${baseLang}/preview?previewId=${previewId}&device=${device}&appId=${params.appId}&data=${dataParam}`; setPreviewUrl(url); } catch { } }}>
                         <ArrowLeft className="w-4 h-4 mr-1" />{lang === "zh" ? "返回" : "Back"}
                       </Button>
                       <div className="text-sm font-semibold">{lang === "zh" ? "登录配置" : "Login Settings"}</div>
@@ -2770,7 +2792,7 @@ export default function ClientConfigPage() {
                     {/* <Button variant="secondary" onClick={() => setAiOpsOpen(true)}>
                       {lang === "zh" ? "AI运营" : "AI Ops"}
                     </Button> */}
-                    <a href={`http://47.94.52.142:3007/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
+                    <a href={`http://localhost:3007/docs/apps/${params.appId}/swagger`} target="_blank" rel="noreferrer">
                       <Button variant="secondary">API</Button>
                     </a>
                   </div>

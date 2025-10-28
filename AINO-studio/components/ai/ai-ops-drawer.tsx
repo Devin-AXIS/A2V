@@ -219,6 +219,30 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   const [saveMsg, setSaveMsg] = useState("")
   const [previewJson, setPreviewJson] = useState<string>("")
 
+  // 关联表选择相关状态
+  const [selectedTable, setSelectedTable] = useState<string>("")
+  const [selectedField, setSelectedField] = useState<string>("")
+  const [selectedCurrentField, setSelectedCurrentField] = useState<string>("")
+  const [availableTables, setAvailableTables] = useState<Array<{ id: string, name: string }>>([])
+  const [availableFields, setAvailableFields] = useState<Array<{ id: string, name: string }>>([])
+  const [loadingTables, setLoadingTables] = useState(false)
+
+  // 当dirId变化时获取表列表
+  useEffect(() => {
+    fetchTables()
+  }, [])
+
+  // 当选择的表变化时获取字段列表
+  useEffect(() => {
+    if (selectedTable) {
+      fetchFields(selectedTable)
+      setSelectedField("") // 清空字段选择
+    } else {
+      setAvailableFields([])
+      setSelectedField("")
+    }
+  }, [selectedTable])
+
   // 分析采集回来的数据结构，提取可用字段
   function analyzeScrapedData(data: any[]): string[] {
     if (!data || data.length === 0) return []
@@ -596,18 +620,6 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
           })
         }
 
-        // id: "81t57gtt0b9",
-        // images: [],
-        // label: "项 1",
-        // numbers: [],
-        // texts: [
-        //   {id: "jmulwhv648a", label: "工作年限", value: "a", fieldId: "jmulwhv648a"}
-        //   {id: "ojbhcxb0a2", label: "月度工资占比", value: "v", fieldId: "ojbhcxb0a2"}
-        //   {id: "igwku3x0k3q", label: "新增岗位数量", value: "c", fieldId: "igwku3x0k3q"}
-        // ]s
-
-        // return;
-
         for (let publicKey in publicMappings) {
           const currentMappings = publicMappings[publicKey];
           const [datas, nextKey] = getJsonDataByPath(publicKey, firstItem)
@@ -666,6 +678,29 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
 
       const base = getApiBase()
       let ok = 0, fail = 0, done = 0
+
+
+      setUpserting(false)
+      const currentDir = availableTables.find(item => item.id === dirId)
+      if (selectedTable && selectedField && selectedCurrentField) {
+        currentDir.config.correlations = [{
+          sourceDir: selectedTable,
+          sourceField: selectedField,
+          targetDir: currentDir.id,
+          targetField: selectedCurrentField,
+        }];
+        const r = await fetch(`${base}/api/directories/${encodeURIComponent(String(dirId))}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(currentDir)
+        })
+        if (r.ok) {
+          const { data } = await r.json()
+          toast({ description: t("更新目录成功", "Update directory success"), variant: "success" as any })
+        } else {
+          toast({ description: t("更新目录失败", "Update directory failed"), variant: "destructive" as any })
+        }
+      }
 
       // 顺序逐条入库，避免并发带来的速率与顺序问题
       for (const rec of list) {
@@ -813,7 +848,7 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
     }
     toast({ description: t("已提交 Dry-run，请稍等…", "Dry-run submitted, please wait…") })
     // demo call: send a tiny parse task to server AI gateway
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'}/api/ai/chat`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'}/api/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -842,7 +877,40 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
   }
 
   function getApiBase() {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://47.94.52.142:3007'
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007'
+  }
+
+  // 获取当前应用下的所有表
+  const fetchTables = async () => {
+    setLoadingTables(true)
+    try {
+      let token = typeof window !== 'undefined' ? localStorage.getItem('aino_token') : null
+      if (!token) {
+        token = 'test-token'
+      }
+      const r = await await fetch(`${getApiBase()}/api/directories?limit=100`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+      })
+      if (r.ok) {
+        const { data } = await r.json()
+        setAvailableTables(data.directories || [])
+      } else {
+        toast({ description: t("获取表列表失败", "Failed to fetch tables"), variant: "destructive" as any })
+      }
+    } catch (error) {
+      console.log(error, 23232323)
+      toast({ description: t("获取表列表失败", "Failed to fetch tables"), variant: "destructive" as any })
+    } finally {
+      setLoadingTables(false)
+    }
+  }
+
+  // 获取指定表的字段
+  const fetchFields = async (dirId: string) => {
+    const current = availableTables.find(item => item.id === dirId)
+    if (!current) return
+    setAvailableFields(current.config.fields || []);
   }
 
   async function onScrapeTest() {
@@ -1494,6 +1562,62 @@ export function AIOpsDrawer({ open, onOpenChange, appId, lang = "zh", dirId, dir
                         <Button size="sm" onClick={onUpsert} disabled={upserting || !dirId}>
                           {upserting ? <><Loader2 className="size-4 mr-1 animate-spin" />{t('入库中…', 'Upserting…')}</> : t('入库', 'Upsert')}
                         </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">{t("关联到其它表", "Related to other tables")}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          将
+                          <Select value={selectedCurrentField} onValueChange={setSelectedCurrentField}>
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder={
+                                !selectedTable || !selectedField
+                                  ? t("请先选择表及关联字段", "Please select table and related field first")
+                                  : t("选择当前表字段关联到目标表字段", "Select current field to related to target field")
+                              } />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pageFields.map((field) => (
+                                <SelectItem key={field.key} value={field.key}>
+                                  {field.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          字段 关联到
+                          <Select value={selectedTable} onValueChange={setSelectedTable} disabled={loadingTables}>
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder={loadingTables ? t("加载中...", "Loading...") : t("选择表", "Select table")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableTables.map((table) => (
+                                <SelectItem key={table.id} value={table.id}>
+                                  {table.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          表的
+                          <Select value={selectedField} onValueChange={setSelectedField} disabled={!selectedTable}>
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder={
+                                !selectedTable
+                                  ? t("请先选择表", "Please select table first")
+                                  : t("选择字段", "Select field")
+                              } />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableFields.map((field) => (
+                                <SelectItem key={field.id} value={field.id}>
+                                  {field.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          字段
+                        </div>
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white/60 dark:bg-neutral-900/50 backdrop-blur p-3 text-xs text-muted-foreground min-h-[120px]">

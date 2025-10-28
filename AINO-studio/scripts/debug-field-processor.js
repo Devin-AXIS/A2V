@@ -7,7 +7,7 @@
 
 // 简单的API请求函数
 async function apiRequest(endpoint, options = {}) {
-  const baseUrl = 'http://47.94.52.142:3001'
+  const baseUrl = 'http://localhost:3001'
   const url = `${baseUrl}${endpoint}`
 
   const defaultOptions = {

@@ -157,13 +157,13 @@ export function BottomNavigation({ dict, items }: BottomNavigationProps) {
 
               if (cfgId) {
                 // 如果有 cfgId，使用 cfgId 参数
-                fullHref = `/${locale}/preview?cfgId=${cfgId}&device=mobile&isEdite=true`
+                fullHref = `/${locale}/preview?cfgId=${cfgId}&device=mobile`
               } else if (previewId && appId) {
                 // 否则使用存储的预览参数
                 fullHref = `/${locale}/preview?previewId=${previewId}&device=mobile&appId=${appId}`
               } else if (mainPath) {
                 // 如果没有预览参数，回退到首页
-                fullHref = mainPath
+                fullHref = `/zh/preview${mainPath}`
               } else {
                 // 如果没有预览参数，回退到首页
                 fullHref = `/${locale}`

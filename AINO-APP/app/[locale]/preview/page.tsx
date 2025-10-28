@@ -16,6 +16,7 @@ function PreviewContent() {
   const router = useRouter()
   const [mergedOnce, setMergedOnce] = useState(false)
 
+  window.localStorage.setItem('MAIN_PATH', window.location.search)
   // Merge QUERY_STRING from localStorage into current URL once on mount
   useEffect(() => {
     if (mergedOnce) return
