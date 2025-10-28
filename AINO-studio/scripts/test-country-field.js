@@ -2,7 +2,7 @@
 
 import fetch from 'node-fetch'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = 'http://47.94.52.142:3001'
 const TOKEN = 'test-token'
 
 async function apiRequest(endpoint, options = {}) {

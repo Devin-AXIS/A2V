@@ -182,8 +182,8 @@ echo "=================================="
 export NODE_ENV=development
 export PORT=${PORT:-3007}
 echo "NODE_ENV=$NODE_ENV"
-echo "服务器将在 http://localhost:$PORT 启动"
-echo "健康检查: http://localhost:$PORT/health"
+echo "服务器将在 http://47.94.52.142:$PORT 启动"
+echo "健康检查: http://47.94.52.142:$PORT/health"
 echo "按 Ctrl+C 停止服务器"
 echo "=================================="
 

@@ -12,8 +12,8 @@ if [ -f "logs/backend.pid" ]; then
     BACKEND_PID=$(cat logs/backend.pid)
     if kill -0 $BACKEND_PID 2>/dev/null; then
         echo "   ✅ 进程运行中 (PID: $BACKEND_PID)"
-        if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-            echo "   ✅ 服务响应正常: http://localhost:3001"
+        if curl -s http://47.94.52.142:3001/health > /dev/null 2>&1; then
+            echo "   ✅ 服务响应正常: http://47.94.52.142:3001"
         else
             echo "   ⚠️  进程运行但服务无响应"
         fi
@@ -32,8 +32,8 @@ if [ -f "logs/frontend.pid" ]; then
     FRONTEND_PID=$(cat logs/frontend.pid)
     if kill -0 $FRONTEND_PID 2>/dev/null; then
         echo "   ✅ 进程运行中 (PID: $FRONTEND_PID)"
-        if curl -s http://localhost:3000 > /dev/null 2>&1; then
-            echo "   ✅ 服务响应正常: http://localhost:3000"
+        if curl -s http://47.94.52.142:3000 > /dev/null 2>&1; then
+            echo "   ✅ 服务响应正常: http://47.94.52.142:3000"
         else
             echo "   ⚠️  进程运行但服务无响应"
         fi
@@ -52,8 +52,8 @@ if [ -f "logs/aino-app.pid" ]; then
     AINO_APP_PID=$(cat logs/aino-app.pid)
     if kill -0 $AINO_APP_PID 2>/dev/null; then
         echo "   ✅ 进程运行中 (PID: $AINO_APP_PID)"
-        if curl -s http://localhost:3002 > /dev/null 2>&1; then
-            echo "   ✅ 服务响应正常: http://localhost:3002"
+        if curl -s http://47.94.52.142:3002 > /dev/null 2>&1; then
+            echo "   ✅ 服务响应正常: http://47.94.52.142:3002"
         else
             echo "   ⚠️  进程运行但服务无响应"
         fi
@@ -90,5 +90,5 @@ echo "📋 可用命令："
 echo "   • 启动所有服务: ./start-all.sh"
 echo "   • 停止所有服务: ./stop-all.sh"
 echo "   • 查看状态: ./status.sh"
-echo "Frontends: http://localhost:3006 (studio), http://localhost:3005 (app)"
-echo "Backend:   http://localhost:3007"
+echo "Frontends: http://47.94.52.142:3006 (studio), http://47.94.52.142:3005 (app)"
+echo "Backend:   http://47.94.52.142:3007"
