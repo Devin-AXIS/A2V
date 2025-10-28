@@ -1,5 +1,5 @@
 "use client"
-import { isType } from "@/components/card/utils"
+import { isType, findItemCardDataByTitle } from "@/components/card/utils"
 import { AppCard } from "@/components/layout/app-card"
 import { Tag } from "@/components/basic/tag"
 import { CheckCircle } from "lucide-react"
@@ -22,9 +22,9 @@ const defaultJobBenefitsData: JobBenefitsData = {
 }
 
 export function JobBenefitsCard({ data, className }: JobBenefitsCardProps) {
-    const { key: providedKey } = useLocalThemeKey()
+    const { key: providedKey, recMainTitle } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobBenefitsData)
-    merged = isType(merged) === "Array" ? merged[0] : merged;
+    merged = isType(merged) === 'Array' ? findItemCardDataByTitle(merged, recMainTitle) : merged;
     return (
         <AppCard className={className}>
             <div className="p-5 space-y-4">

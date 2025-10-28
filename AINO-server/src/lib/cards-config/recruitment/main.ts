@@ -197,6 +197,7 @@ export const RecruitmentSubCards = [
             { key: "description", type: "text", label: "描述" },
             { key: "avgMonthlySalary", type: "text", label: "平均月薪" },
             { key: "dataSource", type: "text", label: "数据源" },
+            { key: "link", type: "relation", label: "关联职位" },
             {
                 key: "salaryDistribution", type: "meta_items", label: "薪资分布", child: [
                     { key: "range", type: "text", label: "薪资范围" },
@@ -218,6 +219,7 @@ export const RecruitmentSubCards = [
             { key: "experience", type: "text", label: "经验" },
             { key: "education", type: "text", label: "教育" },
             { key: "tags", type: "tags", label: "标签" },
+            { key: "link", type: "relation", label: "关联职位" },
         ],
         displayName: "职位发布",
         type: "form",
@@ -234,6 +236,7 @@ export const RecruitmentSubCards = [
             { key: "education", type: "text", label: "教育" },
             { key: "experience", type: "text", label: "经验" },
             { key: "employmentType", type: "text", label: "就业类型" },
+            { key: "link", type: "relation", label: "关联职位" },
         ],
         displayName: "职位头部",
         type: "display"
@@ -243,6 +246,7 @@ export const RecruitmentSubCards = [
         dataConfig: [
             { key: "title", type: "text", label: "标题" },
             { key: "requirements", type: "tags", label: "要求" },
+            { key: "link", type: "relation", label: "关联职位" },
         ],
         displayName: "职位要求",
         type: "display"
@@ -252,6 +256,7 @@ export const RecruitmentSubCards = [
         dataConfig: [
             { key: "title", type: "text", label: "标题" },
             { key: "benefits", type: "tags", label: "福利" },
+            { key: "link", type: "relation", label: "关联职位" },
         ],
         displayName: "职位福利",
         type: "display"
@@ -271,6 +276,7 @@ export const RecruitmentSubCards = [
         dataConfig: [
             { key: "buttonText", type: "text", label: "按钮文本" },
             { key: "href", type: "text", label: "链接" },
+            { key: "link", type: "relation", label: "关联职位" },
         ],
         displayName: "投递简历",
         type: "form"

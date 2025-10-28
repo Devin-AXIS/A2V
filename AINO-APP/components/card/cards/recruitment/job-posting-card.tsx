@@ -6,7 +6,7 @@ import { PillButton } from "@/components/basic/pill-button"
 import { CardRegistry } from "../../core/registry"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
-import { isType } from "../../utils"
+import { isType, findItemCardDataByTitle } from "../../utils"
 
 interface JobPostingCardProps {
   disableLocalTheme?: boolean
@@ -23,9 +23,9 @@ const defaultData = {
 };
 
 export default function JobPostingCard({ disableLocalTheme }: JobPostingCardProps) {
-  const { key: providedKey } = useLocalThemeKey()
+  const { key: providedKey, recMainTitle } = useLocalThemeKey()
   let { realData: jobData, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultData)
-  jobData = isType(jobData) === "Array" ? jobData[0] : jobData;
+  jobData = isType(jobData) === 'Array' ? findItemCardDataByTitle(jobData, recMainTitle) : jobData;
 
   return (
     <AppCard disableLocalTheme={disableLocalTheme} className="p-6 h-full w-full flex flex-col">

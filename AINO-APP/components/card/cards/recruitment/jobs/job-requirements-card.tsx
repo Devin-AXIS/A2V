@@ -3,7 +3,7 @@
 import { AppCard } from "@/components/layout/app-card"
 import { useCardRegistryData } from "@/hooks/use-card-registry-data"
 import { useLocalThemeKey } from "@/components/providers/local-theme-key"
-import { isType } from "@/components/card/utils"
+import { isType, findItemCardDataByTitle } from "@/components/card/utils"
 
 export interface JobRequirementsData {
     title: string
@@ -26,9 +26,9 @@ const defaultJobRequirementsData: JobRequirementsData = {
 }
 
 export function JobRequirementsCard({ data, className }: JobRequirementsCardProps) {
-    const { key: providedKey } = useLocalThemeKey()
+    const { key: providedKey, recMainTitle } = useLocalThemeKey()
     let { realData: merged, CARD_DISPLAY_DATA } = useCardRegistryData(providedKey, defaultJobRequirementsData)
-    merged = isType(merged) === "Array" ? merged[0] : merged;
+    merged = isType(merged) === 'Array' ? findItemCardDataByTitle(merged, recMainTitle) : merged;
     return (
         <AppCard className={className}>
             <div className="p-5 space-y-4">
