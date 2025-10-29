@@ -31,7 +31,7 @@ if [ "$curr_node" -lt "$need_node" ]; then
 fi
 
 # 默认端口与变量（如未在 .env 中提供）
-export REGISTRAR_PORT=${PORT:-3010}
+export REGISTRAR_PORT=${PORT:-3005}
 export DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/bmcp}
 export GATEWAY_BASE=${GATEWAY_BASE:-http://localhost:${REGISTRAR_PORT}}
 export SIGNATURE_SECRET=${SIGNATURE_SECRET:-dev-secret}
@@ -83,7 +83,7 @@ $NPM --workspace @bmcp/registrar run dev & REG_PID=$!
 # Compiler（假设端口 3011 由代码内部决定或通过 .env 覆盖）
 $NPM --workspace @bmcp/compiler run dev & COMP_PID=$!
 
-# Web（Next.js 默认 3002）
+# Web（Next.js 默认 3007）
 NEXT_PUBLIC_BMCP_REGISTRAR="$NEXT_PUBLIC_BMCP_REGISTRAR" \
 NEXT_PUBLIC_BMCP_COMPILER="$NEXT_PUBLIC_BMCP_COMPILER" \
 $NPM --workspace @bmcp/web run dev & WEB_PID=$!
@@ -91,7 +91,7 @@ $NPM --workspace @bmcp/web run dev & WEB_PID=$!
 trap 'echo "[bmcp] 收到中断信号，停止进程..."; kill ${REG_PID:-0} ${COMP_PID:-0} ${WEB_PID:-0} 2>/dev/null || true; exit 0' INT TERM
 
 echo "[bmcp] 所有进程已启动。"
-echo "  Web:        http://localhost:3002"
+echo "  Web:        http://localhost:3007"
 echo "  Registrar:  http://localhost:${REGISTRAR_PORT}"
 echo "  Compiler:   ${NEXT_PUBLIC_BMCP_COMPILER}"
 

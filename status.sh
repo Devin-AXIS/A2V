@@ -52,8 +52,8 @@ if [ -f "logs/aino-app.pid" ]; then
     AINO_APP_PID=$(cat logs/aino-app.pid)
     if kill -0 $AINO_APP_PID 2>/dev/null; then
         echo "   ✅ 进程运行中 (PID: $AINO_APP_PID)"
-        if curl -s http://47.94.52.142:3002 > /dev/null 2>&1; then
-            echo "   ✅ 服务响应正常: http://47.94.52.142:3002"
+        if curl -s http://47.94.52.142:3007 > /dev/null 2>&1; then
+            echo "   ✅ 服务响应正常: http://47.94.52.142:3007"
         else
             echo "   ⚠️  进程运行但服务无响应"
         fi
