@@ -1,1 +1,0 @@
-DOCKER_CONFIG=~/.docker-no-cred ./db.sh start
