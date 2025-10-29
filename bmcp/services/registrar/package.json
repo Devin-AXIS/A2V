@@ -1,0 +1,25 @@
+{
+    "name": "@bmcp/registrar",
+    "version": "1.0.0",
+    "description": "BMCP Registrar/Proxy 网关服务",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@bmcp/schema": "file:../../packages/schema",
+        "hono": "^3.10.0",
+        "undici": "^5.28.2",
+        "@hono/node-server": "1.13.0",
+        "tweetnacl": "^1.0.3",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.8.0",
+        "tsx": "^4.1.4",
+        "typescript": "^5.2.2"
+    }
+}

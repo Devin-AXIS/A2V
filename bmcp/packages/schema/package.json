@@ -1,0 +1,24 @@
+{
+    "name": "@bmcp/schema",
+    "version": "1.0.0",
+    "description": "BMCP 共享类型定义和 JSON Schema",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "generate": "drizzle-kit generate",
+        "migrate": "drizzle-kit migrate",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "drizzle-orm": "^0.28.6",
+        "postgres": "^3.4.3",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.8.0",
+        "drizzle-kit": "^0.19.13",
+        "typescript": "^5.2.2"
+    }
+}
