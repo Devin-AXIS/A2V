@@ -24,7 +24,7 @@ export default function CreatePage() {
     }
 
     async function submitOpenapi() {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BMCP_COMPILER || 'http://localhost:3001'}/api/compile-openapi`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BMCP_COMPILER || 'http://localhost:3006'}/api/compile/openapi`, {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ openapiUrl })
         });
         setResult(await res.json());
@@ -35,7 +35,7 @@ export default function CreatePage() {
             <h2>创建 BMCP</h2>
             <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                 <button onClick={() => setTab('mcp')} disabled={tab === 'mcp'}>MCP → 价值化</button>
-                <button onClick={() => setTab('openapi')} disabled={tab === 'openapi'}>OpenAPI → 自动 MCP</button>
+                {/* <button onClick={() => setTab('openapi')} disabled={tab === 'openapi'}>OpenAPI → 自动 MCP</button> */}
             </div>
             {tab === 'mcp' ? (
                 <section style={{ marginTop: 16 }}>

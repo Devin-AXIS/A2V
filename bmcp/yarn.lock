@@ -44,6 +44,7 @@
   resolved "file:apps/api"
   dependencies:
     "@hono/node-server" "1.13.0"
+    drizzle-orm "^0.44.7"
     hono "^3.10.0"
 
 "@bmcp/compiler@file:/Users/wemo/new-flow/ai/AINO/bmcp/services/compiler":
@@ -54,6 +55,7 @@
     "@bmcp/schema" "file:../../packages/schema"
     "@hono/node-server" "^1.8.0"
     axios "^1.5.0"
+    drizzle-orm "^0.44.7"
     hono "^3.10.0"
     zod "^3.22.4"
 
@@ -63,6 +65,7 @@
   dependencies:
     "@bmcp/schema" "file:../../packages/schema"
     "@hono/node-server" "1.13.0"
+    drizzle-orm "^0.44.7"
     hono "^3.10.0"
     tweetnacl "^1.0.3"
     undici "^5.28.2"
@@ -72,7 +75,7 @@
   version "1.0.0"
   resolved "file:packages/schema"
   dependencies:
-    drizzle-orm "^0.28.6"
+    drizzle-orm "^0.44.7"
     postgres "^3.4.3"
     zod "^3.22.4"
 
@@ -80,6 +83,7 @@
   version "1.0.0"
   resolved "file:apps/web"
   dependencies:
+    drizzle-orm "^0.44.7"
     next "^15.0.0"
     react "^18.2.0"
     react-dom "^18.2.0"
@@ -529,10 +533,10 @@ drizzle-kit@^0.19.13:
     minimatch "^7.4.3"
     zod "^3.20.2"
 
-drizzle-orm@^0.28.6:
-  version "0.28.6"
-  resolved "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.28.6.tgz"
-  integrity sha512-yBe+F9htrlYER7uXgDJUQsTHFoIrI5yMm5A0bg0GiZ/kY5jNXTWoEy4KQtg35cE27sw1VbgzoMWHAgCckUUUww==
+drizzle-orm@^0.44.7:
+  version "0.44.7"
+  resolved "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.44.7.tgz"
+  integrity sha512-quIpnYznjU9lHshEOAYLoZ9s3jweleHlZIAWR/jX9gAWNg/JhQ1wj0KGRf7/Zm+obRrYd9GjPVJg790QY9N5AQ==
 
 dunder-proto@^1.0.1:
   version "1.0.1"

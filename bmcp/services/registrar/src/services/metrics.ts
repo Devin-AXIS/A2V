@@ -1,6 +1,7 @@
 import { db, calls, mappings } from '@bmcp/schema';
 import crypto from 'crypto';
-import { eq, and, gte, sql, count, avg } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
+import { count, avg } from 'drizzle-orm';
 
 export interface CallMetrics {
     mappingId: string;

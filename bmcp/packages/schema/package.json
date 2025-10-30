@@ -12,7 +12,7 @@
         "type-check": "tsc --noEmit"
     },
     "dependencies": {
-        "drizzle-orm": "^0.28.6",
+        "drizzle-orm": "^0.44.7",
         "postgres": "^3.4.3",
         "zod": "^3.22.4"
     },
