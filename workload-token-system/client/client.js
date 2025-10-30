@@ -27,6 +27,7 @@ class WorkloadClient {
                     { "internalType": "uint256", "name": "inputSize", "type": "uint256" },
                     { "internalType": "uint256", "name": "outputSize", "type": "uint256" },
                     { "internalType": "uint256", "name": "executionTime", "type": "uint256" },
+                    { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
                     { "internalType": "bytes32", "name": "proofHash", "type": "bytes32" }
                 ],
                 "name": "submitWorkProof",
@@ -202,6 +203,7 @@ class WorkloadClient {
                 workProof.inputSize,
                 workProof.outputSize,
                 workProof.executionTime,
+                workProof.timestamp,
                 proofHash
             ).send({
                 from: this.account.address,

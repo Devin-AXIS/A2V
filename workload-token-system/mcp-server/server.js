@@ -51,20 +51,23 @@ const tools = {
 
 // 生成工作量证明
 function generateWorkProof(taskId, input, output, executionTime, toolName) {
+    const now = Date.now();
+    const inputSize = JSON.stringify(input).length;
+    const outputSize = JSON.stringify(output).length;
     const proof = {
         taskId,
         toolName,
-        inputSize: JSON.stringify(input).length,
-        outputSize: JSON.stringify(output).length,
+        inputSize,
+        outputSize,
         executionTime,
-        timestamp: Date.now(),
+        timestamp: now,
         hash: crypto.createHash('sha256')
             .update(JSON.stringify({
                 taskId,
-                inputSize: JSON.stringify(input).length,
-                outputSize: JSON.stringify(output).length,
+                inputSize,
+                outputSize,
                 executionTime,
-                timestamp: Date.now()
+                timestamp: now
             }))
             .digest('hex')
     };

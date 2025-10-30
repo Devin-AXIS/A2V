@@ -126,6 +126,7 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         uint256 inputSize,
         uint256 outputSize,
         uint256 executionTime,
+        uint256 timestamp,
         bytes32 proofHash
     ) external nonReentrant {
         require(bytes(taskId).length > 0, unicode"任务ID不能为空");
@@ -148,7 +149,7 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
             inputSize: inputSize,
             outputSize: outputSize,
             executionTime: executionTime,
-            timestamp: block.timestamp,
+            timestamp: timestamp,
             proofHash: proofHash,
             verified: false
         });
