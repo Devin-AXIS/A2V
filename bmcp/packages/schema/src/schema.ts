@@ -1,97 +1,115 @@
-import { pgTable, uuid, varchar, text, timestamp, integer, boolean, jsonb, decimal } from 'drizzle-orm/pg-core';
+// 内存存储 - 不再使用数据库，只保留表对象用于类型兼容
 import { MappingKind, PricingPolicy, TokenType, ChainType, InvoiceStatus } from './types';
 
-// 映射表
-export const mappings = pgTable('mappings', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    originalUrl: varchar('original_url', { length: 500 }).notNull(),
-    publisherId: uuid('publisher_id').notNull(),
-    kind: varchar('kind', { length: 20 }).$type<MappingKind>().notNull(),
-    gatewayUrl: varchar('gateway_url', { length: 500 }).notNull(),
-    enable402: boolean('enable_402').default(true).notNull(),
-    settlementToken: varchar('settlement_token', { length: 20 }).$type<TokenType>().default('USDC').notNull(),
-    chainId: integer('chain_id').default(56).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-    isActive: boolean('is_active').default(true).notNull()
-});
+// 创建简单的表对象，只包含必要的属性用于内存存储识别
+// 这些对象不再与数据库绑定，只用于 db.ts 中的表识别
 
-// 调用记录表
-export const calls = pgTable('calls', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    mappingId: uuid('mapping_id').notNull().references(() => mappings.id),
-    callerId: uuid('caller_id').notNull(),
-    timestamp: timestamp('timestamp').defaultNow().notNull(),
-    durationMs: integer('duration_ms').notNull(),
-    reqBytes: integer('req_bytes').notNull(),
-    respBytes: integer('resp_bytes').notNull(),
-    status: integer('status').notNull(),
-    fingerprint: varchar('fingerprint', { length: 64 }),
-    errorMessage: text('error_message')
-});
+export const mappings = {
+    name: 'mappings',
+    // 添加一个 _ 属性以兼容旧代码
+    _: {},
+    // 列定义用于查询时的识别
+    id: { name: 'id' },
+    originalUrl: { name: 'originalUrl' },
+    publisherId: { name: 'publisherId' },
+    kind: { name: 'kind' },
+    gatewayUrl: { name: 'gatewayUrl' },
+    enable402: { name: 'enable402' },
+    settlementToken: { name: 'settlementToken' },
+    chainId: { name: 'chainId' },
+    defaultMethod: { name: 'defaultMethod' },
+    customHeaders: { name: 'customHeaders' },
+    mcpEndpoint: { name: 'mcpEndpoint' },
+    mcpConnectionConfig: { name: 'mcpConnectionConfig' },
+    mcpRequestBody: { name: 'mcpRequestBody' },
+    createdAt: { name: 'createdAt' },
+    updatedAt: { name: 'updatedAt' },
+    isActive: { name: 'isActive' }
+} as any;
 
-// 计量记录表
-export const meters = pgTable('meters', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    callId: uuid('call_id').notNull().references(() => calls.id),
-    policy: varchar('policy', { length: 30 }).$type<PricingPolicy>().notNull(),
-    units: integer('units').notNull(),
-    unit: varchar('unit', { length: 20 }).default('CREDIT').notNull()
-});
+export const calls = {
+    name: 'calls',
+    _: {},
+    id: { name: 'id' },
+    mappingId: { name: 'mappingId' },
+    callerId: { name: 'callerId' },
+    timestamp: { name: 'timestamp' },
+    durationMs: { name: 'durationMs' },
+    reqBytes: { name: 'reqBytes' },
+    respBytes: { name: 'respBytes' },
+    status: { name: 'status' },
+    fingerprint: { name: 'fingerprint' },
+    errorMessage: { name: 'errorMessage' }
+} as any;
 
-// 收据记录表
-export const receipts = pgTable('receipts', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    callId: uuid('call_id').notNull().references(() => calls.id),
-    receiptHash: varchar('receipt_hash', { length: 66 }).notNull(),
-    signature: text('signature').notNull(),
-    chainHint: varchar('chain_hint', { length: 20 }).$type<ChainType>().notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull()
-});
+export const meters = {
+    name: 'meters',
+    _: {},
+    id: { name: 'id' },
+    callId: { name: 'callId' },
+    policy: { name: 'policy' },
+    units: { name: 'units' },
+    unit: { name: 'unit' }
+} as any;
 
-// 发票记录表
-export const invoices = pgTable('invoices', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    callerId: uuid('caller_id').notNull(),
-    period: varchar('period', { length: 10 }).notNull(), // 如 "2024-01"
-    amount: decimal('amount', { precision: 20, scale: 8 }).notNull(),
-    status: varchar('status', { length: 20 }).$type<InvoiceStatus>().notNull(),
-    chainId: integer('chain_id').notNull(),
-    token: varchar('token', { length: 20 }).$type<TokenType>().notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    paidAt: timestamp('paid_at')
-});
+export const receipts = {
+    name: 'receipts',
+    _: {},
+    id: { name: 'id' },
+    callId: { name: 'callId' },
+    receiptHash: { name: 'receiptHash' },
+    signature: { name: 'signature' },
+    chainHint: { name: 'chainHint' },
+    createdAt: { name: 'createdAt' }
+} as any;
 
-// 发布者配置表
-export const publisherConfigs = pgTable('publisher_configs', {
-    publisherId: uuid('publisher_id').primaryKey(),
-    pricingJson: jsonb('pricing_json').notNull(),
-    splitsJson: jsonb('splits_json').notNull(),
-    walletAddr: varchar('wallet_addr', { length: 42 }).notNull(),
-    chainPref: varchar('chain_pref', { length: 20 }).$type<ChainType>().notNull(),
-    incentivesJson: jsonb('incentives_json'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull()
-});
+export const invoices = {
+    name: 'invoices',
+    _: {},
+    id: { name: 'id' },
+    callerId: { name: 'callerId' },
+    period: { name: 'period' },
+    amount: { name: 'amount' },
+    status: { name: 'status' },
+    chainId: { name: 'chainId' },
+    token: { name: 'token' },
+    createdAt: { name: 'createdAt' },
+    paidAt: { name: 'paidAt' }
+} as any;
 
-// 目标反馈表（预留）
-export const goals = pgTable('goals', {
-    callId: uuid('call_id').primaryKey().references(() => calls.id),
-    goalType: varchar('goal_type', { length: 50 }),
-    goalScore: integer('goal_score'),
-    goalSuccess: boolean('goal_success'),
-    feedback: text('feedback'),
-    createdAt: timestamp('created_at').defaultNow().notNull()
-});
+export const publisherConfigs = {
+    name: 'publisher_configs',
+    _: {},
+    publisherId: { name: 'publisherId' },
+    pricingJson: { name: 'pricingJson' },
+    splitsJson: { name: 'splitsJson' },
+    walletAddr: { name: 'walletAddr' },
+    chainPref: { name: 'chainPref' },
+    incentivesJson: { name: 'incentivesJson' },
+    createdAt: { name: 'createdAt' },
+    updatedAt: { name: 'updatedAt' }
+} as any;
 
-// 链配置表
-export const chainConfigs = pgTable('chain_configs', {
-    chainId: integer('chain_id').primaryKey(),
-    name: varchar('name', { length: 20 }).$type<ChainType>().notNull(),
-    rpcUrl: varchar('rpc_url', { length: 200 }).notNull(),
-    registryAddress: varchar('registry_address', { length: 42 }).notNull(),
-    vaultAddress: varchar('vault_address', { length: 42 }).notNull(),
-    tokens: jsonb('tokens').notNull(),
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull()
-});
+export const goals = {
+    name: 'goals',
+    _: {},
+    callId: { name: 'callId' },
+    goalType: { name: 'goalType' },
+    goalScore: { name: 'goalScore' },
+    goalSuccess: { name: 'goalSuccess' },
+    feedback: { name: 'feedback' },
+    createdAt: { name: 'createdAt' }
+} as any;
+
+export const chainConfigs = {
+    name: 'chain_configs',
+    _: {},
+    chainId: { name: 'chainId' },
+    chainName: { name: 'name' }, // 重命名为 chainName 避免与对象 name 冲突
+    rpcUrl: { name: 'rpcUrl' },
+    registryAddress: { name: 'registryAddress' },
+    vaultAddress: { name: 'vaultAddress' },
+    tokens: { name: 'tokens' },
+    isActive: { name: 'isActive' },
+    createdAt: { name: 'createdAt' }
+} as any;

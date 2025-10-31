@@ -97,7 +97,7 @@ exports.GoalSchema = zod_1.z.object({
 });
 // API 请求/响应类型
 exports.RegisterRequestSchema = zod_1.z.object({
-    originalUrl: zod_1.z.string().url(),
+    originalUrl: zod_1.z.string().url().optional(), // 对于 MCP 类型，可以使用 mcpEndpoint 代替
     kind: exports.MappingKind,
     pricing: zod_1.z.object({
         policy: exports.PricingPolicy,
@@ -108,12 +108,32 @@ exports.RegisterRequestSchema = zod_1.z.object({
     }),
     enable402: zod_1.z.boolean().default(true),
     settlementToken: exports.TokenType.default('USDC'),
-    publisherId: exports.PublisherId
+    publisherId: exports.PublisherId,
+    // MCP 相关字段
+    mcpEndpoint: zod_1.z.string().min(1).optional(), // MCP 服务端点 URL (支持 HTTP/HTTPS/WS/WSS/stdio)
+    mcpConnectionConfig: zod_1.z.record(zod_1.z.any()).optional(), // MCP 接入配置 (传输方式、端点等)
+    mcpRequestBody: zod_1.z.record(zod_1.z.any()).optional(), // MCP 请求体模板 (JSON-RPC 格式)
+    // 其他可选字段
+    defaultMethod: zod_1.z.string().optional(),
+    customHeaders: zod_1.z.record(zod_1.z.string()).optional(),
+    chainId: zod_1.z.number().int().optional()
+}).refine((data) => {
+    // 如果是 MCP 类型，必须提供 mcpEndpoint 或 originalUrl
+    if (data.kind === 'mcp') {
+        return !!(data.mcpEndpoint || data.originalUrl);
+    }
+    // 如果是 compiled 类型，必须提供 originalUrl
+    if (data.kind === 'compiled') {
+        return !!data.originalUrl;
+    }
+    return true;
+}, {
+    message: 'MCP 类型必须提供 mcpEndpoint 或 originalUrl，compiled 类型必须提供 originalUrl'
 });
 exports.RegisterResponseSchema = zod_1.z.object({
     mappingId: exports.MappingId,
     gatewayUrl: zod_1.z.string().url(),
-    originalUrl: zod_1.z.string().url(),
+    originalUrl: zod_1.z.string(), // 可能是 mcpEndpoint，不一定必须是标准 URL
     pricing: zod_1.z.record(zod_1.z.any())
 });
 // 402 支付相关

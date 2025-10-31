@@ -32,6 +32,12 @@ if [ -z "${PRIVATE_KEY:-}" ]; then
   exit 1
 fi
 
+# 显示配置信息（不显示完整私钥）
+if [ -n "${PRIVATE_KEY:-}" ]; then
+  PK_PREFIX=$(echo "$PRIVATE_KEY" | cut -c1-10)
+  echo "✅ PRIVATE_KEY 已加载 (${PK_PREFIX}...)"
+fi
+
 # install deps
 if command -v npm >/dev/null 2>&1; then
   if [ -f package-lock.json ]; then

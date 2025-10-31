@@ -47,14 +47,20 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
     uint256 public constant MIN_INPUT_SIZE = 1;
     uint256 public constant MAX_INPUT_SIZE = 10000000;
 
-    event WorkProofSubmitted(address indexed user, string taskId, uint256 reward);
+    event WorkProofSubmitted(
+        address indexed user,
+        string taskId,
+        uint256 reward
+    );
     event WorkProofVerified(string taskId, bool verified);
     event TaskRewardUpdated(string toolName, uint256 baseReward);
     event VerifierAuthorized(address indexed verifier, bool authorized);
 
-    constructor(string memory name_, string memory symbol_, uint256 initialSupply)
-        ERC20(name_, symbol_)
-    {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 initialSupply
+    ) ERC20(name_, symbol_) {
         _mint(msg.sender, initialSupply * 10 ** decimals());
         _setupTaskRewards();
     }
@@ -104,9 +110,16 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
     ) external nonReentrant {
         require(bytes(taskId).length > 0, unicode"任务ID不能为空");
         require(bytes(toolName).length > 0, unicode"工具名称不能为空");
-        require(inputSize >= MIN_INPUT_SIZE && inputSize <= MAX_INPUT_SIZE, unicode"输入大小超出范围");
-        require(executionTime >= MIN_EXECUTION_TIME && executionTime <= MAX_EXECUTION_TIME, "执行时间超出范围");
-        require(workProofs[taskId].timestamp == 0, "任务已存在");
+        require(
+            inputSize >= MIN_INPUT_SIZE && inputSize <= MAX_INPUT_SIZE,
+            unicode"输入大小超出范围"
+        );
+        require(
+            executionTime >= MIN_EXECUTION_TIME &&
+                executionTime <= MAX_EXECUTION_TIME,
+            unicode"执行时间超出范围"
+        );
+        require(workProofs[taskId].timestamp == 0, unicode"任务已存在");
 
         WorkProof memory proof = WorkProof({
             taskId: taskId,
@@ -125,7 +138,12 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         if (isValid) {
             workProofs[taskId].verified = true;
 
-            uint256 reward = _calculateReward(toolName, inputSize, outputSize, executionTime);
+            uint256 reward = _calculateReward(
+                toolName,
+                inputSize,
+                outputSize,
+                executionTime
+            );
 
             UserWorkload storage userWorkload = userWorkloads[msg.sender];
             userWorkload.totalTasks++;
@@ -141,7 +159,9 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         emit WorkProofVerified(taskId, isValid);
     }
 
-    function _verifyWorkProof(WorkProof memory proof) internal view returns (bool) {
+    function _verifyWorkProof(
+        WorkProof memory proof
+    ) internal view returns (bool) {
         TaskReward memory reward = taskRewards[proof.toolName];
         if (!reward.active) return false;
 
@@ -166,7 +186,7 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         uint256 executionTime
     ) internal view returns (uint256) {
         TaskReward memory reward = taskRewards[toolName];
-        require(reward.active, "任务类型未激活");
+        require(reward.active, unicode"任务类型未激活");
 
         uint256 totalReward = reward.baseReward;
         totalReward += (executionTime * reward.timeMultiplier) / 1000;
@@ -175,20 +195,31 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         return totalReward;
     }
 
-    function getUserWorkload(address user)
+    function getUserWorkload(
+        address user
+    )
         external
         view
-        returns (uint256 totalTasks, uint256 totalTokensEarned, uint256 lastActivity)
+        returns (
+            uint256 totalTasks,
+            uint256 totalTokensEarned,
+            uint256 lastActivity
+        )
     {
         UserWorkload storage uw = userWorkloads[user];
         return (uw.totalTasks, uw.totalTokensEarned, uw.lastActivity);
     }
 
-    function isTaskCompleted(address user, string memory taskId) external view returns (bool) {
+    function isTaskCompleted(
+        address user,
+        string memory taskId
+    ) external view returns (bool) {
         return userWorkloads[user].completedTasks[taskId];
     }
 
-    function getWorkProof(string memory taskId)
+    function getWorkProof(
+        string memory taskId
+    )
         external
         view
         returns (
@@ -237,8 +268,11 @@ contract WorkloadToken is ERC20, Ownable, ReentrancyGuard {
         emit VerifierAuthorized(verifier, authorized);
     }
 
-    function batchMint(address[] memory recipients, uint256[] memory amounts) external onlyOwner {
-        require(recipients.length == amounts.length, "数组长度不匹配");
+    function batchMint(
+        address[] memory recipients,
+        uint256[] memory amounts
+    ) external onlyOwner {
+        require(recipients.length == amounts.length, unicode"数组长度不匹配");
         for (uint256 i = 0; i < recipients.length; i++) {
             _mint(recipients[i], amounts[i]);
         }

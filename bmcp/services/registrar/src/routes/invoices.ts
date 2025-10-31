@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { BillingService } from '../services/billing';
 import { db, invoices } from '@bmcp/schema';
 import { eq } from 'drizzle-orm';
+import { normalizeCallerId } from '../utils/callerId';
 
 const app = new Hono();
 const billing = new BillingService();
@@ -9,7 +10,9 @@ const billing = new BillingService();
 app.get('/', async (c) => {
     const callerId = c.req.query('caller_id');
     if (!callerId) return c.json({ error: 'caller_id 必填' }, 400);
-    const list = await db.select().from(invoices).where(eq(invoices.callerId, callerId));
+    // 规范化 callerId，确保它是有效的 UUID 格式
+    const normalizedCallerId = normalizeCallerId(callerId);
+    const list = await db.select().from(invoices).where(eq(invoices.callerId, normalizedCallerId));
     return c.json({ invoices: list });
 });
 

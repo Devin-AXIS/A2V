@@ -24,16 +24,38 @@ export class PricingService {
         chainPref: string;
         incentivesJson?: Record<string, any>;
     }): Promise<PublisherConfig> {
-        const [config] = await db.insert(publisherConfigs).values({
-            publisherId: data.publisherId,
-            pricingJson: data.pricingJson,
-            splitsJson: data.splitsJson,
-            walletAddr: data.walletAddr,
-            chainPref: data.chainPref,
-            incentivesJson: data.incentivesJson
-        }).returning();
+        // 检查是否已存在，如果存在则更新，否则创建
+        const existing = await this.getPublisherConfig(data.publisherId);
+        
+        if (existing) {
+            // 更新现有配置
+            const [config] = await db
+                .update(publisherConfigs)
+                .set({
+                    pricingJson: data.pricingJson,
+                    splitsJson: data.splitsJson,
+                    walletAddr: data.walletAddr,
+                    chainPref: data.chainPref,
+                    incentivesJson: data.incentivesJson,
+                    updatedAt: new Date()
+                })
+                .where(eq(publisherConfigs.publisherId, data.publisherId))
+                .returning();
+            
+            return config!;
+        } else {
+            // 创建新配置
+            const [config] = await db.insert(publisherConfigs).values({
+                publisherId: data.publisherId,
+                pricingJson: data.pricingJson,
+                splitsJson: data.splitsJson,
+                walletAddr: data.walletAddr,
+                chainPref: data.chainPref,
+                incentivesJson: data.incentivesJson
+            }).returning();
 
-        return config;
+            return config;
+        }
     }
 
     async getPublisherConfig(publisherId: string): Promise<PublisherConfig | null> {

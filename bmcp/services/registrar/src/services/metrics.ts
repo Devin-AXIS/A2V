@@ -2,6 +2,7 @@ import { db, calls, mappings } from '@bmcp/schema';
 import crypto from 'crypto';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { count, avg } from 'drizzle-orm';
+import { normalizeCallerId } from '../utils/callerId';
 
 export interface CallMetrics {
     mappingId: string;
@@ -26,10 +27,13 @@ export class MetricsService {
     async recordCall(metrics: CallMetrics) {
         const callId = crypto.randomUUID();
 
+        // 规范化 callerId，确保它是有效的 UUID 格式
+        const normalizedCallerId = normalizeCallerId(metrics.callerId);
+
         await db.insert(calls).values({
             id: callId,
             mappingId: metrics.mappingId,
-            callerId: metrics.callerId,
+            callerId: normalizedCallerId,
             durationMs: metrics.durationMs,
             reqBytes: metrics.reqBytes,
             respBytes: metrics.respBytes,
@@ -125,7 +129,9 @@ export class MetricsService {
         }
 
         if (callerId) {
-            query = query.where(eq(calls.callerId, callerId));
+            // 规范化 callerId，确保它是有效的 UUID 格式
+            const normalizedCallerId = normalizeCallerId(callerId);
+            query = query.where(eq(calls.callerId, normalizedCallerId));
         }
 
         return await query;

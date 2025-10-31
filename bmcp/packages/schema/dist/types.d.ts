@@ -208,8 +208,8 @@ export declare const GoalSchema: z.ZodObject<{
     goalSuccess?: boolean | undefined;
     feedback?: string | undefined;
 }>;
-export declare const RegisterRequestSchema: z.ZodObject<{
-    originalUrl: z.ZodString;
+export declare const RegisterRequestSchema: z.ZodEffects<z.ZodObject<{
+    originalUrl: z.ZodOptional<z.ZodString>;
     kind: z.ZodEnum<["mcp", "compiled"]>;
     pricing: z.ZodObject<{
         policy: z.ZodEnum<["flat_per_call", "by_bytes", "duration_weighted", "custom"]>;
@@ -233,8 +233,13 @@ export declare const RegisterRequestSchema: z.ZodObject<{
     enable402: z.ZodDefault<z.ZodBoolean>;
     settlementToken: z.ZodDefault<z.ZodEnum<["USDC", "USDT", "PLATFORM"]>>;
     publisherId: z.ZodString;
+    mcpEndpoint: z.ZodOptional<z.ZodString>;
+    mcpConnectionConfig: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    mcpRequestBody: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    defaultMethod: z.ZodOptional<z.ZodString>;
+    customHeaders: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+    chainId: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    originalUrl: string;
     publisherId: string;
     kind: "mcp" | "compiled";
     enable402: boolean;
@@ -246,8 +251,14 @@ export declare const RegisterRequestSchema: z.ZodObject<{
         pricePerMs?: number | undefined;
         customPricing?: Record<string, any> | undefined;
     };
+    originalUrl?: string | undefined;
+    chainId?: number | undefined;
+    mcpEndpoint?: string | undefined;
+    mcpConnectionConfig?: Record<string, any> | undefined;
+    mcpRequestBody?: Record<string, any> | undefined;
+    defaultMethod?: string | undefined;
+    customHeaders?: Record<string, string> | undefined;
 }, {
-    originalUrl: string;
     publisherId: string;
     kind: "mcp" | "compiled";
     pricing: {
@@ -257,8 +268,53 @@ export declare const RegisterRequestSchema: z.ZodObject<{
         pricePerMs?: number | undefined;
         customPricing?: Record<string, any> | undefined;
     };
+    originalUrl?: string | undefined;
     enable402?: boolean | undefined;
     settlementToken?: "USDC" | "USDT" | "PLATFORM" | undefined;
+    chainId?: number | undefined;
+    mcpEndpoint?: string | undefined;
+    mcpConnectionConfig?: Record<string, any> | undefined;
+    mcpRequestBody?: Record<string, any> | undefined;
+    defaultMethod?: string | undefined;
+    customHeaders?: Record<string, string> | undefined;
+}>, {
+    publisherId: string;
+    kind: "mcp" | "compiled";
+    enable402: boolean;
+    settlementToken: "USDC" | "USDT" | "PLATFORM";
+    pricing: {
+        policy: "flat_per_call" | "by_bytes" | "duration_weighted" | "custom";
+        pricePerCall?: number | undefined;
+        pricePerByte?: number | undefined;
+        pricePerMs?: number | undefined;
+        customPricing?: Record<string, any> | undefined;
+    };
+    originalUrl?: string | undefined;
+    chainId?: number | undefined;
+    mcpEndpoint?: string | undefined;
+    mcpConnectionConfig?: Record<string, any> | undefined;
+    mcpRequestBody?: Record<string, any> | undefined;
+    defaultMethod?: string | undefined;
+    customHeaders?: Record<string, string> | undefined;
+}, {
+    publisherId: string;
+    kind: "mcp" | "compiled";
+    pricing: {
+        policy: "flat_per_call" | "by_bytes" | "duration_weighted" | "custom";
+        pricePerCall?: number | undefined;
+        pricePerByte?: number | undefined;
+        pricePerMs?: number | undefined;
+        customPricing?: Record<string, any> | undefined;
+    };
+    originalUrl?: string | undefined;
+    enable402?: boolean | undefined;
+    settlementToken?: "USDC" | "USDT" | "PLATFORM" | undefined;
+    chainId?: number | undefined;
+    mcpEndpoint?: string | undefined;
+    mcpConnectionConfig?: Record<string, any> | undefined;
+    mcpRequestBody?: Record<string, any> | undefined;
+    defaultMethod?: string | undefined;
+    customHeaders?: Record<string, string> | undefined;
 }>;
 export declare const RegisterResponseSchema: z.ZodObject<{
     mappingId: z.ZodString;

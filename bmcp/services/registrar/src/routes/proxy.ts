@@ -15,6 +15,12 @@ app.all('/:id/*', authMiddleware, billingMiddleware, async (c) => {
     try {
         const mappingId = c.req.param('id');
         const path = c.req.param('*') || '';
+        // 保留查询参数
+        const fullUrl = c.req.url; // e.g. /proxy/{id}/foo?x=1
+        const basePrefix = `/proxy/${mappingId}`;
+        const idx = fullUrl.indexOf(basePrefix);
+        const suffix = idx >= 0 ? fullUrl.substring(idx + basePrefix.length) : path;
+        const pathWithQuery = suffix || '';
         const method = c.req.method;
         const headers = Object.fromEntries(c.req.raw.headers.entries());
         const body = await c.req.text();
@@ -33,23 +39,35 @@ app.all('/:id/*', authMiddleware, billingMiddleware, async (c) => {
         const startTime = Date.now();
         const reqBytes = Buffer.byteLength(body, 'utf8');
 
-        // 执行代理请求
+        // 合并映射配置的自定义 headers
+        const mergedHeaders = { ...headers };
+        if (mapping.customHeaders && typeof mapping.customHeaders === 'object') {
+            Object.assign(mergedHeaders, mapping.customHeaders as Record<string, string>);
+        }
+
+        // 如果请求方法未指定或是 GET，且映射配置了默认方法，使用默认方法
+        const effectiveMethod = (method === 'GET' || !method) && mapping.defaultMethod 
+            ? mapping.defaultMethod 
+            : method;
+
+        // 执行代理请求（传递已获取的mapping避免重复查询）
         const result = await proxyService.proxyRequest({
             mappingId,
             originalUrl: mapping.originalUrl,
-            path,
-            method,
-            headers,
+            path: pathWithQuery,
+            method: effectiveMethod,
+            headers: mergedHeaders,
             body,
-            callerId: c.get('callerId') || 'anonymous'
+            callerId: c.get('callerId') || 'anonymous',
+            mapping // 传递已获取的mapping
         });
 
         const endTime = Date.now();
         const durationMs = endTime - startTime;
         const respBytes = Buffer.byteLength(JSON.stringify(result.data), 'utf8');
 
-        // 记录调用指标
-        await metricsService.recordCall({
+        // 记录调用指标（返回数据库中的 callId）
+        const callId = await metricsService.recordCall({
             mappingId,
             callerId: c.get('callerId') || 'anonymous',
             durationMs,
@@ -59,6 +77,11 @@ app.all('/:id/*', authMiddleware, billingMiddleware, async (c) => {
             fingerprint: result.fingerprint,
             errorMessage: result.error
         });
+
+        // 如果代理请求失败（500 错误），直接返回错误响应，不创建收据
+        if (result.status >= 500 || result.error) {
+            return c.json(result.data, result.status);
+        }
 
         // 计算费用（从发布者配置读取定价策略）
         const cost = await billingService.calculateCost({
@@ -89,9 +112,9 @@ app.all('/:id/*', authMiddleware, billingMiddleware, async (c) => {
             }
         }
 
-        // 创建收据
+        // 创建收据（使用数据库中实际的 callId）
         const receipt = await billingService.createReceipt({
-            callId: result.callId,
+            callId: callId,
             mappingId,
             amount: cost,
             currency: mapping.settlementToken || 'USDC',

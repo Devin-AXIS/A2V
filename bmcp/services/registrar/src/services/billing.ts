@@ -3,6 +3,7 @@ import { eq, and, gte } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { PricingService } from './pricing';
+import { normalizeCallerId } from '../utils/callerId';
 
 export interface CostCalculation {
     mappingId: string;
@@ -47,13 +48,16 @@ export class BillingService {
     }
 
     async getBalance(callerId: string): Promise<number> {
+        // 规范化 callerId，确保它是有效的 UUID 格式
+        const normalizedCallerId = normalizeCallerId(callerId);
+
         // 简化实现：从数据库查询余额
         // 实际实现应该查询链上余额或缓存
         const unpaidInvoices = await db
             .select()
             .from(invoices)
             .where(and(
-                eq(invoices.callerId, callerId),
+                eq(invoices.callerId, normalizedCallerId),
                 eq(invoices.status, 'pending')
             ));
 
@@ -70,10 +74,13 @@ export class BillingService {
     async createPaymentRequest(params: PaymentRequest) {
         const invoiceId = uuidv4();
 
+        // 规范化 callerId，确保它是有效的 UUID 格式
+        const normalizedCallerId = normalizeCallerId(params.callerId);
+
         // 创建发票记录
         await db.insert(invoices).values({
             id: invoiceId,
-            callerId: params.callerId,
+            callerId: normalizedCallerId,
             period: new Date().toISOString().slice(0, 7), // YYYY-MM
             amount: params.amount.toString(),
             status: 'pending',
@@ -145,11 +152,14 @@ export class BillingService {
     }): Promise<Call> {
         const callId = uuidv4();
 
+        // 规范化 callerId，确保它是有效的 UUID 格式
+        const normalizedCallerId = normalizeCallerId(callData.callerId);
+
         // 创建调用记录
         const [call] = await db.insert(calls).values({
             id: callId,
             mappingId: callData.mappingId,
-            callerId: callData.callerId,
+            callerId: normalizedCallerId,
             durationMs: callData.durationMs,
             reqBytes: callData.reqBytes,
             respBytes: callData.respBytes,
