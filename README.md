@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MCP 服务器调用工具
 
 这是一个基于 Next.js 和官方 MCP SDK 的 Web 应用，用于连接和调用 MCP（Model Context Protocol）服务器。
@@ -138,3 +139,6 @@ npm run dev
 ## 许可证
 
 MIT
+=======
+
+>>>>>>> 205c39b58570bc1b4cd4b1ad9b5c6c43cc974fc5
