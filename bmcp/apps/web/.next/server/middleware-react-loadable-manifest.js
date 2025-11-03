@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app/create/page.tsx -> ethers\":{\"id\":\"app/create/page.tsx -> ethers\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_ethers_lib_esm_index_js.js\"]},\"app/x402-demo/page.tsx -> ethers\":{\"id\":\"app/x402-demo/page.tsx -> ethers\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_ethers_lib_esm_index_js.js\"]}}"

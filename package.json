@@ -1,0 +1,40 @@
+{
+    "name": "mcp-client-web",
+    "version": "1.0.0",
+    "description": "Web interface for calling MCP servers using official SDK",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "test": "hardhat test",
+        "deploy-token": "sh scripts/deploy-workload-base.sh"
+    },
+    "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "nextjs"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.5.0",
+        "ethers": "^6.0.0",
+        "eventsource": "^4.0.0",
+        "next": "^14.0.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    },
+    "devDependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+        "@openzeppelin/contracts": "^5.0.0",
+        "@types/node": "24.9.2",
+        "@types/react": "19.2.2",
+        "dotenv": "^16.3.1",
+        "eslint": "^8.0.0",
+        "eslint-config-next": "^14.0.0",
+        "hardhat": "^2.19.0",
+        "typescript": "^5.0.0"
+    }
+}

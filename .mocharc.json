@@ -1,0 +1,6 @@
+{
+  "require": "hardhat/register",
+  "timeout": 40000,
+  "recursive": true
+}
+

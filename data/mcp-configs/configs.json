@@ -1,0 +1,42 @@
+[
+  {
+    "id": "527b62a4a9c92f29ea39c3abf4439cf1",
+    "title": "简易应用",
+    "description": "简易应用",
+    "connectionType": "url",
+    "connectionConfig": {
+      "url": "https://mcp.fastgpt.io/ge59csMrueEUs54Z6sZY6yrY/sse"
+    },
+    "createdAt": "2025-11-02T04:13:40.166Z"
+  },
+  {
+    "id": "79bc2fe4684fe905a2e0017887d951be",
+    "title": "ccc",
+    "description": "ccc",
+    "connectionType": "url",
+    "connectionConfig": {
+      "url": "https://mcp.fastgpt.io/ge59csMrueEUs54Z6sZY6yrY/sse"
+    },
+    "createdAt": "2025-11-02T07:52:07.152Z"
+  },
+  {
+    "id": "4bab02b33c26319a6ed663b8bcf5b3f4",
+    "title": "yth",
+    "description": "ret",
+    "connectionType": "url",
+    "connectionConfig": {
+      "url": "https://mcp.fastgpt.io/ge59csMrueEUs54Z6sZY6yrY/sse"
+    },
+    "createdAt": "2025-11-02T08:16:25.532Z"
+  },
+  {
+    "id": "655fe10e2a705af2ec2ef95c7c3bd026",
+    "title": "ewqw",
+    "description": "xcv",
+    "connectionType": "url",
+    "connectionConfig": {
+      "url": "https://mcp.fastgpt.io/ge59csMrueEUs54Z6sZY6yrY/sse"
+    },
+    "createdAt": "2025-11-02T08:31:18.912Z"
+  }
+]
