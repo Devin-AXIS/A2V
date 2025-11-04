@@ -1,144 +1,257 @@
-<<<<<<< HEAD
-# MCP 服务器调用工具
+# 🚀 A2V Protocol - Next-Gen AI Value Compute Protocol
 
-这是一个基于 Next.js 和官方 MCP SDK 的 Web 应用，用于连接和调用 MCP（Model Context Protocol）服务器。
+<div align="center">
 
-## 功能特性
+![A2V Protocol](https://img.shields.io/badge/A2V-Protocol-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-Active-success?style=for-the-badge)
 
-- ✅ 连接 MCP 服务器（通过 stdio 传输）
-- ✅ 列出和调用工具（Tools）
-- ✅ 列出和读取资源（Resources）
-- ✅ 列出和获取提示词（Prompts）
-- ✅ 实时响应日志
-- ✅ 现代化的 Web UI
-- ✅ 基于 Next.js 14 App Router
+**The Synaptic Mesh for the AI Economy**
 
-## 安装步骤
+*10,000+ AI-driven applications are shaping the next value protocol — built on A2V*
 
-1. **安装依赖**
+[Documentation](#) • [Get Started](#quick-start) • [Discord](https://discord.com/) • [Twitter](https://twitter.com)
 
-```bash
-npm install
+</div>
+
+---
+
+## 🌟 What is A2V?
+
+**A2V (AI Value Compute Protocol)** is a revolutionary distributed protocol that enables AI agents to measure, exchange, and settle value on-chain. Think of it as the **synaptic mesh** of the AI economy — a neural substrate that connects agents, models, and blockchain value systems into a unified, transparent, and autonomous network.
+
+By aligning probabilistic AI cognition with blockchain finality, A2V creates a **hybrid intelligence consensus** where every prompt, inference, and interaction becomes measurable economic value.
+
+### 🎯 The Vision
+
+A2V establishes a decentralized **AI value governance layer** across 10,000+ agents, ensuring that every AI interaction is measured and settled via smart contracts. We're building the foundation of the AI value economy — where intelligence meets blockchain.
+
+---
+
+## ✨ Key Features
+
+### 🔗 **Synaptic Mesh Architecture**
+- **Distributed Neural Substrate**: Links agents, models, and on-chain value systems seamlessly
+- **Hybrid Intelligence Consensus**: Combines probabilistic AI cognition with blockchain finality
+- **Autonomous Value Network**: Transparent, decentralized governance across the ecosystem
+
+### 💎 **MCP Integration** (Model Context Protocol)
+- ✅ **Fully Compatible** with 10,000+ MCP tools and agents
+- ✅ **Smart Contract Settlement** on-chain for every interaction
+- ✅ **Real-time AI Call Metering** and analytics
+- ✅ **Automated Value Distribution** across the network
+- ✅ **Open SDK & Developer APIs** for seamless integration
+
+### 🌐 **HTTP Gateway**
+- ✅ **One-click HTTP Registration** for quick onboarding
+- ✅ **Auto-generate A2V Value Addresses** for instant participation
+- ✅ **Built-in Call Tracking & Analytics** for comprehensive insights
+
+### 🔐 **Decentralized Governance**
+- Transparent and autonomous value flow
+- Smart contract-based settlement
+- Measurable economic value for every AI interaction
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    A2V Protocol Layer                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────┐  │
+│  │  AI Agents   │──────│  MCP Tools   │──────│  Models  │  │
+│  │  10,000+     │      │  10,000+     │      │          │  │
+│  └──────┬───────┘      └──────┬───────┘      └────┬─────┘  │
+│         │                     │                    │        │
+│         └─────────────────────┼────────────────────┘        │
+│                               │                             │
+│                    ┌──────────▼──────────┐                  │
+│                    │  Value Measurement  │                  │
+│                    │   & Settlement      │                  │
+│                    └──────────┬──────────┘                  │
+│                               │                             │
+│                    ┌──────────▼──────────┐                  │
+│                    │  Smart Contracts    │                  │
+│                    │  On-Chain Settlement│                  │
+│                    └──────────────────────┘                  │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-2. **开发模式启动**
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ or Python 3.8+
+- A Web3 wallet (MetaMask, WalletConnect, etc.)
+- Access to an MCP-compatible AI agent or tool
+
+### Installation
+
+#### Option 1: HTTP Gateway Integration
 
 ```bash
-npm run dev
-```
+# Clone the repository
+git clone https://github.com/yourusername/a2vhub.git
+cd a2vhub
 
-应用将在 `http://localhost:3000` 启动。
+# Install dependencies (if applicable)
+npm install  # or yarn install / pnpm install
 
-3. **生产构建**
-
-```bash
-npm run build
+# Start the local server
+python3 -m http.server 8000
+# or
 npm start
 ```
 
-## 使用方法
+Visit `http://localhost:8000` to see the A2V Protocol interface.
 
-### 1. 连接 MCP 服务器
+#### Option 2: MCP Integration
 
-在 Web 界面中填写：
-- **命令 (Command)**: 要执行的命令，例如 `node`, `python`, `npm` 等
-- **参数 (Arguments)**: 命令的参数，例如 `server.js` 或 `--version`
-- **连接ID (可选)**: 留空将自动生成
+```javascript
+// Example: Integrate A2V with your MCP agent
+import { A2VClient } from '@a2v/sdk';
 
-示例：
-- Command: `node`
-- Arguments: `./path/to/mcp-server.js`
+const client = new A2VClient({
+  apiKey: 'your-api-key',
+  network: 'mainnet', // or 'testnet'
+});
 
-或者：
-- Command: `python`
-- Arguments: `-m mcp_server`
+// Register your agent
+await client.registerAgent({
+  name: 'My AI Agent',
+  mcpTools: ['tool1', 'tool2'],
+});
 
-### 2. 使用工具
-
-连接成功后：
-1. 点击 "列出工具" 查看可用的工具
-2. 点击工具旁边的 "调用" 按钮
-3. 在弹出窗口中填写参数（如有）
-4. 点击 "执行" 调用工具
-
-### 3. 读取资源
-
-1. 点击 "列出资源" 查看可用的资源
-2. 点击资源旁边的 "读取" 按钮查看资源内容
-
-### 4. 获取提示词
-
-1. 点击 "列出提示词" 查看可用的提示词
-2. 点击提示词旁边的 "获取" 按钮
-3. 填写参数（如有）并获取提示词内容
-
-## 项目结构
-
-```
-BMCP/
-├── package.json              # 项目配置和依赖
-├── next.config.js            # Next.js 配置
-├── tsconfig.json             # TypeScript 配置
-├── app/                      # Next.js App Router
-│   ├── layout.tsx           # 根布局
-│   ├── page.tsx             # 主页面（React组件）
-│   ├── globals.css          # 全局样式
-│   └── api/                 # API 路由
-│       ├── connect/         # 连接MCP服务器
-│       ├── disconnect/     # 断开连接
-│       ├── tools/           # 工具相关API
-│       ├── resources/       # 资源相关API
-│       └── prompts/         # 提示词相关API
-├── lib/                      # 工具函数
-│   └── mcp-client.ts        # MCP客户端管理
-└── README.md                 # 本文件
+// Start measuring value
+const value = await client.measureInteraction({
+  agentId: 'agent-123',
+  prompt: 'Your AI prompt',
+  inference: 'AI response',
+});
 ```
 
-## 技术栈
+---
 
-- **框架**: Next.js 14 (App Router)
-- **前端**: React + TypeScript
-- **后端**: Next.js API Routes
-- **MCP SDK**: `@modelcontextprotocol/sdk` (官方 SDK)
+## 📚 Documentation
 
-## API 端点
+### Core Concepts
 
-- `POST /api/connect` - 连接到 MCP 服务器
-- `POST /api/disconnect` - 断开连接
-- `GET /api/tools/:connectionId` - 列出工具
-- `POST /api/call-tool` - 调用工具
-- `GET /api/resources/:connectionId` - 列出资源
-- `POST /api/read-resource` - 读取资源
-- `GET /api/prompts/:connectionId` - 列出提示词
-- `POST /api/get-prompt` - 获取提示词
-- `GET /api/connections` - 获取所有活跃连接
+- **Synaptic Mesh**: The distributed neural substrate that connects all participants
+- **Value Measurement**: How AI interactions are quantified and tracked
+- **On-Chain Settlement**: Smart contract-based value exchange
+- **Hybrid Consensus**: Combining AI cognition with blockchain finality
 
-## 注意事项
+### API Reference
 
-1. MCP 服务器必须支持 stdio 传输方式
-2. 确保 MCP 服务器的命令和参数正确
-3. 某些工具可能需要特定的参数格式
-4. 连接失败时，请检查命令路径和参数是否正确
+Full API documentation is available at [docs.a2vprotocol.com](https://docs.a2vprotocol.com)
 
-## 开发模式
+### Integration Guides
 
-Next.js 自动支持热重载：
+- [MCP Integration Guide](#)
+- [HTTP Gateway Setup](#)
+- [Smart Contract Deployment](#)
+- [SDK Usage Examples](#)
 
-```bash
-npm run dev
-```
+---
 
-## 注意事项
+## 🛠️ Tech Stack
 
-1. MCP 服务器必须支持 stdio 传输方式
-2. 确保 MCP 服务器的命令和参数正确
-3. 某些工具可能需要特定的参数格式
-4. 连接失败时，请检查命令路径和参数是否正确
-5. 项目使用 TypeScript，如遇到类型错误请检查 `tsconfig.json`
+- **Frontend**: HTML5, CSS3, JavaScript (Webflow)
+- **Blockchain**: Smart Contracts (Ethereum-compatible)
+- **Protocol**: MCP (Model Context Protocol) compatible
+- **SDK**: JavaScript/TypeScript SDK available
+- **Infrastructure**: Decentralized, blockchain-based
 
-## 许可证
+---
 
-MIT
-=======
+## 🌍 Ecosystem
 
->>>>>>> 205c39b58570bc1b4cd4b1ad9b5c6c43cc974fc5
+A2V is compatible with a vast ecosystem of AI tools and agents:
+
+- **10,000+ MCP Tools** - Full compatibility with the Model Context Protocol ecosystem
+- **AI Agents** - Connect any AI agent to the value network
+- **Blockchain Networks** - Multi-chain support for value settlement
+- **Developer Tools** - Open SDK and comprehensive APIs
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! A2V is an open-source project built by the community, for the community.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Contribution Guidelines
+
+- Follow the existing code style
+- Write clear commit messages
+- Add tests for new features
+- Update documentation as needed
+- Be respectful and constructive in discussions
+
+---
+
+## 📊 Roadmap
+
+- [x] Core protocol development
+- [x] MCP integration framework
+- [x] HTTP Gateway implementation
+- [ ] Mainnet deployment
+- [ ] Advanced analytics dashboard
+- [ ] Multi-chain support
+- [ ] Mobile SDK
+- [ ] Enterprise features
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built for the AI and blockchain community
+- Inspired by the Model Context Protocol (MCP) ecosystem
+- Powered by decentralized technologies
+
+---
+
+## 📞 Contact & Community
+
+- **Website**: [a2vprotocol.com](https://a2vprotocol.com)
+- **Discord**: [Join our community](https://discord.com/)
+- **Twitter**: [@A2VProtocol](https://twitter.com)
+- **GitHub**: [github.com/a2vprotocol](https://github.com/a2vprotocol)
+- **Telegram**: [Join our Telegram](https://telegram.org/)
+
+---
+
+## ⭐ Star History
+
+If you find A2V useful, please consider giving us a star on GitHub!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/a2vhub&type=Date)](https://star-history.com/#yourusername/a2vhub&Date)
+
+---
+
+<div align="center">
+
+**Built with ❤️ by the A2V Community**
+
+*Measuring AI value, one interaction at a time.*
+
+</div>
