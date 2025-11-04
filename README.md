@@ -10,7 +10,7 @@
 
 *10,000+ AI-driven applications are shaping the next value protocol — built on A2V*
 
-[Documentation](#) • [Get Started](#quick-start) • [Discord](https://discord.com/) • [Twitter](https://twitter.com)
+[Documentation](#) • [Get Started](#quick-start) • [Website](http://a2v.ipollo.ai/) • [Twitter](https://x.com/a2vprotocol)
 
 </div>
 
@@ -24,7 +24,7 @@ By aligning probabilistic AI cognition with blockchain finality, A2V creates a *
 
 ### 🎯 The Vision
 
-A2V establishes a decentralized **AI value governance layer** across 10,000+ agents, ensuring that every AI interaction is measured and settled via smart contracts. We're building the foundation of the AI value economy — where intelligence meets blockchain.
+A2V establishes a decentralized **AI value governance layer** across 10,000+ agents, ensuring that every AI interaction is measured and settled via smart contracts. We're building the foundation of the **AI agent tool economy** — where intelligence meets blockchain, enabling transparent compensation, agent-to-agent transactions, and goal-oriented value creation.
 
 ---
 
@@ -35,12 +35,26 @@ A2V establishes a decentralized **AI value governance layer** across 10,000+ age
 - **Hybrid Intelligence Consensus**: Combines probabilistic AI cognition with blockchain finality
 - **Autonomous Value Network**: Transparent, decentralized governance across the ecosystem
 
-### 💎 **MCP Integration** (Model Context Protocol)
-- ✅ **Fully Compatible** with 10,000+ MCP tools and agents
+### 💎 **Multi-Protocol Compatibility**
+- ✅ **MCP (Model Context Protocol)**: Fully compatible with 10,000+ MCP tools and agents
+- ✅ **A2A (Agent-to-Agent)**: Native support for future agent-to-agent transactions and collaborations
 - ✅ **Smart Contract Settlement** on-chain for every interaction
 - ✅ **Real-time AI Call Metering** and analytics
 - ✅ **Automated Value Distribution** across the network
 - ✅ **Open SDK & Developer APIs** for seamless integration
+
+### 💰 **AI Compensation Quantification System**
+- ✅ **Intelligent Payroll System**: Automated compensation calculation for AI agents based on performance and value creation
+- ✅ **Goal-Oriented Rewards**: Support for agent objectives and target-based compensation models
+- ✅ **Transparent Metrics**: Real-time tracking of agent contributions and earnings
+- ✅ **Fair Distribution**: Algorithm-based value allocation ensuring equitable compensation
+- ✅ **Multi-Agent Economics**: Enable complex economic interactions between multiple AI agents
+
+### 🤖 **Agent Tool Economy**
+- ✅ **Future-Ready Architecture**: Built for the emerging AI agent tool economy
+- ✅ **Agent Goal Support**: Comprehensive support for agent objectives and mission-driven value creation
+- ✅ **Tool Marketplace Integration**: Seamless connection to agent tool ecosystems
+- ✅ **Economic Incentives**: Align agent goals with economic rewards
 
 ### 🌐 **HTTP Gateway**
 - ✅ **One-click HTTP Registration** for quick onboarding
@@ -66,16 +80,24 @@ A2V establishes a decentralized **AI value governance layer** across 10,000+ age
 │  │  10,000+     │      │  10,000+     │      │          │  │
 │  └──────┬───────┘      └──────┬───────┘      └────┬─────┘  │
 │         │                     │                    │        │
-│         └─────────────────────┼────────────────────┘        │
+│         │                     │                    │        │
+│  ┌──────▼─────────────────────▼────────────────────▼─────┐  │
+│  │         A2A (Agent-to-Agent) Network                  │  │
+│  │         Agent Tool Economy                             │  │
+│  └──────┬─────────────────────────────────────────────────┘  │
+│         │                                                    │
+│         └─────────────────────┐                             │
 │                               │                             │
 │                    ┌──────────▼──────────┐                  │
 │                    │  Value Measurement  │                  │
 │                    │   & Settlement      │                  │
+│                    │  Compensation Sys.  │                  │
 │                    └──────────┬──────────┘                  │
 │                               │                             │
 │                    ┌──────────▼──────────┐                  │
 │                    │  Smart Contracts    │                  │
 │                    │  On-Chain Settlement│                  │
+│                    │  Goal-Based Rewards │                  │
 │                    └──────────────────────┘                  │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
@@ -126,6 +148,7 @@ const client = new A2VClient({
 await client.registerAgent({
   name: 'My AI Agent',
   mcpTools: ['tool1', 'tool2'],
+  goals: ['objective1', 'objective2'], // Agent goals support
 });
 
 // Start measuring value
@@ -133,6 +156,38 @@ const value = await client.measureInteraction({
   agentId: 'agent-123',
   prompt: 'Your AI prompt',
   inference: 'AI response',
+});
+
+// AI Compensation tracking
+const compensation = await client.calculateCompensation({
+  agentId: 'agent-123',
+  performance: { tasks: 100, quality: 0.95 },
+});
+```
+
+#### Option 3: A2A (Agent-to-Agent) Integration
+
+```javascript
+// Example: Enable agent-to-agent transactions
+import { A2VClient } from '@a2v/sdk';
+
+const client = new A2VClient({
+  apiKey: 'your-api-key',
+  network: 'mainnet',
+});
+
+// Enable A2A transactions
+await client.enableA2A({
+  agentId: 'agent-123',
+  capabilities: ['request', 'respond', 'collaborate'],
+});
+
+// Initiate agent-to-agent transaction
+const transaction = await client.initiateA2ATransaction({
+  fromAgent: 'agent-123',
+  toAgent: 'agent-456',
+  service: 'data-processing',
+  value: 100,
 });
 ```
 
@@ -144,6 +199,10 @@ const value = await client.measureInteraction({
 
 - **Synaptic Mesh**: The distributed neural substrate that connects all participants
 - **Value Measurement**: How AI interactions are quantified and tracked
+- **AI Compensation Quantification**: Automated payroll system for AI agents based on performance
+- **A2A (Agent-to-Agent)**: Native support for agent-to-agent transactions and collaborations
+- **Agent Tool Economy**: Economic framework for the emerging AI agent tool marketplace
+- **Goal-Oriented Rewards**: Support for agent objectives and mission-driven value creation
 - **On-Chain Settlement**: Smart contract-based value exchange
 - **Hybrid Consensus**: Combining AI cognition with blockchain finality
 
@@ -154,6 +213,8 @@ Full API documentation is available at [docs.a2vprotocol.com](https://docs.a2vpr
 ### Integration Guides
 
 - [MCP Integration Guide](#)
+- [A2A (Agent-to-Agent) Setup](#)
+- [AI Compensation System Configuration](#)
 - [HTTP Gateway Setup](#)
 - [Smart Contract Deployment](#)
 - [SDK Usage Examples](#)
@@ -164,7 +225,7 @@ Full API documentation is available at [docs.a2vprotocol.com](https://docs.a2vpr
 
 - **Frontend**: HTML5, CSS3, JavaScript (Webflow)
 - **Blockchain**: Smart Contracts (Ethereum-compatible)
-- **Protocol**: MCP (Model Context Protocol) compatible
+- **Protocol**: MCP (Model Context Protocol) & A2A (Agent-to-Agent) compatible
 - **SDK**: JavaScript/TypeScript SDK available
 - **Infrastructure**: Decentralized, blockchain-based
 
@@ -172,9 +233,13 @@ Full API documentation is available at [docs.a2vprotocol.com](https://docs.a2vpr
 
 ## 🌍 Ecosystem
 
-A2V is compatible with a vast ecosystem of AI tools and agents:
+A2V is compatible with a vast ecosystem of AI tools and agents, designed for the future of the AI agent tool economy:
 
 - **10,000+ MCP Tools** - Full compatibility with the Model Context Protocol ecosystem
+- **A2A (Agent-to-Agent)** - Native support for agent-to-agent transactions and collaborations
+- **AI Compensation System** - Automated payroll and value distribution for AI agents
+- **Agent Tool Economy** - Built for the emerging marketplace of AI agent tools and services
+- **Goal-Oriented Agents** - Comprehensive support for agent objectives and mission-driven value creation
 - **AI Agents** - Connect any AI agent to the value network
 - **Blockchain Networks** - Multi-chain support for value settlement
 - **Developer Tools** - Open SDK and comprehensive APIs
@@ -208,8 +273,13 @@ We welcome contributions! A2V is an open-source project built by the community, 
 - [x] Core protocol development
 - [x] MCP integration framework
 - [x] HTTP Gateway implementation
+- [x] AI Compensation Quantification System
+- [x] A2A (Agent-to-Agent) compatibility foundation
+- [ ] Full A2A transaction support
 - [ ] Mainnet deployment
 - [ ] Advanced analytics dashboard
+- [ ] Agent Tool Economy marketplace
+- [ ] Goal-oriented reward system enhancement
 - [ ] Multi-chain support
 - [ ] Mobile SDK
 - [ ] Enterprise features
@@ -232,11 +302,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact & Community
 
-- **Website**: [a2vprotocol.com](https://a2vprotocol.com)
-- **Discord**: [Join our community](https://discord.com/)
-- **Twitter**: [@A2VProtocol](https://twitter.com)
+- **Website**: [a2v.ipollo.ai](http://a2v.ipollo.ai/)
+- **Twitter/X**: [@a2vprotocol](https://x.com/a2vprotocol)
+- **Email**: 
+  - General inquiries: [a2v@ipollo.ai](mailto:a2v@ipollo.ai)
+  - Technical support: [devin@ipollo.ai](mailto:devin@ipollo.ai)
 - **GitHub**: [github.com/a2vprotocol](https://github.com/a2vprotocol)
-- **Telegram**: [Join our Telegram](https://telegram.org/)
 
 ---
 
@@ -255,3 +326,4 @@ If you find A2V useful, please consider giving us a star on GitHub!
 *Measuring AI value, one interaction at a time.*
 
 </div>
+
