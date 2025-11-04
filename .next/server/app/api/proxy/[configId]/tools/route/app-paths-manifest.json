@@ -1,0 +1,3 @@
+{
+  "/api/proxy/[configId]/tools/route": "app/api/proxy/[configId]/tools/route.js"
+}

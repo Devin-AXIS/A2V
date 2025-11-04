@@ -1,0 +1,3 @@
+{
+  "/api/distribute-tokens/route": "app/api/distribute-tokens/route.js"
+}

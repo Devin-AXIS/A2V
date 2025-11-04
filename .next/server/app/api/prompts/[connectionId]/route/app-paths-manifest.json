@@ -1,0 +1,3 @@
+{
+  "/api/prompts/[connectionId]/route": "app/api/prompts/[connectionId]/route.js"
+}

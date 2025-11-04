@@ -1,14 +1,27 @@
-node_modules/
-.env
-.DS_Store
-*.log
-dist/
-build/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Next.js
-.next/
-out/
-next-env.d.ts
+# dependencies
+/node_modules
 
-# Vercel
+# next.js
+/.next/*/cache
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
 .vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
