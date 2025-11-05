@@ -1,7 +1,7 @@
 "use client"
 
 import { AppCard } from "@/components/app-card"
-import { useMemo, useEffect, useState } from "react"
+import { useMemo, useEffect, useState, useCallback } from "react"
 
 type App = {
   id: number
@@ -311,11 +311,12 @@ interface AppGridProps {
   selectedCategory: string
   searchTerm: string
   onAppsChange?: (apps: App[]) => void
+  refreshTrigger?: number
 }
 
-export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm, onAppsChange }: AppGridProps) {
+export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm, onAppsChange, refreshTrigger }: AppGridProps) {
   const [apps, setApps] = useState([]);
-  const getAppList = async () => {
+  const getAppList = useCallback(async () => {
     try {
       const res = await fetch("/api/configs")
       const { configs } = await res.json()
@@ -323,10 +324,11 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
       configs.forEach(item => {
         newApp.push({
           id: item.id,
-          name: item.config.name,
-          category: item.config.connectionConfig.formData.category,
+          name: item.config.title,
+          category: item.config?.connectionConfig?.formData?.category || "Charts",
           description: item.config.description,
-          icon: item.config.connectionConfig.formData.icon,
+          // 优先使用配置的顶级 icon 字段（URL），如果没有则回退到 formData.icon（兼容旧数据）
+          icon: item.config.icon || item.config.connectionConfig?.formData?.icon,
           ...item.config.connectionConfig.st
         })
       })
@@ -337,11 +339,18 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
     } catch (e) {
       console.log(e)
     }
-  }
+  }, [onAppsChange])
 
   useEffect(() => {
     getAppList()
-  }, [])
+  }, [getAppList])
+
+  // 当 refreshTrigger 变化时，刷新应用列表
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      getAppList()
+    }
+  }, [refreshTrigger, getAppList])
 
   const filteredApps = useMemo(() => {
     let filtered = apps
@@ -355,11 +364,12 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(
-        (app) =>
-          app.name.toLowerCase().includes(searchLower) ||
-          app.description.toLowerCase().includes(searchLower) ||
-          app.category.toLowerCase().includes(searchLower) ||
-          app.tags.some((tag) => tag.toLowerCase().includes(searchLower)),
+        (app) => {
+          return (app.name || "").toLowerCase().includes(searchLower) ||
+            app.description.toLowerCase().includes(searchLower) ||
+            app.category.toLowerCase().includes(searchLower) ||
+            app.tags.some((tag) => tag.toLowerCase().includes(searchLower))
+        }
       )
     }
 
@@ -423,7 +433,7 @@ export const getTotalApps = (appsArray: App[], category: string, search: string)
     const searchLower = search.toLowerCase()
     filtered = filtered.filter(
       (app) =>
-        app.name.toLowerCase().includes(searchLower) ||
+        (app.name || "").toLowerCase().includes(searchLower) ||
         app.description.toLowerCase().includes(searchLower) ||
         app.category.toLowerCase().includes(searchLower) ||
         app.tags.some((tag) => tag.toLowerCase().includes(searchLower)),

@@ -7,6 +7,7 @@ interface MCPConfig {
     id: string;
     title: string;
     description: string;
+    icon?: string; // 图片URL，不再是base64
     connectionType: 'url' | 'command' | 'script';
     connectionConfig: {
         user?: any;
@@ -60,7 +61,7 @@ async function writeConfigs(configs: MCPConfig[]) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { title, description, connectionType, connectionConfig } = await request.json();
+        const { title, description, icon, connectionType, connectionConfig } = await request.json();
 
         // 验证必填字段
         if (!title || !description) {
@@ -85,6 +86,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // 如果 icon 是 base64 格式，需要转换（但新上传的应该已经是 URL）
+        // 这里只保存 URL，不保存 base64
+        let iconUrl = icon;
+        if (icon && icon.startsWith('data:image')) {
+            // 如果是 base64，忽略它（旧数据兼容，新上传应该已经是 URL）
+            console.warn('收到 base64 格式的 icon，已忽略。请使用文件上传 API 上传图片。');
+            iconUrl = undefined;
+        }
+
         // 生成唯一ID
         const configId = randomBytes(16).toString('hex');
 
@@ -93,6 +103,7 @@ export async function POST(request: NextRequest) {
             id: configId,
             title,
             description,
+            icon: iconUrl, // 保存图片 URL，而不是 base64
             connectionType,
             connectionConfig,
             createdAt: new Date().toISOString(),
@@ -109,8 +120,8 @@ export async function POST(request: NextRequest) {
 
         // 生成访问链接
         // 提供两个链接：配置页面链接和代理SSE链接
-        const configPageUrl = `${request.nextUrl.origin}/config/${configId}`;
-        const proxySseUrl = `${request.nextUrl.origin}/api/proxy/${configId}/sse`;
+        const configPageUrl = `http://a2vhub.ipollo.ai/config/${configId}`;
+        const proxySseUrl = `http://a2vhub.ipollo.ai/api/proxy/${configId}/sse`;
 
         return NextResponse.json({
             success: true,

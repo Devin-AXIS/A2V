@@ -65,11 +65,13 @@ interface UploadProtocolModalProps {
   onClose: () => void
   connectedWallet?: string | null
   userProfile?: UserProfile | null
+  onSuccess?: () => void
 }
 
-export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProfile }: UploadProtocolModalProps) {
+export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProfile, onSuccess }: UploadProtocolModalProps) {
   const [step, setStep] = useState(1)
   const [isConverting, setIsConverting] = useState(false)
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false)
   const [tools, setTools] = useState([])
   const [resources, setResources] = useState([])
   const [prompts, setPrompts] = useState([])
@@ -104,7 +106,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Validate file type
@@ -119,12 +121,31 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
         return
       }
 
-      // Read and preview the image
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData({ ...formData, icon: reader.result as string })
+      setIsUploadingIcon(true)
+      try {
+        // Upload image to server
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', file)
+
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.url) {
+          // Save the URL instead of base64
+          setFormData({ ...formData, icon: data.url })
+        } else {
+          alert(data.message || 'Failed to upload image')
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        alert('Failed to upload image. Please try again.')
+      } finally {
+        setIsUploadingIcon(false)
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -198,91 +219,15 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
           setFormData({ ...formData, convertedProtocol: true, tools: toolsData.tools || [] });
         } catch (error: any) {
           console.error('自动获取资源错误:', error);
+        } finally {
+          setIsConverting(false)
         }
         // setStep(3);
       }, 500)
     } else {
+      setIsConverting(false)
       throw new Error(data.error || data.message || '连接失败');
     }
-
-    //     // Simulate realistic conversion process
-    //     await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    //     // Parse MCP protocol and extract tools
-    //     const mockTools = [
-    //       {
-    //         name: "calculateValue",
-    //         description: "Calculate AI model value based on usage metrics and performance data",
-    //         parameters: ["modelId", "timeRange", "metrics"],
-    //       },
-    //       {
-    //         name: "trackUsage",
-    //         description: "Monitor and record API call statistics with blockchain verification",
-    //         parameters: ["apiKey", "endpoint", "timestamp"],
-    //       },
-    //       {
-    //         name: "generateReport",
-    //         description: "Create comprehensive value assessment reports with on-chain data",
-    //         parameters: ["reportType", "dateRange", "format"],
-    //       },
-    //       {
-    //         name: "verifyTransaction",
-    //         description: "Verify value transfer transactions on the blockchain network",
-    //         parameters: ["txHash", "chainId"],
-    //       },
-    //     ]
-
-    //     // Generate A2V protocol extension
-    //     const a2vExtension = `
-    // // A2V Protocol Extension
-    // // Generated from MCP Protocol
-
-    // import { A2VProtocol } from '@a2v/core'
-
-    // export const a2vConfig = {
-    //   version: '1.0.0',
-    //   valueTracking: true,
-    //   blockchain: {
-    //     network: 'ethereum',
-    //     contractAddress: '0x...',
-    //   },
-    //   pricing: {
-    //     model: 'pay-per-call',
-    //     currency: 'USD',
-    //   },
-    //   tools: ${JSON.stringify(
-    //       mockTools.map((t) => ({ name: t.name, description: t.description })),
-    //       null,
-    //       2,
-    //     )}
-    // }
-
-    // // Original MCP Protocol
-    // ${formData.mcpProtocol}
-
-    // // A2V Value Calculation Wrapper
-    // export async function executeWithValueTracking(toolName: string, params: any) {
-    //   const startTime = Date.now()
-    //   const result = await executeMCPTool(toolName, params)
-    //   const executionTime = Date.now() - startTime
-
-    //   // Record value metrics on-chain
-    //   await A2VProtocol.recordExecution({
-    //     tool: toolName,
-    //     executionTime,
-    //     timestamp: Date.now(),
-    //     valueGenerated: calculateValue(result)
-    //   })
-
-    //   return result
-    // }`
-
-    //     setFormData({
-    //       ...formData,
-    //       tools: mockTools,
-    //       convertedProtocol: a2vExtension,
-    //     })
-    setIsConverting(false)
   }
 
   const handleSaveMcpProxy = async () => {
@@ -372,6 +317,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
       body: JSON.stringify(body),
     });
     const data = await response.json();
+    console.log(data, 23232323)
     if (data.success) {
       setSavedMcpConfig(data);
       setStep(3);
@@ -382,6 +328,10 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
     console.log("Submitting A2V Protocol:", formData)
     onClose()
     setStep(1)
+    // 触发刷新应用列表
+    if (onSuccess) {
+      onSuccess()
+    }
   }
 
   const handleNextStep = useCallback(async () => {
@@ -468,7 +418,9 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
                 <label className="block text-xs font-medium text-gray-300 mb-2">Icon</label>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <div className="w-16 h-16 rounded-xl backdrop-blur-xl bg-white/8 border border-white/20 flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.08)] overflow-hidden">
-                    {formData.icon ? (
+                    {isUploadingIcon ? (
+                      <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                    ) : formData.icon ? (
                       <Image
                         src={formData.icon || "/placeholder.svg"}
                         alt="Icon"
@@ -491,9 +443,10 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
                     <button
                       type="button"
                       onClick={triggerFileInput}
-                      className="flex-1 sm:flex-none px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/20 text-xs text-white hover:bg-white/10 hover:shadow-[0_4px_16px_rgba(255,255,255,0.1)] transition-all duration-300"
+                      disabled={isUploadingIcon}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/20 text-xs text-white hover:bg-white/10 hover:shadow-[0_4px_16px_rgba(255,255,255,0.1)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Upload Icon
+                      {isUploadingIcon ? "Uploading..." : "Upload Icon"}
                     </button>
                     {formData.icon && (
                       <button
@@ -731,7 +684,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
                   By using this MCP connection for calling, the token distribution function can be completed
                 </p>
               </div>
-              {/* 
+
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-3">Blockchain Network</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -805,7 +758,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
                   </div>
                 </div>
-              )} */}
+              )}
             </div>
           )}
         </div>

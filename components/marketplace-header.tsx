@@ -22,6 +22,7 @@ interface MarketplaceHeaderProps {
   setActiveCategory: (category: string) => void
   searchTerm: string
   setSearchTerm: (term: string) => void
+  onRefreshApps?: () => void
 }
 
 export function MarketplaceHeader({
@@ -29,6 +30,7 @@ export function MarketplaceHeader({
   setActiveCategory,
   searchTerm,
   setSearchTerm,
+  onRefreshApps,
 }: MarketplaceHeaderProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
@@ -80,18 +82,18 @@ export function MarketplaceHeader({
       // 从 localStorage 恢复钱包信息
       const savedWallet = localStorage.getItem('connectedWallet')
       const savedWalletType = localStorage.getItem('walletType')
-      
+
       if (savedWallet && savedWalletType) {
         // 验证钱包是否仍然连接（通过钱包扩展 API）
         try {
           let provider: any = null
-          
+
           if (savedWalletType === 'metamask') {
             provider = typeof window !== 'undefined' ? (window as any).ethereum : null
           } else if (savedWalletType === 'okx') {
             provider = typeof window !== 'undefined' ? (window as any).okxwallet : null
           }
-          
+
           if (provider) {
             // 使用 eth_accounts 检查连接（不需要用户授权）
             const accounts = await provider.request({ method: 'eth_accounts' })
@@ -118,7 +120,7 @@ export function MarketplaceHeader({
         }
       }
     }
-    
+
     restoreWalletConnection()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -175,7 +177,7 @@ export function MarketplaceHeader({
   const handleWalletConnect = async (address: string, type: string) => {
     setConnectedWallet(address)
     setWalletType(type)
-    
+
     // 保存到 localStorage
     localStorage.setItem('connectedWallet', address)
     localStorage.setItem('walletType', type)
@@ -323,11 +325,12 @@ export function MarketplaceHeader({
         </div>
       </header>
 
-      <UploadProtocolModal 
-        isOpen={isUploadModalOpen} 
+      <UploadProtocolModal
+        isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         connectedWallet={connectedWallet}
         userProfile={userProfile}
+        onSuccess={onRefreshApps}
       />
       <WalletConnectModal
         isOpen={isWalletModalOpen}

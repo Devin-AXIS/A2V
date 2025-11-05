@@ -1,3 +1,0 @@
-{
-  "/api/proxy/[configId]/message/route": "app/api/proxy/[configId]/message/route.js"
-}

@@ -143,7 +143,7 @@ export function AppCard({ app }: AppCardProps) {
         <p className="text-xs text-gray-400 leading-relaxed mb-3 line-clamp-2">{app.description}</p>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {app.tags.slice(0, 2).map((tag) => (
+          {(app.tags || []).slice(0, 2).map((tag) => (
             <Badge
               key={tag}
               variant="outline"
@@ -168,11 +168,10 @@ export function AppCard({ app }: AppCardProps) {
 
           <Button
             size="sm"
-            className={`transition-all duration-500 rounded-lg text-xs h-6 px-2.5 ${
-              isHovered
-                ? "bg-primary text-black shadow-lg shadow-primary/40 scale-105"
-                : "bg-primary/80 text-black hover:bg-primary"
-            }`}
+            className={`transition-all duration-500 rounded-lg text-xs h-6 px-2.5 ${isHovered
+              ? "bg-primary text-black shadow-lg shadow-primary/40 scale-105"
+              : "bg-primary/80 text-black hover:bg-primary"
+              }`}
           >
             Call
           </Button>

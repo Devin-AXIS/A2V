@@ -173,7 +173,13 @@ export default function AppDetailPage() {
   const getAppDetail = async (id: string) => {
     const res = await fetch(`/api/config/${id}`)
     const { config } = await res.json()
-    setAppData({ ...config.connectionConfig, title: config.title })
+    // 优先使用配置的顶级 icon 字段（URL），如果没有则回退到 formData.icon（兼容旧数据）
+    const icon = config.icon || config.connectionConfig?.formData?.icon
+    setAppData({
+      ...config.connectionConfig,
+      title: config.title,
+      icon: icon // 添加 icon 字段
+    })
   }
 
   const connectionAndGetTools = async (id: string) => {
@@ -205,7 +211,6 @@ export default function AppDetailPage() {
       const toolsData = await toolsRes.json();
       if (toolsData.success !== false) {
         const { tools } = toolsData;
-        console.log(tools, 23232323);
         setTools(tools || [])
       } else {
         console.error('获取工具失败:', toolsData.error);
@@ -233,6 +238,61 @@ export default function AppDetailPage() {
 
   // /api/config/id
 
+  // 获取用户信息，返回是否需要显示设置弹窗
+  const fetchUserProfile = async (address: string): Promise<boolean> => {
+    try {
+      // 先从 API 获取用户资料
+      const response = await fetch(`/api/user-profile?address=${encodeURIComponent(address)}`)
+      const data = await response.json()
+
+      if (data.success && data.profile) {
+        setUserProfile(data.profile)
+        // 同时保存到 localStorage
+        localStorage.setItem(`profile_${address}`, JSON.stringify(data.profile))
+        setIsFirstTimeSetup(false)
+        return false // 不需要显示设置弹窗
+      } else {
+        // 如果 API 没有数据，尝试从 localStorage 读取
+        const existingProfile = localStorage.getItem(`profile_${address}`)
+        if (existingProfile) {
+          try {
+            const parsed = JSON.parse(existingProfile)
+            if (parsed && parsed.name) {
+              setUserProfile(parsed)
+              setIsFirstTimeSetup(false)
+              return false
+            }
+          } catch (e) {
+            console.error('解析 localStorage 用户资料失败:', e)
+          }
+        }
+        // 用户首次使用，需要设置个人资料
+        setIsFirstTimeSetup(true)
+        setUserProfile(null)
+        return true // 需要显示设置弹窗
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+      // 出错时尝试从 localStorage 读取
+      const existingProfile = localStorage.getItem(`profile_${address}`)
+      if (existingProfile) {
+        try {
+          const parsed = JSON.parse(existingProfile)
+          if (parsed && parsed.name) {
+            setUserProfile(parsed)
+            setIsFirstTimeSetup(false)
+            return false
+          }
+        } catch (e) {
+          console.error('解析 localStorage 用户资料失败:', e)
+        }
+      }
+      setIsFirstTimeSetup(true)
+      setUserProfile(null)
+      return true // 出错时也需要显示设置弹窗
+    }
+  }
+
   // 页面加载时恢复登录状态
   useEffect(() => {
     const restoreWalletConnection = async () => {
@@ -258,11 +318,8 @@ export default function AppDetailPage() {
               // 钱包仍然连接，恢复状态
               setConnectedWallet(savedWallet)
               setWalletType(savedWalletType)
-              // 恢复用户资料
-              const existingProfile = localStorage.getItem(`profile_${savedWallet}`)
-              if (existingProfile) {
-                setUserProfile(JSON.parse(existingProfile))
-              }
+              // 从 API 获取用户资料
+              await fetchUserProfile(savedWallet)
             } else {
               // 钱包已断开，清除保存的信息
               localStorage.removeItem('connectedWallet')
@@ -290,7 +347,7 @@ export default function AppDetailPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleWalletConnect = (address: string, type: string) => {
+  const handleWalletConnect = async (address: string, type: string) => {
     setConnectedWallet(address)
     setWalletType(type)
 
@@ -298,21 +355,48 @@ export default function AppDetailPage() {
     localStorage.setItem('connectedWallet', address)
     localStorage.setItem('walletType', type)
 
-    const existingProfile = localStorage.getItem(`profile_${address}`)
-    if (existingProfile) {
-      setUserProfile(JSON.parse(existingProfile))
-    } else {
-      setIsFirstTimeSetup(true)
+    // 从 API 获取用户资料
+    const shouldShowSetup = await fetchUserProfile(address)
+
+    // 如果是首次使用，显示个人资料设置弹窗
+    if (shouldShowSetup) {
       setIsProfileModalOpen(true)
     }
   }
 
-  const handleProfileSave = (profile: UserProfile) => {
-    setUserProfile(profile)
+  const handleProfileSave = async (profile: UserProfile) => {
     if (connectedWallet) {
-      localStorage.setItem(`profile_${connectedWallet}`, JSON.stringify(profile))
+      try {
+        // 保存到 API
+        const response = await fetch('/api/user-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: connectedWallet,
+            ...profile,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          setUserProfile(data.profile)
+          // 同时保存到 localStorage
+          localStorage.setItem(`profile_${connectedWallet}`, JSON.stringify(data.profile))
+          setIsFirstTimeSetup(false)
+        } else {
+          throw new Error(data.message || '保存失败')
+        }
+      } catch (error: any) {
+        console.error('保存用户信息失败:', error)
+        // 即使 API 保存失败，也先保存到本地
+        setUserProfile(profile)
+        localStorage.setItem(`profile_${connectedWallet}`, JSON.stringify(profile))
+        setIsFirstTimeSetup(false)
+      }
     }
-    setIsFirstTimeSetup(false)
   }
 
   const handleWalletDisconnect = () => {
@@ -455,12 +539,11 @@ export default function AppDetailPage() {
               <div className="relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-5">
                   {/* Left: App Info */}
-                  {console.log(appData, 23232323)}
                   <div className="lg:col-span-3">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center rounded-xl shadow-lg shadow-primary/40 flex-shrink-0 overflow-hidden">
                         <Image
-                          src={appData.formData?.icon || "/placeholder.svg"}
+                          src={appData.icon || appData.formData?.icon || "/placeholder.svg"}
                           alt={`app logo`}
                           width={48}
                           height={48}
@@ -608,7 +691,6 @@ export default function AppDetailPage() {
 
             {activeTab === "features" && (
               <div className="space-y-3">
-                {console.log(tools, 23232323)}
                 {tools.map((feature, index) => (
                   <div
                     key={index}

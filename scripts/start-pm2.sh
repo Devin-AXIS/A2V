@@ -61,7 +61,7 @@ if [ -f "ecosystem.config.js" ]; then
             --interpreter bash \
             --cwd "$PROJECT_DIR" \
             --env NODE_ENV=production \
-            --env PORT=4001 \
+            --env PORT=80 \
             --error ./logs/pm2-error.log \
             --output ./logs/pm2-out.log \
             --log ./logs/pm2-combined.log \

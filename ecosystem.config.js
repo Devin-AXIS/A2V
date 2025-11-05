@@ -14,7 +14,7 @@ module.exports = {
       exec_mode: 'fork', // 'fork' 或 'cluster'
       env: {
         NODE_ENV: 'production',
-        PORT: 4001,
+        PORT: 80,
       },
       // 自动重启配置
       watch: false,

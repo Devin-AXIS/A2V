@@ -130,10 +130,19 @@ export async function POST(request: NextRequest) {
         const profiles = await readProfiles();
         const addressKey = address.toLowerCase();
 
+        // 如果 avatar 是 base64 格式，需要转换（但新上传的应该已经是 URL）
+        // 这里只保存 URL，不保存 base64
+        let avatarUrl = avatar || '';
+        if (avatar && avatar.startsWith('data:image')) {
+            // 如果是 base64，忽略它（旧数据兼容，新上传应该已经是 URL）
+            console.warn('收到 base64 格式的 avatar，已忽略。请使用文件上传 API 上传图片。');
+            avatarUrl = '';
+        }
+
         // 创建或更新用户信息
         const profile: UserProfile = {
             address: addressKey,
-            avatar: avatar || '',
+            avatar: avatarUrl, // 保存图片 URL，而不是 base64
             name: name.trim(),
             website: website || '',
             profession: profession || '',

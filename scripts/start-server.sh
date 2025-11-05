@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 
 # 设置环境变量
 export NODE_ENV=production
-export PORT=4001
+export PORT=80
 
 # 启动 Next.js 服务器
 exec pnpm start

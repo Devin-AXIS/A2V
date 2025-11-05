@@ -36,7 +36,7 @@ fi
 
 # 构建项目
 echo "🔨 开始构建项目..."
-pnpm build
+pnpm next build
 
 # 检查构建是否成功
 if [ $? -eq 0 ] && [ -d ".next" ]; then

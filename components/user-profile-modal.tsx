@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { X, User, Globe, Briefcase, Camera } from "lucide-react"
+import { X, User, Globe, Briefcase, Camera, Loader2 } from "lucide-react"
 
 interface UserProfile {
   avatar: string
@@ -35,6 +35,7 @@ export function UserProfileModal({
     profession: initialProfile?.profession || "",
     bio: initialProfile?.bio || "",
   })
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   useEffect(() => {
     if (initialProfile) {
@@ -52,14 +53,46 @@ export function UserProfileModal({
     }
   }
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setProfile({ ...profile, avatar: reader.result as string })
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload an image file")
+        return
       }
-      reader.readAsDataURL(file)
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB")
+        return
+      }
+
+      setIsUploadingAvatar(true)
+      try {
+        // Upload image to server
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', file)
+
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.url) {
+          // Save the URL instead of base64
+          setProfile({ ...profile, avatar: data.url })
+        } else {
+          alert(data.message || 'Failed to upload image')
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        alert('Failed to upload image. Please try again.')
+      } finally {
+        setIsUploadingAvatar(false)
+      }
     }
   }
 
@@ -100,18 +133,20 @@ export function UserProfileModal({
           <div className="flex flex-col items-center gap-4">
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden backdrop-blur-xl bg-white/5 border-2 border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex items-center justify-center">
-                {profile.avatar ? (
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                ) : profile.avatar ? (
                   <img src={profile.avatar || "/placeholder.svg"} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-10 h-10 text-gray-400" />
                 )}
               </div>
-              <label className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer">
+              <label className={`absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer ${isUploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Camera className="w-6 h-6 text-white" />
-                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={isUploadingAvatar} className="hidden" />
               </label>
             </div>
-            <p className="text-xs text-gray-400">Click to upload avatar</p>
+            <p className="text-xs text-gray-400">{isUploadingAvatar ? "Uploading..." : "Click to upload avatar"}</p>
           </div>
 
           {/* Name */}

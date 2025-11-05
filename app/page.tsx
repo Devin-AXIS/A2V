@@ -25,11 +25,16 @@ export default function MarketplacePage() {
   const [activeCategory, setActiveCategory] = useState("All")
   const [searchTerm, setSearchTerm] = useState("")
   const [apps, setApps] = useState<App[]>([])
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const appsPerPage = 8
 
   useEffect(() => {
     setCurrentPage(1)
   }, [activeCategory, searchTerm])
+
+  const handleRefreshApps = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -53,6 +58,7 @@ export default function MarketplacePage() {
           setActiveCategory={setActiveCategory}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onRefreshApps={handleRefreshApps}
         />
 
         <main className="container mx-auto px-4 py-8 max-w-7xl">
@@ -62,6 +68,7 @@ export default function MarketplacePage() {
             selectedCategory={activeCategory}
             searchTerm={searchTerm}
             onAppsChange={setApps}
+            refreshTrigger={refreshTrigger}
           />
           <Pagination
             currentPage={currentPage}

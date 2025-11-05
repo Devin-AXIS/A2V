@@ -1,5 +1,5 @@
 {
-  "buildStage": "static-generation",
+  "buildStage": "compile",
   "buildOptions": {
     "useBuildWorker": "true"
   }

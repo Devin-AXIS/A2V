@@ -1,3 +1,0 @@
-{
-  "/api/proxy/[configId]/sse/route": "app/api/proxy/[configId]/sse/route.js"
-}
