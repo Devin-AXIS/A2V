@@ -76,8 +76,18 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes);
         await fs.writeFile(filePath, buffer);
 
-        // 生成文件URL
-        const fileUrl = `/uploads/${uniqueFilename}`;
+        // 验证文件是否成功保存
+        try {
+            const stats = await fs.stat(filePath);
+            console.log(`文件保存成功: ${filePath}, 大小: ${stats.size} bytes`);
+        } catch (error) {
+            console.error('文件保存验证失败:', error);
+        }
+
+        // 生成文件URL（使用 API 路由确保在生产环境中也能访问）
+        // 优先使用 API 路由，这样在生产环境中也能正常工作
+        const fileUrl = `/api/uploads/${uniqueFilename}`;
+        console.log(`文件URL: ${fileUrl}, 完整路径: ${filePath}`);
 
         return NextResponse.json({
             success: true,
