@@ -1,3 +1,0 @@
-{
-  "/api/config/[configId]/route": "app/api/config/[configId]/route.js"
-}
