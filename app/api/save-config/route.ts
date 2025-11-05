@@ -8,6 +8,7 @@ interface MCPConfig {
     title: string;
     description: string;
     icon?: string; // 图片URL，不再是base64
+    creatorWallet?: string; // 创建者的钱包地址
     connectionType: 'url' | 'command' | 'script';
     connectionConfig: {
         user?: any;
@@ -61,7 +62,7 @@ async function writeConfigs(configs: MCPConfig[]) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { title, description, icon, connectionType, connectionConfig } = await request.json();
+        const { title, description, icon, connectionType, connectionConfig, creatorWallet } = await request.json();
 
         // 验证必填字段
         if (!title || !description) {
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
             title,
             description,
             icon: iconUrl, // 保存图片 URL，而不是 base64
+            creatorWallet: creatorWallet ? creatorWallet.toLowerCase() : undefined, // 保存创建者钱包地址（小写）
             connectionType,
             connectionConfig,
             createdAt: new Date().toISOString(),

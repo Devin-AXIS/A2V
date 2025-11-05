@@ -26,6 +26,7 @@ export default function MarketplacePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [apps, setApps] = useState<App[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null)
   const appsPerPage = 8
 
   useEffect(() => {
@@ -34,6 +35,10 @@ export default function MarketplacePage() {
 
   const handleRefreshApps = () => {
     setRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleWalletChange = (wallet: string | null) => {
+    setConnectedWallet(wallet)
   }
 
   return (
@@ -59,6 +64,7 @@ export default function MarketplacePage() {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           onRefreshApps={handleRefreshApps}
+          onWalletChange={handleWalletChange}
         />
 
         <main className="container mx-auto px-4 py-8 max-w-7xl">
@@ -67,6 +73,7 @@ export default function MarketplacePage() {
             appsPerPage={appsPerPage}
             selectedCategory={activeCategory}
             searchTerm={searchTerm}
+            connectedWallet={connectedWallet}
             onAppsChange={setApps}
             refreshTrigger={refreshTrigger}
           />

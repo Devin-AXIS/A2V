@@ -23,6 +23,7 @@ interface MarketplaceHeaderProps {
   searchTerm: string
   setSearchTerm: (term: string) => void
   onRefreshApps?: () => void
+  onWalletChange?: (wallet: string | null) => void // 添加钱包地址变化回调
 }
 
 export function MarketplaceHeader({
@@ -31,6 +32,7 @@ export function MarketplaceHeader({
   searchTerm,
   setSearchTerm,
   onRefreshApps,
+  onWalletChange,
 }: MarketplaceHeaderProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
@@ -101,6 +103,7 @@ export function MarketplaceHeader({
               // 钱包仍然连接，恢复状态
               setConnectedWallet(savedWallet)
               setWalletType(savedWalletType)
+              onWalletChange?.(savedWallet) // 通知父组件
               // 获取用户资料
               await fetchUserProfile(savedWallet)
             } else {
@@ -176,6 +179,7 @@ export function MarketplaceHeader({
 
   const handleWalletConnect = async (address: string, type: string) => {
     setConnectedWallet(address)
+    onWalletChange?.(address) // 通知父组件
     setWalletType(type)
 
     // 保存到 localStorage
@@ -200,6 +204,7 @@ export function MarketplaceHeader({
 
   const handleWalletDisconnect = () => {
     setConnectedWallet(null)
+    onWalletChange?.(null) // 通知父组件
     setWalletType(null)
     setUserProfile(null)
     // 清除 localStorage 中的保存信息

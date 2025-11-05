@@ -2,14 +2,15 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, TrendingUp, CheckCircle2, Activity } from "lucide-react"
+import { Star, TrendingUp, CheckCircle2, Activity, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
 
 interface AppCardProps {
   app: {
-    id: number
+    id: number | string
     name: string
     category: string
     description: string
@@ -21,12 +22,63 @@ interface AppCardProps {
     tags: string[]
     valueChange?: string
     chartData?: number[]
+    creatorWallet?: string
   }
+  connectedWallet?: string | null
+  onDelete?: () => void
 }
 
-export function AppCard({ app }: AppCardProps) {
+export function AppCard({ app, connectedWallet, onDelete }: AppCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
+
+  // 检查当前用户是否是创建者
+  const isCreator = connectedWallet && app.creatorWallet && 
+    connectedWallet.toLowerCase() === app.creatorWallet.toLowerCase()
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation() // 阻止卡片点击事件
+    
+    if (!window.confirm(`确定要删除 "${app.name}" 吗？此操作无法撤销。`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/delete-config?id=${app.id}&wallet=${encodeURIComponent(connectedWallet || '')}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "删除成功",
+          description: `"${app.name}" 已成功删除`,
+        })
+        if (onDelete) {
+          onDelete()
+        }
+      } else {
+        toast({
+          title: "删除失败",
+          description: data.message || data.error || "删除应用时发生错误",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('删除应用失败:', error)
+      toast({
+        title: "删除失败",
+        description: "删除应用时发生错误，请稍后重试",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const generateChartPath = (data: number[]) => {
     const width = 100
@@ -50,6 +102,21 @@ export function AppCard({ app }: AppCardProps) {
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
     >
+      {/* 删除按钮 - 仅创建者可见 */}
+      {isCreator && (
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="absolute top-3 right-3 z-20 p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+          title="删除应用"
+        >
+          {isDeleting ? (
+            <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      )}
       <div className="absolute inset-0 pointer-events-none">
         {/* Gradient orb top-right */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-primary/15 to-transparent rounded-full blur-3xl group-hover:from-primary/25 transition-all duration-500" />

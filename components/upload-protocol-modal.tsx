@@ -310,6 +310,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
       description: formData.description,
       title: formData.name,
       icon: formData.icon,
+      creatorWallet: connectedWallet || null, // 添加创建者钱包地址
     };
     const response = await fetch('/api/save-config', {
       method: 'POST',

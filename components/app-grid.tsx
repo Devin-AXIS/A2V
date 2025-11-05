@@ -310,11 +310,12 @@ interface AppGridProps {
   appsPerPage: number
   selectedCategory: string
   searchTerm: string
+  connectedWallet?: string | null
   onAppsChange?: (apps: App[]) => void
   refreshTrigger?: number
 }
 
-export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm, onAppsChange, refreshTrigger }: AppGridProps) {
+export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm, connectedWallet, onAppsChange, refreshTrigger }: AppGridProps) {
   const [apps, setApps] = useState([]);
   const getAppList = useCallback(async () => {
     try {
@@ -329,6 +330,7 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
           description: item.config.description,
           // 优先使用配置的顶级 icon 字段（URL），如果没有则回退到 formData.icon（兼容旧数据）
           icon: item.config.icon || item.config.connectionConfig?.formData?.icon,
+          creatorWallet: item.config.creatorWallet, // 添加创建者钱包地址
           ...item.config.connectionConfig.st
         })
       })
@@ -408,7 +410,12 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
       {paginatedApps.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-[1400px] mx-auto">
           {paginatedApps.map((app) => (
-            <AppCard key={app.id} app={app} />
+            <AppCard 
+              key={app.id} 
+              app={app} 
+              connectedWallet={connectedWallet}
+              onDelete={getAppList}
+            />
           ))}
         </div>
       ) : (
