@@ -1,25 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-
-const CONFIGS_FILE = path.join(process.cwd(), 'data', 'mcp-configs', 'configs.json');
-
-// 读取配置
-async function readConfig(configId: string) {
-    try {
-        const data = await fs.readFile(CONFIGS_FILE, 'utf-8');
-        const configs = JSON.parse(data);
-        return configs.find((c: any) => c.id === configId);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            throw new Error('配置文件不存在');
-        }
-        throw error;
-    }
-}
+import { getConfigById } from '@/lib/database';
 
 // 存储活跃的代理会话（与sse路由共享）
 interface ProxySession {
@@ -127,7 +110,7 @@ export async function GET(
         }
 
         // 读取配置
-        const config = await readConfig(configId);
+        const config = getConfigById(configId);
         if (!config) {
             return NextResponse.json(
                 { success: false, error: '配置不存在' },

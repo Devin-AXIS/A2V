@@ -1,9 +1,5 @@
 // 代理客户端辅助函数
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const CONFIGS_FILE = path.join(process.cwd(), 'data', 'mcp-configs', 'configs.json');
 
 // 存储活跃的代理会话
 interface ProxySession {
@@ -41,7 +37,7 @@ export function getProxyClient(connectionId: string): Client {
   console.log(`[Proxy Client] 查找代理连接: ${configId}`);
 
   const sessions = getProxySessions();
-  
+
   // 查找该配置的最新会话
   for (const [sessionId, session] of sessions.entries()) {
     if (session.configId === configId && session.mcpClient) {

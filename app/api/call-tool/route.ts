@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClient } from '@/lib/mcp-client';
 import { getProxyClient, isProxyConnection, getActiveProxyConfigIds, hasActiveProxySession } from '@/lib/proxy-client';
+import { getConfigById } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     console.log('\n========== [Call Tool API] 请求开始 ==========');
@@ -35,15 +36,10 @@ export async function POST(request: NextRequest) {
             if (configIdPattern.test(connectionId)) {
                 console.log(`  - 检测到可能是 configId 格式`);
                 try {
-                    // 检查配置是否存在
-                    const { promises: fs } = await import('fs');
-                    const path = await import('path');
-                    const configsFile = path.join(process.cwd(), 'data', 'mcp-configs', 'configs.json');
-                    const configsData = await fs.readFile(configsFile, 'utf-8');
-                    const configs = JSON.parse(configsData);
-                    const configExists = configs.some((c: any) => c.id === connectionId);
+                    // 从数据库检查配置是否存在
+                    const config = getConfigById(connectionId);
 
-                    if (configExists) {
+                    if (config) {
                         // 配置存在，说明这是代理连接
                         const possibleProxyId = `proxy_${connectionId}`;
                         console.log(`  ✅ [Call Tool] 配置存在，确认是代理连接`);
@@ -98,13 +94,8 @@ export async function POST(request: NextRequest) {
                 // 提取 configId
                 const configId = actualConnectionId.replace('proxy_', '');
 
-                // 读取配置并创建临时会话
-                const { promises: fs } = await import('fs');
-                const path = await import('path');
-                const configsFile = path.join(process.cwd(), 'data', 'mcp-configs', 'configs.json');
-                const configsData = await fs.readFile(configsFile, 'utf-8');
-                const configs = JSON.parse(configsData);
-                const config = configs.find((c: any) => c.id === configId);
+                // 从数据库读取配置并创建临时会话
+                const config = getConfigById(configId);
 
                 if (!config) {
                     throw new Error(`配置不存在: ${configId}`);

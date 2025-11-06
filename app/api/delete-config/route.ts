@@ -1,44 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const CONFIGS_DIR = path.join(process.cwd(), 'data', 'mcp-configs');
-const CONFIGS_FILE = path.join(CONFIGS_DIR, 'configs.json');
-
-// 确保目录存在
-async function ensureDir() {
-    try {
-        await fs.mkdir(CONFIGS_DIR, { recursive: true });
-    } catch (error) {
-        console.error('创建配置目录失败:', error);
-    }
-}
-
-// 读取所有配置
-async function readConfigs(): Promise<any[]> {
-    try {
-        await ensureDir();
-        const data = await fs.readFile(CONFIGS_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return [];
-        }
-        console.error('读取配置失败:', error);
-        return [];
-    }
-}
-
-// 写入所有配置
-async function writeConfigs(configs: any[]) {
-    try {
-        await ensureDir();
-        await fs.writeFile(CONFIGS_FILE, JSON.stringify(configs, null, 2), 'utf-8');
-    } catch (error) {
-        console.error('写入配置失败:', error);
-        throw error;
-    }
-}
+import { getConfigById, deleteConfig } from '@/lib/database';
 
 export async function DELETE(request: NextRequest) {
     try {
@@ -69,13 +30,10 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        // 读取所有配置
-        const configs = await readConfigs();
+        // 读取配置
+        const config = getConfigById(configId);
 
-        // 查找要删除的配置
-        const configIndex = configs.findIndex((c: any) => c.id === configId);
-
-        if (configIndex === -1) {
+        if (!config) {
             return NextResponse.json(
                 {
                     success: false,
@@ -85,8 +43,6 @@ export async function DELETE(request: NextRequest) {
                 { status: 404 }
             );
         }
-
-        const config = configs[configIndex];
 
         // 验证权限：只有创建者才能删除
         const walletLower = walletAddress.toLowerCase();
@@ -103,11 +59,8 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        // 删除配置
-        configs.splice(configIndex, 1);
-
-        // 保存配置
-        await writeConfigs(configs);
+        // 从数据库删除配置
+        deleteConfig(configId);
 
         return NextResponse.json({
             success: true,

@@ -1,64 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { randomBytes } from 'crypto';
-
-interface MCPConfig {
-    id: string;
-    title: string;
-    description: string;
-    icon?: string; // 图片URL，不再是base64
-    creatorWallet?: string; // 创建者的钱包地址
-    connectionType: 'url' | 'command' | 'script';
-    connectionConfig: {
-        user?: any;
-        formData?: any;
-        url?: string;
-        command?: string;
-        args?: string[];
-        script?: any;
-        connectionId?: string;
-    };
-    createdAt: string;
-}
-
-const CONFIGS_DIR = path.join(process.cwd(), 'data', 'mcp-configs');
-const CONFIGS_FILE = path.join(CONFIGS_DIR, 'configs.json');
-
-// 确保目录存在
-async function ensureDir() {
-    try {
-        await fs.mkdir(CONFIGS_DIR, { recursive: true });
-    } catch (error) {
-        console.error('创建配置目录失败:', error);
-    }
-}
-
-// 读取所有配置
-async function readConfigs(): Promise<MCPConfig[]> {
-    try {
-        await ensureDir();
-        const data = await fs.readFile(CONFIGS_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return [];
-        }
-        console.error('读取配置失败:', error);
-        return [];
-    }
-}
-
-// 写入所有配置
-async function writeConfigs(configs: MCPConfig[]) {
-    try {
-        await ensureDir();
-        await fs.writeFile(CONFIGS_FILE, JSON.stringify(configs, null, 2), 'utf-8');
-    } catch (error) {
-        console.error('写入配置失败:', error);
-        throw error;
-    }
-}
+import { createConfig, MCPConfig } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     try {
@@ -111,14 +53,8 @@ export async function POST(request: NextRequest) {
             createdAt: new Date().toISOString(),
         };
 
-        // 读取现有配置
-        const configs = await readConfigs();
-
-        // 添加新配置
-        configs.push(newConfig);
-
-        // 保存配置
-        await writeConfigs(configs);
+        // 保存到数据库
+        createConfig(newConfig);
 
         // 生成访问链接
         // 提供两个链接：配置页面链接和代理SSE链接

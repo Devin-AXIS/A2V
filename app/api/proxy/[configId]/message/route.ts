@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-const CONFIGS_DIR = path.join(process.cwd(), 'data', 'mcp-configs');
-const CONFIGS_FILE = path.join(CONFIGS_DIR, 'configs.json');
+import { getConfigById } from '@/lib/database';
 
 // 存储活跃的代理会话（与sse路由共享）
 interface ProxySession {
@@ -92,15 +88,7 @@ export async function POST(
             const { mcpClient, transport, configId } = session;
 
             // 读取配置以获取目标URL
-            const config = await (async () => {
-                try {
-                    const data = await fs.readFile(path.join(process.cwd(), 'data', 'mcp-configs', 'configs.json'), 'utf-8');
-                    const configs = JSON.parse(data);
-                    return configs.find((c: any) => c.id === configId);
-                } catch {
-                    return null;
-                }
-            })();
+            const config = getConfigById(configId);
 
             if (!config) {
                 throw new Error('无法读取配置');

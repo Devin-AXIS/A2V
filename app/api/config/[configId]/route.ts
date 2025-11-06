@@ -1,23 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const CONFIGS_DIR = path.join(process.cwd(), 'data', 'mcp-configs');
-const CONFIGS_FILE = path.join(CONFIGS_DIR, 'configs.json');
-
-// 读取所有配置
-async function readConfigs() {
-    try {
-        const data = await fs.readFile(CONFIGS_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return [];
-        }
-        console.error('读取配置失败:', error);
-        return [];
-    }
-}
+import { getConfigById } from '@/lib/database';
 
 export async function GET(
     request: NextRequest,
@@ -37,11 +19,8 @@ export async function GET(
             );
         }
 
-        // 读取所有配置
-        const configs = await readConfigs();
-
-        // 查找指定ID的配置
-        const config = configs.find((c: any) => c.id === configId);
+        // 读取指定配置
+        const config = getConfigById(configId);
 
         if (!config) {
             return NextResponse.json(

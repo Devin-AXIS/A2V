@@ -65,25 +65,36 @@ export async function POST(request: NextRequest) {
         }
 
         // 检测是否是代理链接（格式：/api/proxy/[configId]/sse 或 http://.../api/proxy/[configId]/sse）
-        console.log('[Connect] 检查是否是代理链接...');
+        console.log('[Connect] ========== 开始检查代理链接 ==========');
         console.log(`  - urlOrCommand: ${urlOrCommand}`);
         console.log(`  - 类型: ${typeof urlOrCommand}`);
+        console.log(`  - 长度: ${urlOrCommand?.length || 0}`);
 
         if (urlOrCommand && typeof urlOrCommand === 'string') {
             // 匹配 /api/proxy/[configId]/sse 格式（支持完整URL和相对路径）
-            const proxyUrlPattern = /\/api\/proxy\/([^\/]+)\/sse/i;
-            const proxyMatch = urlOrCommand.match(proxyUrlPattern);
+            // 注意：正则表达式需要匹配相对路径和绝对路径两种格式
+            const relativeProxyPattern = /^\/api\/proxy\/([^\/]+)\/sse$/i;
+            const absoluteProxyPattern = /https?:\/\/[^\/]+\/api\/proxy\/([^\/]+)\/sse/i;
+            
+            const relativeMatch = urlOrCommand.match(relativeProxyPattern);
+            const absoluteMatch = urlOrCommand.match(absoluteProxyPattern);
+            
+            const proxyMatch = relativeMatch || absoluteMatch;
 
-            console.log(`  - 正则匹配结果:`, proxyMatch);
+            console.log(`  - 相对路径匹配:`, relativeMatch);
+            console.log(`  - 绝对路径匹配:`, absoluteMatch);
+            console.log(`  - 最终匹配结果:`, proxyMatch);
 
             if (proxyMatch) {
-                const configId = proxyMatch[1];
+                const configId = proxyMatch[1]; // 两个正则的捕获组都在索引1
                 console.log(`  ✅ [Connect] 检测到代理链接，configId: ${configId}`);
+                console.log(`  - 匹配的URL: ${urlOrCommand}`);
 
-                // 对于代理链接，返回一个特殊的连接ID格式：proxy_[configId]
-                // 前端可以通过这个ID识别是代理连接，并使用代理API端点
+                // 对于代理链接，不需要实际建立连接
+                // 代理连接由 SSE 端点管理，这里只返回连接ID
                 const proxyConnectionId = `proxy_${configId}`;
                 console.log(`  - 生成的 connectionId: ${proxyConnectionId}`);
+                console.log('[Connect] ========== 代理链接检测完成，返回 ==========');
 
                 return NextResponse.json({
                     success: true,
@@ -94,9 +105,40 @@ export async function POST(request: NextRequest) {
                 });
             } else {
                 console.log(`  ⚠️  [Connect] 不是代理链接格式`);
+                console.log(`  - URL 是否以 /api/proxy 开头: ${urlOrCommand.startsWith('/api/proxy')}`);
+                console.log(`  - URL 是否包含 /api/proxy: ${urlOrCommand.includes('/api/proxy')}`);
             }
         }
+        console.log('[Connect] ========== 代理链接检测完成，继续处理 ==========');
 
+        // 如果不是代理链接，尝试直接连接
+        // 但如果 URL 是相对路径，需要检查是否是有效的 MCP 服务器 URL
+        if (urlOrCommand && typeof urlOrCommand === 'string' && 
+            !urlOrCommand.startsWith('http://') && 
+            !urlOrCommand.startsWith('https://')) {
+            
+            // 如果是相对路径，可能是代理链接但没有被正确识别
+            // 或者是不支持的命令行格式
+            if (urlOrCommand.startsWith('/')) {
+                // 相对路径的 API 端点不应该用于直接连接
+                // 如果之前没有识别为代理链接，可能是格式问题
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: '无效的连接URL',
+                        message: `相对路径 "${urlOrCommand}" 不能用于直接连接。如果是代理链接，请使用完整格式：/api/proxy/[configId]/sse`,
+                    },
+                    { status: 400 }
+                );
+            }
+            
+            // 如果是命令行（不以 / 开头），继续处理
+        }
+
+        // 现在尝试连接 MCP 服务器（只有非代理链接才会到达这里）
+        console.log('[Connect] 准备连接 MCP 服务器...');
+        console.log(`  - urlOrCommand: ${urlOrCommand}`);
+        
         const id = await connectMCP(urlOrCommand, finalArgs, finalConnectionId);
 
         return NextResponse.json({

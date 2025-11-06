@@ -2,8 +2,7 @@ import { NextRequest } from 'next/server';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { getConfigById } from '@/lib/database';
 
 // EventSource 实例类型（基于 eventsource 包）
 interface EventSourceInstance {
@@ -41,9 +40,6 @@ function getEventSource(): EventSourceConstructor {
     throw new Error('无法加载 EventSource');
 }
 
-const CONFIGS_DIR = path.join(process.cwd(), 'data', 'mcp-configs');
-const CONFIGS_FILE = path.join(CONFIGS_DIR, 'configs.json');
-
 // 存储活跃的代理会话
 interface ProxySession {
     configId: string;
@@ -66,21 +62,6 @@ function getProxySessions(): Map<string, ProxySession> {
     return globalThis.__mcpProxySessions;
 }
 
-// 读取配置
-async function readConfig(configId: string) {
-    try {
-        const data = await fs.readFile(CONFIGS_FILE, 'utf-8');
-        const configs = JSON.parse(data);
-        const config = configs.find((c: any) => c.id === configId);
-        return config;
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            throw new Error('配置文件不存在');
-        }
-        throw error;
-    }
-}
-
 // 发送SSE消息
 function sendSSEMessage(controller: ReadableStreamDefaultController<Uint8Array>, data: any) {
     const encoder = new TextEncoder();
@@ -88,23 +69,49 @@ function sendSSEMessage(controller: ReadableStreamDefaultController<Uint8Array>,
     controller.enqueue(encoder.encode(`data: ${message}\n\n`));
 }
 
+// 处理 OPTIONS 预检请求
+export async function OPTIONS(request: NextRequest) {
+    console.log('[SSE] OPTIONS 预检请求');
+    return new Response(null, {
+        status: 200,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '86400',
+        },
+    });
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ configId: string }> | { configId: string } }
 ) {
-    const resolvedParams = params instanceof Promise ? await params : params;
-    const { configId } = resolvedParams;
+    console.log('[SSE] GET 请求开始');
+    
+    try {
+        const resolvedParams = params instanceof Promise ? await params : params;
+        const { configId } = resolvedParams;
+        
+        console.log('[SSE] configId:', configId);
 
-    if (!configId) {
-        return new Response(
-            JSON.stringify({ error: '缺少配置ID' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-    }
+        if (!configId) {
+            console.error('[SSE] 缺少配置ID');
+            return new Response(
+                JSON.stringify({ error: '缺少配置ID' }),
+                { 
+                    status: 400, 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                    } 
+                }
+            );
+        }
 
-    // 创建SSE响应流
-    const stream = new ReadableStream({
-        async start(controller) {
+        // 创建SSE响应流
+        const stream = new ReadableStream({
+            async start(controller) {
             const encoder = new TextEncoder();
             let sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             let mcpClient: Client | null = null;
@@ -114,7 +121,7 @@ export async function GET(
 
             try {
                 // 读取配置
-                const config = await readConfig(configId);
+                const config = getConfigById(configId);
                 if (!config) {
                     const errorMsg = { type: 'error', error: '配置不存在' };
                     sendSSEMessage(controller, errorMsg);
@@ -380,15 +387,32 @@ export async function GET(
         },
     });
 
-    return new Response(stream, {
-        headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no', // 禁用Nginx缓冲
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-        },
-    });
+        console.log('[SSE] 返回 SSE 流响应');
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no', // 禁用Nginx缓冲
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+        });
+    } catch (error: any) {
+        console.error('[SSE] 路由处理错误:', error);
+        return new Response(
+            JSON.stringify({ 
+                error: 'SSE 路由处理失败', 
+                message: error.message 
+            }),
+            { 
+                status: 500, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                } 
+            }
+        );
+    }
 }
