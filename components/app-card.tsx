@@ -41,7 +41,7 @@ export function AppCard({ app, connectedWallet, onDelete }: AppCardProps) {
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation() // 阻止卡片点击事件
     
-    if (!window.confirm(`确定要删除 "${app.name}" 吗？此操作无法撤销。`)) {
+    if (!window.confirm(`Are you sure you want to delete "${app.name}"? This action cannot be undone.`)) {
       return
     }
 
@@ -55,24 +55,24 @@ export function AppCard({ app, connectedWallet, onDelete }: AppCardProps) {
 
       if (data.success) {
         toast({
-          title: "删除成功",
-          description: `"${app.name}" 已成功删除`,
+          title: "Deleted successfully",
+          description: `"${app.name}" has been deleted successfully`,
         })
         if (onDelete) {
           onDelete()
         }
       } else {
         toast({
-          title: "删除失败",
-          description: data.message || data.error || "删除应用时发生错误",
+          title: "Delete failed",
+          description: data.message || data.error || "An error occurred while deleting the app",
           variant: "destructive",
         })
       }
     } catch (error) {
       console.error('删除应用失败:', error)
       toast({
-        title: "删除失败",
-        description: "删除应用时发生错误，请稍后重试",
+        title: "Delete failed",
+        description: "An error occurred while deleting the app, please try again later",
         variant: "destructive",
       })
     } finally {
@@ -108,7 +108,7 @@ export function AppCard({ app, connectedWallet, onDelete }: AppCardProps) {
           onClick={handleDelete}
           disabled={isDeleting}
           className="absolute top-3 right-3 z-20 p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
-          title="删除应用"
+          title="Delete App"
         >
           {isDeleting ? (
             <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />

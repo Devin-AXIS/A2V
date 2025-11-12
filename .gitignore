@@ -28,3 +28,9 @@ next-env.d.ts
 
 # data
 /data
+
+# SSL certificates
+/certs
+*.key
+*.crt
+*.pem

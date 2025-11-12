@@ -44,7 +44,7 @@ export function MarketplaceHeader({
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const { toast } = useToast()
 
-  const categories = ["All", "Charts", "Application", "AI", "Marketing", "E-commerce", "DeFi", "Analytics"]
+  const categories = ["All", "Data", "On-chain", "Finance", "Media", "AI", "Dev", "Research", "Biz", "Infra"]
 
   // 获取用户信息，返回是否需要显示设置弹窗
   const fetchUserProfile = async (address: string): Promise<boolean> => {
@@ -66,8 +66,8 @@ export function MarketplaceHeader({
     } catch (error) {
       console.error('获取用户信息失败:', error)
       toast({
-        title: "获取用户信息失败",
-        description: "无法加载您的个人资料信息",
+        title: "Failed to get user information",
+        description: "Unable to load your profile information",
         variant: "destructive",
       })
       setIsFirstTimeSetup(true)
@@ -148,17 +148,17 @@ export function MarketplaceHeader({
         setUserProfile(data.profile)
         setIsFirstTimeSetup(false)
         toast({
-          title: "保存成功",
-          description: "用户信息已保存",
+          title: "Saved successfully",
+          description: "User information saved",
         })
       } else {
-        throw new Error(data.message || '保存失败')
+        throw new Error(data.message || 'Save failed')
       }
     } catch (error: any) {
       console.error('保存用户信息失败:', error)
       toast({
-        title: "保存失败",
-        description: error.message || "无法保存您的个人资料信息",
+        title: "Save failed",
+        description: error.message || "Unable to save your profile information",
         variant: "destructive",
       })
     }
@@ -167,8 +167,8 @@ export function MarketplaceHeader({
   const handleUploadClick = () => {
     if (!connectedWallet) {
       toast({
-        title: "请先登录",
-        description: "您需要先登录才能使用此功能。",
+        title: "Please login first",
+        description: "You need to login first to use this feature.",
         variant: "destructive",
       })
       setIsWalletModalOpen(true)

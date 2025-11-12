@@ -27,7 +27,7 @@ export default function MarketplacePage() {
   const [apps, setApps] = useState<App[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null)
-  const appsPerPage = 8
+  const appsPerPage = 12
 
   useEffect(() => {
     setCurrentPage(1)

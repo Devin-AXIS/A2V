@@ -2,6 +2,7 @@
 
 import { AppCard } from "@/components/app-card"
 import { useMemo, useEffect, useState, useCallback } from "react"
+import { Loader2 } from "lucide-react"
 
 type App = {
   id: number
@@ -317,7 +318,10 @@ interface AppGridProps {
 
 export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm, connectedWallet, onAppsChange, refreshTrigger }: AppGridProps) {
   const [apps, setApps] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const getAppList = useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/configs")
       const { configs } = await res.json()
@@ -340,6 +344,8 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
       }
     } catch (e) {
       console.log(e)
+    } finally {
+      setIsLoading(false);
     }
   }, [onAppsChange])
 
@@ -359,7 +365,12 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
 
     // Filter by category
     if (selectedCategory !== "All") {
-      filtered = filtered.filter((app) => app.category.includes(selectedCategory))
+      filtered = filtered.filter((app) => {
+        // 使用 trim 去除空格，然后进行精确匹配
+        const appCategory = (app.category || "").trim();
+        const selected = selectedCategory.trim();
+        return appCategory === selected;
+      })
     }
 
     // Filter by search term
@@ -395,7 +406,9 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
             {selectedCategory === "All" ? "A2V Protocol Marketplace" : selectedCategory}
           </h2>
           <p className="text-sm text-gray-400 mt-1">
-            {filteredApps.length > 0 ? (
+            {isLoading ? (
+              <>Loading applications...</>
+            ) : filteredApps.length > 0 ? (
               <>
                 Displaying {startCount}-{endCount} of {filteredApps.length} applications
                 {searchTerm && ` matching "${searchTerm}"`}
@@ -407,7 +420,13 @@ export function AppGrid({ currentPage, appsPerPage, selectedCategory, searchTerm
         </div>
       </div>
 
-      {paginatedApps.length > 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 backdrop-blur-2xl bg-white/[0.03] rounded-2xl border border-white/10">
+          <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">Loading applications...</h3>
+          <p className="text-sm text-gray-400">Please wait while we fetch the latest apps</p>
+        </div>
+      ) : paginatedApps.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-[1400px] mx-auto">
           {paginatedApps.map((app) => (
             <AppCard 
@@ -433,7 +452,12 @@ export const getTotalApps = (appsArray: App[], category: string, search: string)
   let filtered = appsArray
 
   if (category !== "All") {
-    filtered = filtered.filter((app) => app.category.includes(category))
+    filtered = filtered.filter((app) => {
+      // 使用 trim 去除空格，然后进行精确匹配
+      const appCategory = (app.category || "").trim();
+      const selected = category.trim();
+      return appCategory === selected;
+    })
   }
 
   if (search.trim()) {

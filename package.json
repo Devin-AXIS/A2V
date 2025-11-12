@@ -6,12 +6,17 @@
     "build": "sh scripts/build.sh",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start",
+    "start:http": "next start",
+    "start": "node server.js",
+    "generate-cert": "sh scripts/generate-cert.sh",
     "deploy-token": "sh scripts/deploy-workload-base.sh",
-    "prod": "sh scripts/start-pm2.sh",
+    "prod:http": "sh scripts/start-pm2.sh",
+    "prod": "HTTPS_ENABLED=true sh scripts/start-pm2.sh",
     "stop": "pm2 stop 0 & pm2 delete 0",
     "migrate": "tsx scripts/migrate-to-sqlite.ts",
-    "build-sqlite": "sh scripts/build-sqlite.sh"
+    "build-sqlite": "sh scripts/build-sqlite.sh",
+    "import-apps": "tsx scripts/import-apps.ts",
+    "delete-all-apps": "tsx scripts/delete-all-apps.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

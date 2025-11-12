@@ -80,6 +80,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    appDetail: "",
     icon: "",
     category: "",
     mcpProtocol: "",
@@ -95,7 +96,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
     price: "",
   })
 
-  const categories = ["Charts", "Application", "AI", "Marketing", "E-commerce", "DeFi", "Analytics"]
+  const categories = ["Data", "On-chain", "Finance", "Media", "AI", "Dev", "Research", "Biz", "Infra"]
 
   const chains = [
     { id: "ethereum", name: "Ethereum", logo: "⟠", color: "#627EEA" },
@@ -200,21 +201,21 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
           if (toolsData.success) {
             setFormData({ ...formData, tools: toolsData.tools || [] });
           } else {
-            addLog('error', `获取工具失败: ${toolsData.error || toolsData.message}`);
+            addLog('error', `Failed to get tools: ${toolsData.error || toolsData.message}`);
           }
 
           const resourcesData = await resourcesRes.json();
           if (resourcesData.success) {
             setResources(resourcesData.resources || []);
           } else {
-            addLog('error', `获取资源失败: ${resourcesData.error || resourcesData.message}`);
+            addLog('error', `Failed to get resources: ${resourcesData.error || resourcesData.message}`);
           }
 
           const promptsData = await promptsRes.json();
           if (promptsData.success) {
             setPrompts(promptsData.prompts || []);
           } else {
-            addLog('error', `获取提示词失败: ${promptsData.error || promptsData.message}`);
+            addLog('error', `Failed to get prompts: ${promptsData.error || promptsData.message}`);
           }
           setFormData({ ...formData, convertedProtocol: true, tools: toolsData.tools || [] });
         } catch (error: any) {
@@ -226,7 +227,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
       }, 500)
     } else {
       setIsConverting(false)
-      throw new Error(data.error || data.message || '连接失败');
+      throw new Error(data.error || data.message || 'Connection failed');
     }
   }
 
@@ -493,6 +494,17 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
               </div>
 
               <div>
+                <label className="block text-xs font-medium text-gray-300 mb-2">App Detail</label>
+                <textarea
+                  value={formData.appDetail}
+                  onChange={(e) => setFormData({ ...formData, appDetail: e.target.value })}
+                  placeholder="Enter detailed information about your A2V application..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/20 text-white text-sm placeholder:text-gray-500 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_20px_rgba(79,209,197,0.15)] transition-all duration-300 resize-none"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-gray-300 mb-2">MCP URL</label>
                 {/* <div className="flex gap-2 mb-3">
                   <button
@@ -681,7 +693,6 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
                   className="backdrop-blur-xl bg-white/5 border-white/20 text-white text-sm font-mono focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_20px_rgba(79,209,197,0.15)] transition-all duration-300"
                 />
                 <p className="text-xs text-gray-400 mt-2">
-                  {/* This key will be used to authenticate API calls to your MCP protocol */}
                   By using this MCP connection for calling, the token distribution function can be completed
                 </p>
               </div>
@@ -776,7 +787,7 @@ export function UploadProtocolModal({ isOpen, onClose, connectedWallet, userProf
           <button
             onClick={() => (step < 3 ? handleNextStep() : handleSubmit())}
             disabled={
-              (step === 1 && (!formData.name || !formData.category || (formData.mcpInputType === "url" ? !formData.mcpUrl : !formData.mcpProtocol))) ||
+              (step === 1 && (!formData.name || !formData.appDetail || !formData.description || !formData.category || (formData.mcpInputType === "url" ? !formData.mcpUrl : !formData.mcpProtocol))) ||
               (step === 2 && !formData.convertedProtocol)
             }
             className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-black text-xs font-medium hover:shadow-[0_8px_32px_rgba(79,209,197,0.4)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 disabled:hover:scale-100"

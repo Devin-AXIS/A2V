@@ -26,14 +26,14 @@ export function calculateTokenAmount(result: any): string {
     console.log(`  [计算详情] 内容长度: ${totalLength} 字符`);
 
     // 根据内容大小计算代币数量
-    // 基础奖励：每个字符 0.01 代币（提高奖励，确保有足够的代币）
-    // 最小 10 代币，最大根据内容长度动态计算
-    const baseReward = 10; // 最小奖励提高到 10 代币
-    const perCharReward = 0.01; // 每字符奖励提高到 0.01
+    // 基础奖励：1 代币，每字符 0.001 代币
+    // 最小 1 代币，最大 100 代币
+    const baseReward = 1; // 基础奖励：1 代币
+    const perCharReward = 0.001; // 每字符奖励：0.001 代币
     const calculatedAmount = baseReward + (totalLength * perCharReward);
-
-    // 限制最大代币数量（例如最大 10000 代币）
-    const maxAmount = 10000;
+    
+    // 限制最大代币数量（最大 100 代币）
+    const maxAmount = 100;
     const finalAmount = Math.min(calculatedAmount, maxAmount);
 
     console.log(`  [计算详情] 基础奖励: ${baseReward}`);

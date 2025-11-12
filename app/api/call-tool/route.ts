@@ -7,7 +7,11 @@ export async function POST(request: NextRequest) {
     console.log('\n========== [Call Tool API] 请求开始 ==========');
 
     try {
-        const { connectionId, toolName, arguments: toolArgs, walletAddress } = await request.json();
+        const body = await request.json();
+        const { connectionId, toolName, arguments: toolArgsFromBody, args: argsFromBody, walletAddress } = body;
+
+        // 支持两种参数名：arguments 和 args（前端可能使用 args）
+        const toolArgs = toolArgsFromBody || argsFromBody || {};
 
         console.log(`[Call Tool] 接收到的参数:`);
         console.log(`  - connectionId: ${connectionId}`);
@@ -91,6 +95,7 @@ export async function POST(request: NextRequest) {
                 console.log(`  ✅ 使用现有代理会话`);
             } catch (sessionError: any) {
                 console.log(`  ⚠️  代理会话不存在，尝试创建临时会话...`);
+                console.log(`  - 错误信息: ${sessionError.message}`);
                 // 提取 configId
                 const configId = actualConnectionId.replace('proxy_', '');
 
@@ -98,7 +103,13 @@ export async function POST(request: NextRequest) {
                 const config = getConfigById(configId);
 
                 if (!config) {
-                    throw new Error(`配置不存在: ${configId}`);
+                    return NextResponse.json(
+                        {
+                            error: '配置不存在',
+                            message: `无法找到配置 ID: ${configId}。请确保已正确连接代理。`,
+                        },
+                        { status: 404 }
+                    );
                 }
 
                 // 创建临时会话（参考 proxy/tools 的实现）
@@ -145,12 +156,21 @@ export async function POST(request: NextRequest) {
                     throw new Error(`不支持的连接类型: ${config.connectionType}`);
                 }
 
-                await mcpClient.connect(transport);
-                client = mcpClient;
-                console.log(`  ✅ 临时代理会话创建成功`);
+                try {
+                    await mcpClient.connect(transport);
+                    client = mcpClient;
+                    console.log(`  ✅ 临时代理会话创建成功`);
+                } catch (connectError: any) {
+                    console.error(`  ❌ 创建临时代理会话失败:`, connectError);
+                    throw new Error(`无法连接到 MCP 服务器: ${connectError.message || '连接失败'}`);
+                }
             }
         } else {
-            client = getClient(actualConnectionId);
+            try {
+                client = getClient(actualConnectionId);
+            } catch (clientError: any) {
+                throw new Error(`无法获取客户端连接: ${clientError.message || '连接不存在'}`);
+            }
         }
 
         console.log(`\n[Call Tool] 调用工具: ${toolName}`);

@@ -2,10 +2,22 @@
 
 # PM2启动脚本
 # 用于使用PM2启动打包后的Next.js应用
+# 
+# 使用说明：
+# - 默认启动 HTTP 服务器 (端口 80)
+# - 设置环境变量 HTTPS_ENABLED=true 启动 HTTPS 服务器 (端口 443)
+#   例如: HTTPS_ENABLED=true ./scripts/start-pm2.sh
 
 set -e  # 遇到错误立即退出
 
-echo "🚀 使用PM2启动应用..."
+# 检查是否启用 HTTPS
+HTTPS_ENABLED=${HTTPS_ENABLED:-false}
+
+if [ "$HTTPS_ENABLED" = "true" ]; then
+    echo "🔒 使用PM2启动应用 (HTTPS模式)..."
+else
+    echo "🚀 使用PM2启动应用 (HTTP模式)..."
+fi
 
 # 获取脚本所在目录的绝对路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,14 +66,25 @@ echo "🔄 启动应用..."
 # 检查是否存在 ecosystem.config.js
 if [ -f "ecosystem.config.js" ]; then
     echo "📄 使用 ecosystem.config.js 配置文件..."
-    pm2 start ecosystem.config.js
+    if [ "$HTTPS_ENABLED" = "true" ]; then
+        HTTPS_ENABLED=true pm2 start ecosystem.config.js
+    else
+        pm2 start ecosystem.config.js
+    fi
     else
         echo "⚠️  未找到 ecosystem.config.js，使用默认配置启动..."
-        pm2 start "./scripts/start-server.sh" --name "$APP_NAME" \
+        if [ "$HTTPS_ENABLED" = "true" ]; then
+            START_SCRIPT="./scripts/start-https-server.sh"
+            echo "🔒 使用 HTTPS 启动脚本..."
+        else
+            START_SCRIPT="./scripts/start-server.sh"
+        fi
+        pm2 start "$START_SCRIPT" --name "$APP_NAME" \
             --interpreter bash \
             --cwd "$PROJECT_DIR" \
             --env NODE_ENV=production \
             --env PORT=80 \
+            --env HTTPS_PORT=443 \
             --error ./logs/pm2-error.log \
             --output ./logs/pm2-out.log \
             --log ./logs/pm2-combined.log \
@@ -73,7 +96,14 @@ if [ -f "ecosystem.config.js" ]; then
 pm2 save
 
 echo ""
-echo "✅ 应用已启动！"
+if [ "$HTTPS_ENABLED" = "true" ]; then
+    echo "✅ HTTPS 应用已启动！"
+    echo "   🔒 HTTPS: https://localhost:443"
+    echo "   🔄 HTTP 重定向: http://localhost:80 -> https://localhost:443"
+else
+    echo "✅ HTTP 应用已启动！"
+    echo "   🌐 HTTP: http://localhost:80"
+fi
 echo ""
 echo "📋 常用命令："
 echo "   📊 查看状态: pm2 status"

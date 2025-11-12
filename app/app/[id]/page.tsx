@@ -169,17 +169,71 @@ export default function AppDetailPage() {
   const [tools, setTools] = useState<any[]>([])
   const [isCallToolModalOpen, setIsCallToolModalOpen] = useState(false)
   const [selectedTool, setSelectedTool] = useState<any>(null)
+  const [isMock, setIsMock] = useState(false)
+
+  // 将 MockTools 转换为工具对象数组
+  // MockTools 可能是字符串数组（旧格式）或对象数组（新格式，包含name和description）
+  const convertMockToolsToToolObjects = (mockTools: any[]): any[] => {
+    return mockTools.map((tool) => {
+      // 如果是字符串，使用旧格式处理
+      if (typeof tool === 'string') {
+        return {
+          name: tool,
+          description: `${tool}. It provides simulated functionality for testing purposes.`,
+          inputSchema: {
+            type: "object",
+            properties: {
+              input: {
+                type: "string",
+                description: `Input parameter for ${tool}`,
+              },
+            },
+            required: ["input"],
+          },
+        }
+      }
+      // 如果是对象，使用新格式（包含name和description）
+      return {
+        name: tool.name,
+        description: tool.description,
+        inputSchema: {
+          type: "object",
+          properties: {
+            input: {
+              type: "string",
+              description: `Input parameter for ${tool.name}`,
+            },
+          },
+          required: ["input"],
+        },
+      }
+    })
+  }
 
   const getAppDetail = async (id: string) => {
     const res = await fetch(`/api/config/${id}`)
     const { config } = await res.json()
     // 优先使用配置的顶级 icon 字段（URL），如果没有则回退到 formData.icon（兼容旧数据）
     const icon = config.icon || config.connectionConfig?.formData?.icon
+    const formData = config.connectionConfig?.formData || {}
+    const isMockApp = formData.isMock === true
+
     setAppData({
       ...config.connectionConfig,
       title: config.title,
-      icon: icon // 添加 icon 字段
+      icon: icon, // 添加 icon 字段
+      isMock: isMockApp,
     })
+    setIsMock(isMockApp)
+
+    // 如果是 mock 应用，使用 MockTools 生成工具列表
+    if (isMockApp && formData.MockTools && Array.isArray(formData.MockTools)) {
+      const mockTools = convertMockToolsToToolObjects(formData.MockTools)
+      setTools(mockTools)
+    }
+
+    // 返回 isMockApp 以便调用者知道是否需要连接
+    return isMockApp
   }
 
   const connectionAndGetTools = async (id: string) => {
@@ -224,8 +278,14 @@ export default function AppDetailPage() {
 
   useEffect(() => {
     const id = params.id as string
-    connectionAndGetTools(id)
-    getAppDetail(id)
+    const loadApp = async () => {
+      const isMockApp = await getAppDetail(id)
+      // 只有在非 mock 应用时才连接和获取工具
+      if (!isMockApp) {
+        connectionAndGetTools(id)
+      }
+    }
+    loadApp()
   }, [params.id])
 
   const handleCallTool = (tool: any) => {
@@ -414,10 +474,10 @@ export default function AppDetailPage() {
 
   const generateChartPath = (data: number[]) => {
     const width = 100
-    const height = 40
+    const height = 30
     const points = data.map((value, index) => {
       const x = (index / (data.length - 1)) * width
-      const y = height - ((value - Math.min(...data)) / (Math.max(...data) - Math.min(...data))) * height
+      const y = height - (value / Math.max(...data)) * height
       return `${x},${y}`
     })
     return `M ${points.join(" L ")}`
@@ -552,14 +612,14 @@ export default function AppDetailPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h1 className="text-sm font-semibold text-white">{appData.formData?.name}</h1>
+                          <h1 className="text-sm font-semibold text-white">{appData.formData?.name || appData.title || "AI App"}</h1>
                           {app.verified && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
                           <div className="flex items-center gap-1">
                             <span className="text-base" style={{ color: app.chain.color }}>
                               {app.chain.logo}
                             </span>
                             <span className="text-[10px] font-medium" style={{ color: app.chain.color }}>
-                              {appData.formData?.name}
+                              {appData.title}
                             </span>
                           </div>
                           {app.trending && (
@@ -569,7 +629,7 @@ export default function AppDetailPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-3">{appData.formData?.description}</p>
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-3">{appData.formData?.description || appData.formData?.intro}</p>
                       </div>
                     </div>
 
@@ -580,7 +640,7 @@ export default function AppDetailPage() {
                       </div>
                       <div className="flex items-center gap-1.5 text-gray-400">
                         <Activity className="w-3 h-3 text-primary" />
-                        <span className="font-medium">{app.installs} calls</span>
+                        <span className="font-medium">{appData.st?.installs} calls</span>
                       </div>
                       <Badge
                         variant="outline"
@@ -615,39 +675,46 @@ export default function AppDetailPage() {
                         </p>
                       </div>
 
-                      <div className="relative">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Activity className="w-3 h-3 text-primary" />
-                          <span className="text-[10px] text-gray-400 font-medium">Call Trends</span>
+                      {appData.st?.chartData && (
+                        <div className="relative w-full">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <Activity className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-xs text-gray-400">Call Trends</span>
+                            </div>
+                            {appData.st?.valueChange && (
+                              <span
+                                className={`text-xs font-medium ${appData.st.valueChange.startsWith("+") ? "text-primary" : "text-red-400"}`}
+                              >
+                                {appData.st.valueChange}
+                              </span>
+                            )}
+                          </div>
+                          <div className="p-3 rounded-xl backdrop-blur-xl bg-black/30 group-hover:bg-black/40 transition-all duration-500 w-full">
+                            <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                              <defs>
+                                <linearGradient id={`gradient-${params.id as string}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor="#4FD1C5" stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor="#4FD1C5" stopOpacity="0.8" />
+                                </linearGradient>
+                              </defs>
+                              <path
+                                d={generateChartPath(appData.st.chartData)}
+                                fill="none"
+                                stroke={`url(#gradient-${params.id as string})`}
+                                strokeWidth="2"
+                                className="transition-all duration-500"
+                              />
+                            </svg>
+                          </div>
                         </div>
-                        <div className="relative h-14 backdrop-blur-xl bg-black/30 rounded-lg p-2">
-                          <svg
-                            width="100%"
-                            height="100%"
-                            viewBox="0 0 100 40"
-                            preserveAspectRatio="none"
-                            className="overflow-visible"
-                          >
-                            <defs>
-                              <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#4FD1C5" stopOpacity="0.3" />
-                                <stop offset="100%" stopColor="#4FD1C5" stopOpacity="0" />
-                              </linearGradient>
-                            </defs>
-                            <path
-                              d={`${generateChartPath(app.chartData)} L 100,40 L 0,40 Z`}
-                              fill="url(#chartGradient)"
-                            />
-                            <path d={generateChartPath(app.chartData)} fill="none" stroke="#4FD1C5" strokeWidth="0.8" />
-                          </svg>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Tabs */}
-                {/* <div className="flex gap-2 pt-3 border-t border-white/5">
+                <div className="flex gap-2 pt-3 border-t border-white/5">
                   <button
                     onClick={() => setActiveTab("overview")}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${activeTab === "overview"
@@ -664,9 +731,9 @@ export default function AppDetailPage() {
                       : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                   >
-                    Features
+                    Tools
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => setActiveTab("api")}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${activeTab === "api"
                       ? "bg-primary/20 text-primary backdrop-blur-xl shadow-lg shadow-primary/20"
@@ -674,18 +741,18 @@ export default function AppDetailPage() {
                       }`}
                   >
                     API Reference
-                  </button>
-                </div> */}
+                  </button> */}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-3 border-t border-white/5">Tools</div>
+            {/* <div className="flex gap-2 pt-3 border-t border-white/5">Tools</div> */}
 
             {/* Content Sections */}
             {activeTab === "overview" && (
               <div className="backdrop-blur-2xl bg-white/[0.03] hover:bg-white/[0.06] rounded-2xl p-5 shadow-2xl transition-all duration-500">
                 <h2 className="text-sm font-semibold text-white mb-3">Service Overview</h2>
-                <p className="text-xs text-gray-400 leading-relaxed">{app.overview}</p>
+                <p className="text-xs text-gray-400 leading-relaxed">{appData.formData?.appDetail || "This application has not filled in the details"}</p>
               </div>
             )}
 
@@ -705,7 +772,8 @@ export default function AppDetailPage() {
                     <p className="text-xs text-gray-400 leading-relaxed ml-8">{feature.description}</p>
                     <Button
                       onClick={() => handleCallTool(feature)}
-                      className="cursor-pointer float-right absolute right-[20px] top-[20px]"
+                      size="sm"
+                      className="cursor-pointer float-right absolute right-[20px] top-[14px] text-xs px-2 py-1 h-7"
                     >
                       Call Tool
                     </Button>
@@ -754,11 +822,11 @@ export default function AppDetailPage() {
 
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xl rounded-lg backdrop-blur-xl flex-shrink-0">
-                    <img src={appData.user?.avatar} alt={appData.user?.name} className="w-10 h-10 rounded-lg" />
+                    <img src={appData.user?.avatar || appData.formData?.avatar} alt={appData.user?.name || appData.formData?.username} className="w-10 h-10 rounded-lg" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-xs font-semibold text-white">{appData.user?.name}</span>
+                      <span className="text-xs font-semibold text-white">{appData.user?.name || appData.formData?.username}</span>
                       {app.author.verified && <CheckCircle2 className="w-3 h-3 text-primary" />}
                     </div>
                     <p className="text-[10px] text-gray-400">{app.author.apps} applications published</p>
@@ -810,7 +878,7 @@ export default function AppDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center p-2 backdrop-blur-xl bg-black/30 rounded-lg">
                   <span className="text-xs text-gray-400">Total Calls</span>
-                  <span className="text-xs font-semibold text-white">{app.installs}</span>
+                  <span className="text-xs font-semibold text-white">{appData.st?.installs}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 backdrop-blur-xl bg-black/30 rounded-lg">
                   <span className="text-xs text-gray-400">Success Rate</span>
@@ -855,9 +923,10 @@ export default function AppDetailPage() {
           setSelectedTool(null)
         }}
         tool={selectedTool}
-        appName={appData.title || app.name || "应用"}
+        appName={appData.title || app.name || "App"}
         configId={params.id as string}
         walletAddress={connectedWallet}
+        isMock={isMock}
       />
     </div>
   )
